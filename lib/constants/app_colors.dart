@@ -39,6 +39,8 @@ class AppColors {
   static const Color indigoLight = Color(0xFF818CF8);
   static const Color teal = Color(0xFF14B8A6);
   static const Color tealLight = Color(0xFF2DD4BF);
+  static const Color orange = Color(0xFFFF6B35);
+  static const Color orangeLight = Color(0xFFFF8A65);
   
   // Text Colors - Perfect Readability
   static const Color textPrimary = Color(0xFF1E293B);
@@ -101,12 +103,6 @@ class AppColors {
     end: Alignment.bottomRight,
   );
   
-  static const LinearGradient infoGradient = LinearGradient(
-    colors: [info, infoLight],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-  
   static const LinearGradient pinkGradient = LinearGradient(
     colors: [pink, pinkLight],
     begin: Alignment.topLeft,
@@ -121,6 +117,12 @@ class AppColors {
   
   static const LinearGradient tealGradient = LinearGradient(
     colors: [teal, tealLight],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
+  static const LinearGradient orangeGradient = LinearGradient(
+    colors: [orange, orangeLight],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
