@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import '../models/user.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
+import '../models/user_model.dart';
 
 class ProfileHeader extends StatefulWidget {
   final User user;
@@ -65,170 +64,161 @@ class _ProfileHeaderState extends State<ProfileHeader>
 
   @override
   Widget build(BuildContext context) {
-    return AnimationLimiter(
-      child: Column(
-        children: AnimationConfiguration.toStaggeredList(
-          duration: const Duration(milliseconds: 800),
-          childAnimationBuilder: (widget) => SlideAnimation(
-            horizontalOffset: 50.0,
-            child: FadeInAnimation(child: widget),
-          ),
-          children: [
-            Container(
-              margin: const EdgeInsets.all(20.0),
-              padding: const EdgeInsets.all(24.0),
-              decoration: AppStyles.glassCardDecoration,
-              child: Row(
-                children: [
-                  // Animated Profile Image with Glow
-                  AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _pulseAnimation.value,
-                        child: Container(
-                          width: 70,
-                          height: 70,
-                          decoration: AppStyles.neonGlow,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.primary.withOpacity(0.3),
-                                width: 3,
-                              ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(35),
-                              child: Image.network(
-                                widget.user.profileImage,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      gradient: AppColors.primaryGradient,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      Icons.person,
-                                      size: 35,
-                                      color: AppColors.textWhite,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(24.0),
+          decoration: AppStyles.glassCardDecoration,
+          child: Row(
+            children: [
+              // Animated Profile Image with Glow
+              AnimatedBuilder(
+                animation: _pulseAnimation,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _pulseAnimation.value,
+                    child: Container(
+                      width: 70,
+                      height: 70,
+                      decoration: AppStyles.neonGlow,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.3),
+                            width: 3,
                           ),
                         ),
-                      );
-                    },
-                  ),
-                  
-                  const SizedBox(width: 20),
-                  
-                  // User Info with Beautiful Typography
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.user.name,
-                          style: AppStyles.heading3.copyWith(
-                            background: Paint()
-                              ..shader = AppColors.primaryGradient.createShader(
-                                const Rect.fromLTWH(0, 0, 200, 30),
-                              ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(35),
+                          child: Image.network(
+                            widget.user.profileImage,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  gradient: AppColors.primaryGradient,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.person,
+                                  size: 35,
+                                  color: AppColors.textWhite,
+                                ),
+                              );
+                            },
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: AppColors.successGradient,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            _getGreeting(),
-                            style: AppStyles.bodyMedium.copyWith(
-                              color: AppColors.textWhite,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                  
-                  // Animated Notification Bell
-                  AnimatedBuilder(
-                    animation: _rotateAnimation,
-                    builder: (context, child) {
-                      return Transform.rotate(
-                        angle: _rotateAnimation.value * 0.1,
-                        child: Stack(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(16),
+                  );
+                },
+              ),
+              
+              const SizedBox(width: 20),
+              
+              // User Info with Beautiful Typography
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.user.name,
+                      style: AppStyles.heading3.copyWith(
+                        background: Paint()
+                          ..shader = AppColors.primaryGradient.createShader(
+                            const Rect.fromLTWH(0, 0, 200, 30),
+                          ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.successGradient,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _getGreeting(),
+                        style: AppStyles.bodyMedium.copyWith(
+                          color: AppColors.textWhite,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Animated Notification Bell
+              AnimatedBuilder(
+                animation: _rotateAnimation,
+                builder: (context, child) {
+                  return Transform.rotate(
+                    angle: _rotateAnimation.value * 0.1,
+                    child: Stack(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            gradient: AppColors.infoGradient,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.info.withOpacity(0.3),
+                                blurRadius: 15,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.notifications_outlined,
+                            color: AppColors.textWhite,
+                            size: 28,
+                          ),
+                        ),
+                        if (widget.notificationCount > 0)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
-                                gradient: AppColors.infoGradient,
-                                borderRadius: BorderRadius.circular(16),
+                                gradient: AppColors.accentGradient,
+                                borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.info.withOpacity(0.3),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 5),
+                                    color: AppColors.accent.withOpacity(0.4),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
                                   ),
                                 ],
                               ),
-                              child: Icon(
-                                Icons.notifications_outlined,
-                                color: AppColors.textWhite,
-                                size: 28,
-                              ),
-                            ),
-                            if (widget.notificationCount > 0)
-                              Positioned(
-                                top: 8,
-                                right: 8,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    gradient: AppColors.accentGradient,
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.accent.withOpacity(0.4),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Text(
-                                    widget.notificationCount.toString(),
-                                    style: AppStyles.caption.copyWith(
-                                      color: AppColors.textWhite,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                              child: Text(
+                                widget.notificationCount.toString(),
+                                style: AppStyles.caption.copyWith(
+                                  color: AppColors.textWhite,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 

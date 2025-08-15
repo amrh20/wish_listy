@@ -46,12 +46,14 @@ class AppColors {
   static const Color textLight = Color(0xFF64748B);
   static const Color textWhite = Color(0xFFFFFFFF);
   static const Color textMuted = Color(0xFF94A3B8);
+  static const Color textTertiary = Color(0xFF94A3B8);
   
   // Background Colors - Soft and Comfortable
   static const Color background = Color(0xFFF8FAFC);
   static const Color surface = Color(0xFFFFFFFF);
   static const Color card = Color(0xFFFFFFFF);
   static const Color cardHover = Color(0xFFF1F5F9);
+  static const Color surfaceVariant = Color(0xFFF1F5F9);
   
   // Border Colors - Subtle and Elegant
   static const Color border = Color(0xFFE2E8F0);
@@ -66,6 +68,12 @@ class AppColors {
   // Glassmorphism Colors
   static const Color glass = Color(0x80FFFFFF);
   static const Color glassDark = Color(0x80F8FAFC);
+  
+  // Dark Theme Colors
+  static const Color backgroundDark = Color(0xFF0F172A);
+  static const Color surfaceDark = Color(0xFF1E293B);
+  static const Color textPrimaryDark = Color(0xFFF8FAFC);
+  static const Color textSecondaryDark = Color(0xFFCBD5E1);
   
   // Beautiful Gradients
   static const LinearGradient primaryGradient = LinearGradient(
@@ -136,4 +144,7 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+
+  // Error and warning colors
+  static const Color error = Color(0xFFEF4444);
 }

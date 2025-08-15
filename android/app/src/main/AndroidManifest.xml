@@ -1,8 +1,53 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- ============================================= -->
+    <!-- إضافة الصلاحيات هنا قبل الـ application tag -->
+    <!-- ============================================= -->
+    
+    <!-- صلاحية الإنترنت - مطلوبة لجميع طلبات الشبكة -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    
+    <!-- صلاحية الكاميرا - لالتقاط الصور ومسح QR codes -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    
+    <!-- صلاحية الموقع الدقيق - لتحديد الموقع في الأحداث -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    
+    <!-- صلاحية الموقع التقريبي - بديل للموقع الدقيق -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    
+    <!-- صلاحية قراءة التخزين الخارجي - للصور والملفات -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    
+    <!-- صلاحية كتابة التخزين الخارجي (للإصدارات الأقدم من Android) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
+                     android:maxSdkVersion="28" />
+    
+    <!-- صلاحية الوصول لمعرض الصور (Android 13+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    
+    <!-- صلاحية الاهتزاز للـ haptic feedback -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    
+    <!-- صلاحية الشبكة لفحص الاتصال -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    
+    <!-- صلاحية الإشعارات (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- ============================================= -->
+    <!-- بداية الـ application tag -->
+    <!-- ============================================= -->
+    
     <application
-        android:label="wish_listy"
+        android:label="WishLink"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/LaunchTheme"
+        android:exported="true"
+        android:usesCleartextTraffic="true">
+        
+        <!-- MainActivity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -12,34 +57,59 @@
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
-            <!-- Specifies an Android theme to apply to this Activity as soon as
-                 the Android process has started. This theme is visible to the user
-                 while the Flutter UI initializes. After that, this theme continues
-                 to determine the Window background behind the Flutter UI. -->
+            
+            <!-- Meta-data -->
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
-            <intent-filter>
+              android:resource="@style/NormalTheme" />
+            
+            <!-- Intent filters -->
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            
+            <!-- Deep Links support -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="wishlink" />
+            </intent-filter>
+            
         </activity>
-        <!-- Don't delete the meta-data below.
-             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2" />
-    </application>
-    <!-- Required to query activities that can process text, see:
-         https://developer.android.com/training/package-visibility and
-         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
 
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.PROCESS_TEXT"/>
-            <data android:mimeType="text/plain"/>
-        </intent>
-    </queries>
+        <!-- File Provider for sharing files -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!-- Firebase Messaging Service (if using Firebase) -->
+        <service
+            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+    </application>
+
+    <!-- تحديد الميزات المطلوبة -->
+    <uses-feature 
+        android:name="android.hardware.camera" 
+        android:required="false" />
+    <uses-feature 
+        android:name="android.hardware.location" 
+        android:required="false" />
+    <uses-feature 
+        android:name="android.hardware.location.gps" 
+        android:required="false" />
+
 </manifest>

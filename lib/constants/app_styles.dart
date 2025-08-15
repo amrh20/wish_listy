@@ -39,36 +39,54 @@ class AppStyles {
     fontFamily: 'Poppins',
   );
   
-  static TextStyle get bodyLarge => const TextStyle(
+  // Additional text styles
+  static TextStyle get headingLarge => const TextStyle(
+    fontSize: 32,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textPrimary,
+    height: 1.2,
+  );
+
+  static TextStyle get headingMedium => const TextStyle(
+    fontSize: 20,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+    height: 1.3,
+  );
+  
+  static TextStyle get headingSmall => const TextStyle(
     fontSize: 18,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+    height: 1.3,
+  );
+  
+  static TextStyle get bodyLarge => const TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
     height: 1.5,
-    fontFamily: 'Inter',
   );
   
   static TextStyle get bodyMedium => const TextStyle(
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: FontWeight.w400,
-    color: AppColors.textSecondary,
-    height: 1.6,
-    fontFamily: 'Inter',
+    color: AppColors.textPrimary,
+    height: 1.5,
   );
   
   static TextStyle get bodySmall => const TextStyle(
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: FontWeight.w400,
-    color: AppColors.textLight,
-    height: 1.5,
-    fontFamily: 'Inter',
+    color: AppColors.textSecondary,
+    height: 1.4,
   );
   
   static TextStyle get caption => const TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    color: AppColors.textLight,
-    height: 1.4,
-    fontFamily: 'Inter',
+    fontSize: 11,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textTertiary,
+    height: 1.3,
   );
   
   static TextStyle get button => const TextStyle(

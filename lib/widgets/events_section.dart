@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import '../models/event.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
+import '../models/event.dart';
 
 class EventsSection extends StatefulWidget {
   final List<Event> events;

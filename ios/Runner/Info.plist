@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Wish Listy</string>
+	<string>WishListy</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -41,9 +41,46 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Camera Permission -->
+	<key>NSCameraUsageDescription</key>
+	<string>WishLink needs camera access to let you add photos to your wishlist items and scan QR codes.</string>
+	
+	<!-- Photo Library Permission -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>WishLink needs photo library access to let you select images for your wishlist items.</string>
+	
+	<!-- Photo Library Add Permission -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>WishLink needs permission to save QR codes and wishlist images to your photo library.</string>
+	
+	<!-- Location Permission -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>WishLink needs location access to help you find and add event locations.</string>
+	
+	<!-- Microphone Permission -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>WishLink needs microphone access for video features.</string>
+	
+	<!-- Calendar Permission -->
+	<key>NSCalendarsUsageDescription</key>
+	<string>WishLink needs calendar access to add your events to your device calendar.</string>
+	
+	<!-- Contacts Permission -->
+	<key>NSContactsUsageDescription</key>
+	<string>WishLink needs contacts access to help you find and add friends from your contacts.</string>
+	
+	<!-- HTTP Support (Development Only) -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 </dict>
 </plist>

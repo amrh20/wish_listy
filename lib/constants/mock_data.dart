@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
-import '../models/user.dart';
+import '../models/user_model.dart';
 import '../models/wish.dart';
 import '../models/event.dart';
 import 'app_colors.dart';
 
 class MockData {
-  static User get currentUser => User(
+  static final User currentUser = User(
     id: '1',
-    name: 'Sara Ahmed',
-    profileImage: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-    wishCount: 24,
-    reservedCount: 7,
-    friendsCount: 16,
-    eventsCount: 3,
+    name: 'Ahmed Hassan',
+    email: 'ahmed@example.com',
+    profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    privacySettings: PrivacySettings(
+      publicWishlistVisibility: WishlistVisibility.friends,
+      allowFriendRequests: true,
+      showOnlineStatus: true,
+      allowEventInvitations: true,
+    ),
+    createdAt: DateTime.now().subtract(const Duration(days: 30)),
+    updatedAt: DateTime.now(),
   );
 
   static List<Wish> get wishes => [

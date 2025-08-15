@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import '../models/wish.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
+import '../models/wish.dart';
 
 class WishesSection extends StatefulWidget {
   final List<Wish> wishes;
