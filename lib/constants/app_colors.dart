@@ -8,9 +8,9 @@ class AppColors {
   static const Color primaryAccent = Color(0xFF8B5CF6);
   
   // Secondary Colors - Soft and Elegant
-  static const Color secondary = Color(0xFFF8FAFC);
-  static const Color secondaryLight = Color(0xFFFFFFFF);
-  static const Color secondaryDark = Color(0xFFE2E8F0);
+  static const Color secondary = Color(0xFF14B8A6); // Beautiful teal color
+  static const Color secondaryLight = Color(0xFF2DD4BF); // Lighter teal
+  static const Color secondaryDark = Color(0xFF0F766E); // Darker teal
   
   // Accent Colors - Vibrant and Eye-catching
   static const Color accent = Color(0xFFEF4444);

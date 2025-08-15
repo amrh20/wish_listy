@@ -1053,10 +1053,10 @@ class _SearchAndTabsDelegate extends SliverPersistentHeaderDelegate {
   _SearchAndTabsDelegate({required this.child});
 
   @override
-  double get minExtent => 140;
+  double get minExtent => 160;
 
   @override
-  double get maxExtent => 140;
+  double get maxExtent => 160;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {

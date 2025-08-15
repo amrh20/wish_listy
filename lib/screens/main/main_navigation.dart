@@ -159,7 +159,7 @@ class _MainNavigationState extends State<MainNavigation>
       
       // Floating Action Button (conditional)
       floatingActionButton: _buildFloatingActionButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 

@@ -411,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen>
                 icon: Icons.person_add_outlined,
                 title: 'Add Friend',
                 subtitle: 'Connect',
-                color: AppColors.secondary,
+                color: AppColors.success,
                 onTap: () {
                   AppRoutes.pushNamed(context, AppRoutes.friends);
                 },

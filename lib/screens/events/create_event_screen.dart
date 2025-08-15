@@ -36,7 +36,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
       id: 'birthday',
       name: 'Birthday',
       icon: Icons.cake_outlined,
-      color: AppColors.secondary,
+      color: AppColors.pink,
       emoji: '🎂',
     ),
     EventTypeOption(
@@ -388,72 +388,83 @@ class _CreateEventScreenState extends State<CreateEventScreen>
           const SizedBox(height: 16),
           
           // Event Type Grid
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              crossAxisSpacing: 6,
-              mainAxisSpacing: 6,
-              childAspectRatio: 1.0,
-            ),
-            itemCount: _eventTypes.length,
-            itemBuilder: (context, index) {
-              final eventType = _eventTypes[index];
-              final isSelected = _selectedEventType == eventType.id;
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final itemWidth = (constraints.maxWidth - 18) / 4; // 18 = 6*3 (spacing)
+              final itemHeight = itemWidth * 1.1; // Slightly taller than wide
+              final gridHeight = (itemHeight * 2) + 6; // 2 rows + spacing
               
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedEventType = eventType.id;
-                  });
-                },
-                                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                    color: isSelected 
-                        ? eventType.color.withOpacity(0.1)
-                        : AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected 
-                          ? eventType.color
-                          : AppColors.textTertiary.withOpacity(0.3),
-                      width: isSelected ? 2 : 1,
-                    ),
+              return SizedBox(
+                height: gridHeight,
+                child: GridView.builder(
+                  shrinkWrap: false,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    crossAxisSpacing: 6,
+                    mainAxisSpacing: 6,
+                    childAspectRatio: itemWidth / itemHeight,
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        eventType.emoji,
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                      const SizedBox(height: 2),
-                      Icon(
-                        eventType.icon,
-                        color: isSelected 
-                            ? eventType.color
-                            : AppColors.textTertiary,
-                        size: 16,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        eventType.name,
-                        style: AppStyles.caption.copyWith(
+                  itemCount: _eventTypes.length,
+                  itemBuilder: (context, index) {
+                    final eventType = _eventTypes[index];
+                    final isSelected = _selectedEventType == eventType.id;
+                    
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedEventType = eventType.id;
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
                           color: isSelected 
-                              ? eventType.color
-                              : AppColors.textTertiary,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                          fontSize: 10,
+                              ? eventType.color.withOpacity(0.1)
+                              : AppColors.surfaceVariant,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isSelected 
+                                ? eventType.color
+                                : AppColors.textTertiary.withOpacity(0.3),
+                            width: isSelected ? 2 : 1,
+                          ),
                         ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              eventType.emoji,
+                              style: const TextStyle(fontSize: 18),
+                            ),
+                            const SizedBox(height: 1),
+                            Icon(
+                              eventType.icon,
+                              color: isSelected 
+                                  ? eventType.color
+                                  : AppColors.textTertiary,
+                              size: 14,
+                            ),
+                            const SizedBox(height: 1),
+                            Text(
+                              eventType.name,
+                              style: AppStyles.caption.copyWith(
+                                color: isSelected 
+                                    ? eventType.color
+                                    : AppColors.textTertiary,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                fontSize: 9,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               );
             },
