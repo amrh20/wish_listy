@@ -1,101 +1,97 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppStyles {
-  // Beautiful Text Styles with Custom Fonts
-  static TextStyle get heading1 => const TextStyle(
+  // Beautiful Text Styles with Cairo Font
+  static TextStyle get heading1 => GoogleFonts.cairo(
     fontSize: 36,
     fontWeight: FontWeight.w800,
     color: AppColors.textPrimary,
     height: 1.1,
     letterSpacing: -0.5,
-    fontFamily: 'Poppins',
   );
   
-  static TextStyle get heading2 => const TextStyle(
+  static TextStyle get heading2 => GoogleFonts.cairo(
     fontSize: 28,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     height: 1.2,
     letterSpacing: -0.3,
-    fontFamily: 'Poppins',
   );
   
-  static TextStyle get heading3 => const TextStyle(
+  static TextStyle get heading3 => GoogleFonts.cairo(
     fontSize: 24,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
     height: 1.3,
     letterSpacing: -0.2,
-    fontFamily: 'Poppins',
   );
   
-  static TextStyle get heading4 => const TextStyle(
+  static TextStyle get heading4 => GoogleFonts.cairo(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
     height: 1.4,
     letterSpacing: -0.1,
-    fontFamily: 'Poppins',
   );
   
   // Additional text styles
-  static TextStyle get headingLarge => const TextStyle(
+  static TextStyle get headingLarge => GoogleFonts.cairo(
     fontSize: 32,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     height: 1.2,
   );
 
-  static TextStyle get headingMedium => const TextStyle(
+  static TextStyle get headingMedium => GoogleFonts.cairo(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
     height: 1.3,
   );
   
-  static TextStyle get headingSmall => const TextStyle(
+  static TextStyle get headingSmall => GoogleFonts.cairo(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
     height: 1.3,
   );
   
-  static TextStyle get bodyLarge => const TextStyle(
+  static TextStyle get bodyLarge => GoogleFonts.cairo(
     fontSize: 16,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
     height: 1.5,
   );
   
-  static TextStyle get bodyMedium => const TextStyle(
+  static TextStyle get bodyMedium => GoogleFonts.cairo(
     fontSize: 14,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
     height: 1.5,
   );
   
-  static TextStyle get bodySmall => const TextStyle(
+  static TextStyle get bodySmall => GoogleFonts.cairo(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
     height: 1.4,
   );
   
-  static TextStyle get caption => const TextStyle(
+  static TextStyle get caption => GoogleFonts.cairo(
     fontSize: 11,
     fontWeight: FontWeight.w400,
     color: AppColors.textTertiary,
     height: 1.3,
   );
   
-  static TextStyle get button => const TextStyle(
+  static TextStyle get button => GoogleFonts.cairo(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     color: AppColors.textWhite,
     height: 1.4,
     letterSpacing: 0.2,
-    fontFamily: 'Inter',
   );
   
   static TextStyle get overline => const TextStyle(

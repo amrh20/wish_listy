@@ -2,12 +2,14 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/animated_background.dart';
+import '../../services/localization_service.dart';
 
 class EventsScreen extends StatefulWidget {
   @override
@@ -131,48 +133,52 @@ class _EventsScreenState extends State<EventsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.accent.withOpacity(0.02),
-              AppColors.secondary.withOpacity(0.01),
+    return Consumer<LocalizationService>(
+      builder: (context, localization, child) {
+        return Scaffold(
+          body: Stack(
+            children: [
+              // Animated Background
+              AnimatedBackground(
+                colors: [
+                  AppColors.background,
+                  AppColors.accent.withOpacity(0.02),
+                  AppColors.secondary.withOpacity(0.01),
+                ],
+              ),
+              
+              // Content
+              NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) {
+                  return [
+                    _buildSliverAppBar(localization),
+                    _buildSliverTabBar(localization),
+                  ];
+                },
+                body: AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, child) {
+                    return FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildMyEventsTab(localization),
+                          _buildInvitedEventsTab(localization),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
-          
-          // Content
-          NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                _buildSliverAppBar(),
-                _buildSliverTabBar(),
-              ];
-            },
-            body: AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) {
-                return FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildMyEventsTab(),
-                      _buildInvitedEventsTab(),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildSliverAppBar() {
+  Widget _buildSliverAppBar(LocalizationService localization) {
     return SliverAppBar(
       expandedHeight: 120,
       floating: true,
@@ -185,14 +191,14 @@ class _EventsScreenState extends State<EventsScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Events',
+              localization.translate('events.title'),
               style: AppStyles.headingMedium.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
-              '${_getUpcomingEventsCount()} upcoming events',
+              '${_getUpcomingEventsCount()} ${localization.translate('events.upcomingEvents')}',
               style: AppStyles.bodySmall.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -232,7 +238,7 @@ class _EventsScreenState extends State<EventsScreen>
     );
   }
 
-  Widget _buildSliverTabBar() {
+  Widget _buildSliverTabBar(LocalizationService localization) {
     return SliverPersistentHeader(
       pinned: true,
       delegate: _SliverTabBarDelegate(
@@ -250,19 +256,19 @@ class _EventsScreenState extends State<EventsScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('My Events'),
+                  Text(localization.translate('events.myEvents')),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.accent.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.accent,
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       '${_myEvents.length}',
                       style: AppStyles.caption.copyWith(
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -273,7 +279,7 @@ class _EventsScreenState extends State<EventsScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Invited'),
+                  Text(localization.translate('events.invited')),
                   const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -298,12 +304,12 @@ class _EventsScreenState extends State<EventsScreen>
     );
   }
 
-  Widget _buildMyEventsTab() {
+  Widget _buildMyEventsTab(LocalizationService localization) {
     return RefreshIndicator(
       onRefresh: _refreshEvents,
       color: AppColors.accent,
       child: _myEvents.isEmpty
-          ? _buildEmptyMyEvents()
+          ? _buildEmptyMyEvents(localization)
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: _myEvents.length + 1, // +1 for bottom padding
@@ -317,7 +323,7 @@ class _EventsScreenState extends State<EventsScreen>
     );
   }
 
-  Widget _buildInvitedEventsTab() {
+  Widget _buildInvitedEventsTab(LocalizationService localization) {
     final upcomingEvents = _invitedEvents.where((e) => e.status == EventStatus.upcoming).toList();
     final pastEvents = _invitedEvents.where((e) => e.status == EventStatus.completed).toList();
 
@@ -325,7 +331,7 @@ class _EventsScreenState extends State<EventsScreen>
       onRefresh: _refreshEvents,
       color: AppColors.secondary,
       child: _invitedEvents.isEmpty
-          ? _buildEmptyInvitedEvents()
+          ? _buildEmptyInvitedEvents(localization)
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -333,7 +339,7 @@ class _EventsScreenState extends State<EventsScreen>
                 children: [
                   // Upcoming Events
                   if (upcomingEvents.isNotEmpty) ...[
-                    _buildSectionHeader('Upcoming Events'),
+                    _buildSectionHeader(localization.translate('events.upcomingEvents')),
                     const SizedBox(height: 12),
                     ...upcomingEvents.map((event) => _buildEventCard(event)),
                     const SizedBox(height: 24),
@@ -341,9 +347,10 @@ class _EventsScreenState extends State<EventsScreen>
                   
                   // Past Events
                   if (pastEvents.isNotEmpty) ...[
-                    _buildSectionHeader('Past Events'),
+                    _buildSectionHeader(localization.translate('events.pastEvents')),
                     const SizedBox(height: 12),
                     ...pastEvents.map((event) => _buildEventCard(event)),
+                    const SizedBox(height: 24),
                   ],
                   
                   const SizedBox(height: 100), // Bottom padding
@@ -664,7 +671,7 @@ class _EventsScreenState extends State<EventsScreen>
     );
   }
 
-  Widget _buildEmptyMyEvents() {
+  Widget _buildEmptyMyEvents(LocalizationService localization) {
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -685,14 +692,14 @@ class _EventsScreenState extends State<EventsScreen>
           ),
           const SizedBox(height: 24),
           Text(
-            'No Events Created',
+            localization.translate('events.noEvents'),
             style: AppStyles.headingMedium.copyWith(
               color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            'Create your first event to start planning celebrations and sharing wishlists with friends.',
+            localization.translate('events.createEvent'),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textTertiary,
               height: 1.5,
@@ -701,19 +708,19 @@ class _EventsScreenState extends State<EventsScreen>
           ),
           const SizedBox(height: 32),
           CustomButton(
-            text: 'Create Event',
+            text: localization.translate('events.createEvent'),
             onPressed: () {
               AppRoutes.pushNamed(context, AppRoutes.createEvent);
             },
-            variant: ButtonVariant.gradient,
-            gradientColors: [AppColors.accent, AppColors.secondary],
+            variant: ButtonVariant.primary,
+            customColor: AppColors.accent,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyInvitedEvents() {
+  Widget _buildEmptyInvitedEvents(LocalizationService localization) {
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -734,14 +741,14 @@ class _EventsScreenState extends State<EventsScreen>
           ),
           const SizedBox(height: 24),
           Text(
-            'No Event Invitations',
+            localization.translate('events.noInvitations'),
             style: AppStyles.headingMedium.copyWith(
               color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            'When friends invite you to their events, you\'ll see them here.',
+            localization.translate('events.invited'),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textTertiary,
               height: 1.5,

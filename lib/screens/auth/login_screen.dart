@@ -2,8 +2,10 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
+import '../../services/localization_service.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
@@ -86,278 +88,282 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.primary.withOpacity(0.05),
-              AppColors.secondary.withOpacity(0.03),
-            ],
-          ),
-          
-          // Content
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  return FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: SlideTransition(
-                      position: _slideAnimation,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const SizedBox(height: 40),
-                          
-                          // Back Button
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: IconButton(
-                              onPressed: () => Navigator.pop(context),
-                              icon: const Icon(Icons.arrow_back_ios),
-                              style: IconButton.styleFrom(
-                                backgroundColor: AppColors.surface,
-                                padding: const EdgeInsets.all(12),
-                              ),
-                            ),
-                          ),
-                          
-                          const SizedBox(height: 40),
-                          
-                          // Header
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+    return Consumer<LocalizationService>(
+      builder: (context, localization, child) {
+        return Scaffold(
+          body: Stack(
+            children: [
+              // Animated Background
+              AnimatedBackground(
+                colors: [
+                  AppColors.background,
+                  AppColors.primary.withOpacity(0.05),
+                  AppColors.secondary.withOpacity(0.03),
+                ],
+              ),
+              
+              // Content
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: AnimatedBuilder(
+                    animation: _animationController,
+                    builder: (context, child) {
+                      return FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: SlideTransition(
+                          position: _slideAnimation,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Text(
-                                'Welcome Back!',
-                                style: AppStyles.headingLarge.copyWith(
-                                  fontSize: 32,
+                              const SizedBox(height: 40),
+                              
+                              // Back Button
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: IconButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  icon: const Icon(Icons.arrow_back_ios),
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: AppColors.surface,
+                                    padding: const EdgeInsets.all(12),
+                                  ),
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Sign in to continue your wishlist journey',
-                                style: AppStyles.bodyLarge.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          
-                          const SizedBox(height: 48),
-                          
-                          // Login Form
-                          Form(
-                            key: _formKey,
-                            child: Column(
-                              children: [
-                                // Email Field
-                                CustomTextField(
-                                  controller: _emailController,
-                                  label: 'Email',
-                                  hint: 'Enter your email address',
-                                  keyboardType: TextInputType.emailAddress,
-                                  prefixIcon: Icons.email_outlined,
-                                  validator: (value) {
-                                    if (value?.isEmpty ?? true) {
-                                      return 'Please enter your email';
-                                    }
-                                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                        .hasMatch(value!)) {
-                                      return 'Please enter a valid email';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                
-                                const SizedBox(height: 20),
-                                
-                                // Password Field
-                                CustomTextField(
-                                  controller: _passwordController,
-                                  label: 'Password',
-                                  hint: 'Enter your password',
-                                  obscureText: _obscurePassword,
-                                  prefixIcon: Icons.lock_outlined,
-                                  suffixIcon: IconButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscurePassword = !_obscurePassword;
-                                      });
-                                    },
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
+                              
+                              const SizedBox(height: 40),
+                              
+                              // Header
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    localization.translate('auth.welcomeBack'),
+                                    style: AppStyles.headingLarge.copyWith(
+                                      fontSize: 32,
                                     ),
                                   ),
-                                  validator: (value) {
-                                    if (value?.isEmpty ?? true) {
-                                      return 'Please enter your password';
-                                    }
-                                    if (value!.length < 6) {
-                                      return 'Password must be at least 6 characters';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                
-                                const SizedBox(height: 16),
-                                
-                                // Remember Me & Forgot Password
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    localization.translate('auth.signInSubtitle'),
+                                    style: AppStyles.bodyLarge.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              
+                              const SizedBox(height: 48),
+                              
+                              // Login Form
+                              Form(
+                                key: _formKey,
+                                child: Column(
                                   children: [
-                                    Row(
-                                      children: [
-                                        Checkbox(
-                                          value: _rememberMe,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _rememberMe = value ?? false;
-                                            });
-                                          },
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
+                                    // Email Field
+                                    CustomTextField(
+                                      controller: _emailController,
+                                      label: localization.translate('auth.email'),
+                                      hint: localization.translate('auth.enterEmail'),
+                                      keyboardType: TextInputType.emailAddress,
+                                      prefixIcon: Icons.email_outlined,
+                                      validator: (value) {
+                                        if (value?.isEmpty ?? true) {
+                                          return localization.translate('auth.pleaseEnterEmail');
+                                        }
+                                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                                            .hasMatch(value!)) {
+                                          return localization.translate('auth.pleaseEnterValidEmail');
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    
+                                    const SizedBox(height: 20),
+                                    
+                                    // Password Field
+                                    CustomTextField(
+                                      controller: _passwordController,
+                                      label: localization.translate('auth.password'),
+                                      hint: localization.translate('auth.enterPassword'),
+                                      obscureText: _obscurePassword,
+                                      prefixIcon: Icons.lock_outlined,
+                                      suffixIcon: IconButton(
+                                        onPressed: () {
+                                          setState(() {
+                                            _obscurePassword = !_obscurePassword;
+                                          });
+                                        },
+                                        icon: Icon(
+                                          _obscurePassword
+                                              ? Icons.visibility_outlined
+                                              : Icons.visibility_off_outlined,
                                         ),
-                                        Text(
-                                          'Remember me',
-                                          style: AppStyles.bodyMedium,
+                                      ),
+                                      validator: (value) {
+                                        if (value?.isEmpty ?? true) {
+                                          return localization.translate('auth.pleaseEnterPassword');
+                                        }
+                                        if (value!.length < 6) {
+                                          return localization.translate('auth.passwordMinLength');
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    
+                                    const SizedBox(height: 16),
+                                    
+                                    // Remember Me & Forgot Password
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Checkbox(
+                                              value: _rememberMe,
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  _rememberMe = value ?? false;
+                                                });
+                                              },
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                            ),
+                                            Text(
+                                              localization.translate('auth.rememberMe'),
+                                              style: AppStyles.bodyMedium,
+                                            ),
+                                          ],
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            AppRoutes.pushNamed(
+                                              context,
+                                              AppRoutes.forgotPassword,
+                                            );
+                                          },
+                                          child: Text(
+                                            localization.translate('auth.forgotPassword'),
+                                            style: AppStyles.bodyMedium.copyWith(
+                                              color: AppColors.primary,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
                                         ),
                                       ],
                                     ),
-                                    TextButton(
-                                      onPressed: () {
-                                        AppRoutes.pushNamed(
-                                          context,
-                                          AppRoutes.forgotPassword,
-                                        );
-                                      },
-                                      child: Text(
-                                        'Forgot Password?',
-                                        style: AppStyles.bodyMedium.copyWith(
-                                          color: AppColors.primary,
-                                          fontWeight: FontWeight.w600,
+                                    
+                                    const SizedBox(height: 32),
+                                    
+                                    // Login Button
+                                    CustomButton(
+                                      text: localization.translate('auth.signIn'),
+                                      onPressed: _handleLogin,
+                                      isLoading: _isLoading,
+                                      variant: ButtonVariant.gradient,
+                                    ),
+                                    
+                                    const SizedBox(height: 24),
+                                    
+                                    // Divider
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Divider(
+                                            color: AppColors.textTertiary.withOpacity(0.3),
+                                          ),
                                         ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                
-                                const SizedBox(height: 32),
-                                
-                                // Login Button
-                                CustomButton(
-                                  text: 'Sign In',
-                                  onPressed: _handleLogin,
-                                  isLoading: _isLoading,
-                                  variant: ButtonVariant.gradient,
-                                ),
-                                
-                                const SizedBox(height: 24),
-                                
-                                // Divider
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Divider(
-                                        color: AppColors.textTertiary.withOpacity(0.3),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                                      child: Text(
-                                        'or continue with',
-                                        style: AppStyles.bodySmall.copyWith(
-                                          color: AppColors.textTertiary,
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                                          child: Text(
+                                            localization.translate('auth.continueWith'),
+                                            style: AppStyles.bodySmall.copyWith(
+                                              color: AppColors.textTertiary,
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                        Expanded(
+                                          child: Divider(
+                                            color: AppColors.textTertiary.withOpacity(0.3),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    Expanded(
-                                      child: Divider(
-                                        color: AppColors.textTertiary.withOpacity(0.3),
-                                      ),
+                                    
+                                    const SizedBox(height: 24),
+                                    
+                                    // Social Login Buttons
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: CustomButton(
+                                            text: localization.translate('social.google'),
+                                            onPressed: () {
+                                              // Handle Google login
+                                            },
+                                            variant: ButtonVariant.outline,
+                                            icon: Icons.g_mobiledata,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: CustomButton(
+                                            text: localization.translate('social.apple'),
+                                            onPressed: () {
+                                              // Handle Apple login
+                                            },
+                                            variant: ButtonVariant.outline,
+                                            icon: Icons.apple,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
-                                ),
-                                
-                                const SizedBox(height: 24),
-                                
-                                // Social Login Buttons
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: CustomButton(
-                                        text: 'Google',
-                                        onPressed: () {
-                                          // Handle Google login
-                                        },
-                                        variant: ButtonVariant.outline,
-                                        icon: Icons.g_mobiledata,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: CustomButton(
-                                        text: 'Apple',
-                                        onPressed: () {
-                                          // Handle Apple login
-                                        },
-                                        variant: ButtonVariant.outline,
-                                        icon: Icons.apple,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                          
-                          const SizedBox(height: 32),
-                          
-                          // Sign Up Link
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "Don't have an account? ",
-                                style: AppStyles.bodyMedium.copyWith(
-                                  color: AppColors.textSecondary,
                                 ),
                               ),
-                              TextButton(
-                                onPressed: () {
-                                  AppRoutes.pushReplacementNamed(
-                                    context,
-                                    AppRoutes.signup,
-                                  );
-                                },
-                                child: Text(
-                                  'Sign Up',
-                                  style: AppStyles.bodyMedium.copyWith(
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
+                              
+                              const SizedBox(height: 32),
+                              
+                              // Sign Up Link
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    localization.translate('auth.dontHaveAccount'),
+                                    style: AppStyles.bodyMedium.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ),
-                                ),
+                                  TextButton(
+                                    onPressed: () {
+                                      AppRoutes.pushReplacementNamed(
+                                        context,
+                                        AppRoutes.signup,
+                                      );
+                                    },
+                                    child: Text(
+                                      localization.translate('auth.signup'),
+                                      style: AppStyles.bodyMedium.copyWith(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

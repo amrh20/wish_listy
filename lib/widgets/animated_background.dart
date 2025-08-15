@@ -58,14 +58,18 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
   }
 
   void _startAnimations() {
-    _gradientController.repeat();
-    if (widget.showParticles) {
-      _particleController.repeat();
+    if (mounted) {
+      _gradientController.repeat();
+      if (widget.showParticles) {
+        _particleController.repeat();
+      }
     }
   }
 
   @override
   void dispose() {
+    _gradientController.stop();
+    _particleController.stop();
     _gradientController.dispose();
     _particleController.dispose();
     super.dispose();
@@ -79,6 +83,8 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
         AnimatedBuilder(
           animation: _gradientAnimation,
           builder: (context, child) {
+            if (!mounted) return const SizedBox.shrink();
+            
             return Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -106,6 +112,8 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
           AnimatedBuilder(
             animation: _particleController,
             builder: (context, child) {
+              if (!mounted) return const SizedBox.shrink();
+              
               return CustomPaint(
                 painter: ParticlesPainter(
                   particles: _particles,
@@ -135,6 +143,8 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
           child: AnimatedBuilder(
             animation: _gradientController,
             builder: (context, child) {
+              if (!mounted) return const SizedBox.shrink();
+              
               return Transform.rotate(
                 angle: _gradientAnimation.value * 2 * pi,
                 child: Container(
@@ -163,6 +173,8 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
           child: AnimatedBuilder(
             animation: _gradientController,
             builder: (context, child) {
+              if (!mounted) return const SizedBox.shrink();
+              
               return Transform.rotate(
                 angle: -_gradientAnimation.value * 1.5 * pi,
                 child: Container(
@@ -192,6 +204,8 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
           child: AnimatedBuilder(
             animation: _gradientController,
             builder: (context, child) {
+              if (!mounted) return const SizedBox.shrink();
+              
               return Transform.rotate(
                 angle: _gradientAnimation.value * pi,
                 child: CustomPaint(

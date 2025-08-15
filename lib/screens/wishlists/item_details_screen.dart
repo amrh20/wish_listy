@@ -5,6 +5,7 @@ import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/animated_background.dart';
 import 'wishlist_items_screen.dart';
+import '../../models/wishlist_model.dart';
 
 class ItemDetailsScreen extends StatefulWidget {
   final WishlistItem item;
@@ -29,7 +30,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   @override
   void initState() {
     super.initState();
-    _isPurchased = widget.item.isPurchased;
+    _isPurchased = widget.item.status == ItemStatus.purchased;
     _initializeAnimations();
     _startAnimations();
   }
@@ -58,7 +59,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   void _startAnimations() {
-    _animationController.forward();
+    if (mounted) {
+      _animationController.forward();
+    }
   }
 
   @override
@@ -93,6 +96,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   child: AnimatedBuilder(
                     animation: _animationController,
                     builder: (context, child) {
+                      if (!mounted) return const SizedBox.shrink();
+                      
                       return FadeTransition(
                         opacity: _fadeAnimation,
                         child: SlideTransition(
@@ -123,7 +128,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                                 const SizedBox(height: 24),
                                 
                                 // Notes Section
-                                if (widget.item.notes != null) ...[
+                                if (widget.item.description != null && widget.item.description!.isNotEmpty) ...[
                                   _buildNotesSection(),
                                   const SizedBox(height: 24),
                                 ],
@@ -228,7 +233,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
               ),
             ),
             child: Icon(
-              _getCategoryIcon(widget.item.category),
+                              _getCategoryIcon('General'),
               color: _getPriorityColor(widget.item.priority),
               size: 60,
             ),
@@ -249,14 +254,15 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           const SizedBox(height: 8),
           
           // Item Description
-          Text(
-            widget.item.description,
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.4,
+          if (widget.item.description != null && widget.item.description!.isNotEmpty)
+            Text(
+              widget.item.description!,
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
         ],
       ),
     );
@@ -289,7 +295,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           _buildInfoRow(
             icon: Icons.attach_money_outlined,
             label: 'Price',
-            value: '\$${widget.item.price.toStringAsFixed(2)}',
+                            value: widget.item.priceRange?.displayPrice ?? 'Price not specified',
             iconColor: AppColors.warning,
           ),
           
@@ -299,18 +305,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           _buildInfoRow(
             icon: Icons.category_outlined,
             label: 'Category',
-            value: widget.item.category,
+                            value: 'General',
             iconColor: AppColors.info,
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Added By
-          _buildInfoRow(
-            icon: Icons.person_outline,
-            label: 'Added by',
-            value: widget.item.addedBy,
-            iconColor: AppColors.secondary,
           ),
           
           const SizedBox(height: 12),
@@ -319,7 +315,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           _buildInfoRow(
             icon: Icons.calendar_today_outlined,
             label: 'Added on',
-            value: _formatDate(widget.item.addedDate),
+            value: _formatDate(widget.item.createdAt),
             iconColor: AppColors.primary,
           ),
         ],
@@ -456,7 +452,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   child: Column(
                     children: [
                       Icon(
-                        _getCategoryIcon(widget.item.category),
+                        _getCategoryIcon('General'),
                         color: AppColors.info,
                         size: 24,
                       ),
@@ -469,7 +465,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        widget.item.category,
+                        'General',
                         style: AppStyles.bodyMedium.copyWith(
                           color: AppColors.info,
                           fontWeight: FontWeight.w600,
@@ -619,13 +615,13 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 width: 1,
               ),
             ),
-            child: Text(
-              widget.item.notes!,
-              style: AppStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-            ),
+            child:         Text(
+          widget.item.description ?? 'No additional notes',
+          style: AppStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+            height: 1.4,
+          ),
+        ),
           ),
         ],
       ),
@@ -667,6 +663,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         return AppColors.warning;
       case ItemPriority.low:
         return AppColors.success;
+      case ItemPriority.urgent:
+        return AppColors.accent;
     }
   }
 
@@ -678,6 +676,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         return 'Medium';
       case ItemPriority.low:
         return 'Low';
+      case ItemPriority.urgent:
+        return 'Urgent';
     }
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 
@@ -8,6 +9,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       primarySwatch: createMaterialColor(AppColors.primary),
+      fontFamily: GoogleFonts.cairo().fontFamily,
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.secondary,
@@ -115,6 +117,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       primarySwatch: createMaterialColor(AppColors.primary),
+      fontFamily: GoogleFonts.cairo().fontFamily,
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         secondary: AppColors.secondary,

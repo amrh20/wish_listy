@@ -16,6 +16,10 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Flutter Localizations
+  flutter_localizations:
+    sdk: flutter
+
   # UI Icons
   cupertino_icons: ^1.0.8
 
@@ -33,13 +37,15 @@ dependencies:
   shared_preferences: ^2.2.2
   
   # Basic utilities
-  intl: ^0.19.0
+  intl: ^0.20.2
   url_launcher: ^6.2.4
   share_plus: ^7.2.2
   
+  # Google Fonts for Cairo font
+  google_fonts: ^6.1.0
+  
   # Basic device info
   device_info_plus: ^9.1.2
-  package_info_plus: ^8.3.1
   
   # QR code generation
   qr_flutter: ^4.1.0
@@ -74,6 +80,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/animations/
+    - assets/translations/
 
 # Removed heavy dependencies for faster builds:
 # - Firebase packages (firebase_core, firebase_auth, etc.) - Can be added later

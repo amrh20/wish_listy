@@ -4,6 +4,7 @@ import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/animated_background.dart';
+import '../../models/wishlist_model.dart';
 import 'events_screen.dart';
 
 class EventWishlistScreen extends StatefulWidget {
@@ -766,6 +767,8 @@ class _EventWishlistScreenState extends State<EventWishlistScreen>
         return AppColors.warning;
       case ItemPriority.low:
         return AppColors.success;
+      case ItemPriority.urgent:
+        return AppColors.error; // Same as high priority
     }
   }
 
@@ -777,6 +780,8 @@ class _EventWishlistScreenState extends State<EventWishlistScreen>
         return 'Medium';
       case ItemPriority.low:
         return 'Low';
+      case ItemPriority.urgent:
+        return 'Urgent';
     }
   }
 
@@ -907,7 +912,7 @@ class _EventWishlistScreenState extends State<EventWishlistScreen>
 }
 
 // Data Models
-enum ItemPriority { low, medium, high }
+// Using ItemPriority from wishlist_model.dart
 
 class EventWishlistItem {
   final String id;

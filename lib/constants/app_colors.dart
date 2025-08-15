@@ -103,6 +103,12 @@ class AppColors {
     end: Alignment.bottomRight,
   );
   
+  static const LinearGradient infoGradient = LinearGradient(
+    colors: [info, infoLight],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+  
   static const LinearGradient pinkGradient = LinearGradient(
     colors: [pink, pinkLight],
     begin: Alignment.topLeft,

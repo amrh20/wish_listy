@@ -3,6 +3,7 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
+import '../../models/wishlist_model.dart';
 import '../../widgets/animated_background.dart';
 
 class WishlistItemsScreen extends StatefulWidget {
@@ -43,68 +44,58 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
   final List<WishlistItem> _items = [
     WishlistItem(
       id: '1',
+      wishlistId: '1',
       name: 'iPhone 15 Pro',
       description: 'Latest iPhone with amazing camera and performance',
-      price: 999.99,
       priority: ItemPriority.high,
-      category: 'Electronics',
       imageUrl: null,
-      isPurchased: false,
-      addedBy: 'Me',
-      addedDate: DateTime.now().subtract(Duration(days: 5)),
-      notes: 'Preferably in Space Black color',
+      status: ItemStatus.desired,
+      createdAt: DateTime.now().subtract(Duration(days: 5)),
+      updatedAt: DateTime.now().subtract(Duration(days: 5)),
     ),
     WishlistItem(
       id: '2',
+      wishlistId: '1',
       name: 'Nike Air Max 270',
       description: 'Comfortable running shoes for daily workouts',
-      price: 129.99,
       priority: ItemPriority.medium,
-      category: 'Fashion',
       imageUrl: null,
-      isPurchased: true,
-      addedBy: 'Sarah',
-      addedDate: DateTime.now().subtract(Duration(days: 10)),
-      notes: 'Size 42, any color is fine',
+      status: ItemStatus.purchased,
+      createdAt: DateTime.now().subtract(Duration(days: 10)),
+      updatedAt: DateTime.now().subtract(Duration(days: 10)),
     ),
     WishlistItem(
       id: '3',
+      wishlistId: '1',
       name: 'Kindle Paperwhite',
       description: 'E-reader with waterproof design and long battery life',
-      price: 139.99,
       priority: ItemPriority.low,
-      category: 'Books',
       imageUrl: null,
-      isPurchased: false,
-      addedBy: 'Me',
-      addedDate: DateTime.now().subtract(Duration(days: 15)),
-      notes: '8GB version is sufficient',
+      status: ItemStatus.desired,
+      createdAt: DateTime.now().subtract(Duration(days: 15)),
+      updatedAt: DateTime.now().subtract(Duration(days: 15)),
     ),
     WishlistItem(
       id: '4',
+      wishlistId: '1',
       name: 'KitchenAid Mixer',
       description: 'Professional stand mixer for baking enthusiasts',
-      price: 299.99,
       priority: ItemPriority.high,
-      category: 'Home & Kitchen',
       imageUrl: null,
-      isPurchased: false,
-      addedBy: 'Emma',
-      addedDate: DateTime.now().subtract(Duration(days: 20)),
-      notes: 'Red color preferred',
+      status: ItemStatus.desired,
+      createdAt: DateTime.now().subtract(Duration(days: 20)),
+      updatedAt: DateTime.now().subtract(Duration(days: 20)),
     ),
     WishlistItem(
       id: '5',
+      wishlistId: '1',
       name: 'Sony WH-1000XM4',
       description: 'Wireless noise-canceling headphones',
-      price: 349.99,
       priority: ItemPriority.medium,
-      category: 'Electronics',
       imageUrl: null,
-      isPurchased: false,
-      addedBy: 'Me',
-      addedDate: DateTime.now().subtract(Duration(days: 25)),
-      notes: 'Great for travel and work',
+      status: ItemStatus.desired,
+      createdAt: DateTime.now().subtract(Duration(days: 25)),
+      updatedAt: DateTime.now().subtract(Duration(days: 25)),
     ),
   ];
 
@@ -152,15 +143,15 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
   List<WishlistItem> get _filteredItems {
     return _items.where((item) {
       final matchesSearch = item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                           item.description.toLowerCase().contains(_searchQuery.toLowerCase());
+                           (item.description?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
       
       switch (_selectedFilter) {
         case 'all':
           return matchesSearch;
         case 'available':
-          return matchesSearch && !item.isPurchased;
+          return matchesSearch && item.status != ItemStatus.purchased;
         case 'purchased':
-          return matchesSearch && item.isPurchased;
+          return matchesSearch && item.status == ItemStatus.purchased;
         case 'high_priority':
           return matchesSearch && item.priority == ItemPriority.high;
         default:
@@ -504,7 +495,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: item.isPurchased 
+                          color: item.status == ItemStatus.purchased 
               ? AppColors.success.withOpacity(0.3)
               : AppColors.borderLight,
           width: 1,
@@ -539,7 +530,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                     ),
                   ),
                   child: Icon(
-                    _getCategoryIcon(item.category),
+                    _getCategoryIcon('General'),
                     color: _getPriorityColor(item.priority),
                     size: 24,
                   ),
@@ -559,13 +550,13 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                               item.name,
                               style: AppStyles.bodyMedium.copyWith(
                                 fontWeight: FontWeight.w600,
-                                decoration: item.isPurchased 
+                                decoration: item.status == ItemStatus.purchased 
                                     ? TextDecoration.lineThrough 
                                     : null,
                               ),
                             ),
                           ),
-                          if (item.isPurchased)
+                          if (item.status == ItemStatus.purchased)
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
@@ -585,14 +576,15 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                       
                       const SizedBox(height: 4),
                       
-                      Text(
-                        item.description,
-                        style: AppStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
+                      if (item.description != null && item.description!.isNotEmpty)
+                        Text(
+                          item.description!,
+                          style: AppStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
                       
                       const SizedBox(height: 8),
                       
@@ -618,7 +610,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                           
                           // Price
                           Text(
-                            '\$${item.price.toStringAsFixed(2)}',
+                            item.priceRange?.displayPrice ?? 'Price not specified',
                             style: AppStyles.bodyMedium.copyWith(
                               color: AppColors.warning,
                               fontWeight: FontWeight.w600,
@@ -629,7 +621,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                           
                           // Added by
                           Text(
-                            'by ${item.addedBy}',
+                            'by Me',
                             style: AppStyles.caption.copyWith(
                               color: AppColors.textTertiary,
                             ),
@@ -684,6 +676,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
         return AppColors.warning;
       case ItemPriority.low:
         return AppColors.success;
+      case ItemPriority.urgent:
+        return AppColors.accent;
     }
   }
 
@@ -695,6 +689,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
         return 'Medium';
       case ItemPriority.low:
         return 'Low';
+      case ItemPriority.urgent:
+        return 'Urgent';
     }
   }
 
@@ -723,33 +719,4 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
   }
 }
 
-// Data Models
-enum ItemPriority { low, medium, high }
-
-class WishlistItem {
-  final String id;
-  final String name;
-  final String description;
-  final double price;
-  final ItemPriority priority;
-  final String category;
-  final String? imageUrl;
-  final bool isPurchased;
-  final String addedBy;
-  final DateTime addedDate;
-  final String? notes;
-
-  WishlistItem({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.price,
-    required this.priority,
-    required this.category,
-    this.imageUrl,
-    required this.isPurchased,
-    required this.addedBy,
-    required this.addedDate,
-    this.notes,
-  });
-}
+// Data Models - Using models from wishlist_model.dart instead

@@ -24,8 +24,10 @@ import '../screens/profile/profile_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../screens/events/guest_management_screen.dart';
 import '../screens/events/event_settings_screen.dart';
-import '../screens/main/home_screen.dart';
 import '../screens/wishlists/wishlist_item_details_screen.dart';
+import '../models/event.dart';
+import '../models/event_model.dart';
+import '../models/wishlist_model.dart';
 
 class AppRoutes {
   // Route Names
@@ -87,9 +89,24 @@ class AppRoutes {
         ),
       );
     } else if (settings.name == itemDetails) {
-      final args = settings.arguments as WishlistItem;
+      final args = settings.arguments as Map<String, dynamic>;
       return MaterialPageRoute(
-        builder: (context) => ItemDetailsScreen(item: args),
+        builder: (context) => ItemDetailsScreen(
+          item: WishlistItem(
+            id: args['id'] ?? '',
+            wishlistId: args['wishlistId'] ?? '1',
+            name: args['title'] ?? args['name'] ?? '',
+            description: args['description'],
+            imageUrl: args['imageUrl'],
+                          priority: ItemPriority.values.firstWhere(
+                (e) => e.toString().split('.').last == args['priority'],
+                orElse: () => ItemPriority.medium,
+              ),
+              status: ItemStatus.desired,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          ),
+        ),
       );
     } else if (settings.name == wishlistItemDetails) {
       final args = settings.arguments as WishlistItemPreview;
@@ -124,11 +141,9 @@ class AppRoutes {
         ),
       );
     } else if (settings.name == eventDetails) {
-      final args = settings.arguments as UpcomingEvent;
+      final args = settings.arguments as Map<String, dynamic>;
       return MaterialPageRoute(
-        builder: (context) => EventDetailsScreen(
-          eventId: args.id,
-        ),
+        builder: (context) => EventDetailsScreen(eventId: args['eventId'] ?? ''),
       );
     }
     
