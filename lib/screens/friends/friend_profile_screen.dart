@@ -157,7 +157,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                         opacity: _fadeAnimation,
                         child: SlideTransition(
                           position: _slideAnimation,
-                          child: Padding(
+                          child: SingleChildScrollView(
                             padding: const EdgeInsets.all(16.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,7 +180,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                                 
                                 // Mutual Friends
                                 _buildMutualFriends(),
-                                const SizedBox(height: 100), // Bottom padding
+                                const SizedBox(height: 32), // Reduced bottom padding
                               ],
                             ),
                           ),
@@ -789,8 +789,11 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
           const SizedBox(height: 16),
           
           // Mock mutual friends preview
-          SizedBox(
-            height: 80,
+          Container(
+            constraints: const BoxConstraints(
+              minHeight: 80,
+              maxHeight: 120,
+            ),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: 5,
@@ -902,23 +905,72 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
   }
 
   void _viewAllWishlists() {
-    // Navigate to all wishlists
+    // Navigate to all public wishlists
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Viewing all ${_friendProfile.name}\'s public wishlists'),
+        backgroundColor: AppColors.info,
+      ),
+    );
+    
+    // TODO: Navigate to a screen showing all public wishlists
+    // This could be a dedicated screen or modal
   }
 
   void _viewEvents() {
     // Navigate to friend's events
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Viewing ${_friendProfile.name}\'s events'),
+        backgroundColor: AppColors.info,
+      ),
+    );
+    
+    // TODO: Navigate to a screen showing friend's public events
+    // This could be a dedicated screen or modal
   }
 
   void _viewGiftHistory() {
     // Navigate to gift history
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Viewing ${_friendProfile.name}\'s gift history'),
+        backgroundColor: AppColors.info,
+      ),
+    );
+    
+    // TODO: Navigate to a screen showing friend's gift history
+    // This could be a dedicated screen or modal
   }
 
   void _viewWishlist(FriendWishlist wishlist) {
-    // Navigate to specific wishlist
+    // Navigate to wishlist details
+    Navigator.pushNamed(
+      context,
+      AppRoutes.wishlistItems,
+      arguments: {
+        'wishlistName': '${_friendProfile.name}\'s ${wishlist.name}',
+        'wishlistId': wishlist.id,
+        'totalItems': wishlist.itemCount,
+        'purchasedItems': 0,
+        'totalValue': 0.0,
+        'isFriendWishlist': true,
+        'friendName': _friendProfile.name,
+      },
+    );
   }
 
   void _viewMutualFriends() {
     // Navigate to mutual friends
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Viewing all ${_friendProfile.mutualFriends} mutual friends'),
+        backgroundColor: AppColors.info,
+      ),
+    );
+    
+    // TODO: Navigate to a screen showing all mutual friends
+    // This could be a dedicated screen or modal
   }
 
   void _shareProfile() {

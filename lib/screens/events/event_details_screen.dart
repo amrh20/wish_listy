@@ -8,6 +8,7 @@ import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/animated_background.dart';
+import 'events_screen.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final String eventId;
@@ -815,66 +816,69 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
   }
 
   Widget _buildWishlistItemPreview(WishlistItemPreview item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-        border: item.isPurchased 
-            ? Border.all(color: AppColors.success.withOpacity(0.3))
-            : null,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: item.isPurchased 
-                  ? AppColors.success.withOpacity(0.1)
-                  : AppColors.secondary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              item.isPurchased 
-                  ? Icons.check_circle_outline
-                  : Icons.card_giftcard_outlined,
-              color: item.isPurchased ? AppColors.success : AppColors.secondary,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.name,
-                  style: AppStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w500,
-                    decoration: item.isPurchased ? TextDecoration.lineThrough : null,
-                    color: item.isPurchased ? AppColors.textTertiary : AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  item.price,
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (item.isPurchased)
-            Text(
-              'Purchased',
-              style: AppStyles.caption.copyWith(
-                color: AppColors.success,
-                fontWeight: FontWeight.w600,
+    return GestureDetector(
+      onTap: () => _viewWishlistItem(item),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(12),
+          border: item.isPurchased 
+              ? Border.all(color: AppColors.success.withOpacity(0.3))
+              : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: item.isPurchased 
+                    ? AppColors.success.withOpacity(0.1)
+                    : AppColors.secondary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                item.isPurchased 
+                    ? Icons.check_circle_outline
+                    : Icons.card_giftcard_outlined,
+                color: item.isPurchased ? AppColors.success : AppColors.secondary,
+                size: 20,
               ),
             ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.name,
+                    style: AppStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w500,
+                      decoration: item.isPurchased ? TextDecoration.lineThrough : null,
+                      color: item.isPurchased ? AppColors.textTertiary : AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    item.price,
+                    style: AppStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (item.isPurchased)
+              Text(
+                'Purchased',
+                style: AppStyles.caption.copyWith(
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1148,6 +1152,59 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
 
   void _viewFullWishlist() {
     // Navigate to full wishlist
+    Navigator.pushNamed(
+      context,
+      AppRoutes.eventWishlist,
+      arguments: EventSummary(
+        id: _eventDetails.id,
+        name: _eventDetails.name,
+        date: _eventDetails.date,
+        type: _convertEventType(_eventDetails.eventType),
+        location: _eventDetails.location,
+        description: _eventDetails.description,
+        hostName: _eventDetails.hostName,
+        status: _convertAttendanceStatus(_eventDetails.attendanceStatus),
+        invitedCount: _eventDetails.totalInvited,
+        acceptedCount: _eventDetails.totalAccepted,
+        wishlistItemCount: _eventDetails.wishlistItems,
+        isCreatedByMe: _eventDetails.isHost,
+      ),
+    );
+  }
+
+  void _viewWishlistItem(WishlistItemPreview item) {
+    // Navigate to individual wishlist item details
+    Navigator.pushNamed(
+      context,
+      AppRoutes.wishlistItemDetails,
+      arguments: item,
+    );
+  }
+
+  // Helper method to convert EventDetailsType to EventType
+  EventType _convertEventType(EventDetailsType detailsType) {
+    switch (detailsType) {
+      case EventDetailsType.birthday:
+        return EventType.birthday;
+      case EventDetailsType.wedding:
+        return EventType.wedding;
+      case EventDetailsType.anniversary:
+        return EventType.anniversary;
+      case EventDetailsType.graduation:
+        return EventType.graduation;
+    }
+  }
+
+  // Helper method to convert AttendanceStatus to EventStatus
+  EventStatus _convertAttendanceStatus(AttendanceStatus attendanceStatus) {
+    switch (attendanceStatus) {
+      case AttendanceStatus.pending:
+        return EventStatus.upcoming;
+      case AttendanceStatus.accepted:
+        return EventStatus.ongoing;
+      case AttendanceStatus.declined:
+        return EventStatus.cancelled;
+    }
   }
 
   void _manageEvent() {

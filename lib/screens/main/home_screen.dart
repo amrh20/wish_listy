@@ -530,90 +530,104 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildEventCard(UpcomingEvent event) {
     final daysUntil = event.date.difference(DateTime.now()).inDays;
     
-    return Container(
-      width: 200,
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textTertiary.withOpacity(0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
+      onTap: () => _openEventDetails(event),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _openEventDetails(event),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: 200,
+            margin: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.textTertiary.withOpacity(0.1),
+                  offset: const Offset(0, 2),
+                  blurRadius: 8,
+                  spreadRadius: 0,
                 ),
-                child: Icon(
-                  Icons.celebration_outlined,
-                  color: AppColors.accent,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Text(
-                      event.name,
-                      style: AppStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      child: Icon(
+                        Icons.celebration_outlined,
+                        color: AppColors.accent,
+                        size: 20,
+                      ),
                     ),
-                    Text(
-                      'by ${event.hostName}',
-                      style: AppStyles.bodySmall.copyWith(
-                        color: AppColors.textTertiary,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            event.name,
+                            style: AppStyles.bodyMedium.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'by ${event.hostName}',
+                            style: AppStyles.bodySmall.copyWith(
+                              color: AppColors.textTertiary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: daysUntil <= 3 
-                  ? AppColors.warning.withOpacity(0.1)
-                  : AppColors.info.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(6),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: daysUntil <= 3 
+                        ? AppColors.warning.withOpacity(0.1)
+                        : AppColors.info.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    daysUntil == 0 
+                        ? 'Today'
+                        : daysUntil == 1 
+                            ? 'Tomorrow'
+                            : 'In $daysUntil days',
+                    style: AppStyles.caption.copyWith(
+                      color: daysUntil <= 3 ? AppColors.warning : AppColors.info,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            child: Text(
-              daysUntil == 0 
-                  ? 'Today'
-                  : daysUntil == 1 
-                      ? 'Tomorrow'
-                      : 'In $daysUntil days',
-              style: AppStyles.caption.copyWith(
-                color: daysUntil <= 3 ? AppColors.warning : AppColors.info,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ),
-        ],
+        ),
       ),
     );
+  }
+
+  void _openEventDetails(UpcomingEvent event) {
+    AppRoutes.pushNamed(context, AppRoutes.eventDetails, arguments: event);
   }
 
   Widget _buildFriendActivity() {

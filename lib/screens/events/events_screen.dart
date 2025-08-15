@@ -818,11 +818,21 @@ class _EventsScreenState extends State<EventsScreen>
   }
 
   void _viewEventWishlist(EventSummary event) {
-    // Navigate to event wishlist
+    // Navigate to event wishlist screen
+    Navigator.pushNamed(
+      context,
+      AppRoutes.eventWishlist,
+      arguments: event,
+    );
   }
 
   void _manageEvent(EventSummary event) {
-    // Navigate to event management
+    // Navigate to event management screen
+    Navigator.pushNamed(
+      context,
+      AppRoutes.eventManagement,
+      arguments: event,
+    );
   }
 
   void _showCalendarView() {

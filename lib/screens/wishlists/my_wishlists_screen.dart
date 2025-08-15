@@ -816,7 +816,17 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   void _viewWishlistItems(WishlistSummary wishlist) {
-    // Navigate to wishlist details
+    Navigator.pushNamed(
+      context,
+      '/wishlist-items',
+      arguments: {
+        'wishlistName': wishlist.name,
+        'wishlistId': wishlist.id,
+        'totalItems': wishlist.itemCount,
+        'purchasedItems': wishlist.purchasedCount,
+        'totalValue': wishlist.totalValue,
+      },
+    );
   }
 
   void _addItemToWishlist(WishlistSummary wishlist) {

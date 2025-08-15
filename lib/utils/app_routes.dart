@@ -11,13 +11,21 @@ import '../screens/main/home_screen.dart';
 import '../screens/main/main_navigation.dart';
 import '../screens/wishlists/my_wishlists_screen.dart';
 import '../screens/wishlists/add_item_screen.dart';
+import '../screens/wishlists/wishlist_items_screen.dart';
+import '../screens/wishlists/item_details_screen.dart';
 import '../screens/events/events_screen.dart';
 import '../screens/events/create_event_screen.dart';
 import '../screens/events/event_details_screen.dart';
+import '../screens/events/event_management_screen.dart';
+import '../screens/events/event_wishlist_screen.dart';
 import '../screens/friends/friends_screen.dart';
 import '../screens/friends/friend_profile_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
+import '../screens/events/guest_management_screen.dart';
+import '../screens/events/event_settings_screen.dart';
+import '../screens/main/home_screen.dart';
+import '../screens/wishlists/wishlist_item_details_screen.dart';
 
 class AppRoutes {
   // Route Names
@@ -30,13 +38,20 @@ class AppRoutes {
   static const String mainNavigation = '/main';
   static const String myWishlists = '/my-wishlists';
   static const String addItem = '/add-item';
+  static const String wishlistItems = '/wishlist-items';
+  static const String itemDetails = '/item-details';
+  static const String wishlistItemDetails = '/wishlist-item-details';
   static const String events = '/events';
   static const String createEvent = '/create-event';
   static const String eventDetails = '/event-details';
+  static const String eventManagement = '/event-management';
+  static const String eventWishlist = '/event-wishlist';
   static const String friends = '/friends';
   static const String friendProfile = '/friend-profile';
   static const String profile = '/profile';
   static const String notifications = '/notifications';
+  static const String guestManagement = '/guest-management';
+  static const String eventSettings = '/event-settings';
 
   // Routes Map
   static Map<String, WidgetBuilder> routes = {
@@ -58,32 +73,66 @@ class AppRoutes {
 
   // Route Generator for dynamic routes
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
-    switch (settings.name) {
-      case eventDetails:
-        final args = settings.arguments as Map<String, dynamic>?;
-        return MaterialPageRoute(
-          builder: (context) => EventDetailsScreen(
-            eventId: args?['eventId'] ?? '',
-          ),
-        );
-      
-      case friendProfile:
-        final args = settings.arguments as Map<String, dynamic>?;
-        return MaterialPageRoute(
-          builder: (context) => FriendProfileScreen(
-            friendId: args?['friendId'] ?? '',
-          ),
-        );
-      
-      default:
-        return MaterialPageRoute(
-          builder: (context) => const Scaffold(
-            body: Center(
-              child: Text('Page not found'),
-            ),
-          ),
-        );
+    if (settings.name == wishlistItems) {
+      final args = settings.arguments as Map<String, dynamic>;
+      return MaterialPageRoute(
+        builder: (context) => WishlistItemsScreen(
+          wishlistName: args['wishlistName'] ?? 'My Wishlist',
+          wishlistId: args['wishlistId'] ?? '1',
+          totalItems: args['totalItems'] ?? 0,
+          purchasedItems: args['purchasedItems'] ?? 0,
+          totalValue: args['totalValue'] ?? 0.0,
+          isFriendWishlist: args['isFriendWishlist'] ?? false,
+          friendName: args['friendName'],
+        ),
+      );
+    } else if (settings.name == itemDetails) {
+      final args = settings.arguments as WishlistItem;
+      return MaterialPageRoute(
+        builder: (context) => ItemDetailsScreen(item: args),
+      );
+    } else if (settings.name == wishlistItemDetails) {
+      final args = settings.arguments as WishlistItemPreview;
+      return MaterialPageRoute(
+        builder: (context) => WishlistItemDetailsScreen(item: args),
+      );
+    } else if (settings.name == eventManagement) {
+      final args = settings.arguments as EventSummary;
+      return MaterialPageRoute(
+        builder: (context) => EventManagementScreen(event: args),
+      );
+    } else if (settings.name == eventWishlist) {
+      final args = settings.arguments as EventSummary;
+      return MaterialPageRoute(
+        builder: (context) => EventWishlistScreen(event: args),
+      );
+    } else if (settings.name == guestManagement) {
+      final args = settings.arguments as EventSummary;
+      return MaterialPageRoute(
+        builder: (context) => GuestManagementScreen(event: args),
+      );
+    } else if (settings.name == eventSettings) {
+      final args = settings.arguments as EventSummary;
+      return MaterialPageRoute(
+        builder: (context) => EventSettingsScreen(event: args),
+      );
+    } else if (settings.name == friendProfile) {
+      final args = settings.arguments as Map<String, dynamic>;
+      return MaterialPageRoute(
+        builder: (context) => FriendProfileScreen(
+          friendId: args['friendId'] ?? '',
+        ),
+      );
+    } else if (settings.name == eventDetails) {
+      final args = settings.arguments as UpcomingEvent;
+      return MaterialPageRoute(
+        builder: (context) => EventDetailsScreen(
+          eventId: args.id,
+        ),
+      );
     }
+    
+    return null;
   }
 
   // Navigation Helpers
