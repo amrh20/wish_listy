@@ -599,7 +599,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         ),
                       ),
                       child: Text(
-                        "Connect through thoughtful gifting",
+                        localization.translate(
+                          'taglines.connectThoughtfulGifting',
+                        ),
                         style: AppStyles.bodyMedium.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w600,

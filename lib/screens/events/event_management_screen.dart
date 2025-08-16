@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/animated_background.dart';
+import '../../services/localization_service.dart';
 import 'events_screen.dart';
 
 class EventManagementScreen extends StatefulWidget {
   final EventSummary event;
 
-  const EventManagementScreen({
-    super.key,
-    required this.event,
-  });
+  const EventManagementScreen({super.key, required this.event});
 
   @override
   _EventManagementScreenState createState() => _EventManagementScreenState();
@@ -37,21 +36,20 @@ class _EventManagementScreenState extends State<EventManagementScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   void _startAnimations() {
@@ -66,70 +64,77 @@ class _EventManagementScreenState extends State<EventManagementScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.secondary.withOpacity(0.03),
-              AppColors.primary.withOpacity(0.02),
+    return Consumer<LocalizationService>(
+      builder: (context, localization, child) {
+        return Scaffold(
+          body: Stack(
+            children: [
+              // Animated Background
+              AnimatedBackground(
+                colors: [
+                  AppColors.background,
+                  AppColors.secondary.withOpacity(0.03),
+                  AppColors.primary.withOpacity(0.02),
+                ],
+              ),
+
+              // Content
+              SafeArea(
+                child: Column(
+                  children: [
+                    // Header
+                    _buildHeader(localization),
+
+                    // Content
+                    Expanded(
+                      child: AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          return FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: SlideTransition(
+                              position: _slideAnimation,
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.all(24.0),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    // Event Info Card
+                                    _buildEventInfoCard(),
+
+                                    const SizedBox(height: 24),
+
+                                    // Management Options
+                                    _buildManagementOptions(localization),
+
+                                    const SizedBox(height: 24),
+
+                                    // Quick Actions
+                                    _buildQuickActions(),
+
+                                    const SizedBox(
+                                      height: 100,
+                                    ), // Bottom padding
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          
-          // Content
-          SafeArea(
-            child: Column(
-              children: [
-                // Header
-                _buildHeader(),
-                
-                // Content
-                Expanded(
-                  child: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: SlideTransition(
-                          position: _slideAnimation,
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(24.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Event Info Card
-                                _buildEventInfoCard(),
-                                
-                                const SizedBox(height: 24),
-                                
-                                // Management Options
-                                _buildManagementOptions(),
-                                
-                                const SizedBox(height: 24),
-                                
-                                // Quick Actions
-                                _buildQuickActions(),
-                                
-                                const SizedBox(height: 100), // Bottom padding
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -155,7 +160,7 @@ class _EventManagementScreenState extends State<EventManagementScreen>
           const SizedBox(width: 16),
           Expanded(
             child: Text(
-              'Manage Event',
+              localization.translate('ui.manageEvent'),
               style: AppStyles.headingSmall.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -235,9 +240,9 @@ class _EventManagementScreenState extends State<EventManagementScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Event Stats
           Row(
             children: [
@@ -280,11 +285,7 @@ class _EventManagementScreenState extends State<EventManagementScreen>
   }) {
     return Column(
       children: [
-        Icon(
-          icon,
-          color: color,
-          size: 20,
-        ),
+        Icon(icon, color: color, size: 20),
         const SizedBox(height: 4),
         Text(
           value,
@@ -295,72 +296,71 @@ class _EventManagementScreenState extends State<EventManagementScreen>
         ),
         Text(
           label,
-          style: AppStyles.caption.copyWith(
-            color: AppColors.textTertiary,
-          ),
+          style: AppStyles.caption.copyWith(color: AppColors.textTertiary),
         ),
       ],
     );
   }
 
-  Widget _buildManagementOptions() {
+  Widget _buildManagementOptions(LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.borderLight, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Event Management',
-            style: AppStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            localization.translate('ui.eventManagement'),
+            style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Guest Management
           _buildManagementOption(
             icon: Icons.people_outline,
-            title: 'Guest Management',
-            description: 'Manage invitations and RSVPs',
+            title: localization.translate('ui.guestManagement'),
+            description: localization.translate('ui.manageInvitationsAndRsvps'),
             onTap: _navigateToGuestManagement,
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Wishlist Management
           _buildManagementOption(
             icon: Icons.card_giftcard_outlined,
-            title: 'Wishlist Management',
-            description: 'Add, edit, and organize wishlist items',
+            title: localization.translate('ui.wishlistManagement'),
+            description: localization.translate(
+              'ui.addEditOrganizeWishlistItems',
+            ),
             onTap: _navigateToWishlistManagement,
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Event Settings
           _buildManagementOption(
             icon: Icons.settings_outlined,
-            title: 'Event Settings',
-            description: 'Privacy, notifications, and preferences',
+            title: localization.translate('ui.eventSettings'),
+            description: localization.translate(
+              'ui.privacyNotificationsPreferences',
+            ),
             onTap: _navigateToEventSettings,
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Event Details
           _buildManagementOption(
             icon: Icons.edit_calendar_outlined,
-            title: 'Edit Event Details',
-            description: 'Change date, location, and description',
+            title: localization.translate('ui.editEventDetails'),
+            description: localization.translate(
+              'ui.changeDateLocationDescription',
+            ),
             onTap: _navigateToEditEventDetails,
           ),
         ],
@@ -381,10 +381,7 @@ class _EventManagementScreenState extends State<EventManagementScreen>
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.borderLight,
-            width: 1,
-          ),
+          border: Border.all(color: AppColors.borderLight, width: 1),
           boxShadow: [
             BoxShadow(
               color: AppColors.shadowLight,
@@ -402,11 +399,7 @@ class _EventManagementScreenState extends State<EventManagementScreen>
                 color: AppColors.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: AppColors.primary,
-                size: 24,
-              ),
+              child: Icon(icon, color: AppColors.primary, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -446,23 +439,18 @@ class _EventManagementScreenState extends State<EventManagementScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.borderLight, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Quick Actions',
-            style: AppStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           Row(
             children: [
               Expanded(
@@ -474,9 +462,9 @@ class _EventManagementScreenState extends State<EventManagementScreen>
                   icon: Icons.share_outlined,
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               Expanded(
                 child: CustomButton(
                   text: 'Cancel Event',
@@ -530,8 +518,18 @@ class _EventManagementScreenState extends State<EventManagementScreen>
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
@@ -591,7 +589,9 @@ class _EventManagementScreenState extends State<EventManagementScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Cancel Event'),
-        content: Text('Are you sure you want to cancel "${widget.event.name}"? This action cannot be undone.'),
+        content: Text(
+          'Are you sure you want to cancel "${widget.event.name}"? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -608,9 +608,7 @@ class _EventManagementScreenState extends State<EventManagementScreen>
                 ),
               );
             },
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.error,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: Text('Yes, Cancel Event'),
           ),
         ],

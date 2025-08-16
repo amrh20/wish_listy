@@ -314,7 +314,7 @@ class _EventsScreenState extends State<EventsScreen>
                 if (index == _myEvents.length) {
                   return const SizedBox(height: 100); // Bottom padding for FAB
                 }
-                return _buildEventCard(_myEvents[index]);
+                return _buildEventCard(_myEvents[index], localization);
               },
             ),
     );
@@ -344,7 +344,9 @@ class _EventsScreenState extends State<EventsScreen>
                       localization.translate('events.upcomingEvents'),
                     ),
                     const SizedBox(height: 12),
-                    ...upcomingEvents.map((event) => _buildEventCard(event)),
+                    ...upcomingEvents.map(
+                      (event) => _buildEventCard(event, localization),
+                    ),
                     const SizedBox(height: 24),
                   ],
 
@@ -354,7 +356,9 @@ class _EventsScreenState extends State<EventsScreen>
                       localization.translate('events.pastEvents'),
                     ),
                     const SizedBox(height: 12),
-                    ...pastEvents.map((event) => _buildEventCard(event)),
+                    ...pastEvents.map(
+                      (event) => _buildEventCard(event, localization),
+                    ),
                     const SizedBox(height: 24),
                   ],
 
@@ -378,7 +382,7 @@ class _EventsScreenState extends State<EventsScreen>
     );
   }
 
-  Widget _buildEventCard(EventSummary event) {
+  Widget _buildEventCard(EventSummary event, LocalizationService localization) {
     final isPast = event.status == EventStatus.completed;
     final daysUntil = event.date.difference(DateTime.now()).inDays;
 
@@ -596,7 +600,7 @@ class _EventsScreenState extends State<EventsScreen>
                           if (event.isCreatedByMe) ...[
                             Expanded(
                               child: CustomButton(
-                                text: 'Manage Event',
+                                text: localization.translate('ui.manageEvent'),
                                 onPressed: () => _manageEvent(event),
                                 variant: ButtonVariant.outline,
                                 customColor: _getEventTypeColor(event.type),
@@ -605,7 +609,7 @@ class _EventsScreenState extends State<EventsScreen>
                             const SizedBox(width: 12),
                             Expanded(
                               child: CustomButton(
-                                text: 'View Wishlist',
+                                text: localization.translate('ui.viewWishlist'),
                                 onPressed: () => _viewEventWishlist(event),
                                 variant: ButtonVariant.primary,
                                 customColor: _getEventTypeColor(event.type),
@@ -623,7 +627,7 @@ class _EventsScreenState extends State<EventsScreen>
                             const SizedBox(width: 12),
                             Expanded(
                               child: CustomButton(
-                                text: 'View Wishlist',
+                                text: localization.translate('ui.viewWishlist'),
                                 onPressed: () => _viewEventWishlist(event),
                                 variant: ButtonVariant.primary,
                                 customColor: _getEventTypeColor(event.type),

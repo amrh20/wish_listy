@@ -1358,7 +1358,9 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     if (_selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please select an event date'),
+          content: Text(
+            localization.translate('dialogs.pleaseSelectEventDate'),
+          ),
           backgroundColor: AppColors.error,
         ),
       );
