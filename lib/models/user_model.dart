@@ -92,7 +92,8 @@ class PrivacySettings {
   factory PrivacySettings.fromJson(Map<String, dynamic> json) {
     return PrivacySettings(
       publicWishlistVisibility: WishlistVisibility.values.firstWhere(
-        (e) => e.toString().split('.').last == json['public_wishlist_visibility'],
+        (e) =>
+            e.toString().split('.').last == json['public_wishlist_visibility'],
         orElse: () => WishlistVisibility.friends,
       ),
       allowFriendRequests: json['allow_friend_requests'] ?? true,
@@ -103,7 +104,10 @@ class PrivacySettings {
 
   Map<String, dynamic> toJson() {
     return {
-      'public_wishlist_visibility': publicWishlistVisibility.toString().split('.').last,
+      'public_wishlist_visibility': publicWishlistVisibility
+          .toString()
+          .split('.')
+          .last,
       'allow_friend_requests': allowFriendRequests,
       'show_online_status': showOnlineStatus,
       'allow_event_invitations': allowEventInvitations,
@@ -117,16 +121,105 @@ class PrivacySettings {
     bool? allowEventInvitations,
   }) {
     return PrivacySettings(
-      publicWishlistVisibility: publicWishlistVisibility ?? this.publicWishlistVisibility,
+      publicWishlistVisibility:
+          publicWishlistVisibility ?? this.publicWishlistVisibility,
       allowFriendRequests: allowFriendRequests ?? this.allowFriendRequests,
       showOnlineStatus: showOnlineStatus ?? this.showOnlineStatus,
-      allowEventInvitations: allowEventInvitations ?? this.allowEventInvitations,
+      allowEventInvitations:
+          allowEventInvitations ?? this.allowEventInvitations,
     );
   }
 }
 
-enum WishlistVisibility {
-  public,
-  friends,
-  private,
+enum WishlistVisibility { public, friends, private }
+
+// Enhanced User Profile for AI features
+class UserProfile {
+  final User user;
+
+  // AI-powered behavior analysis
+  final String
+  behaviorPattern; // 'planner', 'procrastinator', 'spontaneous', 'balanced'
+  final int?
+  averageShoppingDays; // How many days before events they usually shop
+  final DateTime? lastBudgetUpdate;
+  final List<String> preferredReminderTimes; // '09:00', '18:00', etc.
+  final Map<String, double> giftCategoryPreferences; // 'electronics': 0.8, etc.
+
+  UserProfile({
+    required this.user,
+    this.behaviorPattern = 'balanced',
+    this.averageShoppingDays,
+    this.lastBudgetUpdate,
+    this.preferredReminderTimes = const ['09:00', '18:00'],
+    this.giftCategoryPreferences = const {},
+  });
+
+  // Convenience getters
+  String get id => user.id;
+  String get name => user.name;
+  String get email => user.email;
+  String? get profilePicture => user.profilePicture;
+  PrivacySettings get privacySettings => user.privacySettings;
+  DateTime get createdAt => user.createdAt;
+  DateTime get updatedAt => user.updatedAt;
+
+  factory UserProfile.fromUser(User user) {
+    return UserProfile(
+      user: user,
+      behaviorPattern: _analyzeBehaviorPattern(user),
+      averageShoppingDays: _calculateAverageShoppingDays(user),
+      preferredReminderTimes: _getPreferredReminderTimes(user),
+    );
+  }
+
+  // AI analysis methods
+  static String _analyzeBehaviorPattern(User user) {
+    // AI logic would analyze user's past behavior
+    // For now, return random pattern for demo
+    final patterns = ['planner', 'procrastinator', 'spontaneous', 'balanced'];
+    return patterns[user.id.hashCode % patterns.length];
+  }
+
+  static int _calculateAverageShoppingDays(User user) {
+    // AI would analyze past shopping patterns
+    // For demo, return based on behavior pattern
+    final behaviorPattern = _analyzeBehaviorPattern(user);
+    switch (behaviorPattern) {
+      case 'planner':
+        return 14;
+      case 'procrastinator':
+        return 2;
+      case 'spontaneous':
+        return 1;
+      default:
+        return 7;
+    }
+  }
+
+  static List<String> _getPreferredReminderTimes(User user) {
+    // AI would learn from user's interaction patterns
+    // For demo, return default times
+    return ['09:00', '18:00'];
+  }
+
+  UserProfile copyWith({
+    User? user,
+    String? behaviorPattern,
+    int? averageShoppingDays,
+    DateTime? lastBudgetUpdate,
+    List<String>? preferredReminderTimes,
+    Map<String, double>? giftCategoryPreferences,
+  }) {
+    return UserProfile(
+      user: user ?? this.user,
+      behaviorPattern: behaviorPattern ?? this.behaviorPattern,
+      averageShoppingDays: averageShoppingDays ?? this.averageShoppingDays,
+      lastBudgetUpdate: lastBudgetUpdate ?? this.lastBudgetUpdate,
+      preferredReminderTimes:
+          preferredReminderTimes ?? this.preferredReminderTimes,
+      giftCategoryPreferences:
+          giftCategoryPreferences ?? this.giftCategoryPreferences,
+    );
+  }
 }

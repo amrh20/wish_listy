@@ -25,6 +25,10 @@ import '../screens/notifications/notifications_screen.dart';
 import '../screens/events/guest_management_screen.dart';
 import '../screens/events/event_settings_screen.dart';
 import '../screens/wishlists/wishlist_item_details_screen.dart';
+import '../screens/reminders/smart_reminders_screen.dart';
+import '../screens/rewards/achievements_screen.dart';
+import '../screens/rewards/leaderboard_screen.dart';
+import '../screens/rewards/rewards_store_screen.dart';
 import '../models/wishlist_model.dart';
 
 class AppRoutes {
@@ -55,6 +59,10 @@ class AppRoutes {
   static const String personalInformation = '/personal-information';
   static const String privacySecurity = '/privacy-security';
   static const String blockedUsers = '/blocked-users';
+  static const String smartReminders = '/smart-reminders';
+  static const String achievements = '/achievements';
+  static const String leaderboard = '/leaderboard';
+  static const String rewardsStore = '/rewards-store';
 
   // Routes Map
   static Map<String, WidgetBuilder> routes = {
@@ -72,6 +80,10 @@ class AppRoutes {
     friends: (context) => FriendsScreen(),
     profile: (context) => ProfileScreen(),
     notifications: (context) => NotificationsScreen(),
+    smartReminders: (context) => SmartRemindersScreen(),
+    achievements: (context) => AchievementsScreen(),
+    leaderboard: (context) => LeaderboardScreen(),
+    rewardsStore: (context) => RewardsStoreScreen(),
   };
 
   // Route Generator for dynamic routes

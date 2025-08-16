@@ -44,9 +44,11 @@ class Event {
         orElse: () => EventStatus.upcoming,
       ),
       wishlistId: json['wishlist_id'],
-      invitations: (json['invitations'] as List<dynamic>?)
-          ?.map((invitation) => EventInvitation.fromJson(invitation))
-          .toList() ?? [],
+      invitations:
+          (json['invitations'] as List<dynamic>?)
+              ?.map((invitation) => EventInvitation.fromJson(invitation))
+              .toList() ??
+          [],
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );
@@ -63,7 +65,9 @@ class Event {
       'type': type.toString().split('.').last,
       'status': status.toString().split('.').last,
       'wishlist_id': wishlistId,
-      'invitations': invitations.map((invitation) => invitation.toJson()).toList(),
+      'invitations': invitations
+          .map((invitation) => invitation.toJson())
+          .toList(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -103,7 +107,9 @@ class Event {
   bool get isPast => date.isBefore(DateTime.now());
   bool get isToday {
     final now = DateTime.now();
-    return date.year == now.year && date.month == now.month && date.day == now.day;
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   int get daysUntilEvent {
@@ -167,7 +173,9 @@ class EventInvitation {
         orElse: () => InvitationStatus.pending,
       ),
       sentAt: DateTime.parse(json['sent_at']),
-      respondedAt: json['responded_at'] != null ? DateTime.parse(json['responded_at']) : null,
+      respondedAt: json['responded_at'] != null
+          ? DateTime.parse(json['responded_at'])
+          : null,
       message: json['message'],
     );
   }
@@ -236,18 +244,9 @@ enum EventType {
   other,
 }
 
-enum EventStatus {
-  upcoming,
-  ongoing,
-  completed,
-  cancelled,
-}
+enum EventStatus { upcoming, ongoing, completed, cancelled }
 
-enum InvitationStatus {
-  pending,
-  accepted,
-  declined,
-}
+enum InvitationStatus { pending, accepted, declined }
 
 extension EventTypeExtension on EventType {
   String get displayName {
@@ -302,5 +301,63 @@ extension EventTypeExtension on EventType {
       case EventType.other:
         return '🎈';
     }
+  }
+}
+
+// Summary class for displaying events in lists
+class EventSummary {
+  final String id;
+  final String name;
+  final DateTime date;
+  final EventType type;
+  final String? location;
+  final int invitedCount;
+  final int acceptedCount;
+  final int wishlistItemCount;
+  final bool isCreatedByMe;
+  final EventStatus status;
+
+  EventSummary({
+    required this.id,
+    required this.name,
+    required this.date,
+    required this.type,
+    this.location,
+    required this.invitedCount,
+    required this.acceptedCount,
+    required this.wishlistItemCount,
+    required this.isCreatedByMe,
+    required this.status,
+  });
+
+  factory EventSummary.fromEvent(Event event) {
+    return EventSummary(
+      id: event.id,
+      name: event.name,
+      date: event.date,
+      type: event.type,
+      location: event.location,
+      invitedCount: event.invitations.length,
+      acceptedCount: event.acceptedInvitations,
+      wishlistItemCount: 0, // Would be calculated from backend
+      isCreatedByMe:
+          false, // Would be determined by comparing with current user
+      status: event.status,
+    );
+  }
+
+  int get daysUntilEvent {
+    final now = DateTime.now();
+    final difference = date.difference(DateTime(now.year, now.month, now.day));
+    return difference.inDays;
+  }
+
+  bool get isUpcoming => date.isAfter(DateTime.now());
+  bool get isPast => date.isBefore(DateTime.now());
+  bool get isToday {
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 }

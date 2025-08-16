@@ -5,7 +5,9 @@ import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/animated_background.dart';
+import '../../widgets/rewards_widgets.dart';
 import '../../services/localization_service.dart';
+import '../../services/rewards_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   final ScrollController _scrollController = ScrollController();
   bool _showWelcomeCard = true;
+  final RewardsService _rewardsService = RewardsService();
 
   // Mock data - replace with real data from your backend
   final List<UpcomingEvent> _upcomingEvents = [
@@ -97,7 +100,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _initializeAnimations();
+    _initializeRewards();
     _startAnimations();
+  }
+
+  void _initializeRewards() async {
+    // Initialize rewards system for current user
+    await _rewardsService.initializeForUser('current_user');
+    setState(() {
+      // Refresh UI after rewards initialization
+    });
   }
 
   void _initializeAnimations() {
@@ -179,8 +191,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       const SizedBox(height: 24),
                                     ],
 
+                                    // Points & Level Display
+                                    _buildPointsAndLevel(),
+                                    const SizedBox(height: 24),
+
+                                    // Recent Achievement
+                                    const RecentAchievementWidget(),
+                                    const SizedBox(height: 24),
+
                                     // Quick Actions
                                     _buildQuickActions(localization),
+                                    const SizedBox(height: 24),
+
+                                    // Rewards Quick Actions
+                                    _buildRewardsSection(localization),
                                     const SizedBox(height: 32),
 
                                     // Upcoming Events
@@ -193,6 +217,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                                     // Gift Suggestions
                                     _buildGiftSuggestions(localization),
+                                    const SizedBox(height: 32),
+
+                                    // Leaderboard Preview
+                                    const LeaderboardPreviewWidget(),
                                     const SizedBox(
                                       height: 100,
                                     ), // Bottom padding for FAB
@@ -255,6 +283,46 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             backgroundColor: AppColors.surface,
             padding: const EdgeInsets.all(12),
           ),
+        ),
+        const SizedBox(width: 8),
+        // Smart Reminders Button
+        Stack(
+          children: [
+            IconButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/smart-reminders');
+              },
+              icon: Icon(Icons.psychology, color: AppColors.textPrimary),
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.surface,
+                padding: const EdgeInsets.all(12),
+              ),
+            ),
+            // AI Badge
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: AppColors.secondary,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.surface, width: 1),
+                ),
+                child: Center(
+                  child: Text(
+                    '3',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(width: 8),
         // Notifications Button
@@ -435,6 +503,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   color: AppColors.success,
                   onTap: () {
                     AppRoutes.pushNamed(context, AppRoutes.friends);
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 120,
+                child: _buildActionCard(
+                  icon: Icons.psychology,
+                  title: 'Smart\nReminders',
+                  subtitle: 'AI suggestions\nfor you',
+                  color: AppColors.secondary,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/smart-reminders');
                   },
                 ),
               ),
@@ -855,9 +936,46 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildPointsAndLevel() {
+    return Row(
+      children: [
+        Expanded(child: const PointsDisplay()),
+        const SizedBox(width: 16),
+        Expanded(child: const LevelProgressWidget(showDetails: false)),
+      ],
+    );
+  }
+
+  Widget _buildRewardsSection(LocalizationService localization) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text('🎮 Rewards & Achievements', style: AppStyles.headingSmall),
+            const Spacer(),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(context).pushNamed(AppRoutes.achievements),
+              child: Text(
+                'View All',
+                style: AppStyles.bodyMedium.copyWith(color: AppColors.primary),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        const RewardsQuickActions(),
+      ],
+    );
+  }
+
   Future<void> _refreshData() async {
     // Simulate refresh
     await Future.delayed(const Duration(seconds: 1));
+
+    // Refresh rewards data
+    _initializeRewards();
 
     // Refresh your data here
     setState(() {
