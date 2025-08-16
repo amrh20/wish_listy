@@ -93,14 +93,16 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
                   colors:
                       widget.colors ??
                       [
-                        AppColors.primary.withOpacity(0.1),
-                        AppColors.secondary.withOpacity(0.05),
-                        AppColors.accent.withOpacity(0.1),
+                        Colors.white,
+                        Colors.blue.shade50.withOpacity(0.3),
+                        Colors.purple.shade50.withOpacity(0.2),
+                        Colors.white,
                       ],
                   stops: [
-                    0.0 + (_gradientAnimation.value * 0.3),
-                    0.5 + (_gradientAnimation.value * 0.2),
-                    1.0 - (_gradientAnimation.value * 0.1),
+                    0.0,
+                    0.3 + (_gradientAnimation.value * 0.2),
+                    0.7 + (_gradientAnimation.value * 0.1),
+                    1.0,
                   ],
                 ),
               ),
@@ -155,8 +157,8 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        AppColors.primary.withOpacity(0.1),
-                        AppColors.primary.withOpacity(0.05),
+                        Colors.blue.shade100.withOpacity(0.4),
+                        Colors.blue.shade50.withOpacity(0.2),
                         Colors.transparent,
                       ],
                     ),
@@ -187,8 +189,8 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        AppColors.secondary.withOpacity(0.1),
-                        AppColors.accent.withOpacity(0.05),
+                        Colors.purple.shade100.withOpacity(0.3),
+                        Colors.pink.shade50.withOpacity(0.2),
                       ],
                     ),
                   ),
@@ -211,7 +213,7 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
                 angle: _gradientAnimation.value * pi,
                 child: CustomPaint(
                   painter: TrianglePainter(
-                    color: AppColors.accent.withOpacity(0.08),
+                    color: Colors.green.shade100.withOpacity(0.25),
                   ),
                   size: const Size(80, 80),
                 ),
@@ -243,12 +245,13 @@ class Particle {
     size = Random().nextDouble() * 4 + 1;
     speedX = (Random().nextDouble() - 0.5) * 0.002;
     speedY = (Random().nextDouble() - 0.5) * 0.002;
-    opacity = Random().nextDouble() * 0.5 + 0.1;
+    opacity = Random().nextDouble() * 0.3 + 0.05;
 
     List<Color> colors = [
-      AppColors.primary,
-      AppColors.secondary,
-      AppColors.accent,
+      Colors.blue.shade300,
+      Colors.purple.shade300,
+      Colors.green.shade300,
+      Colors.pink.shade300,
     ];
     color = colors[Random().nextInt(colors.length)];
   }

@@ -54,7 +54,7 @@ dependencies:
   table_calendar: ^3.0.9
   
   # Basic notifications
-  flutter_local_notifications: ^16.3.2
+  flutter_local_notifications: ^17.2.3
 
 dev_dependencies:
   flutter_test:
