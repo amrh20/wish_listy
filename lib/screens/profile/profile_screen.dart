@@ -93,22 +93,33 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _initializeAnimations() {
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(
+        milliseconds: 800,
+      ), // Reduced from 1000ms for better performance
       vsync: this,
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+        curve: const Interval(
+          0.0,
+          0.7,
+          curve: Curves.easeInOut,
+        ), // Increased from 0.6
       ),
     );
 
     _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+        Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero).animate(
+          // Reduced from 0.2
           CurvedAnimation(
             parent: _animationController,
-            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+            curve: const Interval(
+              0.1,
+              0.9,
+              curve: Curves.easeOutCubic,
+            ), // Adjusted intervals
           ),
         );
   }
@@ -134,8 +145,8 @@ class _ProfileScreenState extends State<ProfileScreen>
               AnimatedBackground(
                 colors: [
                   AppColors.background,
-                  AppColors.primary.withOpacity(0.02),
-                  AppColors.secondary.withOpacity(0.01),
+                  AppColors.primary.withOpacity(0.01), // Reduced from 0.02
+                  AppColors.secondary.withOpacity(0.005), // Reduced from 0.01
                 ],
               ),
 
@@ -205,10 +216,10 @@ class _ProfileScreenState extends State<ProfileScreen>
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.accent.withOpacity(0.4),
-                  offset: const Offset(0, 8),
-                  blurRadius: 20,
-                  spreadRadius: 2,
+                  color: AppColors.accent.withOpacity(0.3), // Reduced from 0.4
+                  offset: const Offset(0, 6), // Reduced from 8
+                  blurRadius: 15, // Reduced from 20
+                  spreadRadius: 1, // Reduced from 2
                 ),
               ],
             ),

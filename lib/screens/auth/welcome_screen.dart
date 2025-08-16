@@ -27,29 +27,31 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   void initState() {
     super.initState();
 
-    // Floating animation for decorative elements
+    // Floating animation for decorative elements - OPTIMIZED
     _floatingController = AnimationController(
-      duration: const Duration(seconds: 3),
+      duration: const Duration(milliseconds: 1500), // Reduced from 3000ms
       vsync: this,
     )..repeat(reverse: true);
 
-    _floatingAnimation = Tween<double>(begin: -10.0, end: 10.0).animate(
+    _floatingAnimation = Tween<double>(begin: -8.0, end: 8.0).animate(
+      // Reduced range from -10 to 10
       CurvedAnimation(parent: _floatingController, curve: Curves.easeInOut),
     );
 
-    // Pulse animation for the main icon
+    // Pulse animation for the main icon - OPTIMIZED
     _pulseController = AnimationController(
-      duration: const Duration(seconds: 2),
+      duration: const Duration(milliseconds: 1000), // Reduced from 2000ms
       vsync: this,
     )..repeat(reverse: true);
 
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.03).animate(
+      // Reduced scale from 1.05 to 1.03
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // Rotation animation for decorative elements
+    // Rotation animation for decorative elements - OPTIMIZED
     _rotationController = AnimationController(
-      duration: const Duration(seconds: 20),
+      duration: const Duration(seconds: 15), // Reduced from 20 seconds
       vsync: this,
     )..repeat();
 
@@ -86,10 +88,10 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 colors: [
                   const Color(0xFFF8FAFF),
                   const Color(0xFFF3F0FF),
-                  AppColors.primary.withOpacity(0.05),
-                  AppColors.secondary.withOpacity(0.03),
+                  AppColors.primary.withOpacity(0.03), // Reduced from 0.05
+                  AppColors.secondary.withOpacity(0.02), // Reduced from 0.03
                 ],
-                stops: const [0.0, 0.3, 0.7, 1.0],
+                stops: const [0.0, 0.4, 0.8, 1.0], // Simplified stops
               ),
             ),
             child: Stack(
@@ -154,17 +156,31 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                                 boxShadow: [
                                                   BoxShadow(
                                                     color: AppColors.primary
-                                                        .withOpacity(0.3),
-                                                    offset: const Offset(0, 12),
-                                                    blurRadius: 30,
-                                                    spreadRadius: 2,
+                                                        .withOpacity(
+                                                          0.2,
+                                                        ), // Reduced from 0.3
+                                                    offset: const Offset(
+                                                      0,
+                                                      8,
+                                                    ), // Reduced from 12
+                                                    blurRadius:
+                                                        20, // Reduced from 30
+                                                    spreadRadius:
+                                                        1, // Reduced from 2
                                                   ),
                                                   BoxShadow(
                                                     color: AppColors.secondary
-                                                        .withOpacity(0.2),
-                                                    offset: const Offset(0, 6),
-                                                    blurRadius: 20,
-                                                    spreadRadius: 1,
+                                                        .withOpacity(
+                                                          0.15,
+                                                        ), // Reduced from 0.2
+                                                    offset: const Offset(
+                                                      0,
+                                                      4,
+                                                    ), // Reduced from 6
+                                                    blurRadius:
+                                                        15, // Reduced from 20
+                                                    spreadRadius:
+                                                        0, // Reduced from 1
                                                   ),
                                                 ],
                                               ),

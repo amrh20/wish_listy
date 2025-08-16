@@ -1,6 +1,3 @@
-
-
-
 import 'package:flutter/material.dart';
 import 'dart:math';
 import '../constants/app_colors.dart';
@@ -54,7 +51,10 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
   }
 
   void _initializeParticles() {
-    _particles = List.generate(15, (index) => Particle());
+    _particles = List.generate(
+      8,
+      (index) => Particle(),
+    ); // Reduced from 15 to 8 for better performance
   }
 
   void _startAnimations() {
@@ -84,13 +84,14 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
           animation: _gradientAnimation,
           builder: (context, child) {
             if (!mounted) return const SizedBox.shrink();
-            
+
             return Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: widget.colors ??
+                  colors:
+                      widget.colors ??
                       [
                         AppColors.primary.withOpacity(0.1),
                         AppColors.secondary.withOpacity(0.05),
@@ -113,7 +114,7 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
             animation: _particleController,
             builder: (context, child) {
               if (!mounted) return const SizedBox.shrink();
-              
+
               return CustomPaint(
                 painter: ParticlesPainter(
                   particles: _particles,
@@ -144,7 +145,7 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
             animation: _gradientController,
             builder: (context, child) {
               if (!mounted) return const SizedBox.shrink();
-              
+
               return Transform.rotate(
                 angle: _gradientAnimation.value * 2 * pi,
                 child: Container(
@@ -174,7 +175,7 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
             animation: _gradientController,
             builder: (context, child) {
               if (!mounted) return const SizedBox.shrink();
-              
+
               return Transform.rotate(
                 angle: -_gradientAnimation.value * 1.5 * pi,
                 child: Container(
@@ -205,7 +206,7 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
             animation: _gradientController,
             builder: (context, child) {
               if (!mounted) return const SizedBox.shrink();
-              
+
               return Transform.rotate(
                 angle: _gradientAnimation.value * pi,
                 child: CustomPaint(
@@ -243,7 +244,7 @@ class Particle {
     speedX = (Random().nextDouble() - 0.5) * 0.002;
     speedY = (Random().nextDouble() - 0.5) * 0.002;
     opacity = Random().nextDouble() * 0.5 + 0.1;
-    
+
     List<Color> colors = [
       AppColors.primary,
       AppColors.secondary,
@@ -266,25 +267,19 @@ class ParticlesPainter extends CustomPainter {
   final List<Particle> particles;
   final double animation;
 
-  ParticlesPainter({
-    required this.particles,
-    required this.animation,
-  });
+  ParticlesPainter({required this.particles, required this.animation});
 
   @override
   void paint(Canvas canvas, Size size) {
     for (var particle in particles) {
       particle.update();
-      
+
       final paint = Paint()
         ..color = particle.color.withOpacity(particle.opacity)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(
-        Offset(
-          particle.x * size.width,
-          particle.y * size.height,
-        ),
+        Offset(particle.x * size.width, particle.y * size.height),
         particle.size,
         paint,
       );
