@@ -60,71 +60,211 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
   }
 
   void _loadEventDetails() {
-    // Mock event details - replace with actual API call
-    _eventDetails = EventDetails(
-      id: widget.eventId,
-      name: 'Sarah\'s Birthday Party 🎂',
-      description: 'Join us for an amazing birthday celebration with friends, music, delicious food, and lots of fun! We\'ll have games, dancing, and a surprise or two. Can\'t wait to celebrate with everyone!',
-      hostName: 'Sarah Johnson',
-      hostProfilePicture: null,
-      date: DateTime.now().add(Duration(days: 15)),
-      time: '6:00 PM',
-      location: 'Sarah\'s House, 123 Main Street, Downtown',
-      eventType: EventDetailsType.birthday,
-      totalInvited: 24,
-      totalAccepted: 18,
-      totalDeclined: 2,
-      totalPending: 4,
-      wishlistItems: 12,
-      isHost: false,
-      attendanceStatus: AttendanceStatus.accepted,
-      invitedFriends: [
-        EventGuest(
-          id: '1',
-          name: 'Ahmed Ali',
-          profilePicture: null,
-          status: GuestStatus.accepted,
-        ),
-        EventGuest(
-          id: '2',
-          name: 'Emma Watson',
-          profilePicture: null,
-          status: GuestStatus.accepted,
-        ),
-        EventGuest(
-          id: '3',
-          name: 'Mike Thompson',
-          profilePicture: null,
-          status: GuestStatus.pending,
-        ),
-        EventGuest(
-          id: '4',
-          name: 'Lisa Chen',
-          profilePicture: null,
-          status: GuestStatus.declined,
-        ),
-      ],
-      wishlistPreview: [
-        WishlistItemPreview(
-          id: '1',
-          name: 'Wireless Bluetooth Headphones',
-          price: '\$99',
-          isPurchased: false,
-        ),
-        WishlistItemPreview(
-          id: '2',
-          name: 'Vintage Leather Journal',
-          price: '\$45',
-          isPurchased: true,
-        ),
-        WishlistItemPreview(
-          id: '3',
-          name: 'Essential Oils Diffuser',
-          price: '\$65',
-          isPurchased: false,
-        ),
-      ],
-    );
+    // Load event details based on event ID - replace with actual API call
+    // For now, we'll create mock data based on the event ID
+    final eventId = widget.eventId;
+    
+    // Mock event details - in real app, this would be an API call
+    if (eventId == '1') {
+      _eventDetails = EventDetails(
+        id: eventId,
+        name: 'Sarah\'s Birthday Party 🎂',
+        description: 'Join us for an amazing birthday celebration with friends, music, delicious food, and lots of fun! We\'ll have games, dancing, and a surprise or two. Can\'t wait to celebrate with everyone!',
+        hostName: 'Sarah Johnson',
+        hostProfilePicture: null,
+        date: DateTime.now().add(Duration(days: 15)),
+        time: '6:00 PM',
+        location: 'Sarah\'s House, 123 Main Street, Downtown',
+        eventType: EventDetailsType.birthday,
+        totalInvited: 24,
+        totalAccepted: 18,
+        totalDeclined: 2,
+        totalPending: 4,
+        wishlistItems: 12,
+        isHost: false,
+        attendanceStatus: AttendanceStatus.accepted,
+        invitedFriends: [
+          EventGuest(
+            id: '1',
+            name: 'Ahmed Ali',
+            profilePicture: null,
+            status: GuestStatus.accepted,
+          ),
+          EventGuest(
+            id: '2',
+            name: 'Emma Watson',
+            profilePicture: null,
+            status: GuestStatus.accepted,
+          ),
+          EventGuest(
+            id: '3',
+            name: 'Mike Thompson',
+            profilePicture: null,
+            status: GuestStatus.pending,
+          ),
+          EventGuest(
+            id: '4',
+            name: 'Lisa Chen',
+            profilePicture: null,
+            status: GuestStatus.declined,
+          ),
+        ],
+        wishlistPreview: [
+          WishlistItemPreview(
+            id: '1',
+            name: 'Wireless Bluetooth Headphones',
+            price: '\$99',
+            isPurchased: false,
+          ),
+          WishlistItemPreview(
+            id: '2',
+            name: 'Vintage Leather Journal',
+            price: '\$45',
+            isPurchased: true,
+          ),
+          WishlistItemPreview(
+            id: '3',
+            name: 'Essential Oils Diffuser',
+            price: '\$65',
+            isPurchased: false,
+          ),
+        ],
+      );
+    } else if (eventId == '2') {
+      _eventDetails = EventDetails(
+        id: eventId,
+        name: 'My Graduation Ceremony 🎓',
+        description: 'Celebrating the completion of my university journey! Join me for this special milestone with family and friends. There will be a formal ceremony followed by a reception with refreshments and photo opportunities.',
+        hostName: 'Ahmed Hassan',
+        hostProfilePicture: null,
+        date: DateTime.now().add(Duration(days: 12)),
+        time: '2:00 PM',
+        location: 'University Auditorium, Main Campus',
+        eventType: EventDetailsType.graduation,
+        totalInvited: 18,
+        totalAccepted: 15,
+        totalDeclined: 1,
+        totalPending: 2,
+        wishlistItems: 8,
+        isHost: true,
+        attendanceStatus: AttendanceStatus.accepted,
+        invitedFriends: [
+          EventGuest(
+            id: '1',
+            name: 'Noha Ahmed',
+            profilePicture: null,
+            status: GuestStatus.accepted,
+          ),
+          EventGuest(
+            id: '2',
+            name: 'Omar Hassan',
+            profilePicture: null,
+            status: GuestStatus.accepted,
+          ),
+          EventGuest(
+            id: '3',
+            name: 'Fatima Ali',
+            profilePicture: null,
+            status: GuestStatus.pending,
+          ),
+        ],
+        wishlistPreview: [
+          WishlistItemPreview(
+            id: '1',
+            name: 'Professional Watch',
+            price: '\$150',
+            isPurchased: false,
+          ),
+          WishlistItemPreview(
+            id: '2',
+            name: 'Leather Portfolio',
+            price: '\$80',
+            isPurchased: false,
+          ),
+          WishlistItemPreview(
+            id: '3',
+            name: 'Gift Cards',
+            price: '\$50',
+            isPurchased: false,
+          ),
+        ],
+      );
+    } else if (eventId == '3') {
+      _eventDetails = EventDetails(
+        id: eventId,
+        name: 'Summer Vacation Trip 🏖️',
+        description: 'Family vacation to the beautiful beaches! We\'ll be staying at a beachfront resort with activities like swimming, snorkeling, beach volleyball, and evening bonfires. Perfect for relaxation and family bonding.',
+        hostName: 'Ahmed Hassan',
+        hostProfilePicture: null,
+        date: DateTime.now().add(Duration(days: 25)),
+        time: '10:00 AM',
+        location: 'Beach Resort, Red Sea Coast',
+        eventType: EventDetailsType.vacation,
+        totalInvited: 12,
+        totalAccepted: 10,
+        totalDeclined: 0,
+        totalPending: 2,
+        wishlistItems: 6,
+        isHost: true,
+        attendanceStatus: AttendanceStatus.accepted,
+        invitedFriends: [
+          EventGuest(
+            id: '1',
+            name: 'Family Members',
+            profilePicture: null,
+            status: GuestStatus.accepted,
+          ),
+          EventGuest(
+            id: '2',
+            name: 'Close Friends',
+            profilePicture: null,
+            status: GuestStatus.accepted,
+          ),
+        ],
+        wishlistPreview: [
+          WishlistItemPreview(
+            id: '1',
+            name: 'Beach Umbrella',
+            price: '\$45',
+            isPurchased: false,
+          ),
+          WishlistItemPreview(
+            id: '2',
+            name: 'Snorkeling Gear',
+            price: '\$120',
+            isPurchased: false,
+          ),
+          WishlistItemPreview(
+            id: '3',
+            name: 'Beach Towels',
+            price: '\$35',
+            isPurchased: false,
+          ),
+        ],
+      );
+    } else {
+      // Default event details for unknown event IDs
+      _eventDetails = EventDetails(
+        id: eventId,
+        name: 'Event Details',
+        description: 'Event details will be loaded here.',
+        hostName: 'Host Name',
+        hostProfilePicture: null,
+        date: DateTime.now().add(Duration(days: 7)),
+        time: 'TBD',
+        location: 'Location TBD',
+        eventType: EventDetailsType.other,
+        totalInvited: 0,
+        totalAccepted: 0,
+        totalDeclined: 0,
+        totalPending: 0,
+        wishlistItems: 0,
+        isHost: false,
+        attendanceStatus: AttendanceStatus.pending,
+        invitedFriends: [],
+        wishlistPreview: [],
+      );
+    }
   }
 
   void _startAnimations() {
@@ -876,6 +1016,33 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                   color: AppColors.success,
                   fontWeight: FontWeight.w600,
                 ),
+              )
+            else
+              // Add Reserve Button for unpurchased items
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: TextButton(
+                  onPressed: () => _reserveWishlistItem(item),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'Reserve',
+                    style: AppStyles.caption.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ),
           ],
         ),
@@ -955,6 +1122,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         return AppColors.error;
       case EventDetailsType.graduation:
         return AppColors.accent;
+      case EventDetailsType.vacation:
+        return AppColors.warning;
       default:
         return AppColors.primary;
     }
@@ -970,6 +1139,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         return Icons.favorite_border;
       case EventDetailsType.graduation:
         return Icons.school_outlined;
+      case EventDetailsType.vacation:
+        return Icons.beach_access_outlined;
       default:
         return Icons.event_outlined;
     }
@@ -1181,6 +1352,145 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     );
   }
 
+  void _reserveWishlistItem(WishlistItemPreview item) {
+    // Show reservation confirmation dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Reserve Item',
+            style: AppStyles.headingSmall,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Are you sure you want to reserve this item?',
+                style: AppStyles.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.card_giftcard_outlined,
+                      color: AppColors.secondary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.name,
+                            style: AppStyles.bodyMedium.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          Text(
+                            item.price,
+                            style: AppStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _confirmReservation(item);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.textWhite,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Reserve',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textWhite,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmReservation(WishlistItemPreview item) {
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              Icons.check_circle_outline,
+              color: AppColors.textWhite,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Successfully reserved "${item.name}" for ${_eventDetails.hostName}\'s event!',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textWhite,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'View Wishlist',
+          textColor: AppColors.textWhite,
+          onPressed: () {
+            _viewFullWishlist();
+          },
+        ),
+      ),
+    );
+    
+    // In a real app, you would update the item status to reserved
+    // For now, we'll just show the success message
+  }
+
   // Helper method to convert EventDetailsType to EventType
   EventType _convertEventType(EventDetailsType detailsType) {
     switch (detailsType) {
@@ -1192,6 +1502,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         return EventType.anniversary;
       case EventDetailsType.graduation:
         return EventType.graduation;
+      case EventDetailsType.vacation:
+        return EventType.vacation;
+      case EventDetailsType.other:
+        return EventType.other;
     }
   }
 
@@ -1320,6 +1634,8 @@ enum EventDetailsType {
   wedding,
   anniversary,
   graduation,
+  vacation, // Added vacation type
+  other,
 }
 
 enum AttendanceStatus {

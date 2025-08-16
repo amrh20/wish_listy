@@ -228,6 +228,7 @@ enum EventType {
   anniversary,
   graduation,
   holiday,
+  vacation,
   babyShower,
   houseWarming,
   retirement,
@@ -261,6 +262,8 @@ extension EventTypeExtension on EventType {
         return 'Graduation';
       case EventType.holiday:
         return 'Holiday';
+      case EventType.vacation:
+        return 'Vacation';
       case EventType.babyShower:
         return 'Baby Shower';
       case EventType.houseWarming:
@@ -286,6 +289,8 @@ extension EventTypeExtension on EventType {
         return '🎓';
       case EventType.holiday:
         return '🎄';
+      case EventType.vacation:
+        return '🏖️';
       case EventType.babyShower:
         return '👶';
       case EventType.houseWarming:

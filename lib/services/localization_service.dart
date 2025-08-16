@@ -14,6 +14,9 @@ class LocalizationService extends ChangeNotifier {
   // Getters
   String get currentLanguage => _currentLanguage;
   bool get isLoading => _isLoading;
+  
+  // Get current translations
+  Map<String, dynamic> get translations => _translations;
   bool get isRTL => _currentLanguage == 'ar';
   TextDirection get textDirection => isRTL ? TextDirection.rtl : TextDirection.ltr;
 
@@ -39,13 +42,16 @@ class LocalizationService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      final String jsonString = await rootBundle.loadString(
-        'assets/translations/${_currentLanguage}.json',
-      );
+      final String assetPath = 'assets/translations/${_currentLanguage}.json';
+      debugPrint('Attempting to load translations from: $assetPath');
+      
+      final String jsonString = await rootBundle.loadString(assetPath);
+      debugPrint('Successfully loaded JSON string, length: ${jsonString.length}');
       
       _translations = json.decode(jsonString) as Map<String, dynamic>;
       
       debugPrint('Loaded translations for $_currentLanguage: ${_translations.keys.toList()}');
+      debugPrint('Sample translation - home.greeting: ${_translations['home']?['greeting']}');
       
       _isLoading = false;
       notifyListeners();
@@ -53,6 +59,7 @@ class LocalizationService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       debugPrint('Error loading translations for $_currentLanguage: $e');
+      debugPrint('Stack trace: ${StackTrace.current}');
       // Fallback to empty translations
       _translations = {};
     }

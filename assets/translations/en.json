@@ -95,8 +95,8 @@
   },
   "home": {
     "title": "Home",
-    "welcomeMessage": "Welcome to Wish Listy",
-    "greeting": "Hello!",
+    "welcomeMessage": "Welcome to WishListy",
+    "greeting": "Good morning! 👋",
     "subtitle": "What would you like to do today?",
     "upcomingEvents": "Upcoming Events",
     "recentWishlists": "Recent Wishlists",
@@ -107,7 +107,26 @@
     "noWishlists": "No wishlists",
     "createEvent": "Create Event",
     "createWishlist": "Create Wishlist",
-    "addFriend": "Add Friend"
+    "addFriend": "Add Friend",
+    "welcomeBanner": {
+      "title": "Welcome to WishListy",
+      "description": "Start creating wishlists and connecting with friends for meaningful gift experiences",
+      "createFirstWishlist": "Create Your First Wishlist"
+    },
+    "quickActionsCards": {
+      "addFriend": "Add Friend",
+      "addFriendSubtext": "Connect",
+      "createEvent": "Create Event",
+      "createEventSubtext": "Plan celebration",
+      "addItem": "Add Item",
+      "addItemSubtext": "To wishlist"
+    },
+    "friendActivity": "Friend Activity",
+    "giftSuggestions": "Gift Suggestions",
+    "noFriendActivity": "No friend activity",
+    "noFriendActivitySubtitle": "Add friends to see their wishlist updates",
+    "noGiftSuggestions": "No gift suggestions",
+    "noGiftSuggestionsSubtitle": "We'll suggest gifts based on your friends' wishlists"
   },
   "wishlists": {
     "title": "Wishlists",

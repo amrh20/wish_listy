@@ -965,6 +965,7 @@ enum EventType {
   anniversary,
   graduation,
   holiday,
+  vacation,
   babyShower,
   houseWarming,
   retirement,

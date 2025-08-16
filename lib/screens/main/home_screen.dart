@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/animated_background.dart';
+import '../../services/localization_service.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -134,7 +136,9 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Consumer<LocalizationService>(
+      builder: (context, localization, child) {
+        return Scaffold(
       body: Stack(
         children: [
           // Animated Background
@@ -154,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen>
               controller: _scrollController,
               slivers: [
                 // App Bar
-                _buildSliverAppBar(),
+                _buildSliverAppBar(localization),
                 
                 // Content
                 SliverToBoxAdapter(
@@ -172,24 +176,24 @@ class _HomeScreenState extends State<HomeScreen>
                               children: [
                                 // Welcome Card
                                 if (_showWelcomeCard) ...[
-                                  _buildWelcomeCard(),
+                                  _buildWelcomeCard(localization),
                                   const SizedBox(height: 24),
                                 ],
                                 
                                 // Quick Actions
-                                _buildQuickActions(),
+                                _buildQuickActions(localization),
                                 const SizedBox(height: 32),
                                 
                                 // Upcoming Events
-                                _buildUpcomingEvents(),
+                                _buildUpcomingEvents(localization),
                                 const SizedBox(height: 32),
                                 
                                 // Friend Activity
-                                _buildFriendActivity(),
+                                _buildFriendActivity(localization),
                                 const SizedBox(height: 32),
                                 
                                 // Gift Suggestions
-                                _buildGiftSuggestions(),
+                                _buildGiftSuggestions(localization),
                                 const SizedBox(height: 100), // Bottom padding for FAB
                               ],
                             ),
@@ -205,9 +209,11 @@ class _HomeScreenState extends State<HomeScreen>
         ],
       ),
     );
+      },
+    );
   }
 
-  Widget _buildSliverAppBar() {
+  Widget _buildSliverAppBar(LocalizationService localization) {
     return SliverAppBar(
       expandedHeight: 120,
       floating: true,
@@ -220,7 +226,7 @@ class _HomeScreenState extends State<HomeScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Good morning! 👋',
+              localization.translate('home.greeting'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w500,
@@ -289,7 +295,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildWelcomeCard() {
+  Widget _buildWelcomeCard(LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -324,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Welcome to WishListy!',
+                      localization.translate('home.welcomeBanner.title'),
                       style: AppStyles.headingSmall.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -332,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Start creating wishlists and connecting with friends for meaningful gift experiences.',
+                      localization.translate('home.welcomeBanner.description'),
                       style: AppStyles.bodyMedium.copyWith(
                         color: Colors.white,
                         height: 1.4,
@@ -356,7 +362,7 @@ class _HomeScreenState extends State<HomeScreen>
           ),
           const SizedBox(height: 16),
           CustomButton(
-            text: 'Create Your First Wishlist',
+            text: localization.translate('home.welcomeBanner.createFirstWishlist'),
             onPressed: () {
               // Navigate to create wishlist
             },
@@ -371,53 +377,60 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(LocalizationService localization) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Quick Actions',
+          localization.translate('home.quickActions'),
           style: AppStyles.headingSmall,
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                icon: Icons.add_circle_outline,
-                title: 'Add Item',
-                subtitle: 'To wishlist',
-                color: AppColors.primary,
-                onTap: () {
-                  AppRoutes.pushNamed(context, AppRoutes.addItem);
-                },
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            textDirection: TextDirection.ltr, // Force LTR for consistent layout
+            children: [
+              SizedBox(
+                width: 120,
+                child: _buildActionCard(
+                  icon: Icons.add_circle_outline,
+                                  title: localization.translate('home.quickActionsCards.addItem'),
+                subtitle: localization.translate('home.quickActionsCards.addItemSubtext'),
+                  color: AppColors.primary,
+                  onTap: () {
+                    AppRoutes.pushNamed(context, AppRoutes.addItem);
+                  },
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildActionCard(
-                icon: Icons.event_outlined,
-                title: 'Create Event',
-                subtitle: 'Plan celebration',
-                color: AppColors.accent,
-                onTap: () {
-                  AppRoutes.pushNamed(context, AppRoutes.createEvent);
-                },
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 120,
+                child: _buildActionCard(
+                  icon: Icons.event_outlined,
+                  title: localization.translate('home.quickActionsCards.createEvent'),
+                  subtitle: localization.translate('home.quickActionsCards.createEventSubtext'),
+                  color: AppColors.accent,
+                  onTap: () {
+                    AppRoutes.pushNamed(context, AppRoutes.createEvent);
+                  },
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildActionCard(
-                icon: Icons.person_add_outlined,
-                title: 'Add Friend',
-                subtitle: 'Connect',
-                color: AppColors.success,
-                onTap: () {
-                  AppRoutes.pushNamed(context, AppRoutes.friends);
-                },
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 120,
+                child: _buildActionCard(
+                  icon: Icons.person_add_outlined,
+                  title: localization.translate('home.quickActionsCards.addFriend'),
+                  subtitle: localization.translate('home.quickActionsCards.addFriendSubtext'),
+                  color: AppColors.success,
+                  onTap: () {
+                    AppRoutes.pushNamed(context, AppRoutes.friends);
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -464,6 +477,8 @@ class _HomeScreenState extends State<HomeScreen>
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
@@ -472,6 +487,8 @@ class _HomeScreenState extends State<HomeScreen>
                 color: AppColors.textTertiary,
               ),
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -479,7 +496,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildUpcomingEvents() {
+  Widget _buildUpcomingEvents(LocalizationService localization) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -487,7 +504,7 @@ class _HomeScreenState extends State<HomeScreen>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Upcoming Events',
+              localization.translate('home.upcomingEvents'),
               style: AppStyles.headingSmall,
             ),
             TextButton(
@@ -495,7 +512,7 @@ class _HomeScreenState extends State<HomeScreen>
                 AppRoutes.pushNamed(context, AppRoutes.events);
               },
               child: Text(
-                'View All',
+              localization.translate('home.viewAll'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
@@ -508,8 +525,8 @@ class _HomeScreenState extends State<HomeScreen>
         if (_upcomingEvents.isEmpty)
           _buildEmptyState(
             icon: Icons.event_outlined,
-            title: 'No upcoming events',
-            subtitle: 'Create or get invited to events to see them here',
+            title: localization.translate('home.noEvents'),
+            subtitle: localization.translate('home.noEventsSubtitle'),
           )
         else
           SizedBox(
@@ -630,7 +647,7 @@ class _HomeScreenState extends State<HomeScreen>
     AppRoutes.pushNamed(context, AppRoutes.eventDetails, arguments: event);
   }
 
-  Widget _buildFriendActivity() {
+  Widget _buildFriendActivity(LocalizationService localization) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -638,7 +655,7 @@ class _HomeScreenState extends State<HomeScreen>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Friend Activity',
+              localization.translate('home.friendActivity'),
               style: AppStyles.headingSmall,
             ),
             TextButton(
@@ -646,7 +663,7 @@ class _HomeScreenState extends State<HomeScreen>
                 AppRoutes.pushNamed(context, AppRoutes.friends);
               },
               child: Text(
-                'View All',
+              localization.translate('home.viewAll'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
@@ -659,8 +676,8 @@ class _HomeScreenState extends State<HomeScreen>
         if (_friendActivities.isEmpty)
           _buildEmptyState(
             icon: Icons.people_outline,
-            title: 'No friend activity',
-            subtitle: 'Add friends to see their wishlist updates',
+            title: localization.translate('home.noFriendActivity'),
+            subtitle: localization.translate('home.noFriendActivitySubtitle'),
           )
         else
           Column(
@@ -725,7 +742,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildGiftSuggestions() {
+  Widget _buildGiftSuggestions(LocalizationService localization) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
