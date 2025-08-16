@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../services/localization_service.dart';
-import 'dart:math' as math;
 
 class CustomBottomNavigation extends StatelessWidget {
   final int currentIndex;
@@ -21,7 +19,7 @@ class CustomBottomNavigation extends StatelessWidget {
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         if (!context.mounted) return const SizedBox.shrink();
-        
+
         final navigationItems = [
           {
             'icon': Icons.home_outlined,
@@ -77,7 +75,7 @@ class CustomBottomNavigation extends StatelessWidget {
                   final index = entry.key;
                   final item = entry.value;
                   final isActive = currentIndex == index;
-                  
+
                   return _buildNavigationButton(item, index, isActive);
                 }).toList(),
               ),
@@ -88,7 +86,11 @@ class CustomBottomNavigation extends StatelessWidget {
     );
   }
 
-  Widget _buildNavigationButton(Map<String, dynamic> item, int index, bool isActive) {
+  Widget _buildNavigationButton(
+    Map<String, dynamic> item,
+    int index,
+    bool isActive,
+  ) {
     return GestureDetector(
       onTap: () => onTap(index),
       child: AnimatedContainer(
@@ -178,8 +180,16 @@ class HomeIconPainter extends CustomPainter {
         ..color = color
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset(size.width * 0.7, size.height * 0.3), 1.5, sparklePaint);
-      canvas.drawCircle(Offset(size.width * 0.3, size.height * 0.25), 1.0, sparklePaint);
+      canvas.drawCircle(
+        Offset(size.width * 0.7, size.height * 0.3),
+        1.5,
+        sparklePaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.3, size.height * 0.25),
+        1.0,
+        sparklePaint,
+      );
     }
   }
 
@@ -225,11 +235,31 @@ class WishlistIconPainter extends CustomPainter {
     // Bow
     final bowPath = Path();
     bowPath.moveTo(size.width * 0.5, size.height * 0.25);
-    bowPath.quadraticBezierTo(size.width * 0.4, size.height * 0.2, size.width * 0.35, size.height * 0.25);
-    bowPath.quadraticBezierTo(size.width * 0.4, size.height * 0.3, size.width * 0.5, size.height * 0.25);
+    bowPath.quadraticBezierTo(
+      size.width * 0.4,
+      size.height * 0.2,
+      size.width * 0.35,
+      size.height * 0.25,
+    );
+    bowPath.quadraticBezierTo(
+      size.width * 0.4,
+      size.height * 0.3,
+      size.width * 0.5,
+      size.height * 0.25,
+    );
     bowPath.moveTo(size.width * 0.5, size.height * 0.25);
-    bowPath.quadraticBezierTo(size.width * 0.6, size.height * 0.2, size.width * 0.65, size.height * 0.25);
-    bowPath.quadraticBezierTo(size.width * 0.6, size.height * 0.3, size.width * 0.5, size.height * 0.25);
+    bowPath.quadraticBezierTo(
+      size.width * 0.6,
+      size.height * 0.2,
+      size.width * 0.65,
+      size.height * 0.25,
+    );
+    bowPath.quadraticBezierTo(
+      size.width * 0.6,
+      size.height * 0.3,
+      size.width * 0.5,
+      size.height * 0.25,
+    );
 
     canvas.drawPath(boxPath, paint);
     canvas.drawPath(ribbonVPath, paint);
@@ -242,8 +272,16 @@ class WishlistIconPainter extends CustomPainter {
         ..color = color
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset(size.width * 0.15, size.height * 0.4), 1.0, sparklePaint);
-      canvas.drawCircle(Offset(size.width * 0.85, size.height * 0.6), 1.5, sparklePaint);
+      canvas.drawCircle(
+        Offset(size.width * 0.15, size.height * 0.4),
+        1.0,
+        sparklePaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.85, size.height * 0.6),
+        1.5,
+        sparklePaint,
+      );
     }
   }
 
@@ -293,11 +331,31 @@ class EventsIconPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     // Simple dots representing dates
-    canvas.drawCircle(Offset(size.width * 0.35, size.height * 0.55), 1.5, datePaint);
-    canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.55), 1.5, datePaint);
-    canvas.drawCircle(Offset(size.width * 0.65, size.height * 0.55), 1.5, datePaint);
-    canvas.drawCircle(Offset(size.width * 0.35, size.height * 0.7), 1.5, datePaint);
-    canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.7), 1.5, datePaint);
+    canvas.drawCircle(
+      Offset(size.width * 0.35, size.height * 0.55),
+      1.5,
+      datePaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.55),
+      1.5,
+      datePaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.65, size.height * 0.55),
+      1.5,
+      datePaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.35, size.height * 0.7),
+      1.5,
+      datePaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.7),
+      1.5,
+      datePaint,
+    );
 
     canvas.drawPath(calendarPath, paint);
     canvas.drawPath(topPath, paint);
@@ -309,9 +367,21 @@ class EventsIconPainter extends CustomPainter {
         ..color = color
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset(size.width * 0.15, size.height * 0.2), 1.0, sparklePaint);
-      canvas.drawCircle(Offset(size.width * 0.85, size.height * 0.2), 1.0, sparklePaint);
-      canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.15), 1.5, sparklePaint);
+      canvas.drawCircle(
+        Offset(size.width * 0.15, size.height * 0.2),
+        1.0,
+        sparklePaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.85, size.height * 0.2),
+        1.0,
+        sparklePaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.5, size.height * 0.15),
+        1.5,
+        sparklePaint,
+      );
     }
   }
 
@@ -338,10 +408,12 @@ class FriendsIconPainter extends CustomPainter {
 
     // Left person
     final leftHeadPath = Path();
-    leftHeadPath.addOval(Rect.fromCircle(
-      center: Offset(size.width * 0.3, size.height * 0.35),
-      radius: size.width * 0.12,
-    ));
+    leftHeadPath.addOval(
+      Rect.fromCircle(
+        center: Offset(size.width * 0.3, size.height * 0.35),
+        radius: size.width * 0.12,
+      ),
+    );
 
     final leftBodyPath = Path();
     leftBodyPath.moveTo(size.width * 0.3, size.height * 0.47);
@@ -351,10 +423,12 @@ class FriendsIconPainter extends CustomPainter {
 
     // Right person
     final rightHeadPath = Path();
-    rightHeadPath.addOval(Rect.fromCircle(
-      center: Offset(size.width * 0.7, size.height * 0.35),
-      radius: size.width * 0.12,
-    ));
+    rightHeadPath.addOval(
+      Rect.fromCircle(
+        center: Offset(size.width * 0.7, size.height * 0.35),
+        radius: size.width * 0.12,
+      ),
+    );
 
     final rightBodyPath = Path();
     rightBodyPath.moveTo(size.width * 0.7, size.height * 0.47);
@@ -379,8 +453,16 @@ class FriendsIconPainter extends CustomPainter {
         ..color = color
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.25), 1.0, sparklePaint);
-      canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.85), 1.0, sparklePaint);
+      canvas.drawCircle(
+        Offset(size.width * 0.5, size.height * 0.25),
+        1.0,
+        sparklePaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.5, size.height * 0.85),
+        1.0,
+        sparklePaint,
+      );
     }
   }
 
@@ -407,10 +489,12 @@ class ProfileIconPainter extends CustomPainter {
 
     // Head
     final headPath = Path();
-    headPath.addOval(Rect.fromCircle(
-      center: Offset(size.width * 0.5, size.height * 0.35),
-      radius: size.width * 0.15,
-    ));
+    headPath.addOval(
+      Rect.fromCircle(
+        center: Offset(size.width * 0.5, size.height * 0.35),
+        radius: size.width * 0.15,
+      ),
+    );
 
     // Body
     final bodyPath = Path();
@@ -422,21 +506,30 @@ class ProfileIconPainter extends CustomPainter {
 
     // Eyes
     final leftEyePath = Path();
-    leftEyePath.addOval(Rect.fromCircle(
-      center: Offset(size.width * 0.42, size.height * 0.32),
-      radius: size.width * 0.03,
-    ));
+    leftEyePath.addOval(
+      Rect.fromCircle(
+        center: Offset(size.width * 0.42, size.height * 0.32),
+        radius: size.width * 0.03,
+      ),
+    );
 
     final rightEyePath = Path();
-    rightEyePath.addOval(Rect.fromCircle(
-      center: Offset(size.width * 0.58, size.height * 0.32),
-      radius: size.width * 0.03,
-    ));
+    rightEyePath.addOval(
+      Rect.fromCircle(
+        center: Offset(size.width * 0.58, size.height * 0.32),
+        radius: size.width * 0.03,
+      ),
+    );
 
     // Smile
     final smilePath = Path();
     smilePath.moveTo(size.width * 0.42, size.height * 0.4);
-    smilePath.quadraticBezierTo(size.width * 0.5, size.height * 0.45, size.width * 0.58, size.height * 0.4);
+    smilePath.quadraticBezierTo(
+      size.width * 0.5,
+      size.height * 0.45,
+      size.width * 0.58,
+      size.height * 0.4,
+    );
 
     canvas.drawPath(headPath, paint);
     canvas.drawPath(bodyPath, paint);
@@ -450,9 +543,21 @@ class ProfileIconPainter extends CustomPainter {
         ..color = color
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset(size.width * 0.25, size.height * 0.25), 1.0, sparklePaint);
-      canvas.drawCircle(Offset(size.width * 0.75, size.height * 0.25), 1.0, sparklePaint);
-      canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.15), 1.5, sparklePaint);
+      canvas.drawCircle(
+        Offset(size.width * 0.25, size.height * 0.25),
+        1.0,
+        sparklePaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.75, size.height * 0.25),
+        1.0,
+        sparklePaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.5, size.height * 0.15),
+        1.5,
+        sparklePaint,
+      );
     }
   }
 

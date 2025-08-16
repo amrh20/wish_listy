@@ -14,11 +14,12 @@ class LocalizationService extends ChangeNotifier {
   // Getters
   String get currentLanguage => _currentLanguage;
   bool get isLoading => _isLoading;
-  
+
   // Get current translations
   Map<String, dynamic> get translations => _translations;
   bool get isRTL => _currentLanguage == 'ar';
-  TextDirection get textDirection => isRTL ? TextDirection.rtl : TextDirection.ltr;
+  TextDirection get textDirection =>
+      isRTL ? TextDirection.rtl : TextDirection.ltr;
 
   // Initialize the service
   Future<void> initialize() async {
@@ -42,17 +43,23 @@ class LocalizationService extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      final String assetPath = 'assets/translations/${_currentLanguage}.json';
+      final String assetPath = 'assets/translations/$_currentLanguage.json';
       debugPrint('Attempting to load translations from: $assetPath');
-      
+
       final String jsonString = await rootBundle.loadString(assetPath);
-      debugPrint('Successfully loaded JSON string, length: ${jsonString.length}');
-      
+      debugPrint(
+        'Successfully loaded JSON string, length: ${jsonString.length}',
+      );
+
       _translations = json.decode(jsonString) as Map<String, dynamic>;
-      
-      debugPrint('Loaded translations for $_currentLanguage: ${_translations.keys.toList()}');
-      debugPrint('Sample translation - home.greeting: ${_translations['home']?['greeting']}');
-      
+
+      debugPrint(
+        'Loaded translations for $_currentLanguage: ${_translations.keys.toList()}',
+      );
+      debugPrint(
+        'Sample translation - home.greeting: ${_translations['home']?['greeting']}',
+      );
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
@@ -67,8 +74,10 @@ class LocalizationService extends ChangeNotifier {
 
   // Change language
   Future<void> changeLanguage(String languageCode) async {
-    debugPrint('Attempting to change language from $_currentLanguage to $languageCode');
-    
+    debugPrint(
+      'Attempting to change language from $_currentLanguage to $languageCode',
+    );
+
     if (_currentLanguage == languageCode) {
       debugPrint('Language is already $languageCode, no change needed');
       return;
@@ -76,7 +85,7 @@ class LocalizationService extends ChangeNotifier {
 
     _currentLanguage = languageCode;
     debugPrint('Language changed to: $_currentLanguage');
-    
+
     // Save to SharedPreferences
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -117,7 +126,9 @@ class LocalizationService extends ChangeNotifier {
       return value;
     }
 
-    debugPrint('Translation value is not a string for key: $key (value: $value)');
+    debugPrint(
+      'Translation value is not a string for key: $key (value: $value)',
+    );
     return key;
   }
 
@@ -132,18 +143,8 @@ class LocalizationService extends ChangeNotifier {
 
   // Get supported languages
   List<Map<String, String>> get supportedLanguages => [
-    {
-      'code': 'en',
-      'name': 'English',
-      'nativeName': 'English',
-      'flag': '🇺🇸'
-    },
-    {
-      'code': 'ar',
-      'name': 'Arabic',
-      'nativeName': 'العربية',
-      'flag': '🇸🇦'
-    }
+    {'code': 'en', 'name': 'English', 'nativeName': 'English', 'flag': '🇺🇸'},
+    {'code': 'ar', 'name': 'Arabic', 'nativeName': 'العربية', 'flag': '🇸🇦'},
   ];
 
   // Get current language info
@@ -191,10 +192,10 @@ class LocalizationService extends ChangeNotifier {
     final currentIndex = supportedLanguages.indexWhere(
       (lang) => lang['code'] == _currentLanguage,
     );
-    
+
     final nextIndex = (currentIndex + 1) % supportedLanguages.length;
     final nextLanguage = supportedLanguages[nextIndex]['code']!;
-    
+
     await changeLanguage(nextLanguage);
   }
 
@@ -203,7 +204,7 @@ class LocalizationService extends ChangeNotifier {
     final currentIndex = supportedLanguages.indexWhere(
       (lang) => lang['code'] == _currentLanguage,
     );
-    
+
     final nextIndex = (currentIndex + 1) % supportedLanguages.length;
     return supportedLanguages[nextIndex]['code']!;
   }
@@ -213,7 +214,7 @@ class LocalizationService extends ChangeNotifier {
     final currentIndex = supportedLanguages.indexWhere(
       (lang) => lang['code'] == _currentLanguage,
     );
-    
+
     final nextIndex = (currentIndex + 1) % supportedLanguages.length;
     return supportedLanguages[nextIndex];
   }
@@ -238,7 +239,7 @@ class LocalizationService extends ChangeNotifier {
       // English time format (12-hour)
       final hour = time.hourOfPeriod;
       final period = time.period == DayPeriod.am ? 'AM' : 'PM';
-      return '${hour}:${time.minute.toString().padLeft(2, '0')} $period';
+      return '$hour:${time.minute.toString().padLeft(2, '0')} $period';
     }
   }
 

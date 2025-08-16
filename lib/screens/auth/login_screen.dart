@@ -1,6 +1,3 @@
-
-
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
@@ -12,6 +9,8 @@ import '../../widgets/custom_text_field.dart';
 import '../../widgets/animated_background.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -21,11 +20,11 @@ class _LoginScreenState extends State<LoginScreen>
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _rememberMe = false;
@@ -43,21 +42,20 @@ class _LoginScreenState extends State<LoginScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   void _startAnimations() {
@@ -101,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen>
                   AppColors.secondary.withOpacity(0.03),
                 ],
               ),
-              
+
               // Content
               SafeArea(
                 child: SingleChildScrollView(
@@ -117,7 +115,7 @@ class _LoginScreenState extends State<LoginScreen>
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               const SizedBox(height: 40),
-                              
+
                               // Back Button
                               Align(
                                 alignment: Alignment.centerLeft,
@@ -130,9 +128,9 @@ class _LoginScreenState extends State<LoginScreen>
                                   ),
                                 ),
                               ),
-                              
+
                               const SizedBox(height: 40),
-                              
+
                               // Header
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,16 +143,18 @@ class _LoginScreenState extends State<LoginScreen>
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
-                                    localization.translate('auth.signInSubtitle'),
+                                    localization.translate(
+                                      'auth.signInSubtitle',
+                                    ),
                                     style: AppStyles.bodyLarge.copyWith(
                                       color: AppColors.textSecondary,
                                     ),
                                   ),
                                 ],
                               ),
-                              
+
                               const SizedBox(height: 48),
-                              
+
                               // Login Form
                               Form(
                                 key: _formKey,
@@ -163,35 +163,49 @@ class _LoginScreenState extends State<LoginScreen>
                                     // Email Field
                                     CustomTextField(
                                       controller: _emailController,
-                                      label: localization.translate('auth.email'),
-                                      hint: localization.translate('auth.enterEmail'),
+                                      label: localization.translate(
+                                        'auth.email',
+                                      ),
+                                      hint: localization.translate(
+                                        'auth.enterEmail',
+                                      ),
                                       keyboardType: TextInputType.emailAddress,
                                       prefixIcon: Icons.email_outlined,
                                       validator: (value) {
                                         if (value?.isEmpty ?? true) {
-                                          return localization.translate('auth.pleaseEnterEmail');
+                                          return localization.translate(
+                                            'auth.pleaseEnterEmail',
+                                          );
                                         }
-                                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                            .hasMatch(value!)) {
-                                          return localization.translate('auth.pleaseEnterValidEmail');
+                                        if (!RegExp(
+                                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                                        ).hasMatch(value!)) {
+                                          return localization.translate(
+                                            'auth.pleaseEnterValidEmail',
+                                          );
                                         }
                                         return null;
                                       },
                                     ),
-                                    
+
                                     const SizedBox(height: 20),
-                                    
+
                                     // Password Field
                                     CustomTextField(
                                       controller: _passwordController,
-                                      label: localization.translate('auth.password'),
-                                      hint: localization.translate('auth.enterPassword'),
+                                      label: localization.translate(
+                                        'auth.password',
+                                      ),
+                                      hint: localization.translate(
+                                        'auth.enterPassword',
+                                      ),
                                       obscureText: _obscurePassword,
                                       prefixIcon: Icons.lock_outlined,
                                       suffixIcon: IconButton(
                                         onPressed: () {
                                           setState(() {
-                                            _obscurePassword = !_obscurePassword;
+                                            _obscurePassword =
+                                                !_obscurePassword;
                                           });
                                         },
                                         icon: Icon(
@@ -202,20 +216,25 @@ class _LoginScreenState extends State<LoginScreen>
                                       ),
                                       validator: (value) {
                                         if (value?.isEmpty ?? true) {
-                                          return localization.translate('auth.pleaseEnterPassword');
+                                          return localization.translate(
+                                            'auth.pleaseEnterPassword',
+                                          );
                                         }
                                         if (value!.length < 6) {
-                                          return localization.translate('auth.passwordMinLength');
+                                          return localization.translate(
+                                            'auth.passwordMinLength',
+                                          );
                                         }
                                         return null;
                                       },
                                     ),
-                                    
+
                                     const SizedBox(height: 16),
-                                    
+
                                     // Remember Me & Forgot Password
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Row(
                                           children: [
@@ -227,11 +246,14 @@ class _LoginScreenState extends State<LoginScreen>
                                                 });
                                               },
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(4),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
                                               ),
                                             ),
                                             Text(
-                                              localization.translate('auth.rememberMe'),
+                                              localization.translate(
+                                                'auth.rememberMe',
+                                              ),
                                               style: AppStyles.bodyMedium,
                                             ),
                                           ],
@@ -244,40 +266,50 @@ class _LoginScreenState extends State<LoginScreen>
                                             );
                                           },
                                           child: Text(
-                                            localization.translate('auth.forgotPassword'),
-                                            style: AppStyles.bodyMedium.copyWith(
-                                              color: AppColors.primary,
-                                              fontWeight: FontWeight.w600,
+                                            localization.translate(
+                                              'auth.forgotPassword',
                                             ),
+                                            style: AppStyles.bodyMedium
+                                                .copyWith(
+                                                  color: AppColors.primary,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                    
+
                                     const SizedBox(height: 32),
-                                    
+
                                     // Login Button
                                     CustomButton(
-                                      text: localization.translate('auth.signIn'),
+                                      text: localization.translate(
+                                        'auth.signIn',
+                                      ),
                                       onPressed: _handleLogin,
                                       isLoading: _isLoading,
                                       variant: ButtonVariant.gradient,
                                     ),
-                                    
+
                                     const SizedBox(height: 24),
-                                    
+
                                     // Divider
                                     Row(
                                       children: [
                                         Expanded(
                                           child: Divider(
-                                            color: AppColors.textTertiary.withOpacity(0.3),
+                                            color: AppColors.textTertiary
+                                                .withOpacity(0.3),
                                           ),
                                         ),
                                         Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                          ),
                                           child: Text(
-                                            localization.translate('auth.continueWith'),
+                                            localization.translate(
+                                              'auth.continueWith',
+                                            ),
                                             style: AppStyles.bodySmall.copyWith(
                                               color: AppColors.textTertiary,
                                             ),
@@ -285,20 +317,23 @@ class _LoginScreenState extends State<LoginScreen>
                                         ),
                                         Expanded(
                                           child: Divider(
-                                            color: AppColors.textTertiary.withOpacity(0.3),
+                                            color: AppColors.textTertiary
+                                                .withOpacity(0.3),
                                           ),
                                         ),
                                       ],
                                     ),
-                                    
+
                                     const SizedBox(height: 24),
-                                    
+
                                     // Social Login Buttons
                                     Row(
                                       children: [
                                         Expanded(
                                           child: CustomButton(
-                                            text: localization.translate('social.google'),
+                                            text: localization.translate(
+                                              'social.google',
+                                            ),
                                             onPressed: () {
                                               // Handle Google login
                                             },
@@ -309,7 +344,9 @@ class _LoginScreenState extends State<LoginScreen>
                                         const SizedBox(width: 16),
                                         Expanded(
                                           child: CustomButton(
-                                            text: localization.translate('social.apple'),
+                                            text: localization.translate(
+                                              'social.apple',
+                                            ),
                                             onPressed: () {
                                               // Handle Apple login
                                             },
@@ -322,15 +359,17 @@ class _LoginScreenState extends State<LoginScreen>
                                   ],
                                 ),
                               ),
-                              
+
                               const SizedBox(height: 32),
-                              
+
                               // Sign Up Link
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    localization.translate('auth.dontHaveAccount'),
+                                    localization.translate(
+                                      'auth.dontHaveAccount',
+                                    ),
                                     style: AppStyles.bodyMedium.copyWith(
                                       color: AppColors.textSecondary,
                                     ),

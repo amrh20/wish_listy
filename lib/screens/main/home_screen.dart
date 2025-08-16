@@ -4,21 +4,21 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
 import '../../widgets/animated_background.dart';
 import '../../services/localization_service.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   final ScrollController _scrollController = ScrollController();
   bool _showWelcomeCard = true;
 
@@ -106,21 +106,20 @@ class _HomeScreenState extends State<HomeScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   void _startAnimations() {
@@ -139,76 +138,78 @@ class _HomeScreenState extends State<HomeScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
-      body: Stack(
-        children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.primary.withOpacity(0.02),
-              AppColors.secondary.withOpacity(0.01),
+          body: Stack(
+            children: [
+              // Animated Background
+              AnimatedBackground(
+                colors: [
+                  AppColors.background,
+                  AppColors.primary.withOpacity(0.02),
+                  AppColors.secondary.withOpacity(0.01),
+                ],
+              ),
+
+              // Content
+              RefreshIndicator(
+                onRefresh: _refreshData,
+                color: AppColors.primary,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    // App Bar
+                    _buildSliverAppBar(localization),
+
+                    // Content
+                    SliverToBoxAdapter(
+                      child: AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          return FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: SlideTransition(
+                              position: _slideAnimation,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Welcome Card
+                                    if (_showWelcomeCard) ...[
+                                      _buildWelcomeCard(localization),
+                                      const SizedBox(height: 24),
+                                    ],
+
+                                    // Quick Actions
+                                    _buildQuickActions(localization),
+                                    const SizedBox(height: 32),
+
+                                    // Upcoming Events
+                                    _buildUpcomingEvents(localization),
+                                    const SizedBox(height: 32),
+
+                                    // Friend Activity
+                                    _buildFriendActivity(localization),
+                                    const SizedBox(height: 32),
+
+                                    // Gift Suggestions
+                                    _buildGiftSuggestions(localization),
+                                    const SizedBox(
+                                      height: 100,
+                                    ), // Bottom padding for FAB
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          
-          // Content
-          RefreshIndicator(
-            onRefresh: _refreshData,
-            color: AppColors.primary,
-            child: CustomScrollView(
-              controller: _scrollController,
-              slivers: [
-                // App Bar
-                _buildSliverAppBar(localization),
-                
-                // Content
-                SliverToBoxAdapter(
-                  child: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: SlideTransition(
-                          position: _slideAnimation,
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Welcome Card
-                                if (_showWelcomeCard) ...[
-                                  _buildWelcomeCard(localization),
-                                  const SizedBox(height: 24),
-                                ],
-                                
-                                // Quick Actions
-                                _buildQuickActions(localization),
-                                const SizedBox(height: 32),
-                                
-                                // Upcoming Events
-                                _buildUpcomingEvents(localization),
-                                const SizedBox(height: 32),
-                                
-                                // Friend Activity
-                                _buildFriendActivity(localization),
-                                const SizedBox(height: 32),
-                                
-                                // Gift Suggestions
-                                _buildGiftSuggestions(localization),
-                                const SizedBox(height: 100), // Bottom padding for FAB
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+        );
       },
     );
   }
@@ -249,10 +250,7 @@ class _HomeScreenState extends State<HomeScreen>
           onPressed: () {
             // Navigate to search screen
           },
-          icon: Icon(
-            Icons.search_rounded,
-            color: AppColors.textPrimary,
-          ),
+          icon: Icon(Icons.search_rounded, color: AppColors.textPrimary),
           style: IconButton.styleFrom(
             backgroundColor: AppColors.surface,
             padding: const EdgeInsets.all(12),
@@ -353,16 +351,15 @@ class _HomeScreenState extends State<HomeScreen>
                     _showWelcomeCard = false;
                   });
                 },
-                icon: Icon(
-                  Icons.close,
-                  color: Colors.white,
-                ),
+                icon: Icon(Icons.close, color: Colors.white),
               ),
             ],
           ),
           const SizedBox(height: 16),
           CustomButton(
-            text: localization.translate('home.welcomeBanner.createFirstWishlist'),
+            text: localization.translate(
+              'home.welcomeBanner.createFirstWishlist',
+            ),
             onPressed: () {
               // Navigate to create wishlist
             },
@@ -395,8 +392,12 @@ class _HomeScreenState extends State<HomeScreen>
                 width: 120,
                 child: _buildActionCard(
                   icon: Icons.add_circle_outline,
-                                  title: localization.translate('home.quickActionsCards.addItem'),
-                subtitle: localization.translate('home.quickActionsCards.addItemSubtext'),
+                  title: localization.translate(
+                    'home.quickActionsCards.addItem',
+                  ),
+                  subtitle: localization.translate(
+                    'home.quickActionsCards.addItemSubtext',
+                  ),
                   color: AppColors.primary,
                   onTap: () {
                     AppRoutes.pushNamed(context, AppRoutes.addItem);
@@ -408,8 +409,12 @@ class _HomeScreenState extends State<HomeScreen>
                 width: 120,
                 child: _buildActionCard(
                   icon: Icons.event_outlined,
-                  title: localization.translate('home.quickActionsCards.createEvent'),
-                  subtitle: localization.translate('home.quickActionsCards.createEventSubtext'),
+                  title: localization.translate(
+                    'home.quickActionsCards.createEvent',
+                  ),
+                  subtitle: localization.translate(
+                    'home.quickActionsCards.createEventSubtext',
+                  ),
                   color: AppColors.accent,
                   onTap: () {
                     AppRoutes.pushNamed(context, AppRoutes.createEvent);
@@ -421,8 +426,12 @@ class _HomeScreenState extends State<HomeScreen>
                 width: 120,
                 child: _buildActionCard(
                   icon: Icons.person_add_outlined,
-                  title: localization.translate('home.quickActionsCards.addFriend'),
-                  subtitle: localization.translate('home.quickActionsCards.addFriendSubtext'),
+                  title: localization.translate(
+                    'home.quickActionsCards.addFriend',
+                  ),
+                  subtitle: localization.translate(
+                    'home.quickActionsCards.addFriendSubtext',
+                  ),
                   color: AppColors.success,
                   onTap: () {
                     AppRoutes.pushNamed(context, AppRoutes.friends);
@@ -450,10 +459,7 @@ class _HomeScreenState extends State<HomeScreen>
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withOpacity(0.2),
-            width: 1,
-          ),
+          border: Border.all(color: color.withOpacity(0.2), width: 1),
         ),
         child: Column(
           children: [
@@ -464,18 +470,12 @@ class _HomeScreenState extends State<HomeScreen>
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 24,
-              ),
+              child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(height: 12),
             Text(
               title,
-              style: AppStyles.bodyMedium.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -512,7 +512,7 @@ class _HomeScreenState extends State<HomeScreen>
                 AppRoutes.pushNamed(context, AppRoutes.events);
               },
               child: Text(
-              localization.translate('home.viewAll'),
+                localization.translate('home.viewAll'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
@@ -546,7 +546,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildEventCard(UpcomingEvent event) {
     final daysUntil = event.date.difference(DateTime.now()).inDays;
-    
+
     return GestureDetector(
       onTap: () => _openEventDetails(event),
       child: Material(
@@ -616,21 +616,26 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: daysUntil <= 3 
+                    color: daysUntil <= 3
                         ? AppColors.warning.withOpacity(0.1)
                         : AppColors.info.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    daysUntil == 0 
+                    daysUntil == 0
                         ? 'Today'
-                        : daysUntil == 1 
-                            ? 'Tomorrow'
-                            : 'In $daysUntil days',
+                        : daysUntil == 1
+                        ? 'Tomorrow'
+                        : 'In $daysUntil days',
                     style: AppStyles.caption.copyWith(
-                      color: daysUntil <= 3 ? AppColors.warning : AppColors.info,
+                      color: daysUntil <= 3
+                          ? AppColors.warning
+                          : AppColors.info,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -663,7 +668,7 @@ class _HomeScreenState extends State<HomeScreen>
                 AppRoutes.pushNamed(context, AppRoutes.friends);
               },
               child: Text(
-              localization.translate('home.viewAll'),
+                localization.translate('home.viewAll'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
@@ -746,10 +751,7 @@ class _HomeScreenState extends State<HomeScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Gift Suggestions',
-          style: AppStyles.headingSmall,
-        ),
+        Text('Gift Suggestions', style: AppStyles.headingSmall),
         const SizedBox(height: 16),
         if (_giftSuggestions.isEmpty)
           _buildEmptyState(
@@ -774,10 +776,7 @@ class _HomeScreenState extends State<HomeScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.success.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.success.withOpacity(0.2), width: 1),
       ),
       child: Row(
         children: [
@@ -836,11 +835,7 @@ class _HomeScreenState extends State<HomeScreen>
       padding: const EdgeInsets.all(32),
       child: Column(
         children: [
-          Icon(
-            icon,
-            size: 48,
-            color: AppColors.textTertiary,
-          ),
+          Icon(icon, size: 48, color: AppColors.textTertiary),
           const SizedBox(height: 16),
           Text(
             title,
@@ -852,9 +847,7 @@ class _HomeScreenState extends State<HomeScreen>
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textTertiary,
-            ),
+            style: AppStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
             textAlign: TextAlign.center,
           ),
         ],
@@ -865,7 +858,7 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _refreshData() async {
     // Simulate refresh
     await Future.delayed(const Duration(seconds: 1));
-    
+
     // Refresh your data here
     setState(() {
       // Update data

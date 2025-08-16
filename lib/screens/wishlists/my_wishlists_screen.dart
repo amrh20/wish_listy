@@ -4,11 +4,12 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
 import '../../widgets/animated_background.dart';
 import '../../services/localization_service.dart';
 
 class MyWishlistsScreen extends StatefulWidget {
+  const MyWishlistsScreen({super.key});
+
   @override
   _MyWishlistsScreenState createState() => _MyWishlistsScreenState();
 }
@@ -69,13 +70,9 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   void _startAnimations() {
@@ -94,6 +91,13 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.addItem);
+            },
+            backgroundColor: AppColors.accent,
+            child: Icon(Icons.add, color: Colors.white, size: 28),
+          ),
           body: Stack(
             children: [
               // Animated Background
@@ -104,7 +108,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                   AppColors.primary.withOpacity(0.01),
                 ],
               ),
-              
+
               // Content
               NestedScrollView(
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -159,10 +163,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
           onPressed: () {
             _showSearchBottomSheet();
           },
-          icon: Icon(
-            Icons.search_rounded,
-            color: AppColors.textPrimary,
-          ),
+          icon: Icon(Icons.search_rounded, color: AppColors.textPrimary),
           style: IconButton.styleFrom(
             backgroundColor: AppColors.surface,
             padding: const EdgeInsets.all(12),
@@ -172,10 +173,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
         // Menu Button
         PopupMenuButton<String>(
           onSelected: _handleMenuAction,
-          icon: Icon(
-            Icons.more_vert_rounded,
-            color: AppColors.textPrimary,
-          ),
+          icon: Icon(Icons.more_vert_rounded, color: AppColors.textPrimary),
           style: IconButton.styleFrom(
             backgroundColor: AppColors.surface,
             padding: const EdgeInsets.all(12),
@@ -248,11 +246,11 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
               _buildWishlistCard(_publicWishlists.first, isPublic: true),
               const SizedBox(height: 24),
             ],
-            
+
             // Quick Stats
             _buildQuickStats(),
             const SizedBox(height: 24),
-            
+
             // Recent Items
             _buildRecentItems(),
             const SizedBox(height: 100), // Bottom padding for FAB
@@ -284,8 +282,8 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   Widget _buildWishlistCard(WishlistSummary wishlist, {bool isPublic = false}) {
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
-        final progress = wishlist.itemCount > 0 
-            ? wishlist.purchasedCount / wishlist.itemCount 
+        final progress = wishlist.itemCount > 0
+            ? wishlist.purchasedCount / wishlist.itemCount
             : 0.0;
 
         return Container(
@@ -312,8 +310,14 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: isPublic
-                        ? [AppColors.secondary.withOpacity(0.1), AppColors.primary.withOpacity(0.1)]
-                        : [AppColors.accent.withOpacity(0.1), AppColors.secondary.withOpacity(0.1)],
+                        ? [
+                            AppColors.secondary.withOpacity(0.1),
+                            AppColors.primary.withOpacity(0.1),
+                          ]
+                        : [
+                            AppColors.accent.withOpacity(0.1),
+                            AppColors.secondary.withOpacity(0.1),
+                          ],
                   ),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(16),
@@ -326,11 +330,15 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: isPublic ? AppColors.secondary : AppColors.accent,
+                        color: isPublic
+                            ? AppColors.secondary
+                            : AppColors.accent,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        isPublic ? Icons.favorite_rounded : Icons.celebration_rounded,
+                        isPublic
+                            ? Icons.favorite_rounded
+                            : Icons.celebration_rounded,
                         color: Colors.white,
                         size: 24,
                       ),
@@ -349,7 +357,10 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                           const SizedBox(height: 4),
                           if (wishlist.eventDate != null)
                             Text(
-                              _formatEventDate(wishlist.eventDate!, localization),
+                              _formatEventDate(
+                                wishlist.eventDate!,
+                                localization,
+                              ),
                               style: AppStyles.bodySmall.copyWith(
                                 color: AppColors.textSecondary,
                               ),
@@ -365,7 +376,8 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                       ),
                     ),
                     PopupMenuButton<String>(
-                      onSelected: (value) => _handleWishlistAction(value, wishlist),
+                      onSelected: (value) =>
+                          _handleWishlistAction(value, wishlist),
                       icon: Icon(
                         Icons.more_vert_rounded,
                         color: AppColors.textSecondary,
@@ -399,9 +411,16 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                             value: 'delete',
                             child: Row(
                               children: [
-                                Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                                Icon(
+                                  Icons.delete_outline,
+                                  size: 18,
+                                  color: AppColors.error,
+                                ),
                                 SizedBox(width: 8),
-                                Text(localization.translate('common.delete'), style: TextStyle(color: AppColors.error)),
+                                Text(
+                                  localization.translate('common.delete'),
+                                  style: TextStyle(color: AppColors.error),
+                                ),
                               ],
                             ),
                           ),
@@ -410,7 +429,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                   ],
                 ),
               ),
-              
+
               // Stats
               Padding(
                 padding: const EdgeInsets.all(20),
@@ -451,16 +470,18 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Stats Row
                     Row(
                       children: [
                         Expanded(
                           child: _buildStatItem(
                             icon: Icons.inventory_2_outlined,
-                            label: localization.translate('wishlists.totalItems'),
+                            label: localization.translate(
+                              'wishlists.totalItems',
+                            ),
                             value: '${wishlist.itemCount}',
                             color: AppColors.primary,
                           ),
@@ -468,7 +489,9 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                         Expanded(
                           child: _buildStatItem(
                             icon: Icons.check_circle_outline,
-                            label: localization.translate('wishlists.purchasedItems'),
+                            label: localization.translate(
+                              'wishlists.purchasedItems',
+                            ),
                             value: '${wishlist.purchasedCount}',
                             color: AppColors.success,
                           ),
@@ -476,16 +499,18 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                         Expanded(
                           child: _buildStatItem(
                             icon: Icons.attach_money_outlined,
-                            label: localization.translate('wishlists.totalValue'),
+                            label: localization.translate(
+                              'wishlists.totalValue',
+                            ),
                             value: '\$${wishlist.totalValue.toInt()}',
                             color: AppColors.warning,
                           ),
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Action Buttons
                     Row(
                       children: [
@@ -494,7 +519,9 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                             text: localization.translate('wishlists.viewItems'),
                             onPressed: () => _viewWishlistItems(wishlist),
                             variant: ButtonVariant.outline,
-                            customColor: isPublic ? AppColors.secondary : AppColors.accent,
+                            customColor: isPublic
+                                ? AppColors.secondary
+                                : AppColors.accent,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -503,7 +530,9 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                             text: localization.translate('wishlists.addItem'),
                             onPressed: () => _addItemToWishlist(wishlist),
                             variant: ButtonVariant.primary,
-                            customColor: isPublic ? AppColors.secondary : AppColors.accent,
+                            customColor: isPublic
+                                ? AppColors.secondary
+                                : AppColors.accent,
                           ),
                         ),
                       ],
@@ -526,11 +555,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   }) {
     return Column(
       children: [
-        Icon(
-          icon,
-          color: color,
-          size: 20,
-        ),
+        Icon(icon, color: color, size: 20),
         const SizedBox(height: 8),
         Text(
           value,
@@ -542,9 +567,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
         const SizedBox(height: 4),
         Text(
           label,
-          style: AppStyles.caption.copyWith(
-            color: AppColors.textTertiary,
-          ),
+          style: AppStyles.caption.copyWith(color: AppColors.textTertiary),
           textAlign: TextAlign.center,
         ),
       ],
@@ -573,7 +596,8 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                   Expanded(
                     child: _buildQuickStatItem(
                       title: localization.translate('wishlists.totalWishlists'),
-                      value: '${_publicWishlists.length + _eventWishlists.length}',
+                      value:
+                          '${_publicWishlists.length + _eventWishlists.length}',
                       color: AppColors.primary,
                     ),
                   ),
@@ -617,9 +641,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
         const SizedBox(height: 4),
         Text(
           title,
-          style: AppStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
           textAlign: TextAlign.center,
         ),
       ],
@@ -661,11 +683,23 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
               ),
               const SizedBox(height: 16),
               // Mock recent items
-              _buildRecentItemCard('iPhone 15 Pro', '\$999', Icons.phone_android),
+              _buildRecentItemCard(
+                'iPhone 15 Pro',
+                '\$999',
+                Icons.phone_android,
+              ),
               const SizedBox(height: 12),
-              _buildRecentItemCard('Nike Air Jordan Sneakers', '\$180', Icons.sports_soccer),
+              _buildRecentItemCard(
+                'Nike Air Jordan Sneakers',
+                '\$180',
+                Icons.sports_soccer,
+              ),
               const SizedBox(height: 12),
-              _buildRecentItemCard('MacBook Air M2', '\$1,199', Icons.laptop_mac),
+              _buildRecentItemCard(
+                'MacBook Air M2',
+                '\$1,199',
+                Icons.laptop_mac,
+              ),
             ],
           ),
         );
@@ -689,11 +723,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
               color: AppColors.secondary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: AppColors.secondary,
-              size: 20,
-            ),
+            child: Icon(icon, color: AppColors.secondary, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -777,7 +807,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   String _formatEventDate(DateTime date, LocalizationService localization) {
     final now = DateTime.now();
     final difference = date.difference(now).inDays;
-    
+
     if (difference < 0) {
       return localization.translate('wishlists.eventPassed');
     } else if (difference == 0) {
@@ -785,28 +815,37 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
     } else if (difference == 1) {
       return localization.translate('wishlists.tomorrow');
     } else if (difference < 7) {
-      return localization.translate('wishlists.inDays').replaceAll('{days}', '$difference');
+      return localization
+          .translate('wishlists.inDays')
+          .replaceAll('{days}', '$difference');
     } else {
-      return localization.translate('wishlists.inWeeks').replaceAll('{weeks}', '${(difference / 7).ceil()}');
+      return localization
+          .translate('wishlists.inWeeks')
+          .replaceAll('{weeks}', '${(difference / 7).ceil()}');
     }
   }
 
   String _formatLastUpdated(DateTime date, LocalizationService localization) {
     final now = DateTime.now();
     final difference = now.difference(date).inDays;
-    
+
     if (difference == 0) {
       return localization.translate('common.today');
     } else if (difference == 1) {
       return localization.translate('common.yesterday');
     } else {
-      return localization.translate('wishlists.daysAgo').replaceAll('{days}', '$difference');
+      return localization
+          .translate('wishlists.daysAgo')
+          .replaceAll('{days}', '$difference');
     }
   }
 
   int _getTotalItems() {
-    return _publicWishlists.fold(0, (sum, wishlist) => sum + wishlist.itemCount) +
-           _eventWishlists.fold(0, (sum, wishlist) => sum + wishlist.itemCount);
+    return _publicWishlists.fold(
+          0,
+          (sum, wishlist) => sum + wishlist.itemCount,
+        ) +
+        _eventWishlists.fold(0, (sum, wishlist) => sum + wishlist.itemCount);
   }
 
   // Action Handlers
@@ -850,9 +889,11 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   void _addItemToWishlist(WishlistSummary wishlist) {
-    AppRoutes.pushNamed(context, AppRoutes.addItem, arguments: {
-      'wishlistId': wishlist.id,
-    });
+    AppRoutes.pushNamed(
+      context,
+      AppRoutes.addItem,
+      arguments: {'wishlistId': wishlist.id},
+    );
   }
 
   void _exportWishlists() {
@@ -906,10 +947,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Container(
-      color: AppColors.background,
-      child: _tabBar,
-    );
+    return Container(color: AppColors.background, child: _tabBar);
   }
 
   @override

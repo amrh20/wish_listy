@@ -1,14 +1,9 @@
-
-
-
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../constants/app_colors.dart';
-import '../constants/app_styles.dart';
 import 'app_constants.dart';
-import 'app_theme.dart';
 
 class AppUtils {
   // Validation Utilities
@@ -18,8 +13,8 @@ class AppUtils {
 
   static bool isValidPassword(String password) {
     return password.length >= AppConstants.minPasswordLength &&
-           password.length <= AppConstants.maxPasswordLength &&
-           RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)').hasMatch(password);
+        password.length <= AppConstants.maxPasswordLength &&
+        RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)').hasMatch(password);
   }
 
   static bool isValidUrl(String url) {
@@ -36,9 +31,13 @@ class AppUtils {
     return text[0].toUpperCase() + text.substring(1).toLowerCase();
   }
 
-  static String truncateText(String text, int maxLength, {bool addEllipsis = true}) {
+  static String truncateText(
+    String text,
+    int maxLength, {
+    bool addEllipsis = true,
+  }) {
     if (text.length <= maxLength) return text;
-    return addEllipsis 
+    return addEllipsis
         ? '${text.substring(0, maxLength)}...'
         : text.substring(0, maxLength);
   }
@@ -46,7 +45,7 @@ class AppUtils {
   static String generateInitials(String name) {
     List<String> names = name.trim().split(' ');
     if (names.isEmpty) return '';
-    
+
     String initials = '';
     for (int i = 0; i < min(2, names.length); i++) {
       if (names[i].isNotEmpty) {
@@ -85,10 +84,23 @@ class AppUtils {
     }
   }
 
-  static String formatDate(DateTime dateTime, {String format = AppConstants.longDateFormat}) {
+  static String formatDate(
+    DateTime dateTime, {
+    String format = AppConstants.longDateFormat,
+  }) {
     final months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
 
     switch (format) {
@@ -112,8 +124,8 @@ class AppUtils {
   static bool isToday(DateTime dateTime) {
     final now = DateTime.now();
     return dateTime.year == now.year &&
-           dateTime.month == now.month &&
-           dateTime.day == now.day;
+        dateTime.month == now.month &&
+        dateTime.day == now.day;
   }
 
   static bool isThisWeek(DateTime dateTime) {
@@ -139,7 +151,9 @@ class AppUtils {
   static Color lightenColor(Color color, [double amount = 0.1]) {
     assert(amount >= 0 && amount <= 1);
     final hsl = HSLColor.fromColor(color);
-    final hslLight = hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0));
+    final hslLight = hsl.withLightness(
+      (hsl.lightness + amount).clamp(0.0, 1.0),
+    );
     return hslLight.toColor();
   }
 
@@ -156,7 +170,9 @@ class AppUtils {
     FocusManager.instance.primaryFocus?.unfocus();
   }
 
-  static void hapticFeedback([HapticFeedbackType type = HapticFeedbackType.lightImpact]) {
+  static void hapticFeedback([
+    HapticFeedbackType type = HapticFeedbackType.lightImpact,
+  ]) {
     switch (type) {
       case HapticFeedbackType.lightImpact:
         HapticFeedback.lightImpact();
@@ -191,9 +207,7 @@ class AppUtils {
         backgroundColor: backgroundColor ?? AppColors.primary,
         duration: duration,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         action: action,
       ),
     );
@@ -224,9 +238,7 @@ class AppUtils {
       builder: (context) => AlertDialog(
         title: Text(title),
         content: Text(message),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -258,16 +270,21 @@ class AppUtils {
   static String formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    if (bytes < 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
   // Random Utilities
   static String generateRandomId([int length = 8]) {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars =
+        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     final random = Random();
     return String.fromCharCodes(
-      Iterable.generate(length, (_) => chars.codeUnitAt(random.nextInt(chars.length)))
+      Iterable.generate(
+        length,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
     );
   }
 
@@ -336,10 +353,7 @@ class AppUtils {
       tween: Tween(begin: 0.0, end: 1.0),
       duration: duration,
       builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: child,
-        );
+        return Opacity(opacity: value, child: child);
       },
       child: child,
     );
@@ -354,10 +368,7 @@ class AppUtils {
       tween: Tween(begin: begin, end: Offset.zero),
       duration: duration,
       builder: (context, value, child) {
-        return Transform.translate(
-          offset: value,
-          child: child,
-        );
+        return Transform.translate(offset: value, child: child);
       },
       child: child,
     );

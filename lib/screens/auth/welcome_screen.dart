@@ -97,7 +97,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       CustomButton(
                         text: localization.translate('welcome.getStarted'),
                         onPressed: () {
-                          Navigator.pushNamed(context, AppRoutes.signup);
+                          // Navigate directly to main app (home screen with tabs)
+                          Navigator.pushNamedAndRemoveUntil(
+                            context, 
+                            AppRoutes.mainNavigation, 
+                            (route) => false
+                          );
                         },
                         variant: ButtonVariant.primary,
                       ),
@@ -107,6 +112,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       CustomButton(
                         text: localization.translate('welcome.alreadyHaveAccount'),
                         onPressed: () {
+                          // Navigate to login screen
                           Navigator.pushNamed(context, AppRoutes.login);
                         },
                         variant: ButtonVariant.outline,

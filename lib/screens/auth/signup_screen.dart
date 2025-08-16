@@ -1,6 +1,3 @@
-
-
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
@@ -12,6 +9,8 @@ import '../../widgets/custom_text_field.dart';
 import '../../widgets/animated_background.dart';
 
 class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
+
   @override
   _SignupScreenState createState() => _SignupScreenState();
 }
@@ -23,16 +22,16 @@ class _SignupScreenState extends State<SignupScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
-  int _currentStep = 0;
+  final int _currentStep = 0;
 
   @override
   void initState() {
@@ -47,21 +46,20 @@ class _SignupScreenState extends State<SignupScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   void _startAnimations() {
@@ -82,7 +80,10 @@ class _SignupScreenState extends State<SignupScreen>
     if (!_formKey.currentState!.validate()) return;
     if (!_agreeToTerms) {
       // Get localization service from context
-      final localization = Provider.of<LocalizationService>(context, listen: false);
+      final localization = Provider.of<LocalizationService>(
+        context,
+        listen: false,
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(localization.translate('auth.agreeToTermsError')),
@@ -178,7 +179,7 @@ class _SignupScreenState extends State<SignupScreen>
                   AppColors.accent.withOpacity(0.03),
                 ],
               ),
-              
+
               // Content
               SafeArea(
                 child: SingleChildScrollView(
@@ -194,7 +195,7 @@ class _SignupScreenState extends State<SignupScreen>
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               const SizedBox(height: 40),
-                              
+
                               // Back Button
                               Align(
                                 alignment: Alignment.centerLeft,
@@ -207,20 +208,22 @@ class _SignupScreenState extends State<SignupScreen>
                                   ),
                                 ),
                               ),
-                              
+
                               const SizedBox(height: 20),
-                              
+
                               // Progress Indicator
                               _buildProgressIndicator(),
-                              
+
                               const SizedBox(height: 40),
-                              
+
                               // Header
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    localization.translate('auth.createAccount'),
+                                    localization.translate(
+                                      'auth.createAccount',
+                                    ),
                                     style: AppStyles.headingLarge.copyWith(
                                       fontSize: 32,
                                     ),
@@ -234,9 +237,9 @@ class _SignupScreenState extends State<SignupScreen>
                                   ),
                                 ],
                               ),
-                              
+
                               const SizedBox(height: 48),
-                              
+
                               // Signup Form
                               Form(
                                 key: _formKey,
@@ -245,57 +248,79 @@ class _SignupScreenState extends State<SignupScreen>
                                     // Name Field
                                     CustomTextField(
                                       controller: _nameController,
-                                      label: localization.translate('auth.fullName'),
-                                      hint: localization.translate('auth.enterFullName'),
+                                      label: localization.translate(
+                                        'auth.fullName',
+                                      ),
+                                      hint: localization.translate(
+                                        'auth.enterFullName',
+                                      ),
                                       prefixIcon: Icons.person_outlined,
                                       isRequired: true,
                                       validator: (value) {
                                         if (value?.isEmpty ?? true) {
-                                          return localization.translate('auth.pleaseEnterFullName');
+                                          return localization.translate(
+                                            'auth.pleaseEnterFullName',
+                                          );
                                         }
                                         if (value!.length < 2) {
-                                          return localization.translate('auth.nameMinLength');
+                                          return localization.translate(
+                                            'auth.nameMinLength',
+                                          );
                                         }
                                         return null;
                                       },
                                     ),
-                                    
+
                                     const SizedBox(height: 20),
-                                    
+
                                     // Email Field
                                     CustomTextField(
                                       controller: _emailController,
-                                      label: localization.translate('auth.email'),
-                                      hint: localization.translate('auth.enterEmail'),
+                                      label: localization.translate(
+                                        'auth.email',
+                                      ),
+                                      hint: localization.translate(
+                                        'auth.enterEmail',
+                                      ),
                                       keyboardType: TextInputType.emailAddress,
                                       prefixIcon: Icons.email_outlined,
                                       isRequired: true,
                                       validator: (value) {
                                         if (value?.isEmpty ?? true) {
-                                          return localization.translate('auth.pleaseEnterEmail');
+                                          return localization.translate(
+                                            'auth.pleaseEnterEmail',
+                                          );
                                         }
-                                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                            .hasMatch(value!)) {
-                                          return localization.translate('auth.pleaseEnterValidEmail');
+                                        if (!RegExp(
+                                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                                        ).hasMatch(value!)) {
+                                          return localization.translate(
+                                            'auth.pleaseEnterValidEmail',
+                                          );
                                         }
                                         return null;
                                       },
                                     ),
-                                    
+
                                     const SizedBox(height: 20),
-                                    
+
                                     // Password Field
                                     CustomTextField(
                                       controller: _passwordController,
-                                      label: localization.translate('auth.password'),
-                                      hint: localization.translate('auth.createPassword'),
+                                      label: localization.translate(
+                                        'auth.password',
+                                      ),
+                                      hint: localization.translate(
+                                        'auth.createPassword',
+                                      ),
                                       obscureText: _obscurePassword,
                                       prefixIcon: Icons.lock_outlined,
                                       isRequired: true,
                                       suffixIcon: IconButton(
                                         onPressed: () {
                                           setState(() {
-                                            _obscurePassword = !_obscurePassword;
+                                            _obscurePassword =
+                                                !_obscurePassword;
                                           });
                                         },
                                         icon: Icon(
@@ -314,21 +339,26 @@ class _SignupScreenState extends State<SignupScreen>
                                         return null;
                                       },
                                     ),
-                                    
+
                                     const SizedBox(height: 20),
-                                    
+
                                     // Confirm Password Field
                                     CustomTextField(
                                       controller: _confirmPasswordController,
-                                      label: localization.translate('auth.confirmPassword'),
-                                      hint: localization.translate('auth.confirmPasswordHint'),
+                                      label: localization.translate(
+                                        'auth.confirmPassword',
+                                      ),
+                                      hint: localization.translate(
+                                        'auth.confirmPasswordHint',
+                                      ),
                                       obscureText: _obscureConfirmPassword,
                                       prefixIcon: Icons.lock_outlined,
                                       isRequired: true,
                                       suffixIcon: IconButton(
                                         onPressed: () {
                                           setState(() {
-                                            _obscureConfirmPassword = !_obscureConfirmPassword;
+                                            _obscureConfirmPassword =
+                                                !_obscureConfirmPassword;
                                           });
                                         },
                                         icon: Icon(
@@ -339,17 +369,21 @@ class _SignupScreenState extends State<SignupScreen>
                                       ),
                                       validator: (value) {
                                         if (value?.isEmpty ?? true) {
-                                          return localization.translate('auth.pleaseConfirmPassword');
+                                          return localization.translate(
+                                            'auth.pleaseConfirmPassword',
+                                          );
                                         }
                                         if (value != _passwordController.text) {
-                                          return localization.translate('auth.passwordsDoNotMatch');
+                                          return localization.translate(
+                                            'auth.passwordsDoNotMatch',
+                                          );
                                         }
                                         return null;
                                       },
                                     ),
-                                    
+
                                     const SizedBox(height: 32),
-                                    
+
                                     // Terms and Conditions
                                     Row(
                                       children: [
@@ -364,46 +398,67 @@ class _SignupScreenState extends State<SignupScreen>
                                         ),
                                         Expanded(
                                           child: Text(
-                                            localization.translate('auth.termsAndConditions'),
-                                            style: AppStyles.bodyMedium.copyWith(
-                                              color: AppColors.textSecondary,
+                                            localization.translate(
+                                              'auth.termsAndConditions',
                                             ),
+                                            style: AppStyles.bodyMedium
+                                                .copyWith(
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                    
+
                                     const SizedBox(height: 32),
-                                    
+
                                     // Signup Button
                                     CustomButton(
-                                      text: _isLoading ? localization.translate('auth.creatingAccount') : localization.translate('auth.signup'),
-                                      onPressed: _isLoading ? null : _handleSignup,
+                                      text: _isLoading
+                                          ? localization.translate(
+                                              'auth.creatingAccount',
+                                            )
+                                          : localization.translate(
+                                              'auth.signup',
+                                            ),
+                                      onPressed: _isLoading
+                                          ? null
+                                          : _handleSignup,
                                       variant: ButtonVariant.primary,
                                     ),
-                                    
+
                                     const SizedBox(height: 24),
-                                    
+
                                     // Login Link
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Text(
-                                          localization.translate('auth.alreadyHaveAccount'),
+                                          localization.translate(
+                                            'auth.alreadyHaveAccount',
+                                          ),
                                           style: AppStyles.bodyMedium.copyWith(
                                             color: AppColors.textSecondary,
                                           ),
                                         ),
                                         GestureDetector(
                                           onTap: () {
-                                            Navigator.pushReplacementNamed(context, AppRoutes.login);
+                                            Navigator.pushReplacementNamed(
+                                              context,
+                                              AppRoutes.login,
+                                            );
                                           },
                                           child: Text(
-                                            localization.translate('auth.login'),
-                                            style: AppStyles.bodyMedium.copyWith(
-                                              color: AppColors.primary,
-                                              fontWeight: FontWeight.w600,
+                                            localization.translate(
+                                              'auth.login',
                                             ),
+                                            style: AppStyles.bodyMedium
+                                                .copyWith(
+                                                  color: AppColors.primary,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                           ),
                                         ),
                                       ],

@@ -1,17 +1,15 @@
-
-
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
 import '../../widgets/animated_background.dart';
 import '../../services/localization_service.dart';
 
 class EventsScreen extends StatefulWidget {
+  const EventsScreen({super.key});
+
   @override
   _EventsScreenState createState() => _EventsScreenState();
 }
@@ -111,13 +109,9 @@ class _EventsScreenState extends State<EventsScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   void _startAnimations() {
@@ -146,7 +140,7 @@ class _EventsScreenState extends State<EventsScreen>
                   AppColors.secondary.withOpacity(0.01),
                 ],
               ),
-              
+
               // Content
               NestedScrollView(
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -224,10 +218,7 @@ class _EventsScreenState extends State<EventsScreen>
         // Filter Button
         IconButton(
           onPressed: _showFilterOptions,
-          icon: Icon(
-            Icons.filter_list_outlined,
-            color: AppColors.textPrimary,
-          ),
+          icon: Icon(Icons.filter_list_outlined, color: AppColors.textPrimary),
           style: IconButton.styleFrom(
             backgroundColor: AppColors.surface,
             padding: const EdgeInsets.all(12),
@@ -259,7 +250,10 @@ class _EventsScreenState extends State<EventsScreen>
                   Text(localization.translate('events.myEvents')),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.accent,
                       borderRadius: BorderRadius.circular(12),
@@ -282,7 +276,10 @@ class _EventsScreenState extends State<EventsScreen>
                   Text(localization.translate('events.invited')),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.secondary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
@@ -324,8 +321,12 @@ class _EventsScreenState extends State<EventsScreen>
   }
 
   Widget _buildInvitedEventsTab(LocalizationService localization) {
-    final upcomingEvents = _invitedEvents.where((e) => e.status == EventStatus.upcoming).toList();
-    final pastEvents = _invitedEvents.where((e) => e.status == EventStatus.completed).toList();
+    final upcomingEvents = _invitedEvents
+        .where((e) => e.status == EventStatus.upcoming)
+        .toList();
+    final pastEvents = _invitedEvents
+        .where((e) => e.status == EventStatus.completed)
+        .toList();
 
     return RefreshIndicator(
       onRefresh: _refreshEvents,
@@ -339,20 +340,24 @@ class _EventsScreenState extends State<EventsScreen>
                 children: [
                   // Upcoming Events
                   if (upcomingEvents.isNotEmpty) ...[
-                    _buildSectionHeader(localization.translate('events.upcomingEvents')),
+                    _buildSectionHeader(
+                      localization.translate('events.upcomingEvents'),
+                    ),
                     const SizedBox(height: 12),
                     ...upcomingEvents.map((event) => _buildEventCard(event)),
                     const SizedBox(height: 24),
                   ],
-                  
+
                   // Past Events
                   if (pastEvents.isNotEmpty) ...[
-                    _buildSectionHeader(localization.translate('events.pastEvents')),
+                    _buildSectionHeader(
+                      localization.translate('events.pastEvents'),
+                    ),
                     const SizedBox(height: 12),
                     ...pastEvents.map((event) => _buildEventCard(event)),
                     const SizedBox(height: 24),
                   ],
-                  
+
                   const SizedBox(height: 100), // Bottom padding
                 ],
               ),
@@ -376,15 +381,17 @@ class _EventsScreenState extends State<EventsScreen>
   Widget _buildEventCard(EventSummary event) {
     final isPast = event.status == EventStatus.completed;
     final daysUntil = event.date.difference(DateTime.now()).inDays;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: isPast 
+        border: isPast
             ? Border.all(color: AppColors.textTertiary.withOpacity(0.3))
-            : Border.all(color: _getEventTypeColor(event.type).withOpacity(0.3)),
+            : Border.all(
+                color: _getEventTypeColor(event.type).withOpacity(0.3),
+              ),
         boxShadow: [
           BoxShadow(
             color: AppColors.textTertiary.withOpacity(0.1),
@@ -430,8 +437,8 @@ class _EventsScreenState extends State<EventsScreen>
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: isPast 
-                            ? AppColors.textTertiary 
+                        color: isPast
+                            ? AppColors.textTertiary
                             : _getEventTypeColor(event.type),
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -441,9 +448,9 @@ class _EventsScreenState extends State<EventsScreen>
                         size: 28,
                       ),
                     ),
-                    
+
                     const SizedBox(width: 16),
-                    
+
                     // Event Info
                     Expanded(
                       child: Column(
@@ -453,7 +460,9 @@ class _EventsScreenState extends State<EventsScreen>
                             event.name,
                             style: AppStyles.headingSmall.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: isPast ? AppColors.textSecondary : AppColors.textPrimary,
+                              color: isPast
+                                  ? AppColors.textSecondary
+                                  : AppColors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -486,16 +495,19 @@ class _EventsScreenState extends State<EventsScreen>
                         ],
                       ),
                     ),
-                    
+
                     // Date Badge
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: isPast
                             ? AppColors.textTertiary.withOpacity(0.1)
                             : daysUntil <= 7
-                                ? AppColors.warning.withOpacity(0.1)
-                                : AppColors.info.withOpacity(0.1),
+                            ? AppColors.warning.withOpacity(0.1)
+                            : AppColors.info.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -506,8 +518,8 @@ class _EventsScreenState extends State<EventsScreen>
                               color: isPast
                                   ? AppColors.textTertiary
                                   : daysUntil <= 7
-                                      ? AppColors.warning
-                                      : AppColors.info,
+                                  ? AppColors.warning
+                                  : AppColors.info,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -517,8 +529,8 @@ class _EventsScreenState extends State<EventsScreen>
                               color: isPast
                                   ? AppColors.textTertiary
                                   : daysUntil <= 7
-                                      ? AppColors.warning
-                                      : AppColors.info,
+                                  ? AppColors.warning
+                                  : AppColors.info,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -528,7 +540,7 @@ class _EventsScreenState extends State<EventsScreen>
                   ],
                 ),
               ),
-              
+
               // Content
               Padding(
                 padding: const EdgeInsets.all(20),
@@ -546,9 +558,9 @@ class _EventsScreenState extends State<EventsScreen>
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Stats Row
                     Row(
                       children: [
@@ -574,9 +586,9 @@ class _EventsScreenState extends State<EventsScreen>
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Action Buttons
                     if (!isPast) ...[
                       Row(
@@ -647,11 +659,7 @@ class _EventsScreenState extends State<EventsScreen>
   }) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: color,
-        ),
+        Icon(icon, size: 16, color: color),
         const SizedBox(width: 4),
         Text(
           value,
@@ -663,9 +671,7 @@ class _EventsScreenState extends State<EventsScreen>
         const SizedBox(width: 4),
         Text(
           label,
-          style: AppStyles.caption.copyWith(
-            color: AppColors.textTertiary,
-          ),
+          style: AppStyles.caption.copyWith(color: AppColors.textTertiary),
         ),
       ],
     );
@@ -762,8 +768,12 @@ class _EventsScreenState extends State<EventsScreen>
 
   // Helper Methods
   int _getUpcomingEventsCount() {
-    final myUpcoming = _myEvents.where((e) => e.status == EventStatus.upcoming).length;
-    final invitedUpcoming = _invitedEvents.where((e) => e.status == EventStatus.upcoming).length;
+    final myUpcoming = _myEvents
+        .where((e) => e.status == EventStatus.upcoming)
+        .length;
+    final invitedUpcoming = _invitedEvents
+        .where((e) => e.status == EventStatus.upcoming)
+        .length;
     return myUpcoming + invitedUpcoming;
   }
 
@@ -810,8 +820,20 @@ class _EventsScreenState extends State<EventsScreen>
   }
 
   String _getMonthName(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return months[month - 1];
   }
 
@@ -826,20 +848,12 @@ class _EventsScreenState extends State<EventsScreen>
 
   void _viewEventWishlist(EventSummary event) {
     // Navigate to event wishlist screen
-    Navigator.pushNamed(
-      context,
-      AppRoutes.eventWishlist,
-      arguments: event,
-    );
+    Navigator.pushNamed(context, AppRoutes.eventWishlist, arguments: event);
   }
 
   void _manageEvent(EventSummary event) {
     // Navigate to event management screen
-    Navigator.pushNamed(
-      context,
-      AppRoutes.eventManagement,
-      arguments: event,
-    );
+    Navigator.pushNamed(context, AppRoutes.eventManagement, arguments: event);
   }
 
   void _showCalendarView() {
@@ -848,11 +862,9 @@ class _EventsScreenState extends State<EventsScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Calendar View'),
-        content: Container(
+        content: SizedBox(
           height: 300,
-          child: Center(
-            child: Text('Calendar view coming soon!'),
-          ),
+          child: Center(child: Text('Calendar view coming soon!')),
         ),
         actions: [
           TextButton(
@@ -876,10 +888,7 @@ class _EventsScreenState extends State<EventsScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Filter Events',
-              style: AppStyles.headingSmall,
-            ),
+            Text('Filter Events', style: AppStyles.headingSmall),
             const SizedBox(height: 24),
             // Filter options would go here
             Text('Filter options coming soon!'),
@@ -916,10 +925,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Container(
-      color: AppColors.background,
-      child: _tabBar,
-    );
+    return Container(color: AppColors.background, child: _tabBar);
   }
 
   @override
@@ -973,9 +979,4 @@ enum EventType {
   other,
 }
 
-enum EventStatus {
-  upcoming,
-  ongoing,
-  completed,
-  cancelled,
-}
+enum EventStatus { upcoming, ongoing, completed, cancelled }

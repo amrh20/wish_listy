@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
-import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/animated_background.dart';
 import 'events_screen.dart';
@@ -9,10 +8,7 @@ import 'events_screen.dart';
 class EventSettingsScreen extends StatefulWidget {
   final EventSummary event;
 
-  const EventSettingsScreen({
-    super.key,
-    required this.event,
-  });
+  const EventSettingsScreen({super.key, required this.event});
 
   @override
   _EventSettingsScreenState createState() => _EventSettingsScreenState();
@@ -50,21 +46,20 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   void _startAnimations() {
@@ -90,14 +85,14 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               AppColors.primary.withOpacity(0.02),
             ],
           ),
-          
+
           // Content
           SafeArea(
             child: Column(
               children: [
                 // Header
                 _buildHeader(),
-                
+
                 // Content
                 Expanded(
                   child: AnimatedBuilder(
@@ -114,27 +109,27 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
                               children: [
                                 // Privacy Settings
                                 _buildPrivacySettings(),
-                                
+
                                 const SizedBox(height: 24),
-                                
+
                                 // Notification Settings
                                 _buildNotificationSettings(),
-                                
+
                                 const SizedBox(height: 24),
-                                
+
                                 // Reminder Settings
                                 _buildReminderSettings(),
-                                
+
                                 const SizedBox(height: 24),
-                                
+
                                 // Regional Settings
                                 _buildRegionalSettings(),
-                                
+
                                 const SizedBox(height: 32),
-                                
+
                                 // Action Buttons
                                 _buildActionButtons(),
-                                
+
                                 const SizedBox(height: 100), // Bottom padding
                               ],
                             ),
@@ -215,10 +210,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.borderLight, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,9 +231,9 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Public/Private Toggle
           _buildSettingRow(
             icon: Icons.public,
@@ -257,9 +249,9 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               activeColor: AppColors.secondary,
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Allow Guests to Invite
           _buildSettingRow(
             icon: Icons.person_add_outlined,
@@ -275,9 +267,9 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               activeColor: AppColors.secondary,
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Show Guest List
           _buildSettingRow(
             icon: Icons.people_outline,
@@ -293,9 +285,9 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               activeColor: AppColors.secondary,
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Allow Comments
           _buildSettingRow(
             icon: Icons.chat_bubble_outline,
@@ -322,10 +314,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.borderLight, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -346,9 +335,9 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Notify on RSVP
           _buildSettingRow(
             icon: Icons.check_circle_outline,
@@ -364,9 +353,9 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               activeColor: AppColors.secondary,
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Notify on Wishlist Update
           _buildSettingRow(
             icon: Icons.card_giftcard_outlined,
@@ -382,9 +371,9 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               activeColor: AppColors.secondary,
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Notify on Event Update
           _buildSettingRow(
             icon: Icons.event_outlined,
@@ -411,21 +400,14 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.borderLight, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.schedule_outlined,
-                color: AppColors.warning,
-                size: 20,
-              ),
+              Icon(Icons.schedule_outlined, color: AppColors.warning, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Reminder Settings',
@@ -435,9 +417,9 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Enable Reminders
           _buildSettingRow(
             icon: Icons.alarm_outlined,
@@ -453,15 +435,16 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               activeColor: AppColors.secondary,
             ),
           ),
-          
+
           if (_reminderEnabled) ...[
             const SizedBox(height: 16),
-            
+
             // Reminder Days
             _buildSettingRow(
               icon: Icons.calendar_today_outlined,
               title: 'Reminder Timing',
-              subtitle: 'Send reminder ${_reminderDays} day${_reminderDays == 1 ? '' : 's'} before',
+              subtitle:
+                  'Send reminder $_reminderDays day${_reminderDays == 1 ? '' : 's'} before',
               trailing: DropdownButton<int>(
                 value: _reminderDays,
                 onChanged: (value) {
@@ -492,21 +475,14 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.borderLight, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.language_outlined,
-                color: AppColors.accent,
-                size: 20,
-              ),
+              Icon(Icons.language_outlined, color: AppColors.accent, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Regional Settings',
@@ -516,9 +492,9 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Timezone
           _buildSettingRow(
             icon: Icons.access_time_outlined,
@@ -534,17 +510,14 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
                 }
               },
               items: ['UTC', 'EST', 'PST', 'GMT', 'CET'].map((tz) {
-                return DropdownMenuItem<String>(
-                  value: tz,
-                  child: Text(tz),
-                );
+                return DropdownMenuItem<String>(value: tz, child: Text(tz));
               }).toList(),
               underline: Container(),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Language
           _buildSettingRow(
             icon: Icons.translate_outlined,
@@ -559,11 +532,10 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
                   });
                 }
               },
-              items: ['English', 'Spanish', 'French', 'Arabic', 'Chinese'].map((lang) {
-                return DropdownMenuItem<String>(
-                  value: lang,
-                  child: Text(lang),
-                );
+              items: ['English', 'Spanish', 'French', 'Arabic', 'Chinese'].map((
+                lang,
+              ) {
+                return DropdownMenuItem<String>(value: lang, child: Text(lang));
               }).toList(),
               underline: Container(),
             ),
@@ -588,15 +560,11 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
             color: AppColors.surfaceVariant,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(
-            icon,
-            color: AppColors.textTertiary,
-            size: 20,
-          ),
+          child: Icon(icon, color: AppColors.textTertiary, size: 20),
         ),
-        
+
         const SizedBox(width: 16),
-        
+
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -617,7 +585,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
             ],
           ),
         ),
-        
+
         trailing,
       ],
     );
@@ -634,9 +602,9 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
           customColor: AppColors.secondary,
           icon: Icons.save_outlined,
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Reset to Default Button
         CustomButton(
           text: 'Reset to Default',
@@ -645,9 +613,9 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
           customColor: AppColors.textTertiary,
           icon: Icons.restore_outlined,
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Export Settings Button
         CustomButton(
           text: 'Export Settings',
@@ -676,7 +644,9 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Reset Settings'),
-        content: Text('Are you sure you want to reset all settings to default? This action cannot be undone.'),
+        content: Text(
+          'Are you sure you want to reset all settings to default? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -693,9 +663,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
                 ),
               );
             },
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.warning,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppColors.warning),
             child: Text('Reset'),
           ),
         ],

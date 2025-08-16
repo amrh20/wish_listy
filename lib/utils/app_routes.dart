@@ -1,6 +1,3 @@
-
-
-
 import 'package:flutter/material.dart';
 import '../screens/splash_screen.dart';
 import '../screens/auth/welcome_screen.dart';
@@ -21,12 +18,13 @@ import '../screens/events/event_wishlist_screen.dart';
 import '../screens/friends/friends_screen.dart';
 import '../screens/friends/friend_profile_screen.dart';
 import '../screens/profile/profile_screen.dart';
+import '../screens/profile/personal_information_screen.dart';
+import '../screens/profile/privacy_security_screen.dart';
+import '../screens/profile/blocked_users_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../screens/events/guest_management_screen.dart';
 import '../screens/events/event_settings_screen.dart';
 import '../screens/wishlists/wishlist_item_details_screen.dart';
-import '../models/event.dart';
-import '../models/event_model.dart';
 import '../models/wishlist_model.dart';
 
 class AppRoutes {
@@ -54,6 +52,9 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String guestManagement = '/guest-management';
   static const String eventSettings = '/event-settings';
+  static const String personalInformation = '/personal-information';
+  static const String privacySecurity = '/privacy-security';
+  static const String blockedUsers = '/blocked-users';
 
   // Routes Map
   static Map<String, WidgetBuilder> routes = {
@@ -98,11 +99,11 @@ class AppRoutes {
             name: args['title'] ?? args['name'] ?? '',
             description: args['description'],
             imageUrl: args['imageUrl'],
-                          priority: ItemPriority.values.firstWhere(
-                (e) => e.toString().split('.').last == args['priority'],
-                orElse: () => ItemPriority.medium,
-              ),
-              status: ItemStatus.desired,
+            priority: ItemPriority.values.firstWhere(
+              (e) => e.toString().split('.').last == args['priority'],
+              orElse: () => ItemPriority.medium,
+            ),
+            status: ItemStatus.desired,
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           ),
@@ -133,37 +134,64 @@ class AppRoutes {
       return MaterialPageRoute(
         builder: (context) => EventSettingsScreen(event: args),
       );
+    } else if (settings.name == personalInformation) {
+      final args = settings.arguments as Map<String, dynamic>;
+      return MaterialPageRoute(
+        builder: (context) => PersonalInformationScreen(userData: args),
+      );
+    } else if (settings.name == privacySecurity) {
+      final args = settings.arguments as Map<String, dynamic>;
+      return MaterialPageRoute(
+        builder: (context) => PrivacySecurityScreen(privacySettings: args),
+      );
+    } else if (settings.name == blockedUsers) {
+      final args = settings.arguments as List<Map<String, dynamic>>;
+      return MaterialPageRoute(
+        builder: (context) => BlockedUsersScreen(blockedUsers: args),
+      );
     } else if (settings.name == friendProfile) {
       final args = settings.arguments as Map<String, dynamic>;
       return MaterialPageRoute(
-        builder: (context) => FriendProfileScreen(
-          friendId: args['friendId'] ?? '',
-        ),
+        builder: (context) =>
+            FriendProfileScreen(friendId: args['friendId'] ?? ''),
       );
     } else if (settings.name == eventDetails) {
       final args = settings.arguments as Map<String, dynamic>;
       return MaterialPageRoute(
-        builder: (context) => EventDetailsScreen(eventId: args['eventId'] ?? ''),
+        builder: (context) =>
+            EventDetailsScreen(eventId: args['eventId'] ?? ''),
       );
     }
-    
+
     return null;
   }
 
   // Navigation Helpers
-  static void pushNamed(BuildContext context, String routeName, {Object? arguments}) {
+  static void pushNamed(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) {
     Navigator.pushNamed(context, routeName, arguments: arguments);
   }
 
-  static void pushReplacementNamed(BuildContext context, String routeName, {Object? arguments}) {
+  static void pushReplacementNamed(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) {
     Navigator.pushReplacementNamed(context, routeName, arguments: arguments);
   }
 
-  static void pushNamedAndRemoveUntil(BuildContext context, String routeName, {Object? arguments}) {
+  static void pushNamedAndRemoveUntil(
+    BuildContext context,
+    String routeName, {
+    Object? arguments,
+  }) {
     Navigator.pushNamedAndRemoveUntil(
-      context, 
-      routeName, 
-      (route) => false, 
+      context,
+      routeName,
+      (route) => false,
       arguments: arguments,
     );
   }
@@ -174,7 +202,7 @@ class AppRoutes {
 
   // Custom page transitions
   static Route<T> slideTransition<T extends Object?>(
-    Widget page, 
+    Widget page,
     RouteSettings settings, {
     Offset begin = const Offset(1.0, 0.0),
   }) {
@@ -185,45 +213,48 @@ class AppRoutes {
         const end = Offset.zero;
         const curve = Curves.easeInOutCubic;
 
-        var tween = Tween(begin: begin, end: end).chain(
-          CurveTween(curve: curve),
-        );
+        var tween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
 
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
+        return SlideTransition(position: animation.drive(tween), child: child);
       },
       transitionDuration: const Duration(milliseconds: 300),
     );
   }
 
-  static Route<T> fadeTransition<T extends Object?>(Widget page, RouteSettings settings) {
+  static Route<T> fadeTransition<T extends Object?>(
+    Widget page,
+    RouteSettings settings,
+  ) {
     return PageRouteBuilder<T>(
       settings: settings,
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        return FadeTransition(
-          opacity: animation,
-          child: child,
-        );
+        return FadeTransition(opacity: animation, child: child);
       },
       transitionDuration: const Duration(milliseconds: 300),
     );
   }
 
-  static Route<T> scaleTransition<T extends Object?>(Widget page, RouteSettings settings) {
+  static Route<T> scaleTransition<T extends Object?>(
+    Widget page,
+    RouteSettings settings,
+  ) {
     return PageRouteBuilder<T>(
       settings: settings,
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         const curve = Curves.easeInOutCubic;
-        var scaleTween = Tween(begin: 0.8, end: 1.0).chain(
-          CurveTween(curve: curve),
-        );
-        var fadeTween = Tween(begin: 0.0, end: 1.0).chain(
-          CurveTween(curve: curve),
-        );
+        var scaleTween = Tween(
+          begin: 0.8,
+          end: 1.0,
+        ).chain(CurveTween(curve: curve));
+        var fadeTween = Tween(
+          begin: 0.0,
+          end: 1.0,
+        ).chain(CurveTween(curve: curve));
 
         return ScaleTransition(
           scale: animation.drive(scaleTween),

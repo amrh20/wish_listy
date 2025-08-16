@@ -4,8 +4,6 @@ import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../services/localization_service.dart';
 import '../utils/app_routes.dart';
-import '../widgets/animated_background.dart';
-import '../widgets/animated_logo.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -24,10 +22,10 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _startSplashSequence() async {
     print('Splash screen: Starting sequence...');
-    
+
     // Wait for splash to complete
     await Future.delayed(const Duration(seconds: 3));
-    
+
     print('Splash screen: 3 seconds elapsed, attempting navigation...');
 
     // Navigate to welcome screen
@@ -37,11 +35,6 @@ class _SplashScreenState extends State<SplashScreen>
     } else {
       print('Splash screen: Widget not mounted, cannot navigate');
     }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   @override
@@ -68,9 +61,9 @@ class _SplashScreenState extends State<SplashScreen>
                     color: Colors.white,
                   ),
                 ),
-                
+
                 const SizedBox(height: 40),
-                
+
                 // App Title
                 Text(
                   localization.translate('app.splashTitle'),
@@ -79,9 +72,9 @@ class _SplashScreenState extends State<SplashScreen>
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                
+
                 const SizedBox(height: 8),
-                
+
                 // App Subtitle
                 Text(
                   localization.translate('app.splashSubtitle'),
@@ -90,9 +83,9 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                   textAlign: TextAlign.center,
                 ),
-                
+
                 const SizedBox(height: 60),
-                
+
                 // Loading Indicator
                 SizedBox(
                   width: 40,

@@ -3,13 +3,12 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
 import '../../widgets/animated_background.dart';
 
 class FriendProfileScreen extends StatefulWidget {
   final String friendId;
 
-  const FriendProfileScreen({Key? key, required this.friendId}) : super(key: key);
+  const FriendProfileScreen({super.key, required this.friendId});
 
   @override
   _FriendProfileScreenState createState() => _FriendProfileScreenState();
@@ -20,7 +19,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   // Mock friend data
   late FriendProfile _friendProfile;
 
@@ -38,21 +37,20 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   void _loadFriendProfile() {
@@ -61,7 +59,8 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
       id: widget.friendId,
       name: 'Sarah Johnson',
       email: 'sarah@example.com',
-      bio: 'Love reading, traveling, and discovering new places. Always looking for unique gifts and special experiences to share with friends! 📚✈️',
+      bio:
+          'Love reading, traveling, and discovering new places. Always looking for unique gifts and special experiences to share with friends! 📚✈️',
       profilePicture: null,
       isOnline: true,
       lastActive: DateTime.now().subtract(Duration(minutes: 15)),
@@ -77,11 +76,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
           name: 'My General Wishlist',
           itemCount: 15,
           lastUpdated: DateTime.now().subtract(Duration(days: 2)),
-          previewItems: [
-            'Kindle E-reader',
-            'Yoga Mat',
-            'Coffee Table Book',
-          ],
+          previewItems: ['Kindle E-reader', 'Yoga Mat', 'Coffee Table Book'],
         ),
         FriendWishlist(
           id: '2',
@@ -138,7 +133,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
               AppColors.primary.withOpacity(0.01),
             ],
           ),
-          
+
           // Content
           RefreshIndicator(
             onRefresh: _refreshProfile,
@@ -147,7 +142,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
               slivers: [
                 // Profile Header
                 _buildSliverAppBar(),
-                
+
                 // Profile Content
                 SliverToBoxAdapter(
                   child: AnimatedBuilder(
@@ -165,22 +160,24 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                                 // Friendship Info
                                 _buildFriendshipInfo(),
                                 const SizedBox(height: 24),
-                                
+
                                 // Stats Cards
                                 _buildStatsSection(),
                                 const SizedBox(height: 24),
-                                
+
                                 // Public Wishlists
                                 _buildWishlistsSection(),
                                 const SizedBox(height: 24),
-                                
+
                                 // Recent Activity
                                 _buildRecentActivity(),
                                 const SizedBox(height: 24),
-                                
+
                                 // Mutual Friends
                                 _buildMutualFriends(),
-                                const SizedBox(height: 32), // Reduced bottom padding
+                                const SizedBox(
+                                  height: 32,
+                                ), // Reduced bottom padding
                               ],
                             ),
                           ),
@@ -210,10 +207,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                AppColors.secondary,
-                AppColors.primary,
-              ],
+              colors: [AppColors.secondary, AppColors.primary],
             ),
           ),
           child: SafeArea(
@@ -223,7 +217,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 40),
-                  
+
                   // Profile Picture
                   Stack(
                     children: [
@@ -252,7 +246,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                           ),
                         ),
                       ),
-                      
+
                       // Online Status
                       if (_friendProfile.isOnline)
                         Positioned(
@@ -264,18 +258,15 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                             decoration: BoxDecoration(
                               color: AppColors.success,
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 3,
-                              ),
+                              border: Border.all(color: Colors.white, width: 3),
                             ),
                           ),
                         ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 20),
-                  
+
                   // Name
                   Text(
                     _friendProfile.name,
@@ -284,9 +275,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  
+
                   const SizedBox(height: 8),
-                  
+
                   // Status
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -295,15 +286,15 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                         width: 8,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: _friendProfile.isOnline 
-                              ? AppColors.success 
+                          color: _friendProfile.isOnline
+                              ? AppColors.success
                               : AppColors.textTertiary,
                           shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _friendProfile.isOnline 
+                        _friendProfile.isOnline
                             ? 'Online now'
                             : 'Last seen ${_formatLastActive(_friendProfile.lastActive)}',
                         style: AppStyles.bodyMedium.copyWith(
@@ -312,9 +303,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Bio
                   if (_friendProfile.bio != null)
                     Container(
@@ -339,17 +330,11 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
       actions: [
         IconButton(
           onPressed: _sendMessage,
-          icon: Icon(
-            Icons.message_outlined,
-            color: Colors.white,
-          ),
+          icon: Icon(Icons.message_outlined, color: Colors.white),
         ),
         PopupMenuButton<String>(
           onSelected: _handleMenuAction,
-          icon: Icon(
-            Icons.more_vert,
-            color: Colors.white,
-          ),
+          icon: Icon(Icons.more_vert, color: Colors.white),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -396,10 +381,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.success.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.success.withOpacity(0.3), width: 1),
       ),
       child: Row(
         children: [
@@ -500,10 +482,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: color.withOpacity(0.2),
-            width: 1,
-          ),
+          border: Border.all(color: color.withOpacity(0.2), width: 1),
         ),
         child: Column(
           children: [
@@ -514,11 +493,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 20,
-              ),
+              child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(height: 12),
             Text(
@@ -555,10 +530,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Public Wishlists',
-                style: AppStyles.headingSmall,
-              ),
+              Text('Public Wishlists', style: AppStyles.headingSmall),
               TextButton(
                 onPressed: _viewAllWishlists,
                 child: Text(
@@ -572,7 +544,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
             ],
           ),
           const SizedBox(height: 16),
-          
+
           Column(
             children: _friendProfile.publicWishlists.map((wishlist) {
               return _buildWishlistCard(wishlist);
@@ -640,9 +612,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Preview Items
           if (wishlist.previewItems.isNotEmpty) ...[
             Text(
@@ -658,7 +630,10 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
               runSpacing: 4,
               children: wishlist.previewItems.take(3).map((item) {
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.secondary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -674,9 +649,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
               }).toList(),
             ),
           ],
-          
+
           const SizedBox(height: 12),
-          
+
           CustomButton(
             text: 'View Wishlist',
             onPressed: () => _viewWishlist(wishlist),
@@ -699,12 +674,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Recent Activity',
-            style: AppStyles.headingSmall,
-          ),
+          Text('Recent Activity', style: AppStyles.headingSmall),
           const SizedBox(height: 16),
-          
+
           Column(
             children: _friendProfile.recentActivity.map((activity) {
               return _buildActivityItem(activity);
@@ -787,13 +759,10 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Mock mutual friends preview
           Container(
-            constraints: const BoxConstraints(
-              minHeight: 80,
-              maxHeight: 120,
-            ),
+            constraints: const BoxConstraints(minHeight: 80, maxHeight: 120),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: 5,
@@ -835,7 +804,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
   String _formatLastActive(DateTime lastActive) {
     final now = DateTime.now();
     final difference = now.difference(lastActive);
-    
+
     if (difference.inMinutes < 60) {
       return '${difference.inMinutes}m ago';
     } else if (difference.inHours < 24) {
@@ -847,8 +816,18 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
 
   String _formatFriendshipDate(DateTime friendsSince) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[friendsSince.month - 1]} ${friendsSince.year}';
   }
@@ -856,7 +835,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
   String _formatLastUpdated(DateTime lastUpdated) {
     final now = DateTime.now();
     final difference = now.difference(lastUpdated);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays}d ago';
     } else if (difference.inHours > 0) {
@@ -869,7 +848,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
   String _formatActivityTime(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays}d ago';
     } else if (difference.inHours > 0) {
@@ -912,7 +891,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
         backgroundColor: AppColors.info,
       ),
     );
-    
+
     // TODO: Navigate to a screen showing all public wishlists
     // This could be a dedicated screen or modal
   }
@@ -925,7 +904,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
         backgroundColor: AppColors.info,
       ),
     );
-    
+
     // TODO: Navigate to a screen showing friend's public events
     // This could be a dedicated screen or modal
   }
@@ -938,7 +917,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
         backgroundColor: AppColors.info,
       ),
     );
-    
+
     // TODO: Navigate to a screen showing friend's gift history
     // This could be a dedicated screen or modal
   }
@@ -964,11 +943,13 @@ class _FriendProfileScreenState extends State<FriendProfileScreen>
     // Navigate to mutual friends
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Viewing all ${_friendProfile.mutualFriends} mutual friends'),
+        content: Text(
+          'Viewing all ${_friendProfile.mutualFriends} mutual friends',
+        ),
         backgroundColor: AppColors.info,
       ),
     );
-    
+
     // TODO: Navigate to a screen showing all mutual friends
     // This could be a dedicated screen or modal
   }

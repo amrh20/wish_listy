@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
-import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/animated_background.dart';
 import 'events_screen.dart';
@@ -9,10 +8,7 @@ import 'events_screen.dart';
 class GuestManagementScreen extends StatefulWidget {
   final EventSummary event;
 
-  const GuestManagementScreen({
-    super.key,
-    required this.event,
-  });
+  const GuestManagementScreen({super.key, required this.event});
 
   @override
   _GuestManagementScreenState createState() => _GuestManagementScreenState();
@@ -23,7 +19,7 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   String _selectedTab = 'invited';
   final _searchController = TextEditingController();
   String _searchQuery = '';
@@ -93,21 +89,20 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   void _startAnimations() {
@@ -123,9 +118,10 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
 
   List<Guest> get _filteredGuests {
     return _guests.where((guest) {
-      final matchesSearch = guest.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                           guest.email.toLowerCase().contains(_searchQuery.toLowerCase());
-      
+      final matchesSearch =
+          guest.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          guest.email.toLowerCase().contains(_searchQuery.toLowerCase());
+
       switch (_selectedTab) {
         case 'invited':
           return matchesSearch && guest.status == GuestStatus.invited;
@@ -154,14 +150,14 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
               AppColors.primary.withOpacity(0.02),
             ],
           ),
-          
+
           // Content
           SafeArea(
             child: Column(
               children: [
                 // Header
                 _buildHeader(),
-                
+
                 // Content
                 Expanded(
                   child: AnimatedBuilder(
@@ -175,18 +171,16 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                             children: [
                               // Stats Cards
                               _buildStatsCards(),
-                              
+
                               const SizedBox(height: 20),
-                              
+
                               // Search and Tabs
                               _buildSearchAndTabs(),
-                              
+
                               const SizedBox(height: 20),
-                              
+
                               // Guest List
-                              Expanded(
-                                child: _buildGuestList(),
-                              ),
+                              Expanded(child: _buildGuestList()),
                             ],
                           ),
                         ),
@@ -261,9 +255,15 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
 
   Widget _buildStatsCards() {
     final totalGuests = _guests.length;
-    final acceptedGuests = _guests.where((g) => g.rsvpStatus == RSVPStatus.accepted).length;
-    final pendingGuests = _guests.where((g) => g.rsvpStatus == RSVPStatus.pending).length;
-    final declinedGuests = _guests.where((g) => g.rsvpStatus == RSVPStatus.declined).length;
+    final acceptedGuests = _guests
+        .where((g) => g.rsvpStatus == RSVPStatus.accepted)
+        .length;
+    final pendingGuests = _guests
+        .where((g) => g.rsvpStatus == RSVPStatus.pending)
+        .length;
+    final declinedGuests = _guests
+        .where((g) => g.rsvpStatus == RSVPStatus.declined)
+        .length;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -320,18 +320,11 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
       child: Column(
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: 20,
-          ),
+          Icon(icon, color: color, size: 20),
           const SizedBox(height: 8),
           Text(
             value,
@@ -342,9 +335,7 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
           ),
           Text(
             label,
-            style: AppStyles.caption.copyWith(
-              color: AppColors.textTertiary,
-            ),
+            style: AppStyles.caption.copyWith(color: AppColors.textTertiary),
           ),
         ],
       ),
@@ -366,19 +357,25 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
             },
             decoration: InputDecoration(
               hintText: 'Search guests...',
-              prefixIcon: Icon(Icons.search_outlined, color: AppColors.textTertiary),
+              prefixIcon: Icon(
+                Icons.search_outlined,
+                color: AppColors.textTertiary,
+              ),
               filled: true,
               fillColor: AppColors.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Tab Bar
           Container(
             decoration: BoxDecoration(
@@ -401,7 +398,7 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
 
   Widget _buildTab(String value, String label, IconData icon) {
     final isSelected = _selectedTab == value;
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -488,10 +485,14 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: _getRSVPStatusColor(guest.rsvpStatus).withOpacity(0.1),
+                        color: _getRSVPStatusColor(
+                          guest.rsvpStatus,
+                        ).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(25),
                         border: Border.all(
-                          color: _getRSVPStatusColor(guest.rsvpStatus).withOpacity(0.3),
+                          color: _getRSVPStatusColor(
+                            guest.rsvpStatus,
+                          ).withOpacity(0.3),
                           width: 1,
                         ),
                       ),
@@ -505,9 +506,9 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(width: 16),
-                    
+
                     // Guest Info
                     Expanded(
                       child: Column(
@@ -525,7 +526,10 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                               ),
                               // RSVP Status Badge
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: _getRSVPStatusColor(guest.rsvpStatus),
                                   borderRadius: BorderRadius.circular(12),
@@ -540,24 +544,27 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                               ),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 4),
-                          
+
                           Text(
                             guest.email,
                             style: AppStyles.bodySmall.copyWith(
                               color: AppColors.textSecondary,
                             ),
                           ),
-                          
+
                           const SizedBox(height: 8),
-                          
+
                           Row(
                             children: [
                               // Plus One Badge
                               if (guest.plusOne)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.info.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
@@ -570,13 +577,16 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                                     ),
                                   ),
                                 ),
-                              
+
                               if (guest.plusOne) const SizedBox(width: 8),
-                              
+
                               // Dietary Restrictions
                               if (guest.dietaryRestrictions != null)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.warning.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
@@ -596,10 +606,10 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                     ),
                   ],
                 ),
-                
+
                 // Action Buttons
                 const SizedBox(height: 16),
-                
+
                 Row(
                   children: [
                     Expanded(
@@ -611,9 +621,9 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                         icon: Icons.notification_add_outlined,
                       ),
                     ),
-                    
+
                     const SizedBox(width: 12),
-                    
+
                     Expanded(
                       child: CustomButton(
                         text: 'Update Status',
@@ -638,11 +648,7 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.people_outline,
-            size: 64,
-            color: AppColors.textTertiary,
-          ),
+          Icon(Icons.people_outline, size: 64, color: AppColors.textTertiary),
           const SizedBox(height: 16),
           Text(
             'No guests found',
@@ -653,9 +659,7 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
           const SizedBox(height: 8),
           Text(
             'Try adjusting your search or filters',
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textTertiary,
-            ),
+            style: AppStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
           ),
         ],
       ),
@@ -729,6 +733,7 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
 
 // Data Models
 enum GuestStatus { invited, confirmed, cancelled }
+
 enum RSVPStatus { pending, accepted, declined }
 
 class Guest {

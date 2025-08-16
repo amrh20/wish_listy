@@ -1,19 +1,17 @@
-
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
-import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/animated_background.dart';
+import '../../services/localization_service.dart';
 
 class AddItemScreen extends StatefulWidget {
   final String? wishlistId;
 
-  const AddItemScreen({Key? key, this.wishlistId}) : super(key: key);
+  const AddItemScreen({super.key, this.wishlistId});
 
   @override
   _AddItemScreenState createState() => _AddItemScreenState();
@@ -27,20 +25,25 @@ class _AddItemScreenState extends State<AddItemScreen>
   final _linkController = TextEditingController();
   final _minPriceController = TextEditingController();
   final _maxPriceController = TextEditingController();
-  
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   bool _isLoading = false;
   String _selectedWishlist = 'public';
   String _selectedPriority = 'medium';
   String _selectedCurrency = 'USD';
   String? _selectedImagePath;
-  
+
   final List<String> _currencies = ['USD', 'EUR', 'GBP', 'EGP', 'SAR', 'AED'];
   final List<String> _priorities = ['low', 'medium', 'high', 'urgent'];
-  final List<String> _wishlists = ['public', 'birthday', 'christmas', 'anniversary'];
+  final List<String> _wishlists = [
+    'public',
+    'birthday',
+    'christmas',
+    'anniversary',
+  ];
 
   @override
   void initState() {
@@ -58,21 +61,20 @@ class _AddItemScreenState extends State<AddItemScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   void _startAnimations() {
@@ -92,130 +94,155 @@ class _AddItemScreenState extends State<AddItemScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.accent.withOpacity(0.03),
-              AppColors.primary.withOpacity(0.02),
-            ],
-          ),
-          
-          // Content
-          SafeArea(
-            child: Column(
-              children: [
-                // Header
-                _buildHeader(),
-                
-                // Form
-                Expanded(
-                  child: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: SlideTransition(
-                          position: _slideAnimation,
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(24.0),
-                            child: Form(
-                              key: _formKey,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  // Wishlist Selection
-                                  _buildWishlistSelection(),
-                                  const SizedBox(height: 24),
-                                  
-                                  // Item Name
-                                  CustomTextField(
-                                    controller: _nameController,
-                                    label: 'Item Name',
-                                    hint: 'What do you wish for?',
-                                    prefixIcon: Icons.card_giftcard_outlined,
-                                    isRequired: true,
-                                    validator: (value) {
-                                      if (value?.isEmpty ?? true) {
-                                        return 'Please enter item name';
-                                      }
-                                      return null;
-                                    },
+    return Consumer<LocalizationService>(
+      builder: (context, localization, child) {
+        return Scaffold(
+          body: Stack(
+            children: [
+              // Animated Background
+              AnimatedBackground(
+                colors: [
+                  AppColors.background,
+                  AppColors.accent.withOpacity(0.03),
+                  AppColors.primary.withOpacity(0.02),
+                ],
+              ),
+
+              // Content
+              SafeArea(
+                child: Column(
+                  children: [
+                    // Header
+                    _buildHeader(localization),
+
+                    // Form
+                    Expanded(
+                      child: AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          return FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: SlideTransition(
+                              position: _slideAnimation,
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.all(24.0),
+                                child: Form(
+                                  key: _formKey,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      // Wishlist Selection
+                                      _buildWishlistSelection(localization),
+                                      const SizedBox(height: 24),
+
+                                      // Item Name
+                                      CustomTextField(
+                                        controller: _nameController,
+                                        label: localization.translate(
+                                          'wishlists.itemName',
+                                        ),
+                                        hint: localization.translate(
+                                          'wishlists.whatDoYouWishFor',
+                                        ),
+                                        prefixIcon:
+                                            Icons.card_giftcard_outlined,
+                                        isRequired: true,
+                                        validator: (value) {
+                                          if (value?.isEmpty ?? true) {
+                                            return localization.translate(
+                                              'wishlists.pleaseEnterItemName',
+                                            );
+                                          }
+                                          return null;
+                                        },
+                                      ),
+
+                                      const SizedBox(height: 20),
+
+                                      // Description
+                                      CustomTextField(
+                                        controller: _descriptionController,
+                                        label: localization.translate(
+                                          'wishlists.description',
+                                        ),
+                                        hint: localization.translate(
+                                          'wishlists.addDetailsAboutItem',
+                                        ),
+                                        prefixIcon: Icons.description_outlined,
+                                        maxLines: 3,
+                                        validator: null,
+                                      ),
+
+                                      const SizedBox(height: 20),
+
+                                      // Product Link
+                                      CustomTextField(
+                                        controller: _linkController,
+                                        label: localization.translate(
+                                          'wishlists.productLink',
+                                        ),
+                                        hint: localization.translate(
+                                          'wishlists.pasteLinkFromOnlineStore',
+                                        ),
+                                        prefixIcon: Icons.link_outlined,
+                                        keyboardType: TextInputType.url,
+                                        validator: (value) {
+                                          if (value != null &&
+                                              value.isNotEmpty) {
+                                            if (!_isValidUrl(value)) {
+                                              return localization.translate(
+                                                'wishlists.pleaseEnterValidUrl',
+                                              );
+                                            }
+                                          }
+                                          return null;
+                                        },
+                                      ),
+
+                                      const SizedBox(height: 24),
+
+                                      // Price Range Section
+                                      _buildPriceRangeSection(localization),
+
+                                      const SizedBox(height: 24),
+
+                                      // Priority Selection
+                                      _buildPrioritySelection(localization),
+
+                                      const SizedBox(height: 24),
+
+                                      // Image Upload Section
+                                      _buildImageUploadSection(localization),
+
+                                      const SizedBox(height: 32),
+
+                                      // Action Buttons
+                                      _buildActionButtons(localization),
+
+                                      const SizedBox(
+                                        height: 100,
+                                      ), // Bottom padding
+                                    ],
                                   ),
-                                  
-                                  const SizedBox(height: 20),
-                                  
-                                  // Description
-                                  CustomTextField(
-                                    controller: _descriptionController,
-                                    label: 'Description',
-                                    hint: 'Add details about the item (optional)',
-                                    prefixIcon: Icons.description_outlined,
-                                    maxLines: 3,
-                                    validator: null,
-                                  ),
-                                  
-                                  const SizedBox(height: 20),
-                                  
-                                  // Product Link
-                                  CustomTextField(
-                                    controller: _linkController,
-                                    label: 'Product Link',
-                                    hint: 'Paste link from online store (optional)',
-                                    prefixIcon: Icons.link_outlined,
-                                    keyboardType: TextInputType.url,
-                                    validator: (value) {
-                                      if (value != null && value.isNotEmpty) {
-                                        if (!_isValidUrl(value)) {
-                                          return 'Please enter a valid URL';
-                                        }
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                  
-                                  const SizedBox(height: 24),
-                                  
-                                  // Price Range Section
-                                  _buildPriceRangeSection(),
-                                  
-                                  const SizedBox(height: 24),
-                                  
-                                  // Priority Selection
-                                  _buildPrioritySelection(),
-                                  
-                                  const SizedBox(height: 24),
-                                  
-                                  // Image Upload Section
-                                  _buildImageUploadSection(),
-                                  
-                                  const SizedBox(height: 32),
-                                  
-                                  // Action Buttons
-                                  _buildActionButtons(),
-                                  
-                                  const SizedBox(height: 100), // Bottom padding
-                                ],
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -244,13 +271,13 @@ class _AddItemScreenState extends State<AddItemScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Add New Item',
+                  localization.translate('wishlists.addNewItem'),
                   style: AppStyles.headingSmall.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
-                  'Add something special to your wishlist',
+                  localization.translate('wishlists.addSomethingSpecial'),
                   style: AppStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -260,7 +287,7 @@ class _AddItemScreenState extends State<AddItemScreen>
           ),
           // Quick Action Button
           IconButton(
-            onPressed: _scanBarcode,
+            onPressed: () => _scanBarcode(localization),
             icon: const Icon(Icons.qr_code_scanner_outlined),
             style: IconButton.styleFrom(
               backgroundColor: AppColors.accent.withOpacity(0.1),
@@ -273,30 +300,23 @@ class _AddItemScreenState extends State<AddItemScreen>
     );
   }
 
-  Widget _buildWishlistSelection() {
+  Widget _buildWishlistSelection(LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.list_alt_outlined,
-                color: AppColors.primary,
-                size: 20,
-              ),
+              Icon(Icons.list_alt_outlined, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Add to Wishlist',
+                localization.translate('wishlists.addToWishlist'),
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -317,24 +337,31 @@ class _AddItemScreenState extends State<AddItemScreen>
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected 
-                        ? AppColors.primary 
+                    color: isSelected
+                        ? AppColors.primary
                         : AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isSelected 
-                          ? AppColors.primary 
+                      color: isSelected
+                          ? AppColors.primary
                           : AppColors.textTertiary.withOpacity(0.3),
                       width: 1,
                     ),
                   ),
                   child: Text(
-                    _getWishlistDisplayName(wishlist),
+                    _getWishlistDisplayName(wishlist, localization),
                     style: AppStyles.bodySmall.copyWith(
-                      color: isSelected ? Colors.white : AppColors.textSecondary,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      color: isSelected
+                          ? Colors.white
+                          : AppColors.textSecondary,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -346,7 +373,7 @@ class _AddItemScreenState extends State<AddItemScreen>
     );
   }
 
-  Widget _buildPriceRangeSection() {
+  Widget _buildPriceRangeSection(LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -365,7 +392,7 @@ class _AddItemScreenState extends State<AddItemScreen>
               ),
               const SizedBox(width: 8),
               Text(
-                'Price Range (Optional)',
+                localization.translate('wishlists.priceRangeOptional'),
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -373,19 +400,22 @@ class _AddItemScreenState extends State<AddItemScreen>
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Currency Selection
           Row(
             children: [
               Text(
-                'Currency:',
+                '${localization.translate('wishlists.currency')}:',
                 style: AppStyles.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
               const SizedBox(width: 12),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceVariant,
                   borderRadius: BorderRadius.circular(8),
@@ -396,10 +426,7 @@ class _AddItemScreenState extends State<AddItemScreen>
                   items: _currencies.map((currency) {
                     return DropdownMenuItem(
                       value: currency,
-                      child: Text(
-                        currency,
-                        style: AppStyles.bodySmall,
-                      ),
+                      child: Text(currency, style: AppStyles.bodySmall),
                     );
                   }).toList(),
                   onChanged: (value) {
@@ -411,26 +438,28 @@ class _AddItemScreenState extends State<AddItemScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Price Input Fields
           Row(
             children: [
               Expanded(
                 child: CustomTextField(
                   controller: _minPriceController,
-                  label: 'Min Price',
+                  label: localization.translate('wishlists.minPrice'),
                   hint: '0',
                   keyboardType: TextInputType.number,
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'^\d+\.?\d{0,2}'),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(width: 16),
               Text(
-                'to',
+                localization.translate('common.to'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -439,11 +468,13 @@ class _AddItemScreenState extends State<AddItemScreen>
               Expanded(
                 child: CustomTextField(
                   controller: _maxPriceController,
-                  label: 'Max Price',
+                  label: localization.translate('wishlists.maxPrice'),
                   hint: '999',
                   keyboardType: TextInputType.number,
                   inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'^\d+\.?\d{0,2}'),
+                    ),
                   ],
                 ),
               ),
@@ -454,7 +485,7 @@ class _AddItemScreenState extends State<AddItemScreen>
     );
   }
 
-  Widget _buildPrioritySelection() {
+  Widget _buildPrioritySelection(LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -466,14 +497,10 @@ class _AddItemScreenState extends State<AddItemScreen>
         children: [
           Row(
             children: [
-              Icon(
-                Icons.flag_outlined,
-                color: AppColors.secondary,
-                size: 20,
-              ),
+              Icon(Icons.flag_outlined, color: AppColors.secondary, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Priority Level',
+                localization.translate('wishlists.selectPriority'),
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -495,12 +522,12 @@ class _AddItemScreenState extends State<AddItemScreen>
                     margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(
-                      color: isSelected 
+                      color: isSelected
                           ? _getPriorityColor(priority).withOpacity(0.1)
                           : AppColors.surfaceVariant,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isSelected 
+                        color: isSelected
                             ? _getPriorityColor(priority)
                             : AppColors.textTertiary.withOpacity(0.3),
                         width: isSelected ? 2 : 1,
@@ -510,19 +537,21 @@ class _AddItemScreenState extends State<AddItemScreen>
                       children: [
                         Icon(
                           _getPriorityIcon(priority),
-                          color: isSelected 
+                          color: isSelected
                               ? _getPriorityColor(priority)
                               : AppColors.textTertiary,
                           size: 20,
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          priority.toUpperCase(),
+                          _getPriorityDisplayName(priority, localization),
                           style: AppStyles.caption.copyWith(
-                            color: isSelected 
+                            color: isSelected
                                 ? _getPriorityColor(priority)
                                 : AppColors.textTertiary,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                           ),
                         ),
                       ],
@@ -537,7 +566,7 @@ class _AddItemScreenState extends State<AddItemScreen>
     );
   }
 
-  Widget _buildImageUploadSection() {
+  Widget _buildImageUploadSection(LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -556,7 +585,7 @@ class _AddItemScreenState extends State<AddItemScreen>
               ),
               const SizedBox(width: 8),
               Text(
-                'Item Photo (Optional)',
+                localization.translate('wishlists.imageUpload'),
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -564,7 +593,7 @@ class _AddItemScreenState extends State<AddItemScreen>
             ],
           ),
           const SizedBox(height: 16),
-          
+
           if (_selectedImagePath == null) ...[
             // Upload Options
             Row(
@@ -589,7 +618,7 @@ class _AddItemScreenState extends State<AddItemScreen>
                   child: _buildImageUploadOption(
                     icon: Icons.link_outlined,
                     label: 'URL',
-                    onTap: _addImageFromUrl,
+                    onTap: () => _addImageFromUrl(localization),
                   ),
                 ),
               ],
@@ -620,10 +649,7 @@ class _AddItemScreenState extends State<AddItemScreen>
                           _selectedImagePath = null;
                         });
                       },
-                      icon: Icon(
-                        Icons.close,
-                        color: AppColors.error,
-                      ),
+                      icon: Icon(Icons.close, color: AppColors.error),
                       style: IconButton.styleFrom(
                         backgroundColor: Colors.white,
                         padding: const EdgeInsets.all(4),
@@ -651,18 +677,11 @@ class _AddItemScreenState extends State<AddItemScreen>
         decoration: BoxDecoration(
           color: AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.info.withOpacity(0.3),
-            width: 1,
-          ),
+          border: Border.all(color: AppColors.info.withOpacity(0.3), width: 1),
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              color: AppColors.info,
-              size: 24,
-            ),
+            Icon(icon, color: AppColors.info, size: 24),
             const SizedBox(height: 8),
             Text(
               label,
@@ -677,20 +696,20 @@ class _AddItemScreenState extends State<AddItemScreen>
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(LocalizationService localization) {
     return Column(
       children: [
         CustomButton(
-          text: 'Add to Wishlist',
-          onPressed: _saveItem,
+          text: localization.translate('wishlists.addToWishlist'),
+          onPressed: () => _saveItem(localization),
           isLoading: _isLoading,
           variant: ButtonVariant.gradient,
           gradientColors: [AppColors.primary, AppColors.secondary],
         ),
         const SizedBox(height: 12),
         CustomButton(
-          text: 'Save as Draft',
-          onPressed: _saveDraft,
+          text: localization.translate('wishlists.saveDraft'),
+          onPressed: () => _saveDraft(localization),
           variant: ButtonVariant.outline,
         ),
       ],
@@ -698,18 +717,39 @@ class _AddItemScreenState extends State<AddItemScreen>
   }
 
   // Helper Methods
-  String _getWishlistDisplayName(String wishlist) {
+  String _getWishlistDisplayName(
+    String wishlist,
+    LocalizationService localization,
+  ) {
     switch (wishlist) {
       case 'public':
-        return 'Public Wishlist';
+        return localization.translate('wishlists.publicWishlist');
       case 'birthday':
-        return 'Birthday 2024';
+        return localization.translate('wishlists.birthday2024');
       case 'christmas':
-        return 'Christmas 2024';
+        return localization.translate('wishlists.christmas2024');
       case 'anniversary':
-        return 'Anniversary';
+        return localization.translate('wishlists.anniversary');
       default:
         return wishlist;
+    }
+  }
+
+  String _getPriorityDisplayName(
+    String priority,
+    LocalizationService localization,
+  ) {
+    switch (priority) {
+      case 'low':
+        return localization.translate('wishlists.low');
+      case 'medium':
+        return localization.translate('wishlists.medium');
+      case 'high':
+        return localization.translate('wishlists.high');
+      case 'urgent':
+        return localization.translate('wishlists.urgent');
+      default:
+        return priority;
     }
   }
 
@@ -753,7 +793,7 @@ class _AddItemScreenState extends State<AddItemScreen>
   }
 
   // Action Methods
-  Future<void> _saveItem() async {
+  Future<void> _saveItem(LocalizationService localization) async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
@@ -764,10 +804,10 @@ class _AddItemScreenState extends State<AddItemScreen>
     setState(() => _isLoading = false);
 
     // Show success message
-    _showSuccessMessage();
+    _showSuccessMessage(localization);
   }
 
-  void _saveDraft() {
+  void _saveDraft(LocalizationService localization) {
     // Save as draft functionality
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -775,28 +815,26 @@ class _AddItemScreenState extends State<AddItemScreen>
           children: [
             Icon(Icons.save_outlined, color: Colors.white),
             const SizedBox(width: 8),
-            Text('Item saved as draft'),
+            Text(localization.translate('wishlists.itemSavedAsDraft')),
           ],
         ),
         backgroundColor: AppColors.info,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
 
-  void _scanBarcode() {
+  void _scanBarcode(LocalizationService localization) {
     // Barcode scanning functionality
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Barcode scanner coming soon!'),
+        content: Text(
+          localization.translate('wishlists.barcodeScannerComingSoon'),
+        ),
         backgroundColor: AppColors.info,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -813,24 +851,22 @@ class _AddItemScreenState extends State<AddItemScreen>
     });
   }
 
-  void _addImageFromUrl() {
+  void _addImageFromUrl(LocalizationService localization) {
     // Show URL input dialog
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Add Image URL'),
+        title: Text(localization.translate('wishlists.addImageUrl')),
         content: TextField(
           decoration: InputDecoration(
-            hintText: 'Enter image URL',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+            hintText: localization.translate('wishlists.enterImageUrl'),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: Text(localization.translate('common.cancel')),
           ),
           TextButton(
             onPressed: () {
@@ -839,21 +875,19 @@ class _AddItemScreenState extends State<AddItemScreen>
               });
               Navigator.pop(context);
             },
-            child: Text('Add'),
+            child: Text(localization.translate('common.add')),
           ),
         ],
       ),
     );
   }
 
-  void _showSuccessMessage() {
+  void _showSuccessMessage(LocalizationService localization) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -872,13 +906,22 @@ class _AddItemScreenState extends State<AddItemScreen>
             ),
             const SizedBox(height: 24),
             Text(
-              'Item Added!',
+              localization.translate('wishlists.itemAdded'),
               style: AppStyles.headingMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              '${_nameController.text} has been added to your ${_getWishlistDisplayName(_selectedWishlist)}.',
+              localization.translate(
+                'wishlists.itemAddedToWishlist',
+                args: {
+                  'itemName': _nameController.text,
+                  'wishlistName': _getWishlistDisplayName(
+                    _selectedWishlist,
+                    localization,
+                  ),
+                },
+              ),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -889,7 +932,7 @@ class _AddItemScreenState extends State<AddItemScreen>
               children: [
                 Expanded(
                   child: CustomButton(
-                    text: 'Add Another',
+                    text: localization.translate('wishlists.addAnother'),
                     onPressed: () {
                       Navigator.of(context).pop();
                       _clearForm();

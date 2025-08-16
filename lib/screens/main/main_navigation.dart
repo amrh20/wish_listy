@@ -1,12 +1,8 @@
-
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
-import '../../utils/app_theme.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/language_switcher.dart';
 import '../../services/localization_service.dart';
@@ -30,38 +26,40 @@ class _MainNavigationState extends State<MainNavigation>
   late AnimationController _fabAnimationController;
   late Animation<double> _fabScaleAnimation;
 
-  final List<NavigationItem> _navigationItems = [
-    NavigationItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-      label: 'Home',
-      color: AppColors.primary,
-    ),
-    NavigationItem(
-      icon: Icons.favorite_outline,
-      activeIcon: Icons.favorite_rounded,
-      label: 'Wishlists',
-      color: AppColors.secondary,
-    ),
-    NavigationItem(
-      icon: Icons.celebration_outlined,
-      activeIcon: Icons.celebration_rounded,
-      label: 'Events',
-      color: AppColors.accent,
-    ),
-    NavigationItem(
-      icon: Icons.people_outline,
-      activeIcon: Icons.people_rounded,
-      label: 'Friends',
-      color: AppColors.info,
-    ),
-    NavigationItem(
-      icon: Icons.person_outline,
-      activeIcon: Icons.person_rounded,
-      label: 'Profile',
-      color: AppColors.warning,
-    ),
-  ];
+  List<NavigationItem> _getNavigationItems(LocalizationService localization) {
+    return [
+      NavigationItem(
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+        label: localization.translate('navigation.home'),
+        color: AppColors.primary,
+      ),
+      NavigationItem(
+        icon: Icons.favorite_outline,
+        activeIcon: Icons.favorite_rounded,
+        label: localization.translate('navigation.wishlist'),
+        color: AppColors.secondary,
+      ),
+      NavigationItem(
+        icon: Icons.celebration_outlined,
+        activeIcon: Icons.celebration_rounded,
+        label: localization.translate('navigation.events'),
+        color: AppColors.accent,
+      ),
+      NavigationItem(
+        icon: Icons.people_outline,
+        activeIcon: Icons.people_rounded,
+        label: localization.translate('navigation.friends'),
+        color: AppColors.warning,
+      ),
+      NavigationItem(
+        icon: Icons.person_outline,
+        activeIcon: Icons.person_rounded,
+        label: localization.translate('navigation.profile'),
+        color: AppColors.info,
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -76,13 +74,12 @@ class _MainNavigationState extends State<MainNavigation>
       vsync: this,
     );
 
-    _fabScaleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fabAnimationController,
-      curve: Curves.elasticOut,
-    ));
+    _fabScaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _fabAnimationController,
+        curve: Curves.elasticOut,
+      ),
+    );
 
     _fabAnimationController.forward();
   }
@@ -146,7 +143,7 @@ class _MainNavigationState extends State<MainNavigation>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         if (!mounted) return const SizedBox.shrink();
-        
+
         return Scaffold(
           body: PageView(
             controller: _pageController,
@@ -165,87 +162,18 @@ class _MainNavigationState extends State<MainNavigation>
               ProfileScreen(),
             ],
           ),
-          
+
           // Custom Bottom Navigation Bar
           bottomNavigationBar: CustomBottomNavigation(
             currentIndex: _currentIndex,
             onTap: _onTabTapped,
           ),
-          
+
           // Floating Action Button (conditional)
           floatingActionButton: _buildFloatingActionButton(),
           floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         );
       },
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textTertiary.withOpacity(0.1),
-            offset: const Offset(0, -4),
-            blurRadius: 20,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Container(
-          height: 80,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: _navigationItems.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              final isActive = _currentIndex == index;
-              
-              return _buildNavigationButton(item, index, isActive);
-            }).toList(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavigationButton(NavigationItem item, int index, bool isActive) {
-    return GestureDetector(
-      onTap: () => _onTabTapped(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? item.color.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Icon(
-                isActive ? item.activeIcon : item.icon,
-                key: ValueKey(isActive),
-                color: isActive ? item.color : AppColors.textTertiary,
-                size: 24,
-              ),
-            ),
-            const SizedBox(height: 4),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
-              style: AppStyles.caption.copyWith(
-                color: isActive ? item.color : AppColors.textTertiary,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-              ),
-              child: Text(item.label),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -286,11 +214,7 @@ class _MainNavigationState extends State<MainNavigation>
         },
         backgroundColor: Colors.transparent,
         elevation: 0,
-        child: const Icon(
-          Icons.add,
-          color: Colors.white,
-          size: 28,
-        ),
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
   }
@@ -315,11 +239,7 @@ class _MainNavigationState extends State<MainNavigation>
         },
         backgroundColor: Colors.transparent,
         elevation: 0,
-        child: const Icon(
-          Icons.add,
-          color: Colors.white,
-          size: 28,
-        ),
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
   }
@@ -344,11 +264,7 @@ class _MainNavigationState extends State<MainNavigation>
         },
         backgroundColor: Colors.transparent,
         elevation: 0,
-        child: const Icon(
-          Icons.add,
-          color: Colors.white,
-          size: 28,
-        ),
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
   }
@@ -373,11 +289,7 @@ class _MainNavigationState extends State<MainNavigation>
         },
         backgroundColor: Colors.transparent,
         elevation: 0,
-        child: const Icon(
-          Icons.add,
-          color: Colors.white,
-          size: 28,
-        ),
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
   }
@@ -402,11 +314,7 @@ class _MainNavigationState extends State<MainNavigation>
         },
         backgroundColor: Colors.transparent,
         elevation: 0,
-        child: const Icon(
-          Icons.edit,
-          color: Colors.white,
-          size: 28,
-        ),
+        child: const Icon(Icons.edit, color: Colors.white, size: 28),
       ),
     );
   }
@@ -418,7 +326,7 @@ class _MainNavigationState extends State<MainNavigation>
       builder: (context) => Consumer<LocalizationService>(
         builder: (context, localization, child) {
           if (!context.mounted) return const SizedBox.shrink();
-          
+
           return Container(
             decoration: BoxDecoration(
               color: AppColors.surface,
@@ -446,7 +354,9 @@ class _MainNavigationState extends State<MainNavigation>
                     children: [
                       Text(
                         localization.translate('home.quickActions'),
-                        style: AppStyles.heading4.copyWith(color: AppColors.textPrimary),
+                        style: AppStyles.heading4.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 20),
                       Row(
@@ -454,11 +364,16 @@ class _MainNavigationState extends State<MainNavigation>
                           Expanded(
                             child: _buildQuickActionCard(
                               icon: Icons.card_giftcard,
-                              title: localization.translate('home.createWishlist'),
+                              title: localization.translate(
+                                'home.createWishlist',
+                              ),
                               gradient: AppColors.pinkGradient,
                               onTap: () {
                                 Navigator.pop(context);
-                                Navigator.pushNamed(context, '/create-wishlist');
+                                Navigator.pushNamed(
+                                  context,
+                                  '/create-wishlist',
+                                );
                               },
                             ),
                           ),
@@ -538,11 +453,7 @@ class _MainNavigationState extends State<MainNavigation>
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              color: Colors.white,
-              size: 32,
-            ),
+            Icon(icon, color: Colors.white, size: 32),
             const SizedBox(height: 8),
             Text(
               title,

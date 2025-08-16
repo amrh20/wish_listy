@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
-import '../../utils/app_routes.dart';
-import '../../widgets/custom_button.dart';
 import '../../models/wishlist_model.dart';
 import '../../widgets/animated_background.dart';
 
@@ -35,7 +33,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   String _selectedFilter = 'all';
   String _searchQuery = '';
   final _searchController = TextEditingController();
@@ -112,21 +110,20 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   void _startAnimations() {
@@ -142,9 +139,13 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
 
   List<WishlistItem> get _filteredItems {
     return _items.where((item) {
-      final matchesSearch = item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                           (item.description?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
-      
+      final matchesSearch =
+          item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          (item.description?.toLowerCase().contains(
+                _searchQuery.toLowerCase(),
+              ) ??
+              false);
+
       switch (_selectedFilter) {
         case 'all':
           return matchesSearch;
@@ -173,14 +174,14 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
               AppColors.primary.withOpacity(0.02),
             ],
           ),
-          
+
           // Content
           SafeArea(
             child: Column(
               children: [
                 // Header
                 _buildHeader(),
-                
+
                 // Content
                 Expanded(
                   child: AnimatedBuilder(
@@ -194,18 +195,16 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                             children: [
                               // Stats Card
                               _buildStatsCard(),
-                              
+
                               const SizedBox(height: 20),
-                              
+
                               // Search and Filters
                               _buildSearchAndFilters(),
-                              
+
                               const SizedBox(height: 20),
-                              
+
                               // Items List
-                              Expanded(
-                                child: _buildItemsList(),
-                              ),
+                              Expanded(child: _buildItemsList()),
                             ],
                           ),
                         ),
@@ -321,11 +320,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
               color: AppColors.primary,
             ),
           ),
-          Container(
-            width: 1,
-            height: 40,
-            color: AppColors.borderLight,
-          ),
+          Container(width: 1, height: 40, color: AppColors.borderLight),
           Expanded(
             child: _buildStatItem(
               icon: Icons.check_circle_outline,
@@ -334,11 +329,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
               color: AppColors.success,
             ),
           ),
-          Container(
-            width: 1,
-            height: 40,
-            color: AppColors.borderLight,
-          ),
+          Container(width: 1, height: 40, color: AppColors.borderLight),
           Expanded(
             child: _buildStatItem(
               icon: Icons.attach_money_outlined,
@@ -360,11 +351,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
   }) {
     return Column(
       children: [
-        Icon(
-          icon,
-          color: color,
-          size: 24,
-        ),
+        Icon(icon, color: color, size: 24),
         const SizedBox(height: 8),
         Text(
           value,
@@ -375,9 +362,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
         ),
         Text(
           label,
-          style: AppStyles.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppStyles.caption.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );
@@ -398,19 +383,25 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
             },
             decoration: InputDecoration(
               hintText: 'Search items...',
-              prefixIcon: Icon(Icons.search_outlined, color: AppColors.textTertiary),
+              prefixIcon: Icon(
+                Icons.search_outlined,
+                color: AppColors.textTertiary,
+              ),
               filled: true,
               fillColor: AppColors.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -418,11 +409,23 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
               children: [
                 _buildFilterChip('all', 'All', Icons.all_inclusive),
                 const SizedBox(width: 8),
-                _buildFilterChip('available', 'Available', Icons.shopping_bag_outlined),
+                _buildFilterChip(
+                  'available',
+                  'Available',
+                  Icons.shopping_bag_outlined,
+                ),
                 const SizedBox(width: 8),
-                _buildFilterChip('purchased', 'Purchased', Icons.check_circle_outline),
+                _buildFilterChip(
+                  'purchased',
+                  'Purchased',
+                  Icons.check_circle_outline,
+                ),
                 const SizedBox(width: 8),
-                _buildFilterChip('high_priority', 'High Priority', Icons.priority_high),
+                _buildFilterChip(
+                  'high_priority',
+                  'High Priority',
+                  Icons.priority_high,
+                ),
               ],
             ),
           ),
@@ -433,7 +436,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
 
   Widget _buildFilterChip(String value, String label, IconData icon) {
     final isSelected = _selectedFilter == value;
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -495,7 +498,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-                          color: item.status == ItemStatus.purchased 
+          color: item.status == ItemStatus.purchased
               ? AppColors.success.withOpacity(0.3)
               : AppColors.borderLight,
           width: 1,
@@ -535,9 +538,9 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                     size: 24,
                   ),
                 ),
-                
+
                 const SizedBox(width: 16),
-                
+
                 // Item Details
                 Expanded(
                   child: Column(
@@ -550,15 +553,18 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                               item.name,
                               style: AppStyles.bodyMedium.copyWith(
                                 fontWeight: FontWeight.w600,
-                                decoration: item.status == ItemStatus.purchased 
-                                    ? TextDecoration.lineThrough 
+                                decoration: item.status == ItemStatus.purchased
+                                    ? TextDecoration.lineThrough
                                     : null,
                               ),
                             ),
                           ),
                           if (item.status == ItemStatus.purchased)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.success,
                                 borderRadius: BorderRadius.circular(12),
@@ -573,10 +579,11 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                             ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 4),
-                      
-                      if (item.description != null && item.description!.isNotEmpty)
+
+                      if (item.description != null &&
+                          item.description!.isNotEmpty)
                         Text(
                           item.description!,
                           style: AppStyles.bodySmall.copyWith(
@@ -585,16 +592,21 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      
+
                       const SizedBox(height: 8),
-                      
+
                       Row(
                         children: [
                           // Priority Badge
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
-                              color: _getPriorityColor(item.priority).withOpacity(0.1),
+                              color: _getPriorityColor(
+                                item.priority,
+                              ).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -605,20 +617,21 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                               ),
                             ),
                           ),
-                          
+
                           const SizedBox(width: 8),
-                          
+
                           // Price
                           Text(
-                            item.priceRange?.displayPrice ?? 'Price not specified',
+                            item.priceRange?.displayPrice ??
+                                'Price not specified',
                             style: AppStyles.bodyMedium.copyWith(
                               color: AppColors.warning,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          
+
                           const Spacer(),
-                          
+
                           // Added by
                           Text(
                             'by Me',
@@ -659,9 +672,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
           const SizedBox(height: 8),
           Text(
             'Try adjusting your search or filters',
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textTertiary,
-            ),
+            style: AppStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
           ),
         ],
       ),
@@ -711,11 +722,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
 
   void _openItemDetails(WishlistItem item) {
     // Navigate to item details screen
-    Navigator.pushNamed(
-      context,
-      '/item-details',
-      arguments: item,
-    );
+    Navigator.pushNamed(context, '/item-details', arguments: item);
   }
 }
 

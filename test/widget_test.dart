@@ -7,7 +7,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider/provider.dart';
 
 import 'package:wish_listy/main.dart';
 import 'package:wish_listy/services/localization_service.dart';
@@ -17,7 +16,7 @@ void main() {
     // Create a mock localization service
     final localizationService = LocalizationService();
     await localizationService.initialize();
-    
+
     // Build our app and trigger a frame.
     await tester.pumpWidget(MyApp(localizationService: localizationService));
 

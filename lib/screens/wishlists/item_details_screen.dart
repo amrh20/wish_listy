@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
-import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/animated_background.dart';
-import 'wishlist_items_screen.dart';
 import '../../models/wishlist_model.dart';
 
 class ItemDetailsScreen extends StatefulWidget {
   final WishlistItem item;
 
-  const ItemDetailsScreen({
-    super.key,
-    required this.item,
-  });
+  const ItemDetailsScreen({super.key, required this.item});
 
   @override
   _ItemDetailsScreenState createState() => _ItemDetailsScreenState();
@@ -24,7 +19,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   bool _isPurchased = false;
 
   @override
@@ -41,21 +36,20 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   void _startAnimations() {
@@ -83,21 +77,21 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
               AppColors.primary.withOpacity(0.02),
             ],
           ),
-          
+
           // Content
           SafeArea(
             child: Column(
               children: [
                 // Header
                 _buildHeader(),
-                
+
                 // Content
                 Expanded(
                   child: AnimatedBuilder(
                     animation: _animationController,
                     builder: (context, child) {
                       if (!mounted) return const SizedBox.shrink();
-                      
+
                       return FadeTransition(
                         opacity: _fadeAnimation,
                         child: SlideTransition(
@@ -109,33 +103,34 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                               children: [
                                 // Item Image/Icon Section
                                 _buildItemImageSection(),
-                                
+
                                 const SizedBox(height: 24),
-                                
+
                                 // Item Info Section
                                 _buildItemInfoSection(),
-                                
+
                                 const SizedBox(height: 24),
-                                
+
                                 // Priority and Category Section
                                 _buildPriorityCategorySection(),
-                                
+
                                 const SizedBox(height: 24),
-                                
+
                                 // Purchase Status Section
                                 _buildPurchaseStatusSection(),
-                                
+
                                 const SizedBox(height: 24),
-                                
+
                                 // Notes Section
-                                if (widget.item.description != null && widget.item.description!.isNotEmpty) ...[
+                                if (widget.item.description != null &&
+                                    widget.item.description!.isNotEmpty) ...[
                                   _buildNotesSection(),
                                   const SizedBox(height: 24),
                                 ],
-                                
+
                                 // Action Buttons
                                 _buildActionButtons(),
-                                
+
                                 const SizedBox(height: 100), // Bottom padding
                               ],
                             ),
@@ -233,14 +228,14 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
               ),
             ),
             child: Icon(
-                              _getCategoryIcon('General'),
+              _getCategoryIcon('General'),
               color: _getPriorityColor(widget.item.priority),
               size: 60,
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Item Name
           Text(
             widget.item.name,
@@ -250,11 +245,12 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             ),
             textAlign: TextAlign.center,
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Item Description
-          if (widget.item.description != null && widget.item.description!.isNotEmpty)
+          if (widget.item.description != null &&
+              widget.item.description!.isNotEmpty)
             Text(
               widget.item.description!,
               style: AppStyles.bodyMedium.copyWith(
@@ -274,43 +270,39 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.borderLight, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Item Information',
-            style: AppStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Price
           _buildInfoRow(
             icon: Icons.attach_money_outlined,
             label: 'Price',
-                            value: widget.item.priceRange?.displayPrice ?? 'Price not specified',
+            value:
+                widget.item.priceRange?.displayPrice ?? 'Price not specified',
             iconColor: AppColors.warning,
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Category
           _buildInfoRow(
             icon: Icons.category_outlined,
             label: 'Category',
-                            value: 'General',
+            value: 'General',
             iconColor: AppColors.info,
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Added Date
           _buildInfoRow(
             icon: Icons.calendar_today_outlined,
@@ -338,15 +330,11 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             color: iconColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(
-            icon,
-            color: iconColor,
-            size: 20,
-          ),
+          child: Icon(icon, color: iconColor, size: 20),
         ),
-        
+
         const SizedBox(width: 16),
-        
+
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -377,23 +365,18 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.borderLight, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Priority & Category',
-            style: AppStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           Row(
             children: [
               // Priority
@@ -401,10 +384,14 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: _getPriorityColor(widget.item.priority).withOpacity(0.1),
+                    color: _getPriorityColor(
+                      widget.item.priority,
+                    ).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: _getPriorityColor(widget.item.priority).withOpacity(0.3),
+                      color: _getPriorityColor(
+                        widget.item.priority,
+                      ).withOpacity(0.3),
                       width: 1,
                     ),
                   ),
@@ -434,9 +421,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // Category
               Expanded(
                 child: Container(
@@ -490,7 +477,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _isPurchased ? AppColors.success.withOpacity(0.3) : AppColors.borderLight,
+          color: _isPurchased
+              ? AppColors.success.withOpacity(0.3)
+              : AppColors.borderLight,
           width: 1,
         ),
       ),
@@ -513,21 +502,21 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           Row(
             children: [
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: _isPurchased 
+                    color: _isPurchased
                         ? AppColors.success.withOpacity(0.1)
                         : AppColors.warning.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: _isPurchased 
+                      color: _isPurchased
                           ? AppColors.success.withOpacity(0.3)
                           : AppColors.warning.withOpacity(0.3),
                       width: 1,
@@ -537,14 +526,18 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                     children: [
                       Icon(
                         _isPurchased ? Icons.check_circle : Icons.schedule,
-                        color: _isPurchased ? AppColors.success : AppColors.warning,
+                        color: _isPurchased
+                            ? AppColors.success
+                            : AppColors.warning,
                         size: 24,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         _isPurchased ? 'Purchased' : 'Available',
                         style: AppStyles.bodyMedium.copyWith(
-                          color: _isPurchased ? AppColors.success : AppColors.warning,
+                          color: _isPurchased
+                              ? AppColors.success
+                              : AppColors.warning,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -552,16 +545,22 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // Toggle Button
               Expanded(
                 child: CustomButton(
-                  text: _isPurchased ? 'Mark as Available' : 'Mark as Purchased',
+                  text: _isPurchased
+                      ? 'Mark as Available'
+                      : 'Mark as Purchased',
                   onPressed: _togglePurchaseStatus,
-                  variant: _isPurchased ? ButtonVariant.outline : ButtonVariant.primary,
-                  customColor: _isPurchased ? AppColors.success : AppColors.success,
+                  variant: _isPurchased
+                      ? ButtonVariant.outline
+                      : ButtonVariant.primary,
+                  customColor: _isPurchased
+                      ? AppColors.success
+                      : AppColors.success,
                 ),
               ),
             ],
@@ -577,21 +576,14 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.borderLight, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                Icons.note_outlined,
-                color: AppColors.info,
-                size: 20,
-              ),
+              Icon(Icons.note_outlined, color: AppColors.info, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Notes',
@@ -601,9 +593,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -615,13 +607,13 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 width: 1,
               ),
             ),
-            child:         Text(
-          widget.item.description ?? 'No additional notes',
-          style: AppStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-            height: 1.4,
-          ),
-        ),
+            child: Text(
+              widget.item.description ?? 'No additional notes',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
           ),
         ],
       ),
@@ -639,9 +631,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           customColor: AppColors.secondary,
           icon: Icons.share_outlined,
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Delete Button
         CustomButton(
           text: 'Delete Item',
@@ -698,8 +690,18 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
@@ -709,19 +711,17 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     setState(() {
       _isPurchased = !_isPurchased;
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          _isPurchased 
+          _isPurchased
               ? 'Item marked as purchased! 🎉'
-              : 'Item marked as available! 📝'
+              : 'Item marked as available! 📝',
         ),
         backgroundColor: _isPurchased ? AppColors.success : AppColors.info,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -751,7 +751,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Delete Item'),
-        content: Text('Are you sure you want to delete "${widget.item.name}"? This action cannot be undone.'),
+        content: Text(
+          'Are you sure you want to delete "${widget.item.name}"? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -768,9 +770,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 ),
               );
             },
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.error,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: Text('Delete'),
           ),
         ],

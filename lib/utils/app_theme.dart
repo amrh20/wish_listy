@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
-import '../constants/app_styles.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
@@ -14,16 +13,14 @@ class AppTheme {
         primary: AppColors.primary,
         secondary: AppColors.secondary,
         tertiary: AppColors.accent,
-        background: AppColors.background,
         surface: AppColors.surface,
         error: AppColors.accent,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
-        onBackground: AppColors.textPrimary,
         onSurface: AppColors.textPrimary,
         onError: Colors.white,
       ),
-      
+
       // AppBar Theme
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -37,17 +34,15 @@ class AppTheme {
         ),
         iconTheme: IconThemeData(color: AppColors.textPrimary),
       ),
-      
+
       // Card Theme
       cardTheme: CardThemeData(
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         color: AppColors.surface,
         shadowColor: AppColors.textTertiary.withOpacity(0.1),
       ),
-      
+
       // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -59,13 +54,10 @@ class AppTheme {
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
-      
+
       // Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
@@ -76,7 +68,7 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
       ),
-      
+
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -97,10 +89,13 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.accent, width: 1),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         hintStyle: const TextStyle(color: AppColors.textTertiary),
       ),
-      
+
       // Bottom Navigation Bar Theme
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.surface,
@@ -111,7 +106,7 @@ class AppTheme {
       ),
     );
   }
-  
+
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
@@ -122,18 +117,16 @@ class AppTheme {
         primary: AppColors.primary,
         secondary: AppColors.secondary,
         tertiary: AppColors.accent,
-        background: AppColors.backgroundDark,
         surface: AppColors.surfaceDark,
         error: AppColors.accent,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
-        onBackground: AppColors.textPrimaryDark,
         onSurface: AppColors.textPrimaryDark,
         onError: Colors.white,
       ),
     );
   }
-  
+
   // Helper method to create MaterialColor from Color
   static MaterialColor createMaterialColor(Color color) {
     List strengths = <double>[.05];
@@ -143,7 +136,7 @@ class AppTheme {
     for (int i = 1; i < 10; i++) {
       strengths.add(0.1 * i);
     }
-    
+
     for (double strength in strengths) {
       final double ds = 0.5 - strength;
       swatch[(strength * 1000).round()] = Color.fromRGBO(
@@ -153,7 +146,7 @@ class AppTheme {
         1,
       );
     }
-    
+
     return MaterialColor(color.value, swatch);
   }
 }

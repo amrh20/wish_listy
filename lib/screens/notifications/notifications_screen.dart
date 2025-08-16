@@ -1,15 +1,11 @@
-
-
-
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
-import '../../utils/app_routes.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
 import '../../widgets/animated_background.dart';
 
 class NotificationsScreen extends StatefulWidget {
+  const NotificationsScreen({super.key});
+
   @override
   _NotificationsScreenState createState() => _NotificationsScreenState();
 }
@@ -88,21 +84,20 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   void _startAnimations() {
@@ -132,14 +127,14 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               AppColors.primary.withOpacity(0.01),
             ],
           ),
-          
+
           // Content
           SafeArea(
             child: Column(
               children: [
                 // Header
                 _buildHeader(unreadCount),
-                
+
                 // Notifications List
                 Expanded(
                   child: AnimatedBuilder(
@@ -157,28 +152,38 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                                   child: SingleChildScrollView(
                                     padding: const EdgeInsets.all(16),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         // Today Section
                                         if (todayNotifications.isNotEmpty) ...[
                                           _buildSectionHeader('Today'),
                                           const SizedBox(height: 12),
                                           ...todayNotifications.map(
-                                            (notification) => _buildNotificationCard(notification),
+                                            (notification) =>
+                                                _buildNotificationCard(
+                                                  notification,
+                                                ),
                                           ),
                                           const SizedBox(height: 24),
                                         ],
-                                        
+
                                         // Earlier Section
-                                        if (earlierNotifications.isNotEmpty) ...[
+                                        if (earlierNotifications
+                                            .isNotEmpty) ...[
                                           _buildSectionHeader('Earlier'),
                                           const SizedBox(height: 12),
                                           ...earlierNotifications.map(
-                                            (notification) => _buildNotificationCard(notification),
+                                            (notification) =>
+                                                _buildNotificationCard(
+                                                  notification,
+                                                ),
                                           ),
                                         ],
-                                        
-                                        const SizedBox(height: 100), // Bottom padding
+
+                                        const SizedBox(
+                                          height: 100,
+                                        ), // Bottom padding
                                       ],
                                     ),
                                   ),
@@ -241,7 +246,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               ],
             ),
           ),
-          
+
           // Mark All Read Button
           if (unreadCount > 0)
             TextButton(
@@ -254,7 +259,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 ),
               ),
             ),
-          
+
           // Settings Button
           IconButton(
             onPressed: _openNotificationSettings,
@@ -289,8 +294,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: notification.isRead 
-              ? Colors.transparent 
+          color: notification.isRead
+              ? Colors.transparent
               : AppColors.info.withOpacity(0.3),
           width: 1,
         ),
@@ -318,7 +323,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: _getNotificationColor(notification.type).withOpacity(0.1),
+                    color: _getNotificationColor(
+                      notification.type,
+                    ).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -327,9 +334,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                     size: 24,
                   ),
                 ),
-                
+
                 const SizedBox(width: 16),
-                
+
                 // Content
                 Expanded(
                   child: Column(
@@ -342,8 +349,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                               notification.title,
                               style: AppStyles.bodyMedium.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: notification.isRead 
-                                    ? AppColors.textSecondary 
+                                color: notification.isRead
+                                    ? AppColors.textSecondary
                                     : AppColors.textPrimary,
                               ),
                             ),
@@ -359,9 +366,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                             ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 4),
-                      
+
                       Text(
                         notification.message,
                         style: AppStyles.bodySmall.copyWith(
@@ -369,9 +376,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                           height: 1.4,
                         ),
                       ),
-                      
+
                       const SizedBox(height: 8),
-                      
+
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -381,7 +388,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                               color: AppColors.textTertiary,
                             ),
                           ),
-                          
+
                           // Action Buttons
                           if (_hasActions(notification.type))
                             _buildActionButtons(notification),
@@ -417,7 +424,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
             ),
           ],
         );
-      
+
       case NotificationType.eventInvitation:
         return Row(
           mainAxisSize: MainAxisSize.min,
@@ -435,7 +442,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
             ),
           ],
         );
-      
+
       default:
         return const SizedBox();
     }
@@ -452,25 +459,21 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       child: TextButton(
         onPressed: onPressed,
         style: TextButton.styleFrom(
-          backgroundColor: isOutlined 
-              ? Colors.transparent 
+          backgroundColor: isOutlined
+              ? Colors.transparent
               : (color ?? AppColors.primary).withOpacity(0.1),
           foregroundColor: color ?? AppColors.primary,
-          side: isOutlined 
+          side: isOutlined
               ? BorderSide(color: AppColors.textTertiary.withOpacity(0.5))
               : null,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
         ),
         child: Text(
           text,
-          style: AppStyles.caption.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+          style: AppStyles.caption.copyWith(fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -521,8 +524,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     final today = DateTime.now();
     return _notifications.where((notification) {
       return notification.time.year == today.year &&
-             notification.time.month == today.month &&
-             notification.time.day == today.day;
+          notification.time.month == today.month &&
+          notification.time.day == today.day;
     }).toList();
   }
 
@@ -530,8 +533,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     final today = DateTime.now();
     return _notifications.where((notification) {
       return !(notification.time.year == today.year &&
-               notification.time.month == today.month &&
-               notification.time.day == today.day);
+          notification.time.month == today.month &&
+          notification.time.day == today.day);
     }).toList();
   }
 
@@ -578,8 +581,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   bool _hasActions(NotificationType type) {
-    return type == NotificationType.friendRequest || 
-           type == NotificationType.eventInvitation;
+    return type == NotificationType.friendRequest ||
+        type == NotificationType.eventInvitation;
   }
 
   String _formatNotificationTime(DateTime time) {
@@ -602,7 +605,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     if (!notification.isRead) {
       _markAsRead(notification);
     }
-    
+
     // Navigate based on notification type
     switch (notification.type) {
       case NotificationType.friendRequest:
@@ -627,11 +630,11 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     setState(() {
       notification.isRead = true;
     });
-    
-    final message = accept 
-        ? 'Friend request accepted!' 
+
+    final message = accept
+        ? 'Friend request accepted!'
         : 'Friend request declined';
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -646,22 +649,23 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         ),
         backgroundColor: accept ? AppColors.success : AppColors.error,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
 
-  void _handleEventInvitationAction(NotificationItem notification, String action) {
+  void _handleEventInvitationAction(
+    NotificationItem notification,
+    String action,
+  ) {
     setState(() {
       notification.isRead = true;
     });
-    
-    final message = action == 'accept' 
-        ? 'Event invitation accepted!' 
+
+    final message = action == 'accept'
+        ? 'Event invitation accepted!'
         : 'Marked as maybe';
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -673,9 +677,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         ),
         backgroundColor: AppColors.accent,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -692,7 +694,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         notification.isRead = true;
       }
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -704,9 +706,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         ),
         backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -723,34 +723,22 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Notification Settings',
-              style: AppStyles.headingSmall,
-            ),
+            Text('Notification Settings', style: AppStyles.headingSmall),
             const SizedBox(height: 24),
             ListTile(
               leading: Icon(Icons.notifications_active),
               title: Text('Push Notifications'),
-              trailing: Switch(
-                value: true,
-                onChanged: (value) {},
-              ),
+              trailing: Switch(value: true, onChanged: (value) {}),
             ),
             ListTile(
               leading: Icon(Icons.email),
               title: Text('Email Notifications'),
-              trailing: Switch(
-                value: false,
-                onChanged: (value) {},
-              ),
+              trailing: Switch(value: false, onChanged: (value) {}),
             ),
             ListTile(
               leading: Icon(Icons.vibration),
               title: Text('Vibration'),
-              trailing: Switch(
-                value: true,
-                onChanged: (value) {},
-              ),
+              trailing: Switch(value: true, onChanged: (value) {}),
             ),
           ],
         ),
