@@ -86,12 +86,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  const Color(0xFFF8FAFF),
-                  const Color(0xFFF3F0FF),
-                  AppColors.primary.withOpacity(0.03), // Reduced from 0.05
-                  AppColors.secondary.withOpacity(0.02), // Reduced from 0.03
+                  const Color(0xFFF8F7FF),
+                  const Color(0xFFF1EEFF),
+                  const Color(0xFFE8DDFF),
+                  AppColors.primary.withOpacity(0.08),
                 ],
-                stops: const [0.0, 0.4, 0.8, 1.0], // Simplified stops
+                stops: const [0.0, 0.3, 0.7, 1.0],
               ),
             ),
             child: Stack(
@@ -138,74 +138,34 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                           return Transform.scale(
                                             scale: value,
                                             child: Container(
-                                              width: 140,
-                                              height: 140,
+                                              width: 120,
+                                              height: 120,
                                               decoration: BoxDecoration(
                                                 gradient: LinearGradient(
                                                   begin: Alignment.topLeft,
                                                   end: Alignment.bottomRight,
                                                   colors: [
                                                     AppColors.primary,
-                                                    AppColors.primaryAccent,
                                                     AppColors.secondary,
                                                   ],
-                                                  stops: [0.0, 0.5, 1.0],
                                                 ),
                                                 borderRadius:
-                                                    BorderRadius.circular(28),
+                                                    BorderRadius.circular(30),
                                                 boxShadow: [
                                                   BoxShadow(
                                                     color: AppColors.primary
-                                                        .withOpacity(
-                                                          0.2,
-                                                        ), // Reduced from 0.3
-                                                    offset: const Offset(
-                                                      0,
-                                                      8,
-                                                    ), // Reduced from 12
-                                                    blurRadius:
-                                                        20, // Reduced from 30
-                                                    spreadRadius:
-                                                        1, // Reduced from 2
-                                                  ),
-                                                  BoxShadow(
-                                                    color: AppColors.secondary
-                                                        .withOpacity(
-                                                          0.15,
-                                                        ), // Reduced from 0.2
-                                                    offset: const Offset(
-                                                      0,
-                                                      4,
-                                                    ), // Reduced from 6
-                                                    blurRadius:
-                                                        15, // Reduced from 20
-                                                    spreadRadius:
-                                                        0, // Reduced from 1
+                                                        .withOpacity(0.25),
+                                                    offset: const Offset(0, 8),
+                                                    blurRadius: 20,
+                                                    spreadRadius: 0,
                                                   ),
                                                 ],
                                               ),
                                               child: Center(
-                                                child: Container(
-                                                  width: 80,
-                                                  height: 80,
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white
-                                                        .withOpacity(0.2),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          20,
-                                                        ),
-                                                    border: Border.all(
-                                                      color: Colors.white
-                                                          .withOpacity(0.3),
-                                                      width: 2,
-                                                    ),
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.card_giftcard,
-                                                    size: 48,
-                                                    color: Colors.white,
-                                                  ),
+                                                child: Icon(
+                                                  Icons.card_giftcard_rounded,
+                                                  size: 60,
+                                                  color: Colors.white,
                                                 ),
                                               ),
                                             ),
@@ -465,7 +425,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     end: Alignment.bottomRight,
                     colors: [Colors.white, AppColors.primary.withOpacity(0.05)],
                   ),
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(30),
                   border: Border.all(
                     color: AppColors.primary.withOpacity(0.15),
                     width: 1.5,
@@ -515,7 +475,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(30),
                   border: Border.all(
                     color: AppColors.border.withOpacity(0.1),
                     width: 1,
@@ -558,57 +518,32 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 offset: Offset(0, 50 * (1 - value)),
                 child: Column(
                   children: [
-                    // App Name with Creative Typography
-                    ShaderMask(
-                      shaderCallback: (bounds) => LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppColors.primary,
-                          AppColors.primaryAccent,
-                          AppColors.secondary,
-                          AppColors.accent,
-                        ],
-                      ).createShader(bounds),
-                      child: Text(
-                        localization.translate('app.name'),
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: -1.5,
-                          height: 1.2,
-                        ),
+                    // App Name - Simple and Clean
+                    Text(
+                      localization.translate('app.name'),
+                      style: TextStyle(
+                        fontSize: 38,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                        letterSpacing: -1.0,
+                        height: 1.2,
                       ),
                     ),
 
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 12),
 
-                    // Tagline with elegant design
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 6,
+                    // Tagline - Simple text without background
+                    Text(
+                      localization.translate(
+                        'taglines.connectThoughtfulGifting',
                       ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.primary.withOpacity(0.2),
-                          width: 1,
-                        ),
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
+                        height: 1.4,
                       ),
-                      child: Text(
-                        localization.translate(
-                          'taglines.connectThoughtfulGifting',
-                        ),
-                        style: AppStyles.bodyMedium.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                          fontStyle: FontStyle.italic,
-                          fontSize: 13,
-                        ),
-                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
@@ -632,7 +567,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               scale: value,
               child: Container(
                 width: double.infinity,
-                height: 50,
+                height: 58,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
@@ -641,20 +576,16 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                       AppColors.primary,
                       AppColors.primaryAccent,
                       AppColors.secondary,
+                      AppColors.accent,
                     ],
+                    stops: [0.0, 0.3, 0.7, 1.0],
                   ),
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.4),
-                      offset: const Offset(0, 12),
-                      blurRadius: 30,
-                      spreadRadius: 0,
-                    ),
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.2),
+                      color: AppColors.primary.withOpacity(0.3),
                       offset: const Offset(0, 6),
-                      blurRadius: 20,
+                      blurRadius: 15,
                       spreadRadius: 0,
                     ),
                   ],
@@ -662,7 +593,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(25),
+                    borderRadius: BorderRadius.circular(30),
                     onTap: () {
                       Navigator.pushNamedAndRemoveUntil(
                         context,
@@ -672,7 +603,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                     },
                     child: Container(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(25),
+                        borderRadius: BorderRadius.circular(30),
                         border: Border.all(
                           color: Colors.white.withOpacity(0.2),
                           width: 1,
@@ -718,33 +649,35 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               scale: value,
               child: Container(
                 width: double.infinity,
-                height: 50,
+                height: 56,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(25),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white,
+                      const Color(0xFFFAF9FF),
+                      const Color(0xFFF5F3FF),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(30),
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.2),
-                    width: 1.5,
+                    color: AppColors.primary.withOpacity(0.25),
+                    width: 2,
                   ),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.shadow.withOpacity(0.08),
-                      offset: const Offset(0, 8),
-                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                      blurRadius: 12,
                       spreadRadius: 0,
-                    ),
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.9),
-                      offset: const Offset(0, 1),
-                      blurRadius: 0,
-                      spreadRadius: 1,
                     ),
                   ],
                 ),
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(25),
+                    borderRadius: BorderRadius.circular(30),
                     onTap: () {
                       Navigator.pushNamed(context, AppRoutes.login);
                     },
