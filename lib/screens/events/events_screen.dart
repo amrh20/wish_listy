@@ -4,7 +4,8 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/animated_background.dart';
+import '../../widgets/decorative_background.dart';
+
 import '../../services/localization_service.dart';
 
 class EventsScreen extends StatefulWidget {
@@ -130,42 +131,36 @@ class _EventsScreenState extends State<EventsScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
-          body: Stack(
-            children: [
-              // Animated Background
-              AnimatedBackground(
-                colors: [
-                  AppColors.background,
-                  AppColors.accent.withOpacity(0.02),
-                  AppColors.secondary.withOpacity(0.01),
-                ],
-              ),
-
-              // Content
-              NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) {
-                  return [
-                    _buildSliverAppBar(localization),
-                    _buildSliverTabBar(localization),
-                  ];
-                },
-                body: AnimatedBuilder(
-                  animation: _animationController,
-                  builder: (context, child) {
-                    return FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildMyEventsTab(localization),
-                          _buildInvitedEventsTab(localization),
-                        ],
-                      ),
-                    );
+          body: DecorativeBackground(
+            showGifts: true,
+            child: Stack(
+              children: [
+                // Content
+                NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) {
+                    return [
+                      _buildSliverAppBar(localization),
+                      _buildSliverTabBar(localization),
+                    ];
                   },
+                  body: AnimatedBuilder(
+                    animation: _animationController,
+                    builder: (context, child) {
+                      return FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildMyEventsTab(localization),
+                            _buildInvitedEventsTab(localization),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

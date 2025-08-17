@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
+import '../widgets/app_logo.dart';
 import '../constants/app_styles.dart';
 import '../services/localization_service.dart';
 import '../utils/app_routes.dart';
@@ -47,20 +48,8 @@ class _SplashScreenState extends State<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // App Icon (temporary)
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Icon(
-                    Icons.card_giftcard,
-                    size: 60,
-                    color: Colors.white,
-                  ),
-                ),
+                // App Logo
+                const AppLogo(size: 120, showText: false),
 
                 const SizedBox(height: 40),
 

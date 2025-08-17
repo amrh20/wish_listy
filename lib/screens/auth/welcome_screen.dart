@@ -6,6 +6,7 @@ import '../../services/localization_service.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/language_switcher.dart';
+import '../../widgets/app_logo.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -16,695 +17,430 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen>
     with TickerProviderStateMixin {
-  late AnimationController _floatingController;
-  late AnimationController _pulseController;
-  late AnimationController _rotationController;
-  late Animation<double> _floatingAnimation;
-  late Animation<double> _pulseAnimation;
-  late Animation<double> _rotationAnimation;
+  late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
     super.initState();
+    _initializeAnimations();
+  }
 
-    // Floating animation for decorative elements - OPTIMIZED
-    _floatingController = AnimationController(
-      duration: const Duration(milliseconds: 1500), // Reduced from 3000ms
+  void _initializeAnimations() {
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
       vsync: this,
-    )..repeat(reverse: true);
-
-    _floatingAnimation = Tween<double>(begin: -8.0, end: 8.0).animate(
-      // Reduced range from -10 to 10
-      CurvedAnimation(parent: _floatingController, curve: Curves.easeInOut),
     );
 
-    // Pulse animation for the main icon - OPTIMIZED
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1000), // Reduced from 2000ms
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
-    )..repeat(reverse: true);
-
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.03).animate(
-      // Reduced scale from 1.05 to 1.03
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // Rotation animation for decorative elements - OPTIMIZED
-    _rotationController = AnimationController(
-      duration: const Duration(seconds: 15), // Reduced from 20 seconds
-      vsync: this,
-    )..repeat();
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeInOut,
+    );
 
-    _rotationAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(_rotationController);
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
+
+    // Start animations
+    _fadeController.forward();
+    _slideController.forward();
   }
 
   @override
   void dispose() {
-    _floatingController.dispose();
-    _pulseController.dispose();
-    _rotationController.dispose();
+    _fadeController.dispose();
+    _slideController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
-        if (!mounted) return const SizedBox.shrink();
-
         return Scaffold(
-          body: Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFFF8F7FF),
-                  const Color(0xFFF1EEFF),
-                  const Color(0xFFE8DDFF),
-                  AppColors.primary.withOpacity(0.08),
-                ],
-                stops: const [0.0, 0.3, 0.7, 1.0],
+          body: Stack(
+            children: [
+              // White Background with Gift Decorations
+              Container(
+                width: double.infinity,
+                height: double.infinity,
+                color: Colors.white,
+                child: Stack(
+                  children: [
+                    // Gift Box Decorations
+                    _buildGiftDecorations(),
+                  ],
+                ),
               ),
-            ),
-            child: Stack(
-              children: [
-                // Animated background decorations
-                _buildBackgroundDecorations(size),
 
-                // Main content
-                SafeArea(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight:
-                            MediaQuery.of(context).size.height -
-                            MediaQuery.of(context).padding.top -
-                            MediaQuery.of(context).padding.bottom,
-                      ),
-                      child: IntrinsicHeight(
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 20),
+              // Main Content
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    children: [
+                      // Header with Language Switcher
+                      _buildHeader(localization),
 
-                            // Enhanced Header
-                            _buildEnhancedHeader(localization),
+                      // Main Content Area
+                      Expanded(
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: SlideTransition(
+                            position: _slideAnimation,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Logo Section
+                                _buildLogoSection(localization),
 
-                            const SizedBox(height: 40),
+                                const SizedBox(height: 60),
 
-                            // Enhanced Hero Section
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  // Enhanced Logo and App Name
-                                  Column(
-                                    children: [
-                                      // Enhanced icon with gradient, shadow and animation
-                                      TweenAnimationBuilder<double>(
-                                        duration: const Duration(
-                                          milliseconds: 1000,
-                                        ),
-                                        tween: Tween(begin: 0.0, end: 1.0),
-                                        builder: (context, value, child) {
-                                          return Transform.scale(
-                                            scale: value,
-                                            child: Container(
-                                              width: 120,
-                                              height: 120,
-                                              decoration: BoxDecoration(
-                                                gradient: LinearGradient(
-                                                  begin: Alignment.topLeft,
-                                                  end: Alignment.bottomRight,
-                                                  colors: [
-                                                    AppColors.primary,
-                                                    AppColors.secondary,
-                                                  ],
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(30),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: AppColors.primary
-                                                        .withOpacity(0.25),
-                                                    offset: const Offset(0, 8),
-                                                    blurRadius: 20,
-                                                    spreadRadius: 0,
-                                                  ),
-                                                ],
-                                              ),
-                                              child: Center(
-                                                child: Icon(
-                                                  Icons.card_giftcard_rounded,
-                                                  size: 60,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
+                                // Features Preview
+                                _buildFeaturesPreview(localization),
 
-                                      const SizedBox(height: 32),
+                                const SizedBox(height: 60),
 
-                                      // Enhanced App Name with shadow and animation
-                                      TweenAnimationBuilder<double>(
-                                        duration: const Duration(
-                                          milliseconds: 800,
-                                        ),
-                                        tween: Tween(begin: 0.0, end: 1.0),
-                                        builder: (context, value, child) {
-                                          return Transform.scale(
-                                            scale: value,
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 24,
-                                                    vertical: 12,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white,
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: AppColors.shadow
-                                                        .withOpacity(0.1),
-                                                    offset: const Offset(0, 6),
-                                                    blurRadius: 20,
-                                                    spreadRadius: 0,
-                                                  ),
-                                                ],
-                                              ),
-                                              child: Text(
-                                                localization.translate(
-                                                  'app.name',
-                                                ),
-                                                style: AppStyles.headingLarge
-                                                    .copyWith(
-                                                      color: AppColors.primary,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      fontSize: 32,
-                                                    ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-
-                                      const SizedBox(height: 16),
-
-                                      // Enhanced subtitle with better styling and animation
-                                      TweenAnimationBuilder<double>(
-                                        duration: const Duration(
-                                          milliseconds: 1000,
-                                        ),
-                                        tween: Tween(begin: 0.0, end: 1.0),
-                                        builder: (context, value, child) {
-                                          return Opacity(
-                                            opacity: value,
-                                            child: Transform.translate(
-                                              offset: Offset(
-                                                0,
-                                                20 * (1 - value),
-                                              ),
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 20,
-                                                      vertical: 16,
-                                                    ),
-                                                decoration: BoxDecoration(
-                                                  color: AppColors
-                                                      .surfaceVariant
-                                                      .withOpacity(0.5),
-                                                  borderRadius:
-                                                      BorderRadius.circular(16),
-                                                  border: Border.all(
-                                                    color: AppColors.border
-                                                        .withOpacity(0.3),
-                                                    width: 1,
-                                                  ),
-                                                ),
-                                                child: Text(
-                                                  localization.translate(
-                                                    'welcome.subtitle',
-                                                  ),
-                                                  style: AppStyles.bodyLarge
-                                                      .copyWith(
-                                                        color: AppColors
-                                                            .textSecondary,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        height: 1.4,
-                                                      ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-
-                                      const SizedBox(height: 40),
-                                    ],
-                                  ),
-                                ],
-                              ),
+                                // Action Buttons
+                                _buildActionButtons(localization),
+                              ],
                             ),
-
-                            // Enhanced Action Buttons
-                            _buildEnhancedButtons(localization),
-
-                            const SizedBox(height: 32),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  Widget _buildBackgroundDecorations(Size size) {
-    return Stack(
-      children: [
-        // Floating circles
-        AnimatedBuilder(
-          animation: _floatingAnimation,
-          builder: (context, child) {
-            return Positioned(
-              top: 100 + _floatingAnimation.value,
-              right: 30,
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.primary.withOpacity(0.1),
-                      AppColors.secondary.withOpacity(0.05),
-                    ],
+  Widget _buildHeader(LocalizationService localization) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Welcome Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.white, AppColors.primary.withOpacity(0.05)],
+              ),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.2),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.08),
+                  offset: const Offset(0, 4),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.waving_hand, size: 16, color: AppColors.primary),
+                const SizedBox(width: 6),
+                Text(
+                  localization.translate('welcome.title'),
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            );
-          },
-        ),
+              ],
+            ),
+          ),
 
-        AnimatedBuilder(
-          animation: _floatingAnimation,
-          builder: (context, child) {
-            return Positioned(
-              top: 200 - _floatingAnimation.value,
-              left: 20,
-              child: Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.accent.withOpacity(0.1),
-                      AppColors.primary.withOpacity(0.05),
-                    ],
-                  ),
+          // Language Switcher
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadow.withOpacity(0.05),
+                  offset: const Offset(0, 4),
+                  blurRadius: 12,
                 ),
-              ),
-            );
-          },
-        ),
-
-        // Rotating decorative element
-        AnimatedBuilder(
-          animation: _rotationAnimation,
-          builder: (context, child) {
-            return Positioned(
-              bottom: 150,
-              right: 50,
-              child: Transform.rotate(
-                angle: _rotationAnimation.value * 2 * 3.14159,
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.success.withOpacity(0.1),
-                        AppColors.info.withOpacity(0.05),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-
-        // Additional floating shapes
-        AnimatedBuilder(
-          animation: _floatingAnimation,
-          builder: (context, child) {
-            return Positioned(
-              bottom: 300 + _floatingAnimation.value * 0.5,
-              left: 40,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: AppColors.warning.withOpacity(0.1),
-                  border: Border.all(
-                    color: AppColors.warning.withOpacity(0.2),
-                    width: 1,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
+              ],
+            ),
+            child: const LanguageSwitcher(),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildEnhancedHeader(LocalizationService localization) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Welcome badge with enhanced design
-        TweenAnimationBuilder<double>(
-          duration: const Duration(milliseconds: 600),
-          tween: Tween(begin: 0.0, end: 1.0),
-          builder: (context, value, child) {
-            return Transform.scale(
-              scale: value,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Colors.white, AppColors.primary.withOpacity(0.05)],
-                  ),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: AppColors.primary.withOpacity(0.15),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.1),
-                      offset: const Offset(0, 8),
-                      blurRadius: 20,
-                      spreadRadius: 0,
-                    ),
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.8),
-                      offset: const Offset(0, 1),
-                      blurRadius: 0,
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.waving_hand, size: 18, color: AppColors.primary),
-                    const SizedBox(width: 6),
-                    Text(
-                      localization.translate('welcome.title'),
-                      style: AppStyles.headingSmall.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-
-        // Enhanced Language Switcher
-        TweenAnimationBuilder<double>(
-          duration: const Duration(milliseconds: 800),
-          tween: Tween(begin: 0.0, end: 1.0),
-          builder: (context, value, child) {
-            return Transform.scale(
-              scale: value,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: AppColors.border.withOpacity(0.1),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.shadow.withOpacity(0.08),
-                      offset: const Offset(0, 8),
-                      blurRadius: 24,
-                      spreadRadius: 0,
-                    ),
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.9),
-                      offset: const Offset(0, 1),
-                      blurRadius: 0,
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: LanguageSwitcher(),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeroSection(LocalizationService localization) {
+  Widget _buildLogoSection(LocalizationService localization) {
     return Column(
       children: [
-        // Main Title with Enhanced Typography
-        TweenAnimationBuilder<double>(
-          duration: const Duration(milliseconds: 800),
-          tween: Tween(begin: 0.0, end: 1.0),
-          builder: (context, value, child) {
-            return Opacity(
-              opacity: value,
-              child: Transform.translate(
-                offset: Offset(0, 50 * (1 - value)),
-                child: Column(
-                  children: [
-                    // App Name - Simple and Clean
-                    Text(
-                      localization.translate('app.name'),
-                      style: TextStyle(
-                        fontSize: 38,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
-                        letterSpacing: -1.0,
-                        height: 1.2,
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // Tagline - Simple text without background
-                    Text(
-                      localization.translate(
-                        'taglines.connectThoughtfulGifting',
-                      ),
-                      style: AppStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 16,
-                        height: 1.4,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+        // App Logo with Glow Effect
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [
+                AppColors.primary.withOpacity(0.1),
+                AppColors.primary.withOpacity(0.05),
+                Colors.transparent,
+              ],
+              stops: const [0.3, 0.7, 1.0],
+            ),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.15),
+                  offset: const Offset(0, 8),
+                  blurRadius: 24,
+                  spreadRadius: 0,
                 ),
-              ),
-            );
-          },
+                BoxShadow(
+                  color: Colors.white.withOpacity(0.8),
+                  offset: const Offset(0, 1),
+                  blurRadius: 0,
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+            child: const AppLogo(size: 80, showText: false),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // App Name
+        Text(
+          localization.translate('app.name'),
+          style: TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+            letterSpacing: -1.2,
+            height: 1.1,
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Subtitle
+        Text(
+          localization.translate('welcome.subtitle'),
+          style: AppStyles.bodyLarge.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+            height: 1.5,
+          ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
-  Widget _buildEnhancedButtons(LocalizationService localization) {
+  Widget _buildFeaturesPreview(LocalizationService localization) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildFeatureItem(
+          icon: Icons.favorite_outline,
+          title: localization.translate('features.createWishlists'),
+          color: AppColors.primary,
+        ),
+        _buildFeatureItem(
+          icon: Icons.people_outline,
+          title: localization.translate('features.shareWithFriends'),
+          color: AppColors.secondary,
+        ),
+        _buildFeatureItem(
+          icon: Icons.celebration_outlined,
+          title: localization.translate('features.organizeEvents'),
+          color: AppColors.accent,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeatureItem({
+    required IconData icon,
+    required String title,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+              border: Border.all(color: color.withOpacity(0.3), width: 1),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: AppStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(LocalizationService localization) {
     return Column(
       children: [
         // Get Started Button
-        TweenAnimationBuilder<double>(
-          duration: const Duration(milliseconds: 1200),
-          tween: Tween(begin: 0.0, end: 1.0),
-          builder: (context, value, child) {
-            return Transform.scale(
-              scale: value,
-              child: Container(
-                width: double.infinity,
-                height: 58,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.primary,
-                      AppColors.primaryAccent,
-                      AppColors.secondary,
-                      AppColors.accent,
-                    ],
-                    stops: [0.0, 0.3, 0.7, 1.0],
-                  ),
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
-                      offset: const Offset(0, 6),
-                      blurRadius: 15,
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(30),
-                    onTap: () {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        AppRoutes.mainNavigation,
-                        (route) => false,
-                      );
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.rocket_launch_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              localization.translate('welcome.getStarted'),
-                              style: AppStyles.headingSmall.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+        CustomButton(
+          text: localization.translate('welcome.getStarted'),
+          onPressed: () {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.mainNavigation,
+              (route) => false,
             );
           },
+          variant: ButtonVariant.gradient,
+          gradientColors: [AppColors.primary, AppColors.secondary],
+          icon: Icons.rocket_launch_rounded,
         ),
 
         const SizedBox(height: 16),
 
-        // Already Have Account Button
-        TweenAnimationBuilder<double>(
-          duration: const Duration(milliseconds: 1400),
-          tween: Tween(begin: 0.0, end: 1.0),
-          builder: (context, value, child) {
-            return Transform.scale(
-              scale: value,
-              child: Container(
-                width: double.infinity,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.white,
-                      const Color(0xFFFAF9FF),
-                      const Color(0xFFF5F3FF),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: AppColors.primary.withOpacity(0.25),
-                    width: 2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.shadow.withOpacity(0.08),
-                      offset: const Offset(0, 4),
-                      blurRadius: 12,
-                      spreadRadius: 0,
-                    ),
-                  ],
+        // Login Button
+        CustomButton(
+          text: localization.translate('welcome.alreadyHaveAccount'),
+          onPressed: () {
+            Navigator.pushNamed(context, AppRoutes.login);
+          },
+          variant: ButtonVariant.outline,
+          icon: Icons.login_rounded,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGiftDecorations() {
+    return Stack(
+      children: [
+        // Floating Gift Box 1 - Top Right
+        AnimatedBuilder(
+          animation: _fadeAnimation,
+          builder: (context, child) {
+            return Positioned(
+              top: 80 + (_fadeAnimation.value * 10),
+              right: 30,
+              child: Transform.rotate(
+                angle: 0.1,
+                child: _buildGiftBox(
+                  size: 60,
+                  color: AppColors.primary.withOpacity(0.1),
+                  ribbonColor: AppColors.primary.withOpacity(0.3),
                 ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(30),
-                    onTap: () {
-                      Navigator.pushNamed(context, AppRoutes.login);
-                    },
-                    child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.login_rounded,
-                            color: AppColors.primary,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            localization.translate(
-                              'welcome.alreadyHaveAccount',
-                            ),
-                            style: AppStyles.headingSmall.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+              ),
+            );
+          },
+        ),
+
+        // Floating Gift Box 2 - Left Side
+        AnimatedBuilder(
+          animation: _fadeAnimation,
+          builder: (context, child) {
+            return Positioned(
+              top: 200 - (_fadeAnimation.value * 8),
+              left: 20,
+              child: Transform.rotate(
+                angle: -0.15,
+                child: _buildGiftBox(
+                  size: 45,
+                  color: AppColors.accent.withOpacity(0.08),
+                  ribbonColor: AppColors.accent.withOpacity(0.25),
+                ),
+              ),
+            );
+          },
+        ),
+
+        // Floating Gift Box 3 - Bottom Right
+        AnimatedBuilder(
+          animation: _slideAnimation,
+          builder: (context, child) {
+            return Positioned(
+              bottom: 150 + (_slideAnimation.value.dy * 20),
+              right: 50,
+              child: Transform.rotate(
+                angle: 0.2,
+                child: _buildGiftBox(
+                  size: 55,
+                  color: AppColors.secondary.withOpacity(0.1),
+                  ribbonColor: AppColors.secondary.withOpacity(0.3),
+                ),
+              ),
+            );
+          },
+        ),
+
+        // Small Gift Box 4 - Bottom Left
+        AnimatedBuilder(
+          animation: _fadeAnimation,
+          builder: (context, child) {
+            return Positioned(
+              bottom: 300 + (_fadeAnimation.value * 5),
+              left: 40,
+              child: Transform.rotate(
+                angle: -0.1,
+                child: _buildGiftBox(
+                  size: 35,
+                  color: AppColors.success.withOpacity(0.08),
+                  ribbonColor: AppColors.success.withOpacity(0.25),
+                ),
+              ),
+            );
+          },
+        ),
+
+        // Gift Box 5 - Middle Right
+        AnimatedBuilder(
+          animation: _slideAnimation,
+          builder: (context, child) {
+            return Positioned(
+              top: 350 - (_slideAnimation.value.dy * 15),
+              right: 20,
+              child: Transform.rotate(
+                angle: 0.05,
+                child: _buildGiftBox(
+                  size: 40,
+                  color: AppColors.warning.withOpacity(0.08),
+                  ribbonColor: AppColors.warning.withOpacity(0.25),
                 ),
               ),
             );
@@ -713,4 +449,139 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       ],
     );
   }
+
+  Widget _buildGiftBox({
+    required double size,
+    required Color color,
+    required Color ribbonColor,
+  }) {
+    return CustomPaint(
+      painter: GiftBoxPainter(color: color, ribbonColor: ribbonColor),
+      size: Size(size, size),
+    );
+  }
+}
+
+class GiftBoxPainter extends CustomPainter {
+  final Color color;
+  final Color ribbonColor;
+
+  GiftBoxPainter({required this.color, required this.ribbonColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final strokePaint = Paint()
+      ..color = ribbonColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0;
+
+    final ribbonFillPaint = Paint()
+      ..color = ribbonColor.withOpacity(0.8)
+      ..style = PaintingStyle.fill;
+
+    // Gift box body
+    final rect = Rect.fromLTWH(
+      size.width * 0.2,
+      size.height * 0.3,
+      size.width * 0.6,
+      size.height * 0.5,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(6)),
+      paint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect, const Radius.circular(6)),
+      strokePaint,
+    );
+
+    // Gift box lid
+    final lidRect = Rect.fromLTWH(
+      size.width * 0.15,
+      size.height * 0.25,
+      size.width * 0.7,
+      size.height * 0.15,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(lidRect, const Radius.circular(6)),
+      paint,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(lidRect, const Radius.circular(6)),
+      strokePaint,
+    );
+
+    // Ribbon vertical
+    final ribbonV = Rect.fromLTWH(
+      size.width * 0.45,
+      size.height * 0.25,
+      size.width * 0.1,
+      size.height * 0.55,
+    );
+    canvas.drawRect(ribbonV, ribbonFillPaint);
+
+    // Ribbon horizontal
+    final ribbonH = Rect.fromLTWH(
+      size.width * 0.15,
+      size.height * 0.45,
+      size.width * 0.7,
+      size.height * 0.1,
+    );
+    canvas.drawRect(ribbonH, ribbonFillPaint);
+
+    // Bow - Enhanced version
+    final bowPaint = Paint()
+      ..color = ribbonColor
+      ..style = PaintingStyle.fill;
+
+    // Left bow part
+    final leftBowPath = Path();
+    leftBowPath.moveTo(size.width * 0.35, size.height * 0.15);
+    leftBowPath.quadraticBezierTo(
+      size.width * 0.25,
+      size.height * 0.05,
+      size.width * 0.4,
+      size.height * 0.1,
+    );
+    leftBowPath.quadraticBezierTo(
+      size.width * 0.45,
+      size.height * 0.18,
+      size.width * 0.35,
+      size.height * 0.15,
+    );
+    canvas.drawPath(leftBowPath, bowPaint);
+
+    // Right bow part
+    final rightBowPath = Path();
+    rightBowPath.moveTo(size.width * 0.65, size.height * 0.15);
+    rightBowPath.quadraticBezierTo(
+      size.width * 0.75,
+      size.height * 0.05,
+      size.width * 0.6,
+      size.height * 0.1,
+    );
+    rightBowPath.quadraticBezierTo(
+      size.width * 0.55,
+      size.height * 0.18,
+      size.width * 0.65,
+      size.height * 0.15,
+    );
+    canvas.drawPath(rightBowPath, bowPaint);
+
+    // Center knot
+    final knotRect = Rect.fromLTWH(
+      size.width * 0.47,
+      size.height * 0.12,
+      size.width * 0.06,
+      size.height * 0.08,
+    );
+    canvas.drawOval(knotRect, bowPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

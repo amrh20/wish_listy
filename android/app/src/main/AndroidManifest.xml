@@ -40,7 +40,7 @@
     <!-- ============================================= -->
     
     <application
-        android:label="WishLink"
+        android:label="WishListy"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:theme="@style/LaunchTheme"

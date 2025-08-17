@@ -4,8 +4,9 @@ import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
+import '../../widgets/decorative_background.dart';
 import '../../widgets/animated_background.dart';
+import '../../widgets/custom_text_field.dart';
 import '../../services/localization_service.dart';
 
 class AddItemScreen extends StatefulWidget {
@@ -97,145 +98,149 @@ class _AddItemScreenState extends State<AddItemScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
-          body: Stack(
-            children: [
-              // Animated Background
-              AnimatedBackground(
-                colors: [
-                  AppColors.background,
-                  AppColors.accent.withOpacity(0.03),
-                  AppColors.primary.withOpacity(0.02),
-                ],
-              ),
+          body: DecorativeBackground(
+            showGifts: true,
+            child: Stack(
+              children: [
+                // Animated Background
+                AnimatedBackground(
+                  colors: [
+                    AppColors.background,
+                    AppColors.accent.withOpacity(0.03),
+                    AppColors.primary.withOpacity(0.02),
+                  ],
+                ),
 
-              // Content
-              SafeArea(
-                child: Column(
-                  children: [
-                    // Header
-                    _buildHeader(localization),
+                // Content
+                SafeArea(
+                  child: Column(
+                    children: [
+                      // Header
+                      _buildHeader(localization),
 
-                    // Form
-                    Expanded(
-                      child: AnimatedBuilder(
-                        animation: _animationController,
-                        builder: (context, child) {
-                          return FadeTransition(
-                            opacity: _fadeAnimation,
-                            child: SlideTransition(
-                              position: _slideAnimation,
-                              child: SingleChildScrollView(
-                                padding: const EdgeInsets.all(24.0),
-                                child: Form(
-                                  key: _formKey,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      // Wishlist Selection
-                                      _buildWishlistSelection(localization),
-                                      const SizedBox(height: 24),
+                      // Form
+                      Expanded(
+                        child: AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            return FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: SlideTransition(
+                                position: _slideAnimation,
+                                child: SingleChildScrollView(
+                                  padding: const EdgeInsets.all(24.0),
+                                  child: Form(
+                                    key: _formKey,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        // Wishlist Selection
+                                        _buildWishlistSelection(localization),
+                                        const SizedBox(height: 24),
 
-                                      // Item Name
-                                      CustomTextField(
-                                        controller: _nameController,
-                                        label: localization.translate(
-                                          'wishlists.itemName',
-                                        ),
-                                        hint: localization.translate(
-                                          'wishlists.whatDoYouWishFor',
-                                        ),
-                                        prefixIcon:
-                                            Icons.card_giftcard_outlined,
-                                        isRequired: true,
-                                        validator: (value) {
-                                          if (value?.isEmpty ?? true) {
-                                            return localization.translate(
-                                              'wishlists.pleaseEnterItemName',
-                                            );
-                                          }
-                                          return null;
-                                        },
-                                      ),
-
-                                      const SizedBox(height: 20),
-
-                                      // Description
-                                      CustomTextField(
-                                        controller: _descriptionController,
-                                        label: localization.translate(
-                                          'wishlists.description',
-                                        ),
-                                        hint: localization.translate(
-                                          'wishlists.addDetailsAboutItem',
-                                        ),
-                                        prefixIcon: Icons.description_outlined,
-                                        maxLines: 3,
-                                        validator: null,
-                                      ),
-
-                                      const SizedBox(height: 20),
-
-                                      // Product Link
-                                      CustomTextField(
-                                        controller: _linkController,
-                                        label: localization.translate(
-                                          'wishlists.productLink',
-                                        ),
-                                        hint: localization.translate(
-                                          'wishlists.pasteLinkFromOnlineStore',
-                                        ),
-                                        prefixIcon: Icons.link_outlined,
-                                        keyboardType: TextInputType.url,
-                                        validator: (value) {
-                                          if (value != null &&
-                                              value.isNotEmpty) {
-                                            if (!_isValidUrl(value)) {
+                                        // Item Name
+                                        CustomTextField(
+                                          controller: _nameController,
+                                          label: localization.translate(
+                                            'wishlists.itemName',
+                                          ),
+                                          hint: localization.translate(
+                                            'wishlists.whatDoYouWishFor',
+                                          ),
+                                          prefixIcon:
+                                              Icons.card_giftcard_outlined,
+                                          isRequired: true,
+                                          validator: (value) {
+                                            if (value?.isEmpty ?? true) {
                                               return localization.translate(
-                                                'wishlists.pleaseEnterValidUrl',
+                                                'wishlists.pleaseEnterItemName',
                                               );
                                             }
-                                          }
-                                          return null;
-                                        },
-                                      ),
+                                            return null;
+                                          },
+                                        ),
 
-                                      const SizedBox(height: 24),
+                                        const SizedBox(height: 20),
 
-                                      // Price Range Section
-                                      _buildPriceRangeSection(localization),
+                                        // Description
+                                        CustomTextField(
+                                          controller: _descriptionController,
+                                          label: localization.translate(
+                                            'wishlists.description',
+                                          ),
+                                          hint: localization.translate(
+                                            'wishlists.addDetailsAboutItem',
+                                          ),
+                                          prefixIcon:
+                                              Icons.description_outlined,
+                                          maxLines: 3,
+                                          validator: null,
+                                        ),
 
-                                      const SizedBox(height: 24),
+                                        const SizedBox(height: 20),
 
-                                      // Priority Selection
-                                      _buildPrioritySelection(localization),
+                                        // Product Link
+                                        CustomTextField(
+                                          controller: _linkController,
+                                          label: localization.translate(
+                                            'wishlists.productLink',
+                                          ),
+                                          hint: localization.translate(
+                                            'wishlists.pasteLinkFromOnlineStore',
+                                          ),
+                                          prefixIcon: Icons.link_outlined,
+                                          keyboardType: TextInputType.url,
+                                          validator: (value) {
+                                            if (value != null &&
+                                                value.isNotEmpty) {
+                                              if (!_isValidUrl(value)) {
+                                                return localization.translate(
+                                                  'wishlists.pleaseEnterValidUrl',
+                                                );
+                                              }
+                                            }
+                                            return null;
+                                          },
+                                        ),
 
-                                      const SizedBox(height: 24),
+                                        const SizedBox(height: 24),
 
-                                      // Image Upload Section
-                                      _buildImageUploadSection(localization),
+                                        // Price Range Section
+                                        _buildPriceRangeSection(localization),
 
-                                      const SizedBox(height: 32),
+                                        const SizedBox(height: 24),
 
-                                      // Action Buttons
-                                      _buildActionButtons(localization),
+                                        // Priority Selection
+                                        _buildPrioritySelection(localization),
 
-                                      const SizedBox(
-                                        height: 100,
-                                      ), // Bottom padding
-                                    ],
+                                        const SizedBox(height: 24),
+
+                                        // Image Upload Section
+                                        _buildImageUploadSection(localization),
+
+                                        const SizedBox(height: 32),
+
+                                        // Action Buttons
+                                        _buildActionButtons(localization),
+
+                                        const SizedBox(
+                                          height: 100,
+                                        ), // Bottom padding
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

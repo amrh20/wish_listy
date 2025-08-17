@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Wish Listy",
+    "name": "WishListy",
     "tagline": "Connect through thoughtful gifting",
     "welcome": "Welcome",
     "loading": "Loading...",
@@ -853,6 +853,11 @@
     "itemReceived": "marked \"{itemName}\" as received",
     "confirmCancelEvent": "Are you sure you want to cancel \"{eventName}\"? This action cannot be undone.",
     "friendRequestMessage": "\"{message}\""
+  },
+  "features": {
+    "createWishlists": "Create Wishlists",
+    "shareWithFriends": "Share with Friends", 
+    "organizeEvents": "Organize Events"
   },
   "taglines": {
     "connectThoughtfulGifting": "Connect through thoughtful gifting"

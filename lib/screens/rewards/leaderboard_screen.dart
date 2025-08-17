@@ -81,17 +81,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
+          backgroundColor: Colors.grey.shade50,
           body: Stack(
             children: [
-              // Animated Background
-              AnimatedBackground(
-                colors: [
-                  AppColors.background,
-                  AppColors.warning.withOpacity(0.02),
-                  AppColors.accent.withOpacity(0.01),
-                ],
-              ),
-
               // Content
               SafeArea(
                 child: Column(

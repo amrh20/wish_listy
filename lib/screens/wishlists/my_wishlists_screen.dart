@@ -4,7 +4,8 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/animated_background.dart';
+import '../../widgets/decorative_background.dart';
+
 import '../../services/localization_service.dart';
 
 class MyWishlistsScreen extends StatefulWidget {
@@ -98,42 +99,36 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
             backgroundColor: AppColors.accent,
             child: Icon(Icons.add, color: Colors.white, size: 28),
           ),
-          body: Stack(
-            children: [
-              // Animated Background
-              AnimatedBackground(
-                colors: [
-                  AppColors.background,
-                  AppColors.secondary.withOpacity(0.02),
-                  AppColors.primary.withOpacity(0.01),
-                ],
-              ),
-
-              // Content
-              NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) {
-                  return [
-                    _buildSliverAppBar(localization),
-                    _buildSliverTabBar(localization),
-                  ];
-                },
-                body: AnimatedBuilder(
-                  animation: _animationController,
-                  builder: (context, child) {
-                    return FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildPublicWishlistTab(localization),
-                          _buildEventWishlistsTab(localization),
-                        ],
-                      ),
-                    );
+          body: DecorativeBackground(
+            showGifts: true,
+            child: Stack(
+              children: [
+                // Content
+                NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) {
+                    return [
+                      _buildSliverAppBar(localization),
+                      _buildSliverTabBar(localization),
+                    ];
                   },
+                  body: AnimatedBuilder(
+                    animation: _animationController,
+                    builder: (context, child) {
+                      return FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildPublicWishlistTab(localization),
+                            _buildEventWishlistsTab(localization),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

@@ -4,6 +4,7 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/decorative_background.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/animated_background.dart';
 import '../../services/localization_service.dart';
@@ -134,45 +135,37 @@ class _FriendsScreenState extends State<FriendsScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
-          body: Stack(
-            children: [
-              // Animated Background
-              AnimatedBackground(
-                colors: [
-                  AppColors.background,
-                  AppColors.secondary.withValues(alpha: 0.02),
-                  AppColors.accent.withValues(alpha: 0.01),
-                ],
-              ),
-
-              // Content
-              NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) {
-                  return [
-                    _buildSliverAppBar(localization),
-                    _buildSearchAndTabs(localization),
-                  ];
-                },
-                body: AnimatedBuilder(
-                  animation: _animationController,
-                  builder: (context, child) {
-                    return FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _buildMyFriendsTab(localization),
-                          _buildFriendRequestsTab(localization),
-                        ],
-                      ),
-                    );
+          body: DecorativeBackground(
+            showGifts: false,
+            child: Stack(
+              children: [
+                // Content
+                NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) {
+                    return [
+                      _buildSliverAppBar(localization),
+                      _buildSearchAndTabs(localization),
+                    ];
                   },
+                  body: AnimatedBuilder(
+                    animation: _animationController,
+                    builder: (context, child) {
+                      return FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildMyFriendsTab(localization),
+                            _buildFriendRequestsTab(localization),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-
-          // Floating Action Button
           floatingActionButton: FloatingActionButton(
             onPressed: _showAddFriendDialog,
             backgroundColor: AppColors.secondary,

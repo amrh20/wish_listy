@@ -56,7 +56,7 @@ class PermissionsService {
       permission: 'camera',
       title: 'Camera Access',
       message:
-          'WishLink needs camera access to let you add photos to your wishlist items and scan QR codes.',
+          'WishListy needs camera access to let you add photos to your wishlist items and scan QR codes.',
     );
   }
 
@@ -66,7 +66,7 @@ class PermissionsService {
       permission: 'photos',
       title: 'Photo Library Access',
       message:
-          'WishLink needs access to your photos to let you select images for your wishlist items.',
+          'WishListy needs access to your photos to let you select images for your wishlist items.',
     );
   }
 
@@ -76,7 +76,7 @@ class PermissionsService {
       permission: 'location',
       title: 'Location Access',
       message:
-          'WishLink needs location access to help you find and add event locations.',
+          'WishListy needs location access to help you find and add event locations.',
     );
   }
 }

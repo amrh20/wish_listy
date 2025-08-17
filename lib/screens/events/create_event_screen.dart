@@ -141,17 +141,9 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
+          backgroundColor: Colors.grey.shade50,
           body: Stack(
             children: [
-              // Animated Background
-              AnimatedBackground(
-                colors: [
-                  AppColors.background,
-                  AppColors.accent.withOpacity(0.03),
-                  AppColors.secondary.withOpacity(0.02),
-                ],
-              ),
-
               // Content
               SafeArea(
                 child: Column(

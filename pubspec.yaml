@@ -1,5 +1,5 @@
 name: wish_listy
-description: "WishLink - Connect through thoughtful gifting. A modern Flutter app for creating and sharing gift wishlists with friends and family."
+description: "WishListy - Connect through thoughtful gifting. A modern Flutter app for creating and sharing gift wishlists with friends and family."
 
 # Prevent accidental publishing
 publish_to: 'none'

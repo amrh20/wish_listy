@@ -6,7 +6,6 @@ import '../../services/localization_service.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
-import '../../widgets/animated_background.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -169,17 +168,9 @@ class _SignupScreenState extends State<SignupScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
+          backgroundColor: Colors.grey.shade50,
           body: Stack(
             children: [
-              // Animated Background
-              AnimatedBackground(
-                colors: [
-                  AppColors.background,
-                  AppColors.secondary.withOpacity(0.05),
-                  AppColors.accent.withOpacity(0.03),
-                ],
-              ),
-
               // Content
               SafeArea(
                 child: SingleChildScrollView(

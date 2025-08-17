@@ -67,17 +67,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       body: Stack(
         children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.secondary.withOpacity(0.03),
-              AppColors.primary.withOpacity(0.02),
-            ],
-          ),
-
           // Content
           SafeArea(
             child: Column(

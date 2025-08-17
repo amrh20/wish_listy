@@ -117,17 +117,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     final earlierNotifications = _getEarlierNotifications();
 
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       body: Stack(
         children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.info.withOpacity(0.02),
-              AppColors.primary.withOpacity(0.01),
-            ],
-          ),
-
           // Content
           SafeArea(
             child: Column(

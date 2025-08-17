@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "قائمة الأمنيات",
+    "name": "WishListy",
     "welcome": "مرحباً بك",
     "loading": "جاري التحميل...",
     "save": "حفظ",
@@ -604,6 +604,11 @@
     "itemReceived": "تم تمييز \"{itemName}\" كمستلم",
     "confirmCancelEvent": "هل أنت متأكد من إلغاء \"{eventName}\"؟ هذا الإجراء لا يمكن التراجع عنه.",
     "friendRequestMessage": "\"{message}\""
+  },
+  "features": {
+    "createWishlists": "إنشاء قوائم الأمنيات",
+    "shareWithFriends": "مشاركة مع الأصدقاء",
+    "organizeEvents": "تنظيم الفعاليات"
   },
   "taglines": {
     "connectThoughtfulGifting": "تواصل من خلال الهدايا المدروسة"

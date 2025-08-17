@@ -4,8 +4,9 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/animated_background.dart';
+
 import '../../services/localization_service.dart';
+import '../../widgets/decorative_background.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -139,72 +140,77 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
-          body: Stack(
-            children: [
-              // Animated Background
-              AnimatedBackground(
-                colors: [
-                  AppColors.background,
-                  AppColors.primary.withOpacity(0.01), // Reduced from 0.02
-                  AppColors.secondary.withOpacity(0.005), // Reduced from 0.01
-                ],
-              ),
+          body: DecorativeBackground(
+            showGifts: false, // Less busy for profile
+            child: Stack(
+              children: [
+                // Content
+                RefreshIndicator(
+                  onRefresh: _refreshProfile,
+                  color: AppColors.primary,
+                  child: CustomScrollView(
+                    slivers: [
+                      // Profile Header
+                      _buildSliverAppBar(),
 
-              // Content
-              RefreshIndicator(
-                onRefresh: _refreshProfile,
-                color: AppColors.primary,
-                child: CustomScrollView(
-                  slivers: [
-                    // Profile Header
-                    _buildSliverAppBar(),
-
-                    // Profile Content
-                    SliverToBoxAdapter(
-                      child: AnimatedBuilder(
-                        animation: _animationController,
-                        builder: (context, child) {
-                          return FadeTransition(
-                            opacity: _fadeAnimation,
-                            child: SlideTransition(
-                              position: _slideAnimation,
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Stats Cards
-                                    _buildStatsSection(),
-                                    const SizedBox(height: 16), // تقليل المسافة
-                                    // Quick Actions
-                                    _buildQuickActions(),
-                                    const SizedBox(height: 16), // تقليل المسافة
-                                    // Achievements
-                                    _buildAchievements(),
-                                    const SizedBox(height: 16), // تقليل المسافة
-                                    // Account Settings
-                                    _buildAccountSettings(),
-                                    const SizedBox(height: 16), // تقليل المسافة
-                                    // App Settings
-                                    _buildAppSettings(),
-                                    const SizedBox(height: 16), // تقليل المسافة
-                                    // Support & About
-                                    _buildSupportSection(),
-                                    const SizedBox(
-                                      height: 80,
-                                    ), // تقليل المسافة السفلية
-                                  ],
+                      // Profile Content
+                      SliverToBoxAdapter(
+                        child: AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            return FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: SlideTransition(
+                                position: _slideAnimation,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Stats Cards
+                                      _buildStatsSection(),
+                                      const SizedBox(
+                                        height: 16,
+                                      ), // تقليل المسافة
+                                      // Quick Actions
+                                      _buildQuickActions(),
+                                      const SizedBox(
+                                        height: 16,
+                                      ), // تقليل المسافة
+                                      // Achievements
+                                      _buildAchievements(),
+                                      const SizedBox(
+                                        height: 16,
+                                      ), // تقليل المسافة
+                                      // Account Settings
+                                      _buildAccountSettings(),
+                                      const SizedBox(
+                                        height: 16,
+                                      ), // تقليل المسافة
+                                      // App Settings
+                                      _buildAppSettings(),
+                                      const SizedBox(
+                                        height: 16,
+                                      ), // تقليل المسافة
+                                      // Support & About
+                                      _buildSupportSection(),
+                                      const SizedBox(
+                                        height: 80,
+                                      ), // تقليل المسافة السفلية
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           floatingActionButton: Container(
             decoration: BoxDecoration(
@@ -1266,7 +1272,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
           _buildSettingItem(
             icon: Icons.star_outline,
-            title: 'Rate WishLink',
+            title: 'Rate WishListy',
             subtitle: 'Rate us on the app store',
             onTap: _rateApp,
             color: AppColors.warning,

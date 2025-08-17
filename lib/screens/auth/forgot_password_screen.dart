@@ -4,7 +4,6 @@ import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
-import '../../widgets/animated_background.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -120,17 +119,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       body: Stack(
         children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.accent.withOpacity(0.05),
-              AppColors.primary.withOpacity(0.03),
-            ],
-          ),
-
           // Content
           SafeArea(
             child: SingleChildScrollView(

@@ -76,17 +76,9 @@ class _RewardsStoreScreenState extends State<RewardsStoreScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
+          backgroundColor: Colors.grey.shade50,
           body: Stack(
             children: [
-              // Animated Background
-              AnimatedBackground(
-                colors: [
-                  AppColors.background,
-                  AppColors.success.withOpacity(0.02),
-                  AppColors.primary.withOpacity(0.01),
-                ],
-              ),
-
               // Content
               SafeArea(
                 child: Column(

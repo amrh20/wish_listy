@@ -4,6 +4,7 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/decorative_background.dart';
 import '../../widgets/animated_background.dart';
 import '../../services/localization_service.dart';
 import 'events_screen.dart';
@@ -67,67 +68,61 @@ class _EventManagementScreenState extends State<EventManagementScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
-          body: Stack(
-            children: [
-              // Animated Background
-              AnimatedBackground(
-                colors: [
-                  AppColors.background,
-                  AppColors.secondary.withOpacity(0.03),
-                  AppColors.primary.withOpacity(0.02),
-                ],
-              ),
+          body: DecorativeBackground(
+            showGifts: true,
+            child: Stack(
+              children: [
+                // Content
+                SafeArea(
+                  child: Column(
+                    children: [
+                      // Header
+                      _buildHeader(localization),
 
-              // Content
-              SafeArea(
-                child: Column(
-                  children: [
-                    // Header
-                    _buildHeader(localization),
+                      // Content
+                      Expanded(
+                        child: AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            return FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: SlideTransition(
+                                position: _slideAnimation,
+                                child: SingleChildScrollView(
+                                  padding: const EdgeInsets.all(24.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      // Event Info Card
+                                      _buildEventInfoCard(),
 
-                    // Content
-                    Expanded(
-                      child: AnimatedBuilder(
-                        animation: _animationController,
-                        builder: (context, child) {
-                          return FadeTransition(
-                            opacity: _fadeAnimation,
-                            child: SlideTransition(
-                              position: _slideAnimation,
-                              child: SingleChildScrollView(
-                                padding: const EdgeInsets.all(24.0),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    // Event Info Card
-                                    _buildEventInfoCard(),
+                                      const SizedBox(height: 24),
 
-                                    const SizedBox(height: 24),
+                                      // Management Options
+                                      _buildManagementOptions(localization),
 
-                                    // Management Options
-                                    _buildManagementOptions(localization),
+                                      const SizedBox(height: 24),
 
-                                    const SizedBox(height: 24),
+                                      // Quick Actions
+                                      _buildQuickActions(),
 
-                                    // Quick Actions
-                                    _buildQuickActions(),
-
-                                    const SizedBox(
-                                      height: 100,
-                                    ), // Bottom padding
-                                  ],
+                                      const SizedBox(
+                                        height: 100,
+                                      ), // Bottom padding
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

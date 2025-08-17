@@ -4,8 +4,9 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/animated_background.dart';
+
 import '../../widgets/rewards_widgets.dart';
+import '../../widgets/decorative_background.dart';
 import '../../services/localization_service.dart';
 import '../../services/rewards_service.dart';
 
@@ -150,92 +151,86 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
-          body: Stack(
-            children: [
-              // Animated Background
-              AnimatedBackground(
-                colors: [
-                  AppColors.background,
-                  AppColors.primary.withOpacity(0.02),
-                  AppColors.secondary.withOpacity(0.01),
-                ],
-              ),
+          body: DecorativeBackground(
+            child: Stack(
+              children: [
+                // Content
+                RefreshIndicator(
+                  onRefresh: _refreshData,
+                  color: AppColors.primary,
+                  child: CustomScrollView(
+                    controller: _scrollController,
+                    slivers: [
+                      // App Bar
+                      _buildSliverAppBar(localization),
 
-              // Content
-              RefreshIndicator(
-                onRefresh: _refreshData,
-                color: AppColors.primary,
-                child: CustomScrollView(
-                  controller: _scrollController,
-                  slivers: [
-                    // App Bar
-                    _buildSliverAppBar(localization),
+                      // Content
+                      SliverToBoxAdapter(
+                        child: AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            return FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: SlideTransition(
+                                position: _slideAnimation,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Welcome Card
+                                      if (_showWelcomeCard) ...[
+                                        _buildWelcomeCard(localization),
+                                        const SizedBox(height: 24),
+                                      ],
 
-                    // Content
-                    SliverToBoxAdapter(
-                      child: AnimatedBuilder(
-                        animation: _animationController,
-                        builder: (context, child) {
-                          return FadeTransition(
-                            opacity: _fadeAnimation,
-                            child: SlideTransition(
-                              position: _slideAnimation,
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Welcome Card
-                                    if (_showWelcomeCard) ...[
-                                      _buildWelcomeCard(localization),
+                                      // Points & Level Display
+                                      _buildPointsAndLevel(),
                                       const SizedBox(height: 24),
+
+                                      // Recent Achievement
+                                      const RecentAchievementWidget(),
+                                      const SizedBox(height: 24),
+
+                                      // Quick Actions
+                                      _buildQuickActions(localization),
+                                      const SizedBox(height: 24),
+
+                                      // Rewards Quick Actions
+                                      _buildRewardsSection(localization),
+                                      const SizedBox(height: 32),
+
+                                      // Upcoming Events
+                                      _buildUpcomingEvents(localization),
+                                      const SizedBox(height: 32),
+
+                                      // Friend Activity
+                                      _buildFriendActivity(localization),
+                                      const SizedBox(height: 32),
+
+                                      // Gift Suggestions
+                                      _buildGiftSuggestions(localization),
+                                      const SizedBox(height: 32),
+
+                                      // Leaderboard Preview
+                                      const LeaderboardPreviewWidget(),
+                                      const SizedBox(
+                                        height: 100,
+                                      ), // Bottom padding for FAB
                                     ],
-
-                                    // Points & Level Display
-                                    _buildPointsAndLevel(),
-                                    const SizedBox(height: 24),
-
-                                    // Recent Achievement
-                                    const RecentAchievementWidget(),
-                                    const SizedBox(height: 24),
-
-                                    // Quick Actions
-                                    _buildQuickActions(localization),
-                                    const SizedBox(height: 24),
-
-                                    // Rewards Quick Actions
-                                    _buildRewardsSection(localization),
-                                    const SizedBox(height: 32),
-
-                                    // Upcoming Events
-                                    _buildUpcomingEvents(localization),
-                                    const SizedBox(height: 32),
-
-                                    // Friend Activity
-                                    _buildFriendActivity(localization),
-                                    const SizedBox(height: 32),
-
-                                    // Gift Suggestions
-                                    _buildGiftSuggestions(localization),
-                                    const SizedBox(height: 32),
-
-                                    // Leaderboard Preview
-                                    const LeaderboardPreviewWidget(),
-                                    const SizedBox(
-                                      height: 100,
-                                    ), // Bottom padding for FAB
-                                  ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

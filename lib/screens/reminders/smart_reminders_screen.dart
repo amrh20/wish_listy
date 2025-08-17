@@ -120,17 +120,9 @@ class _SmartRemindersScreenState extends State<SmartRemindersScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
+          backgroundColor: Colors.grey.shade50,
           body: Stack(
             children: [
-              // Animated Background
-              AnimatedBackground(
-                colors: [
-                  AppColors.background,
-                  AppColors.primary.withOpacity(0.02),
-                  AppColors.secondary.withOpacity(0.01),
-                ],
-              ),
-
               // Content
               SafeArea(
                 child: Column(
