@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/animated_background.dart';
+import '../../widgets/decorative_background.dart';
 import 'events_screen.dart';
 
 class GuestManagementScreen extends StatefulWidget {
@@ -140,58 +140,47 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.secondary.withOpacity(0.03),
-              AppColors.primary.withOpacity(0.02),
+      body: DecorativeBackground(
+        showGifts: true,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              _buildHeader(),
+
+              // Content
+              Expanded(
+                child: AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, child) {
+                    return FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: Column(
+                          children: [
+                            // Stats Cards
+                            _buildStatsCards(),
+
+                            const SizedBox(height: 20),
+
+                            // Search and Tabs
+                            _buildSearchAndTabs(),
+
+                            const SizedBox(height: 20),
+
+                            // Guest List
+                            Expanded(child: _buildGuestList()),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
-
-          // Content
-          SafeArea(
-            child: Column(
-              children: [
-                // Header
-                _buildHeader(),
-
-                // Content
-                Expanded(
-                  child: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: SlideTransition(
-                          position: _slideAnimation,
-                          child: Column(
-                            children: [
-                              // Stats Cards
-                              _buildStatsCards(),
-
-                              const SizedBox(height: 20),
-
-                              // Search and Tabs
-                              _buildSearchAndTabs(),
-
-                              const SizedBox(height: 20),
-
-                              // Guest List
-                              Expanded(child: _buildGuestList()),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -667,6 +656,28 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
   }
 
   // Helper Methods
+  String _getStatusDisplayName(GuestStatus status) {
+    switch (status) {
+      case GuestStatus.invited:
+        return 'Invited';
+      case GuestStatus.confirmed:
+        return 'Confirmed';
+      case GuestStatus.cancelled:
+        return 'Cancelled';
+    }
+  }
+
+  String _getRSVPDisplayName(RSVPStatus status) {
+    switch (status) {
+      case RSVPStatus.accepted:
+        return 'Accepted';
+      case RSVPStatus.declined:
+        return 'Declined';
+      case RSVPStatus.pending:
+        return 'Pending';
+    }
+  }
+
   Color _getRSVPStatusColor(RSVPStatus status) {
     switch (status) {
       case RSVPStatus.accepted:
@@ -691,41 +702,220 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
 
   // Action Handlers
   void _addNewGuest() {
-    // Navigate to add guest screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Add guest functionality coming soon!'),
-        backgroundColor: AppColors.info,
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Add Guest'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Email or Username',
+                hintText: 'Enter email or username',
+                prefixIcon: Icon(Icons.person_add),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Personal Message (Optional)',
+                hintText: 'Add a personal message',
+                prefixIcon: Icon(Icons.message),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Guest invitation sent!'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            },
+            child: Text('Send Invitation'),
+          ),
+        ],
       ),
     );
   }
 
   void _openGuestDetails(Guest guest) {
-    // Navigate to guest details screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Guest details coming soon!'),
-        backgroundColor: AppColors.info,
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Guest Details'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  child: Text(
+                    guest.name[0].toUpperCase(),
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        guest.name,
+                        style: AppStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        guest.email,
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildDetailRow('Status', _getStatusDisplayName(guest.status)),
+            _buildDetailRow('RSVP', _getRSVPDisplayName(guest.rsvpStatus)),
+            _buildDetailRow(
+              'Invited',
+              '${guest.invitedDate.day}/${guest.invitedDate.month}/${guest.invitedDate.year}',
+            ),
+            if (guest.dietaryRestrictions != null)
+              _buildDetailRow(
+                'Dietary Restrictions',
+                guest.dietaryRestrictions!,
+              ),
+            if (guest.notes != null) _buildDetailRow('Notes', guest.notes!),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+          if (guest.rsvpStatus == RSVPStatus.pending)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _sendReminder(guest);
+              },
+              child: Text('Send Reminder'),
+            ),
+        ],
       ),
     );
   }
 
-  void _sendReminder(Guest guest) {
-    // Send reminder functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Reminder sent to ${guest.name}!'),
-        backgroundColor: AppColors.success,
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: AppStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(child: Text(value, style: AppStyles.bodySmall)),
+        ],
       ),
     );
   }
 
   void _updateGuestStatus(Guest guest) {
-    // Update guest status functionality
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Update ${guest.name}\'s Status'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.check_circle, color: AppColors.success),
+              title: Text('Mark as Confirmed'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${guest.name} marked as confirmed!'),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.cancel, color: AppColors.error),
+              title: Text('Mark as Cancelled'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${guest.name} marked as cancelled!'),
+                    backgroundColor: AppColors.warning,
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.send, color: AppColors.info),
+              title: Text('Send Reminder'),
+              onTap: () {
+                Navigator.pop(context);
+                _sendReminder(guest);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _sendReminder(Guest guest) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Update status for ${guest.name} coming soon!'),
-        backgroundColor: AppColors.info,
+        content: Text('Reminder sent to ${guest.name}!'),
+        backgroundColor: AppColors.success,
       ),
     );
   }

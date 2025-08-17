@@ -466,6 +466,8 @@
     "systemUpdate": "تحديث النظام"
   },
   "common": {
+    "general": "عام",
+    "holiday": "عطلة",
     "yes": "نعم",
     "no": "لا",
     "ok": "حسناً",

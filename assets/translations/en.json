@@ -715,6 +715,8 @@
     "systemUpdate": "System update"
   },
   "common": {
+    "general": "General",
+    "holiday": "Holiday",
     "yes": "Yes",
     "no": "No",
     "ok": "OK",

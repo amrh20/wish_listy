@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/animated_background.dart';
+import '../../widgets/decorative_background.dart';
 import '../../models/wishlist_model.dart';
 import 'events_screen.dart';
 
@@ -170,58 +170,47 @@ class _EventWishlistScreenState extends State<EventWishlistScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.secondary.withOpacity(0.03),
-              AppColors.primary.withOpacity(0.02),
+      body: DecorativeBackground(
+        showGifts: true,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              _buildHeader(),
+
+              // Content
+              Expanded(
+                child: AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, child) {
+                    return FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: Column(
+                          children: [
+                            // Event Info Card
+                            _buildEventInfoCard(),
+
+                            const SizedBox(height: 20),
+
+                            // Search and Filters
+                            _buildSearchAndFilters(),
+
+                            const SizedBox(height: 20),
+
+                            // Items List
+                            Expanded(child: _buildItemsList()),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
-
-          // Content
-          SafeArea(
-            child: Column(
-              children: [
-                // Header
-                _buildHeader(),
-
-                // Content
-                Expanded(
-                  child: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: SlideTransition(
-                          position: _slideAnimation,
-                          child: Column(
-                            children: [
-                              // Event Info Card
-                              _buildEventInfoCard(),
-
-                              const SizedBox(height: 20),
-
-                              // Search and Filters
-                              _buildSearchAndFilters(),
-
-                              const SizedBox(height: 20),
-
-                              // Items List
-                              Expanded(child: _buildItemsList()),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
