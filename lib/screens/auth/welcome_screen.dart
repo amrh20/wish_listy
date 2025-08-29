@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../services/localization_service.dart';
+import '../../services/auth_service.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/language_switcher.dart';
@@ -322,7 +323,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         // Get Started Button
         CustomButton(
           text: localization.translate('welcome.getStarted'),
-          onPressed: () {
+          onPressed: () async {
+            // Set user as guest
+            final authService = Provider.of<AuthService>(context, listen: false);
+            await authService.loginAsGuest();
+            
+            // Navigate to main app in guest mode
             Navigator.pushNamedAndRemoveUntil(
               context,
               AppRoutes.mainNavigation,

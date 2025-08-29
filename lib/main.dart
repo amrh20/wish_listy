@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'services/localization_service.dart';
+import 'services/auth_service.dart';
 import 'utils/app_theme.dart';
 import 'utils/app_routes.dart';
 import 'screens/splash_screen.dart';
@@ -9,25 +10,41 @@ import 'screens/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Create a single instance of LocalizationService
+  // Create instances of services
   final localizationService = LocalizationService();
-  await localizationService.initialize();
+  final authService = AuthService();
   
-  runApp(MyApp(localizationService: localizationService));
+  // Initialize services
+  await localizationService.initialize();
+  await authService.initialize();
+  
+  runApp(MyApp(
+    localizationService: localizationService,
+    authService: authService,
+  ));
 }
 
 class MyApp extends StatelessWidget {
   final LocalizationService localizationService;
+  final AuthService authService;
   
   const MyApp({
     super.key,
     required this.localizationService,
+    required this.authService,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<LocalizationService>(
-      create: (_) => localizationService,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<LocalizationService>(
+          create: (_) => localizationService,
+        ),
+        ChangeNotifierProvider<AuthService>(
+          create: (_) => authService,
+        ),
+      ],
       child: Consumer<LocalizationService>(
         builder: (context, localization, child) {
           return MaterialApp(

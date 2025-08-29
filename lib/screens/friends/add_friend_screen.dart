@@ -14,13 +14,8 @@ class AddFriendScreen extends StatefulWidget {
   State<AddFriendScreen> createState() => _AddFriendScreenState();
 }
 
-class _AddFriendScreenState extends State<AddFriendScreen>
-    with TickerProviderStateMixin {
+class _AddFriendScreenState extends State<AddFriendScreen> {
   final _searchController = TextEditingController();
-
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
 
   bool _isSearching = false;
   String _searchMethod = 'username';
@@ -31,34 +26,10 @@ class _AddFriendScreenState extends State<AddFriendScreen>
   @override
   void initState() {
     super.initState();
-    _initializeAnimations();
-  }
-
-  void _initializeAnimations() {
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    );
-
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
-
-    _animationController.forward();
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -76,72 +47,65 @@ class _AddFriendScreenState extends State<AddFriendScreen>
                 children: [
                   _buildHeader(localization),
                   Expanded(
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: SlideTransition(
-                        position: _slideAnimation,
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              const SizedBox(height: 20),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 20),
 
-                              // Search Method Selection
-                              _buildSearchMethodSelection(localization),
+                          // Search Method Selection
+                          _buildSearchMethodSelection(localization),
 
-                              const SizedBox(height: 24),
+                          const SizedBox(height: 24),
 
-                              // Search Field
-                              CustomTextField(
-                                controller: _searchController,
-                                label: _getSearchLabel(localization),
-                                hint: _getSearchHint(localization),
-                                prefixIcon: Icons.search,
-                                suffixIcon: _isSearching
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : IconButton(
-                                        icon: const Icon(Icons.qr_code_scanner),
-                                        onPressed: () =>
-                                            _scanQRCode(localization),
-                                      ),
-                                onChanged: (value) {
-                                  if (value.isNotEmpty && value.length > 2) {
-                                    _performSearch(value, localization);
-                                  } else {
-                                    setState(() {
-                                      _searchResults.clear();
-                                    });
-                                  }
-                                },
-                              ),
-
-                              const SizedBox(height: 32),
-
-                              // Search Results
-                              if (_searchResults.isNotEmpty) ...[
-                                _buildSearchResults(localization),
-                                const SizedBox(height: 32),
-                              ],
-
-                              // Quick Actions
-                              _buildQuickActions(localization),
-
-                              const SizedBox(height: 32),
-
-                              // Suggested Friends
-                              _buildSuggestedFriends(localization),
-
-                              const SizedBox(height: 100),
-                            ],
+                          // Search Field
+                          CustomTextField(
+                            controller: _searchController,
+                            label: _getSearchLabel(localization),
+                            hint: _getSearchHint(localization),
+                            prefixIcon: Icons.search,
+                            suffixIcon: _isSearching
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : IconButton(
+                                    icon: const Icon(Icons.qr_code_scanner),
+                                    onPressed: () => _scanQRCode(localization),
+                                  ),
+                            onChanged: (value) {
+                              if (value.isNotEmpty && value.length > 2) {
+                                _performSearch(value, localization);
+                              } else {
+                                setState(() {
+                                  _searchResults.clear();
+                                });
+                              }
+                            },
                           ),
-                        ),
+
+                          const SizedBox(height: 32),
+
+                          // Search Results
+                          if (_searchResults.isNotEmpty) ...[
+                            _buildSearchResults(localization),
+                            const SizedBox(height: 32),
+                          ],
+
+                          // Quick Actions
+                          _buildQuickActions(localization),
+
+                          const SizedBox(height: 32),
+
+                          // Suggested Friends
+                          _buildSuggestedFriends(localization),
+
+                          const SizedBox(height: 100),
+                        ],
                       ),
                     ),
                   ),

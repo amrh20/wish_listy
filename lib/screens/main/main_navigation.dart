@@ -6,6 +6,8 @@ import '../../constants/app_styles.dart';
 import '../../widgets/bottom_navigation.dart';
 import '../../widgets/language_switcher.dart';
 import '../../services/localization_service.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/guest_restriction_dialog.dart';
 import 'home_screen.dart';
 import '../wishlists/my_wishlists_screen.dart';
 import '../events/events_screen.dart';
@@ -24,42 +26,6 @@ class _MainNavigationState extends State<MainNavigation>
   int _currentIndex = 0;
   late PageController _pageController;
   late AnimationController _fabAnimationController;
-  late Animation<double> _fabScaleAnimation;
-
-  List<NavigationItem> _getNavigationItems(LocalizationService localization) {
-    return [
-      NavigationItem(
-        icon: Icons.home_outlined,
-        activeIcon: Icons.home_rounded,
-        label: localization.translate('navigation.home'),
-        color: AppColors.primary,
-      ),
-      NavigationItem(
-        icon: Icons.favorite_outline,
-        activeIcon: Icons.favorite_rounded,
-        label: localization.translate('navigation.wishlist'),
-        color: AppColors.secondary,
-      ),
-      NavigationItem(
-        icon: Icons.celebration_outlined,
-        activeIcon: Icons.celebration_rounded,
-        label: localization.translate('navigation.events'),
-        color: AppColors.accent,
-      ),
-      NavigationItem(
-        icon: Icons.people_outline,
-        activeIcon: Icons.people_rounded,
-        label: localization.translate('navigation.friends'),
-        color: AppColors.warning,
-      ),
-      NavigationItem(
-        icon: Icons.person_outline,
-        activeIcon: Icons.person_rounded,
-        label: localization.translate('navigation.profile'),
-        color: AppColors.info,
-      ),
-    ];
-  }
 
   @override
   void initState() {
@@ -74,13 +40,6 @@ class _MainNavigationState extends State<MainNavigation>
       vsync: this,
     );
 
-    _fabScaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _fabAnimationController,
-        curve: Curves.elasticOut,
-      ),
-    );
-
     _fabAnimationController.forward();
   }
 
@@ -92,6 +51,25 @@ class _MainNavigationState extends State<MainNavigation>
   }
 
   void _onTabTapped(int index) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    
+    // Check if guest user is trying to access restricted features
+    if (authService.isGuest) {
+      if (index == 1) { // Wishlists - allow but show limited view
+        // Allow access but the screen will handle guest limitations
+      } else if (index == 2) { // Events - allow but show limited view
+        // Allow access but the screen will handle guest limitations  
+      } else if (index == 3) { // Friends - restricted for guests
+        GuestRestrictionDialog.show(context, 'الأصدقاء', 
+          customMessage: 'يجب تسجيل الدخول لإدارة قائمة الأصدقاء والتواصل معهم.');
+        return;
+      } else if (index == 4) { // Profile - restricted for guests
+        GuestRestrictionDialog.show(context, 'الملف الشخصي',
+          customMessage: 'يجب تسجيل الدخول لعرض وتعديل ملفك الشخصي.');
+        return;
+      }
+    }
+
     if (_currentIndex == index) {
       // Double tap to scroll to top or refresh
       _handleDoubleTap(index);
@@ -178,17 +156,19 @@ class _MainNavigationState extends State<MainNavigation>
   }
 
   Widget? _buildFloatingActionButton() {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    
     switch (_currentIndex) {
       case 0: // Home
         return _buildHomeFAB();
       case 1: // Wishlists
-        return _buildWishlistFAB();
+        return authService.isGuest ? null : _buildWishlistFAB();
       case 2: // Events
-        return _buildEventFAB();
+        return authService.isGuest ? null : _buildEventFAB();
       case 3: // Friends
-        return _buildFriendFAB();
+        return authService.isGuest ? null : _buildFriendFAB();
       case 4: // Profile
-        return _buildProfileFAB();
+        return authService.isGuest ? null : _buildProfileFAB();
       default:
         return null;
     }
@@ -209,8 +189,14 @@ class _MainNavigationState extends State<MainNavigation>
       ),
       child: FloatingActionButton(
         onPressed: () {
-          // Show quick actions menu
-          _showQuickActionsMenu(context);
+          final authService = Provider.of<AuthService>(context, listen: false);
+          if (authService.isGuest) {
+            GuestRestrictionDialog.show(context, 'الإجراءات السريعة',
+              customMessage: 'يجب تسجيل الدخول لإنشاء القوائم والفعاليات وإضافة الأصدقاء.');
+          } else {
+            // Show quick actions menu
+            _showQuickActionsMenu(context);
+          }
         },
         backgroundColor: Colors.transparent,
         elevation: 0,

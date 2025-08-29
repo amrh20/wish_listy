@@ -4,10 +4,10 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
-
 import '../../widgets/rewards_widgets.dart';
 import '../../widgets/decorative_background.dart';
 import '../../services/localization_service.dart';
+import '../../services/auth_service.dart';
 import '../../services/rewards_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -148,8 +148,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LocalizationService>(
-      builder: (context, localization, child) {
+    return Consumer2<LocalizationService, AuthService>(
+      builder: (context, localization, authService, child) {
         return Scaffold(
           body: DecorativeBackground(
             child: Stack(
@@ -162,7 +162,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     controller: _scrollController,
                     slivers: [
                       // App Bar
-                      _buildSliverAppBar(localization),
+                      _buildSliverAppBar(localization, authService),
 
                       // Content
                       SliverToBoxAdapter(
@@ -179,42 +179,72 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      // Welcome Card
-                                      if (_showWelcomeCard) ...[
+                                      // Guest Mode Welcome Card
+                                      if (authService.isGuest) ...[
+                                        _buildGuestWelcomeCard(localization),
+                                        const SizedBox(height: 24),
+                                      ],
+
+                                      // Regular Welcome Card for logged users
+                                      if (authService.isAuthenticated &&
+                                          _showWelcomeCard) ...[
                                         _buildWelcomeCard(localization),
                                         const SizedBox(height: 24),
                                       ],
 
-                                      // Points & Level Display
-                                      _buildPointsAndLevel(),
-                                      const SizedBox(height: 24),
+                                      // Points & Level Display (only for authenticated users)
+                                      if (authService.isAuthenticated) ...[
+                                        _buildPointsAndLevel(),
+                                        const SizedBox(height: 24),
+                                      ],
 
-                                      // Recent Achievement
-                                      const RecentAchievementWidget(),
-                                      const SizedBox(height: 24),
+                                      // Recent Achievement (only for authenticated users)
+                                      if (authService.isAuthenticated) ...[
+                                        const RecentAchievementWidget(),
+                                        const SizedBox(height: 24),
+                                      ],
 
-                                      // Quick Actions
+                                      // Quick Actions (limited for guests)
                                       _buildQuickActions(localization),
                                       const SizedBox(height: 24),
 
-                                      // Rewards Quick Actions
-                                      _buildRewardsSection(localization),
-                                      const SizedBox(height: 32),
+                                      // Rewards Quick Actions (only for authenticated users)
+                                      if (authService.isAuthenticated) ...[
+                                        _buildRewardsSection(localization),
+                                        const SizedBox(height: 32),
+                                      ],
 
-                                      // Upcoming Events
-                                      _buildUpcomingEvents(localization),
-                                      const SizedBox(height: 32),
+                                      // Upcoming Events (only for authenticated users)
+                                      if (authService.isAuthenticated) ...[
+                                        _buildUpcomingEvents(localization),
+                                        const SizedBox(height: 32),
+                                      ],
 
-                                      // Friend Activity
-                                      _buildFriendActivity(localization),
-                                      const SizedBox(height: 32),
+                                      // Friend Activity (only for authenticated users)
+                                      if (authService.isAuthenticated) ...[
+                                        _buildFriendActivity(localization),
+                                        const SizedBox(height: 32),
+                                      ],
 
-                                      // Gift Suggestions
-                                      _buildGiftSuggestions(localization),
-                                      const SizedBox(height: 32),
+                                      // Gift Suggestions (limited for guests)
+                                      if (authService.isAuthenticated) ...[
+                                        _buildGiftSuggestions(localization),
+                                        const SizedBox(height: 32),
+                                      ],
 
-                                      // Leaderboard Preview
-                                      const LeaderboardPreviewWidget(),
+                                      // Leaderboard Preview (only for authenticated users)
+                                      if (authService.isAuthenticated) ...[
+                                        const LeaderboardPreviewWidget(),
+                                        const SizedBox(height: 32),
+                                      ],
+
+                                      // Guest encouragement section
+                                      if (authService.isGuest) ...[
+                                        _buildGuestEncouragementSection(
+                                          localization,
+                                        ),
+                                      ],
+
                                       const SizedBox(
                                         height: 100,
                                       ), // Bottom padding for FAB
@@ -237,122 +267,148 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildSliverAppBar(LocalizationService localization) {
+  Widget _buildSliverAppBar(
+    LocalizationService localization,
+    AuthService authService,
+  ) {
     return SliverAppBar(
-      expandedHeight: 120,
+      expandedHeight: authService.isGuest ? 80 : 120,
       floating: true,
       pinned: true,
       backgroundColor: Colors.transparent,
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              localization.translate('home.greeting'),
-              style: AppStyles.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              'Ahmed',
-              style: AppStyles.headingSmall.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-      ),
-      actions: [
-        // Search Button
-        IconButton(
-          onPressed: () {
-            // Navigate to search screen
-          },
-          icon: Icon(Icons.search_rounded, color: AppColors.textPrimary),
-          style: IconButton.styleFrom(
-            backgroundColor: AppColors.surface,
-            padding: const EdgeInsets.all(12),
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Smart Reminders Button
-        Stack(
-          children: [
-            IconButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/smart-reminders');
-              },
-              icon: Icon(Icons.psychology, color: AppColors.textPrimary),
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.surface,
-                padding: const EdgeInsets.all(12),
-              ),
-            ),
-            // AI Badge
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: AppColors.secondary,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.surface, width: 1),
+        title: authService.isGuest
+            ? Text(
+                'وش ليستي',
+                style: AppStyles.headingMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
                 ),
-                child: Center(
-                  child: Text(
-                    '3',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 8,
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    localization.translate('home.greeting'),
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    authService.userName ?? 'User',
+                    style: AppStyles.headingSmall.copyWith(
+                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                ],
+              ),
+        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+      ),
+      actions: authService.isGuest
+          ? [
+              // Login button for guests
+              IconButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRoutes.login);
+                },
+                icon: Icon(Icons.login, color: AppColors.primary),
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.surface,
+                  padding: const EdgeInsets.all(12),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(width: 8),
-        // Notifications Button
-        Stack(
-          children: [
-            IconButton(
-              onPressed: () {
-                AppRoutes.pushNamed(context, AppRoutes.notifications);
-              },
-              icon: Icon(
-                Icons.notifications_outlined,
-                color: AppColors.textPrimary,
-              ),
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.surface,
-                padding: const EdgeInsets.all(12),
-              ),
-            ),
-            // Notification Badge
-            Positioned(
-              top: 8,
-              right: 8,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  shape: BoxShape.circle,
+              const SizedBox(width: 16),
+            ]
+          : [
+              // Search Button for authenticated users
+              IconButton(
+                onPressed: () {
+                  // Navigate to search screen
+                },
+                icon: Icon(Icons.search_rounded, color: AppColors.textPrimary),
+                style: IconButton.styleFrom(
+                  backgroundColor: AppColors.surface,
+                  padding: const EdgeInsets.all(12),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(width: 16),
-      ],
+              const SizedBox(width: 8),
+              // Smart Reminders Button
+              Stack(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/smart-reminders');
+                    },
+                    icon: Icon(Icons.psychology, color: AppColors.textPrimary),
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.surface,
+                      padding: const EdgeInsets.all(12),
+                    ),
+                  ),
+                  // AI Badge
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.surface, width: 1),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '3',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 8),
+              // Notifications Button
+              Stack(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      AppRoutes.pushNamed(context, AppRoutes.notifications);
+                    },
+                    icon: Icon(
+                      Icons.notifications_outlined,
+                      color: AppColors.textPrimary,
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: AppColors.surface,
+                      padding: const EdgeInsets.all(12),
+                    ),
+                  ),
+                  // Notification Badge
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 16),
+            ],
     );
   }
 
@@ -438,6 +494,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildQuickActions(LocalizationService localization) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -449,71 +507,114 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            textDirection: TextDirection.ltr, // Force LTR for consistent layout
+            textDirection: localization.isRTL
+                ? TextDirection.rtl
+                : TextDirection.ltr,
             children: [
-              SizedBox(
-                width: 120,
-                child: _buildActionCard(
-                  icon: Icons.add_circle_outline,
-                  title: localization.translate(
-                    'home.quickActionsCards.addItem',
+              // For guests - Browse Public Wishlists
+              if (authService.isGuest) ...[
+                SizedBox(
+                  width: 120,
+                  child: _buildActionCard(
+                    icon: Icons.explore_outlined,
+                    title: localization.translate('guest.quickActions.explore'),
+                    subtitle: localization.translate(
+                      'guest.quickActions.exploreSubtitle',
+                    ),
+                    color: AppColors.primary,
+                    onTap: () {
+                      // Navigate to browse public wishlists
+                      Navigator.pushNamed(context, AppRoutes.myWishlists);
+                    },
                   ),
-                  subtitle: localization.translate(
-                    'home.quickActionsCards.addItemSubtext',
-                  ),
-                  color: AppColors.primary,
-                  onTap: () {
-                    AppRoutes.pushNamed(context, AppRoutes.addItem);
-                  },
                 ),
-              ),
-              const SizedBox(width: 12),
-              SizedBox(
-                width: 120,
-                child: _buildActionCard(
-                  icon: Icons.event_outlined,
-                  title: localization.translate(
-                    'home.quickActionsCards.createEvent',
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 120,
+                  child: _buildActionCard(
+                    icon: Icons.event_outlined,
+                    title: localization.translate(
+                      'guest.quickActions.publicEvents',
+                    ),
+                    subtitle: localization.translate(
+                      'guest.quickActions.publicEventsSubtitle',
+                    ),
+                    color: AppColors.accent,
+                    onTap: () {
+                      Navigator.pushNamed(context, AppRoutes.events);
+                    },
                   ),
-                  subtitle: localization.translate(
-                    'home.quickActionsCards.createEventSubtext',
-                  ),
-                  color: AppColors.accent,
-                  onTap: () {
-                    AppRoutes.pushNamed(context, AppRoutes.createEvent);
-                  },
                 ),
-              ),
-              const SizedBox(width: 12),
-              SizedBox(
-                width: 120,
-                child: _buildActionCard(
-                  icon: Icons.person_add_outlined,
-                  title: localization.translate(
-                    'home.quickActionsCards.addFriend',
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 120,
+                  child: _buildActionCard(
+                    icon: Icons.login_outlined,
+                    title: localization.translate(
+                      'guest.quickActions.loginForMore',
+                    ),
+                    subtitle: localization.translate(
+                      'guest.quickActions.loginForMoreSubtitle',
+                    ),
+                    color: AppColors.success,
+                    onTap: () {
+                      Navigator.pushNamed(context, AppRoutes.login);
+                    },
                   ),
-                  subtitle: localization.translate(
-                    'home.quickActionsCards.addFriendSubtext',
+                ),
+              ] else ...[
+                // For authenticated users - Full features
+                SizedBox(
+                  width: 120,
+                  child: _buildActionCard(
+                    icon: Icons.add_circle_outline,
+                    title: localization.translate(
+                      'home.quickActionsCards.addItem',
+                    ),
+                    subtitle: localization.translate(
+                      'home.quickActionsCards.addItemSubtext',
+                    ),
+                    color: AppColors.primary,
+                    onTap: () {
+                      AppRoutes.pushNamed(context, AppRoutes.addItem);
+                    },
                   ),
-                  color: AppColors.success,
-                  onTap: () {
-                    AppRoutes.pushNamed(context, AppRoutes.friends);
-                  },
                 ),
-              ),
-              const SizedBox(width: 12),
-              SizedBox(
-                width: 120,
-                child: _buildActionCard(
-                  icon: Icons.psychology,
-                  title: 'Smart\nReminders',
-                  subtitle: 'AI suggestions\nfor you',
-                  color: AppColors.secondary,
-                  onTap: () {
-                    Navigator.pushNamed(context, '/smart-reminders');
-                  },
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 120,
+                  child: _buildActionCard(
+                    icon: Icons.event_outlined,
+                    title: localization.translate(
+                      'home.quickActionsCards.createEvent',
+                    ),
+                    subtitle: localization.translate(
+                      'home.quickActionsCards.createEventSubtext',
+                    ),
+                    color: AppColors.accent,
+                    onTap: () {
+                      AppRoutes.pushNamed(context, AppRoutes.createEvent);
+                    },
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 120,
+                  child: _buildActionCard(
+                    icon: Icons.person_add_outlined,
+                    title: localization.translate(
+                      'home.quickActionsCards.addFriend',
+                    ),
+                    subtitle: localization.translate(
+                      'home.quickActionsCards.addFriendSubtext',
+                    ),
+                    color: AppColors.success,
+                    onTap: () {
+                      AppRoutes.pushNamed(context, AppRoutes.friends);
+                    },
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -528,6 +629,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -552,7 +658,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             Text(
               title,
               style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-              textAlign: TextAlign.center,
+              textAlign: localization.isRTL
+                  ? TextAlign.right
+                  : TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -562,7 +670,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               style: AppStyles.bodySmall.copyWith(
                 color: AppColors.textTertiary,
               ),
-              textAlign: TextAlign.center,
+              textAlign: localization.isRTL
+                  ? TextAlign.right
+                  : TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -976,6 +1086,133 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     setState(() {
       // Update data
     });
+  }
+
+  // Guest-specific methods
+  Widget _buildGuestWelcomeCard(LocalizationService localization) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.secondary, AppColors.secondaryLight],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.secondary.withOpacity(0.3),
+            offset: const Offset(0, 8),
+            blurRadius: 24,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.explore_outlined, color: Colors.white, size: 32),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  localization.translate('guest.welcome.title'),
+                  style: AppStyles.headingSmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            localization.translate('guest.welcome.description'),
+            style: AppStyles.bodyMedium.copyWith(
+              color: Colors.white.withOpacity(0.9),
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          CustomButton(
+            text: localization.translate('guest.welcome.loginButton'),
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.login);
+            },
+            variant: ButtonVariant.secondary,
+            customColor: Colors.white,
+            customTextColor: AppColors.secondary,
+            size: ButtonSize.small,
+            fullWidth: false,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuestEncouragementSection(LocalizationService localization) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.star_outline, size: 48, color: AppColors.primary),
+          const SizedBox(height: 16),
+          Text(
+            localization.translate('guest.encouragement.title'),
+            style: AppStyles.heading4.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            localization.translate('guest.encouragement.description'),
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: CustomButton(
+                  text: localization.translate(
+                    'guest.encouragement.createAccountButton',
+                  ),
+                  onPressed: () {
+                    Navigator.pushNamed(context, AppRoutes.signup);
+                  },
+                  variant: ButtonVariant.outline,
+                  size: ButtonSize.small,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: CustomButton(
+                  text: localization.translate(
+                    'guest.encouragement.loginButton',
+                  ),
+                  onPressed: () {
+                    Navigator.pushNamed(context, AppRoutes.login);
+                  },
+                  variant: ButtonVariant.gradient,
+                  size: ButtonSize.small,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 

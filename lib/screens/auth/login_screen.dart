@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../services/localization_service.dart';
+import '../../services/auth_service.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
@@ -74,13 +75,33 @@ class _LoginScreenState extends State<LoginScreen>
 
     setState(() => _isLoading = true);
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final success = await authService.login(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
 
-    setState(() => _isLoading = false);
-
-    // Navigate to main app
-    AppRoutes.pushNamedAndRemoveUntil(context, AppRoutes.mainNavigation);
+      if (success && mounted) {
+        // Navigate to main app
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.mainNavigation,
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      // Handle login error if needed
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override

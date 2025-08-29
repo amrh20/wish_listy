@@ -5,8 +5,9 @@ import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/decorative_background.dart';
-
+import '../../widgets/guest_restriction_dialog.dart';
 import '../../services/localization_service.dart';
+import '../../services/auth_service.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -20,8 +21,11 @@ class _EventsScreenState extends State<EventsScreen>
   late TabController _tabController;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  final TextEditingController _searchController = TextEditingController();
+  List<EventSummary> _searchResults = [];
+  bool _isSearching = false;
 
-  // Mock events data
+  // Mock events data for authenticated users
   final List<EventSummary> _myEvents = [
     EventSummary(
       id: '1',
@@ -48,6 +52,38 @@ class _EventsScreenState extends State<EventsScreen>
       wishlistItemCount: 8,
       isCreatedByMe: true,
       status: EventStatus.upcoming,
+    ),
+  ];
+
+  // Mock public events for guest users
+  final List<EventSummary> _publicEvents = [
+    EventSummary(
+      id: 'pub1',
+      name: 'Community Birthday Celebration',
+      date: DateTime.now().add(Duration(days: 5)),
+      type: EventType.birthday,
+      location: 'Community Center',
+      description: 'Join us for a community birthday celebration!',
+      invitedCount: 50,
+      acceptedCount: 32,
+      wishlistItemCount: 25,
+      isCreatedByMe: false,
+      status: EventStatus.upcoming,
+      hostName: 'Sarah Ahmed',
+    ),
+    EventSummary(
+      id: 'pub2',
+      name: 'Wedding Anniversary',
+      date: DateTime.now().add(Duration(days: 12)),
+      type: EventType.anniversary,
+      location: 'Grand Hotel',
+      description: 'Celebrating 10 years of love and happiness',
+      invitedCount: 100,
+      acceptedCount: 75,
+      wishlistItemCount: 40,
+      isCreatedByMe: false,
+      status: EventStatus.upcoming,
+      hostName: 'Ahmed & Fatima',
     ),
   ];
 
@@ -123,13 +159,43 @@ class _EventsScreenState extends State<EventsScreen>
   void dispose() {
     _tabController.dispose();
     _animationController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LocalizationService>(
-      builder: (context, localization, child) {
+    return Consumer2<LocalizationService, AuthService>(
+      builder: (context, localization, authService, child) {
+        // For guest users - show different interface
+        if (authService.isGuest) {
+          return Scaffold(
+            body: DecorativeBackground(
+              showGifts: true,
+              child: Stack(
+                children: [
+                  // Content
+                  NestedScrollView(
+                    headerSliverBuilder: (context, innerBoxIsScrolled) {
+                      return [_buildGuestSliverAppBar(localization)];
+                    },
+                    body: AnimatedBuilder(
+                      animation: _animationController,
+                      builder: (context, child) {
+                        return FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: _buildGuestEventsView(localization),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // For authenticated users - show full interface
         return Scaffold(
           body: DecorativeBackground(
             showGifts: true,
@@ -903,6 +969,472 @@ class _EventsScreenState extends State<EventsScreen>
     setState(() {
       // Update events data
     });
+  }
+
+  // Guest-specific methods
+  Widget _buildGuestSliverAppBar(LocalizationService localization) {
+    return SliverAppBar(
+      expandedHeight: 120,
+      floating: true,
+      pinned: false,
+      flexibleSpace: FlexibleSpaceBar(
+        title: Text(
+          localization.translate('navigation.events'),
+          style: AppStyles.headingMedium.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: false,
+        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppColors.background,
+                AppColors.background.withOpacity(0.8),
+              ],
+            ),
+          ),
+        ),
+      ),
+      backgroundColor: AppColors.background,
+      surfaceTintColor: Colors.transparent,
+      leading: IconButton(
+        onPressed: () => Navigator.pop(context),
+        icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+      ),
+      actions: [
+        // Search Button
+        IconButton(
+          onPressed: () => _showGuestSearch(localization),
+          icon: Icon(Icons.search, color: AppColors.textPrimary),
+          style: IconButton.styleFrom(
+            backgroundColor: AppColors.surface,
+            padding: const EdgeInsets.all(12),
+          ),
+        ),
+        const SizedBox(width: 16),
+      ],
+    );
+  }
+
+  Widget _buildGuestEventsView(LocalizationService localization) {
+    if (_isSearching &&
+        _searchResults.isEmpty &&
+        _searchController.text.isNotEmpty) {
+      return _buildGuestEmptySearch();
+    }
+
+    if (_isSearching && _searchResults.isNotEmpty) {
+      return _buildGuestSearchResults(localization);
+    }
+
+    return _buildGuestEmptyState(localization);
+  }
+
+  Widget _buildGuestEmptyState(LocalizationService localization) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          const SizedBox(height: 60),
+          Icon(Icons.event_outlined, size: 80, color: AppColors.textTertiary),
+          const SizedBox(height: 24),
+          Text(
+            localization.translate('guest.events.empty.title'),
+            style: AppStyles.heading4.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            localization.translate('guest.events.empty.description'),
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          CustomButton(
+            text: localization.translate(
+              'guest.events.empty.searchPlaceholder',
+            ),
+            onPressed: () => _showGuestSearch(localization),
+            variant: ButtonVariant.gradient,
+            icon: Icons.search,
+          ),
+          const SizedBox(height: 20),
+          CustomButton(
+            text: localization.translate('guest.quickActions.loginForMore'),
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.login);
+            },
+            variant: ButtonVariant.outline,
+            icon: Icons.login,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuestEmptySearch() {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off, size: 64, color: AppColors.textTertiary),
+          const SizedBox(height: 16),
+          Text(
+            localization.translate('guest.events.search.noResults'),
+            style: AppStyles.heading4.copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            localization.translate('guest.events.search.noResultsDescription'),
+            style: AppStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuestSearchResults(LocalizationService localization) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        return _buildGuestEventCard(_searchResults[index], localization);
+      },
+    );
+  }
+
+  Widget _buildGuestEventCard(
+    EventSummary event,
+    LocalizationService localization,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _getEventTypeColor(event.type).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _getEventTypeIcon(event.type),
+                  color: _getEventTypeColor(event.type),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.name,
+                      style: AppStyles.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (event.hostName != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '${localization.translate('common.by')} ${event.hostName}',
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  Text(
+                    '${event.date.day}',
+                    style: AppStyles.heading4.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    _getMonthName(event.date.month),
+                    style: AppStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (event.description != null) ...[
+            Text(
+              event.description!,
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (event.location != null) ...[
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  size: 16,
+                  color: AppColors.textTertiary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  event.location!,
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
+          Row(
+            children: [
+              _buildGuestEventStat(
+                icon: Icons.people_outline,
+                value: '${event.acceptedCount}/${event.invitedCount}',
+                label: localization.translate('guest.events.card.attendees'),
+              ),
+              const SizedBox(width: 16),
+              _buildGuestEventStat(
+                icon: Icons.card_giftcard,
+                value: '${event.wishlistItemCount}',
+                label: localization.translate('wishlists.items'),
+              ),
+              const Spacer(),
+              CustomButton(
+                text: localization.translate('guest.events.card.viewDetails'),
+                onPressed: () => _showGuestEventDetails(event),
+                variant: ButtonVariant.outline,
+                size: ButtonSize.small,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuestEventStat({
+    required IconData icon,
+    required String value,
+    required String label,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppColors.textTertiary),
+        const SizedBox(width: 4),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: AppStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
+            ),
+            Text(
+              label,
+              style: AppStyles.caption.copyWith(color: AppColors.textTertiary),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _showGuestSearch(LocalizationService localization) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.borderLight,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    localization.translate('guest.events.search.title'),
+                    style: AppStyles.heading4.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: localization.translate(
+                        'guest.events.empty.searchPlaceholder',
+                      ),
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onChanged: _performGuestSearch,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: _isSearching && _searchResults.isNotEmpty
+                  ? ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: _searchResults.length,
+                      itemBuilder: (context, index) {
+                        return _buildGuestEventCard(
+                          _searchResults[index],
+                          localization,
+                        );
+                      },
+                    )
+                  : _searchController.text.isEmpty
+                  ? _buildGuestSearchSuggestions()
+                  : _buildGuestEmptySearch(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGuestSearchSuggestions() {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            localization.translate('guest.events.search.popular'),
+            style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildSearchChip(localization.translate('events.birthday')),
+              _buildSearchChip(localization.translate('events.wedding')),
+              _buildSearchChip(localization.translate('events.graduation')),
+              _buildSearchChip(localization.translate('events.other')),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchChip(String text) {
+    return GestureDetector(
+      onTap: () {
+        _searchController.text = text;
+        _performGuestSearch(text);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        ),
+        child: Text(
+          text,
+          style: AppStyles.bodySmall.copyWith(color: AppColors.primary),
+        ),
+      ),
+    );
+  }
+
+  void _performGuestSearch(String query) {
+    setState(() {
+      _isSearching = query.isNotEmpty;
+      if (query.isEmpty) {
+        _searchResults.clear();
+      } else {
+        // Simple search simulation
+        _searchResults = _publicEvents
+            .where(
+              (event) =>
+                  event.name.toLowerCase().contains(query.toLowerCase()) ||
+                  (event.description?.toLowerCase().contains(
+                        query.toLowerCase(),
+                      ) ??
+                      false),
+            )
+            .toList();
+      }
+    });
+  }
+
+  void _showGuestEventDetails(EventSummary event) {
+    GuestRestrictionDialog.show(
+      context,
+      'تفاصيل الفعالية',
+      customMessage: 'سجل دخولك لعرض تفاصيل الفعالية الكاملة والتفاعل معها.',
+    );
   }
 }
 

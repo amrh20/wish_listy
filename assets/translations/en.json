@@ -744,6 +744,7 @@
     "of": "of",
     "to": "to",
     "from": "from",
+    "by": "by",
     "and": "and",
     "or": "or",
     "with": "with",
@@ -915,5 +916,73 @@
     "shoes": "shoes",
     "daily": "daily",
     "workouts": "workouts"
+  },
+  "guest": {
+    "welcome": {
+      "title": "Welcome to WishListy! 👋",
+      "description": "Explore the app and discover available features, sign in to access all services",
+      "loginButton": "Sign In"
+    },
+    "quickActions": {
+      "explore": "Explore",
+      "exploreSubtitle": "Public Lists",
+      "publicEvents": "Public",
+      "publicEventsSubtitle": "Events",
+      "loginForMore": "Sign In",
+      "loginForMoreSubtitle": "For More"
+    },
+    "encouragement": {
+      "title": "Discover More Features",
+      "description": "Sign in to access all app features:\n• Create wishlists\n• Manage events\n• Connect with friends\n• Points and rewards system",
+      "createAccountButton": "Sign Up",
+      "loginButton": "Sign In"
+    },
+    "restrictions": {
+      "title": "This feature requires sign in",
+      "message": "To access all features and create your own wishlists, please sign in or create a new account",
+      "loginButton": "Sign In",
+      "signupButton": "Sign Up"
+    },
+    "events": {
+      "empty": {
+        "title": "Discover Public Events",
+        "description": "Search for public events and discover what's happening in your community",
+        "searchPlaceholder": "Search for events..."
+      },
+      "search": {
+        "title": "Search Events",
+        "popular": "Popular",
+        "nearby": "Nearby",
+        "thisWeek": "This Week",
+        "nextWeek": "Next Week",
+        "noResults": "No results found",
+        "noResultsDescription": "Try different search terms"
+      },
+      "card": {
+        "attendees": "Attendees",
+        "public": "Public",
+        "viewDetails": "View Details"
+      }
+    },
+    "wishlists": {
+      "empty": {
+        "title": "Discover Public Wishlists",
+        "description": "Search for users and browse their public wishlists",
+        "searchPlaceholder": "Search for users..."
+      },
+      "search": {
+        "title": "Search Users",
+        "suggestions": "Suggestions",
+        "recent": "Recent",
+        "popular": "Popular",
+        "noResults": "No results found",
+        "noResultsDescription": "Try searching with a different name or email"
+      },
+      "userCard": {
+        "wishlists": "Wishlists",
+        "public": "Public",
+        "viewProfile": "View Profile"
+      }
+    }
   }
 }

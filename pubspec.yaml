@@ -70,6 +70,9 @@ dev_dependencies:
   # Code generation
   json_annotation: ^4.8.1
   json_serializable: ^6.7.1
+  
+  # App icon generation
+  flutter_launcher_icons: ^0.13.1
 
 # Flutter configuration
 flutter:
@@ -102,3 +105,15 @@ flutter:
 # 3. Reduce dependency conflicts
 # 4. Keep essential functionality working
 # 5. Allow easy addition of features later when needed
+
+# App Icon Configuration
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
+  remove_alpha_ios: true
+  # Android specific settings
+  android_gravity: center
+  adaptive_icon_padding: true
