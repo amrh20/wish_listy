@@ -1,6 +1,3 @@
-
-
-
 import 'package:flutter/material.dart';
 import 'dart:math';
 import '../constants/app_colors.dart';
@@ -54,18 +51,25 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
   }
 
   void _initializeParticles() {
-    _particles = List.generate(15, (index) => Particle());
+    _particles = List.generate(
+      8,
+      (index) => Particle(),
+    ); // Reduced from 15 to 8 for better performance
   }
 
   void _startAnimations() {
-    _gradientController.repeat();
-    if (widget.showParticles) {
-      _particleController.repeat();
+    if (mounted) {
+      _gradientController.repeat();
+      if (widget.showParticles) {
+        _particleController.repeat();
+      }
     }
   }
 
   @override
   void dispose() {
+    _gradientController.stop();
+    _particleController.stop();
     _gradientController.dispose();
     _particleController.dispose();
     super.dispose();
@@ -79,21 +83,26 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
         AnimatedBuilder(
           animation: _gradientAnimation,
           builder: (context, child) {
+            if (!mounted) return const SizedBox.shrink();
+
             return Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: widget.colors ??
+                  colors:
+                      widget.colors ??
                       [
-                        AppColors.primary.withOpacity(0.1),
-                        AppColors.secondary.withOpacity(0.05),
-                        AppColors.accent.withOpacity(0.1),
+                        Colors.white,
+                        Colors.blue.shade50.withOpacity(0.3),
+                        Colors.purple.shade50.withOpacity(0.2),
+                        Colors.white,
                       ],
                   stops: [
-                    0.0 + (_gradientAnimation.value * 0.3),
-                    0.5 + (_gradientAnimation.value * 0.2),
-                    1.0 - (_gradientAnimation.value * 0.1),
+                    0.0,
+                    0.3 + (_gradientAnimation.value * 0.2),
+                    0.7 + (_gradientAnimation.value * 0.1),
+                    1.0,
                   ],
                 ),
               ),
@@ -106,6 +115,8 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
           AnimatedBuilder(
             animation: _particleController,
             builder: (context, child) {
+              if (!mounted) return const SizedBox.shrink();
+
               return CustomPaint(
                 painter: ParticlesPainter(
                   particles: _particles,
@@ -135,6 +146,8 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
           child: AnimatedBuilder(
             animation: _gradientController,
             builder: (context, child) {
+              if (!mounted) return const SizedBox.shrink();
+
               return Transform.rotate(
                 angle: _gradientAnimation.value * 2 * pi,
                 child: Container(
@@ -144,8 +157,8 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        AppColors.primary.withOpacity(0.1),
-                        AppColors.primary.withOpacity(0.05),
+                        Colors.blue.shade100.withOpacity(0.4),
+                        Colors.blue.shade50.withOpacity(0.2),
                         Colors.transparent,
                       ],
                     ),
@@ -163,6 +176,8 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
           child: AnimatedBuilder(
             animation: _gradientController,
             builder: (context, child) {
+              if (!mounted) return const SizedBox.shrink();
+
               return Transform.rotate(
                 angle: -_gradientAnimation.value * 1.5 * pi,
                 child: Container(
@@ -174,8 +189,8 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        AppColors.secondary.withOpacity(0.1),
-                        AppColors.accent.withOpacity(0.05),
+                        Colors.purple.shade100.withOpacity(0.3),
+                        Colors.pink.shade50.withOpacity(0.2),
                       ],
                     ),
                   ),
@@ -192,11 +207,13 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
           child: AnimatedBuilder(
             animation: _gradientController,
             builder: (context, child) {
+              if (!mounted) return const SizedBox.shrink();
+
               return Transform.rotate(
                 angle: _gradientAnimation.value * pi,
                 child: CustomPaint(
                   painter: TrianglePainter(
-                    color: AppColors.accent.withOpacity(0.08),
+                    color: Colors.green.shade100.withOpacity(0.25),
                   ),
                   size: const Size(80, 80),
                 ),
@@ -228,12 +245,13 @@ class Particle {
     size = Random().nextDouble() * 4 + 1;
     speedX = (Random().nextDouble() - 0.5) * 0.002;
     speedY = (Random().nextDouble() - 0.5) * 0.002;
-    opacity = Random().nextDouble() * 0.5 + 0.1;
-    
+    opacity = Random().nextDouble() * 0.3 + 0.05;
+
     List<Color> colors = [
-      AppColors.primary,
-      AppColors.secondary,
-      AppColors.accent,
+      Colors.blue.shade300,
+      Colors.purple.shade300,
+      Colors.green.shade300,
+      Colors.pink.shade300,
     ];
     color = colors[Random().nextInt(colors.length)];
   }
@@ -252,25 +270,19 @@ class ParticlesPainter extends CustomPainter {
   final List<Particle> particles;
   final double animation;
 
-  ParticlesPainter({
-    required this.particles,
-    required this.animation,
-  });
+  ParticlesPainter({required this.particles, required this.animation});
 
   @override
   void paint(Canvas canvas, Size size) {
     for (var particle in particles) {
       particle.update();
-      
+
       final paint = Paint()
         ..color = particle.color.withOpacity(particle.opacity)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(
-        Offset(
-          particle.x * size.width,
-          particle.y * size.height,
-        ),
+        Offset(particle.x * size.width, particle.y * size.height),
         particle.size,
         paint,
       );

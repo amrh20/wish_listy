@@ -1,13 +1,13 @@
-
-
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
+import '../../widgets/decorative_background.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/animated_background.dart';
+import '../../services/localization_service.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -21,7 +21,7 @@ class _FriendsScreenState extends State<FriendsScreen>
   late TabController _tabController;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
+
   final _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -107,13 +107,9 @@ class _FriendsScreenState extends State<FriendsScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   void _startAnimations() {
@@ -136,58 +132,51 @@ class _FriendsScreenState extends State<FriendsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.secondary.withValues(alpha: 0.02),
-              AppColors.accent.withValues(alpha: 0.01),
-            ],
-          ),
-          
-          // Content
-          NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                _buildSliverAppBar(),
-                _buildSearchAndTabs(),
-              ];
-            },
-            body: AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) {
-                return FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildMyFriendsTab(),
-                      _buildFriendRequestsTab(),
-                    ],
+    return Consumer<LocalizationService>(
+      builder: (context, localization, child) {
+        return Scaffold(
+          body: DecorativeBackground(
+            showGifts: false,
+            child: Stack(
+              children: [
+                // Content
+                NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) {
+                    return [
+                      _buildSliverAppBar(localization),
+                      _buildSearchAndTabs(localization),
+                    ];
+                  },
+                  body: AnimatedBuilder(
+                    animation: _animationController,
+                    builder: (context, child) {
+                      return FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildMyFriendsTab(localization),
+                            _buildFriendRequestsTab(localization),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-      
-      // Floating Action Button
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddFriendDialog,
-        backgroundColor: AppColors.secondary,
-        child: Icon(
-          Icons.person_add_rounded,
-          color: Colors.white,
-        ),
-      ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: _showAddFriendDialog,
+            backgroundColor: AppColors.secondary,
+            child: Icon(Icons.person_add_rounded, color: Colors.white),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildSliverAppBar() {
+  Widget _buildSliverAppBar(LocalizationService localization) {
     return SliverAppBar(
       expandedHeight: 100,
       floating: true,
@@ -200,14 +189,14 @@ class _FriendsScreenState extends State<FriendsScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Friends',
+              localization.translate('ui.friends'),
               style: AppStyles.headingMedium.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
-              '${_friends.length} friends',
+              '${_friends.length} ${localization.translate('friends.friends')}',
               style: AppStyles.bodySmall.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -220,10 +209,7 @@ class _FriendsScreenState extends State<FriendsScreen>
         // Sync Button
         IconButton(
           onPressed: _syncContacts,
-          icon: Icon(
-            Icons.sync_rounded,
-            color: AppColors.textPrimary,
-          ),
+          icon: Icon(Icons.sync_rounded, color: AppColors.textPrimary),
           style: IconButton.styleFrom(
             backgroundColor: AppColors.surface,
             padding: const EdgeInsets.all(12),
@@ -233,10 +219,7 @@ class _FriendsScreenState extends State<FriendsScreen>
         // More Options
         PopupMenuButton<String>(
           onSelected: _handleMenuAction,
-          icon: Icon(
-            Icons.more_vert_rounded,
-            color: AppColors.textPrimary,
-          ),
+          icon: Icon(Icons.more_vert_rounded, color: AppColors.textPrimary),
           style: IconButton.styleFrom(
             backgroundColor: AppColors.surface,
             padding: const EdgeInsets.all(12),
@@ -272,7 +255,7 @@ class _FriendsScreenState extends State<FriendsScreen>
     );
   }
 
-  Widget _buildSearchAndTabs() {
+  Widget _buildSearchAndTabs(LocalizationService localization) {
     return SliverPersistentHeader(
       pinned: true,
       delegate: _SearchAndTabsDelegate(
@@ -284,12 +267,12 @@ class _FriendsScreenState extends State<FriendsScreen>
               // Search Bar
               CustomTextField(
                 controller: _searchController,
-                label: 'Search friends',
+                label: localization.translate('ui.searchFriends'),
                 hint: 'Search by name or email',
                 prefixIcon: Icons.search_outlined,
               ),
               const SizedBox(height: 16),
-              
+
               // Tab Bar
               TabBar(
                 controller: _tabController,
@@ -305,10 +288,13 @@ class _FriendsScreenState extends State<FriendsScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('My Friends'),
+                        Text(localization.translate('ui.myFriends')),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.secondary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10),
@@ -328,11 +314,14 @@ class _FriendsScreenState extends State<FriendsScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('Requests'),
+                        Text(localization.translate('ui.requests')),
                         const SizedBox(width: 8),
                         if (_friendRequests.isNotEmpty)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: AppColors.accent,
                               borderRadius: BorderRadius.circular(10),
@@ -357,9 +346,9 @@ class _FriendsScreenState extends State<FriendsScreen>
     );
   }
 
-  Widget _buildMyFriendsTab() {
+  Widget _buildMyFriendsTab(LocalizationService localization) {
     final filteredFriends = _getFilteredFriends();
-    
+
     return RefreshIndicator(
       onRefresh: _refreshFriends,
       color: AppColors.secondary,
@@ -372,13 +361,13 @@ class _FriendsScreenState extends State<FriendsScreen>
                 if (index == filteredFriends.length) {
                   return const SizedBox(height: 100); // Bottom padding for FAB
                 }
-                return _buildFriendCard(filteredFriends[index]);
+                return _buildFriendCard(filteredFriends[index], localization);
               },
             ),
     );
   }
 
-  Widget _buildFriendRequestsTab() {
+  Widget _buildFriendRequestsTab(LocalizationService localization) {
     return RefreshIndicator(
       onRefresh: _refreshFriends,
       color: AppColors.secondary,
@@ -397,7 +386,7 @@ class _FriendsScreenState extends State<FriendsScreen>
     );
   }
 
-  Widget _buildFriendCard(Friend friend) {
+  Widget _buildFriendCard(Friend friend, LocalizationService localization) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -426,7 +415,9 @@ class _FriendsScreenState extends State<FriendsScreen>
                   children: [
                     CircleAvatar(
                       radius: 28,
-                      backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
+                      backgroundColor: AppColors.secondary.withValues(
+                        alpha: 0.1,
+                      ),
                       child: Text(
                         friend.name[0].toUpperCase(),
                         style: AppStyles.headingSmall.copyWith(
@@ -455,9 +446,9 @@ class _FriendsScreenState extends State<FriendsScreen>
                       ),
                   ],
                 ),
-                
+
                 const SizedBox(width: 16),
-                
+
                 // Friend Info
                 Expanded(
                   child: Column(
@@ -479,7 +470,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${friend.mutualFriends} mutual friends',
+                            '${friend.mutualFriends} ${localization.translate('ui.mutualFriends')}',
                             style: AppStyles.bodySmall.copyWith(
                               color: AppColors.textTertiary,
                             ),
@@ -492,7 +483,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${friend.wishlistCount} wishlists',
+                            '${friend.wishlistCount} ${localization.translate('ui.wishlists')}',
                             style: AppStyles.bodySmall.copyWith(
                               color: AppColors.textTertiary,
                             ),
@@ -501,27 +492,26 @@ class _FriendsScreenState extends State<FriendsScreen>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        friend.isOnline 
-                            ? 'Online now'
-                            : 'Last seen ${_formatLastActive(friend.lastActive)}',
+                        friend.isOnline
+                            ? localization.translate('ui.onlineNow')
+                            : '${localization.translate('ui.lastSeen')} ${_formatLastActive(friend.lastActive)}',
                         style: AppStyles.caption.copyWith(
-                          color: friend.isOnline 
-                              ? AppColors.success 
+                          color: friend.isOnline
+                              ? AppColors.success
                               : AppColors.textTertiary,
-                          fontWeight: friend.isOnline ? FontWeight.w500 : FontWeight.normal,
+                          fontWeight: friend.isOnline
+                              ? FontWeight.w500
+                              : FontWeight.normal,
                         ),
                       ),
                     ],
                   ),
                 ),
-                
+
                 // Action Button
                 PopupMenuButton<String>(
                   onSelected: (value) => _handleFriendAction(value, friend),
-                  icon: Icon(
-                    Icons.more_vert,
-                    color: AppColors.textTertiary,
-                  ),
+                  icon: Icon(Icons.more_vert, color: AppColors.textTertiary),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -560,9 +550,16 @@ class _FriendsScreenState extends State<FriendsScreen>
                       value: 'unfriend',
                       child: Row(
                         children: [
-                          Icon(Icons.person_remove_outlined, size: 18, color: AppColors.accent),
+                          Icon(
+                            Icons.person_remove_outlined,
+                            size: 18,
+                            color: AppColors.accent,
+                          ),
                           SizedBox(width: 8),
-                          Text('Unfriend', style: TextStyle(color: AppColors.accent)),
+                          Text(
+                            'Unfriend',
+                            style: TextStyle(color: AppColors.accent),
+                          ),
                         ],
                       ),
                     ),
@@ -614,9 +611,9 @@ class _FriendsScreenState extends State<FriendsScreen>
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(width: 12),
-                
+
                 // Request Info
                 Expanded(
                   child: Column(
@@ -648,7 +645,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                     ],
                   ),
                 ),
-                
+
                 // Time
                 Text(
                   _formatRequestTime(request.sentAt),
@@ -658,7 +655,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                 ),
               ],
             ),
-            
+
             // Message
             if (request.message != null) ...[
               const SizedBox(height: 12),
@@ -677,9 +674,9 @@ class _FriendsScreenState extends State<FriendsScreen>
                 ),
               ),
             ],
-            
+
             const SizedBox(height: 16),
-            
+
             // Action Buttons
             Row(
               children: [
@@ -736,7 +733,7 @@ class _FriendsScreenState extends State<FriendsScreen>
           ),
           const SizedBox(height: 12),
           Text(
-            _searchQuery.isEmpty 
+            _searchQuery.isEmpty
                 ? 'Start connecting with friends to share wishlists and make gift-giving more meaningful.'
                 : 'Try adjusting your search terms to find friends.',
             style: AppStyles.bodyMedium.copyWith(
@@ -802,17 +799,17 @@ class _FriendsScreenState extends State<FriendsScreen>
   // Helper Methods
   List<Friend> _getFilteredFriends() {
     if (_searchQuery.isEmpty) return _friends;
-    
+
     return _friends.where((friend) {
       return friend.name.toLowerCase().contains(_searchQuery) ||
-             friend.email.toLowerCase().contains(_searchQuery);
+          friend.email.toLowerCase().contains(_searchQuery);
     }).toList();
   }
 
   String _formatLastActive(DateTime lastActive) {
     final now = DateTime.now();
     final difference = now.difference(lastActive);
-    
+
     if (difference.inMinutes < 60) {
       return '${difference.inMinutes}m ago';
     } else if (difference.inHours < 24) {
@@ -825,7 +822,7 @@ class _FriendsScreenState extends State<FriendsScreen>
   String _formatRequestTime(DateTime sentAt) {
     final now = DateTime.now();
     final difference = now.difference(sentAt);
-    
+
     if (difference.inHours < 24) {
       return '${difference.inHours}h ago';
     } else {
@@ -867,23 +864,25 @@ class _FriendsScreenState extends State<FriendsScreen>
       _friendRequests.remove(request);
       if (accept) {
         // Add to friends list
-        _friends.add(Friend(
-          id: request.senderId,
-          name: request.senderName,
-          email: request.senderEmail,
-          profilePicture: request.senderProfilePicture,
-          mutualFriends: request.mutualFriends,
-          lastActive: DateTime.now(),
-          isOnline: false,
-          wishlistCount: 0,
-        ));
+        _friends.add(
+          Friend(
+            id: request.senderId,
+            name: request.senderName,
+            email: request.senderEmail,
+            profilePicture: request.senderProfilePicture,
+            mutualFriends: request.mutualFriends,
+            lastActive: DateTime.now(),
+            isOnline: false,
+            wishlistCount: 0,
+          ),
+        );
       }
     });
 
-    final message = accept 
-        ? 'Friend request accepted!' 
+    final message = accept
+        ? 'Friend request accepted!'
         : 'Friend request declined';
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -898,16 +897,14 @@ class _FriendsScreenState extends State<FriendsScreen>
         ),
         backgroundColor: accept ? AppColors.success : AppColors.accent,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
 
   void _viewFriendProfile(Friend friend) {
     AppRoutes.pushNamed(
-      context, 
+      context,
       AppRoutes.friendProfile,
       arguments: {'friendId': friend.id},
     );
@@ -942,7 +939,9 @@ class _FriendsScreenState extends State<FriendsScreen>
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('${friend.name} has been removed from your friends'),
+                  content: Text(
+                    '${friend.name} has been removed from your friends',
+                  ),
                   backgroundColor: AppColors.accent,
                 ),
               );
@@ -956,13 +955,11 @@ class _FriendsScreenState extends State<FriendsScreen>
 
   void _showAddFriendDialog() {
     final emailController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text('Add Friend'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1059,7 +1056,11 @@ class _SearchAndTabsDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => 160;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return child;
   }
 

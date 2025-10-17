@@ -1,15 +1,17 @@
-
-
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
-import '../../widgets/animated_background.dart';
+import '../../widgets/decorative_background.dart';
+import '../../widgets/guest_restriction_dialog.dart';
+import '../../services/localization_service.dart';
+import '../../services/auth_service.dart';
 
 class EventsScreen extends StatefulWidget {
+  const EventsScreen({super.key});
+
   @override
   _EventsScreenState createState() => _EventsScreenState();
 }
@@ -19,8 +21,11 @@ class _EventsScreenState extends State<EventsScreen>
   late TabController _tabController;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  final TextEditingController _searchController = TextEditingController();
+  List<EventSummary> _searchResults = [];
+  bool _isSearching = false;
 
-  // Mock events data
+  // Mock events data for authenticated users
   final List<EventSummary> _myEvents = [
     EventSummary(
       id: '1',
@@ -47,6 +52,38 @@ class _EventsScreenState extends State<EventsScreen>
       wishlistItemCount: 8,
       isCreatedByMe: true,
       status: EventStatus.upcoming,
+    ),
+  ];
+
+  // Mock public events for guest users
+  final List<EventSummary> _publicEvents = [
+    EventSummary(
+      id: 'pub1',
+      name: 'Community Birthday Celebration',
+      date: DateTime.now().add(Duration(days: 5)),
+      type: EventType.birthday,
+      location: 'Community Center',
+      description: 'Join us for a community birthday celebration!',
+      invitedCount: 50,
+      acceptedCount: 32,
+      wishlistItemCount: 25,
+      isCreatedByMe: false,
+      status: EventStatus.upcoming,
+      hostName: 'Sarah Ahmed',
+    ),
+    EventSummary(
+      id: 'pub2',
+      name: 'Wedding Anniversary',
+      date: DateTime.now().add(Duration(days: 12)),
+      type: EventType.anniversary,
+      location: 'Grand Hotel',
+      description: 'Celebrating 10 years of love and happiness',
+      invitedCount: 100,
+      acceptedCount: 75,
+      wishlistItemCount: 40,
+      isCreatedByMe: false,
+      status: EventStatus.upcoming,
+      hostName: 'Ahmed & Fatima',
     ),
   ];
 
@@ -109,13 +146,9 @@ class _EventsScreenState extends State<EventsScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   void _startAnimations() {
@@ -126,53 +159,81 @@ class _EventsScreenState extends State<EventsScreen>
   void dispose() {
     _tabController.dispose();
     _animationController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.accent.withOpacity(0.02),
-              AppColors.secondary.withOpacity(0.01),
-            ],
-          ),
-          
-          // Content
-          NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                _buildSliverAppBar(),
-                _buildSliverTabBar(),
-              ];
-            },
-            body: AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) {
-                return FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildMyEventsTab(),
-                      _buildInvitedEventsTab(),
-                    ],
+    return Consumer2<LocalizationService, AuthService>(
+      builder: (context, localization, authService, child) {
+        // For guest users - show different interface
+        if (authService.isGuest) {
+          return Scaffold(
+            body: DecorativeBackground(
+              showGifts: true,
+              child: Stack(
+                children: [
+                  // Content
+                  NestedScrollView(
+                    headerSliverBuilder: (context, innerBoxIsScrolled) {
+                      return [_buildGuestSliverAppBar(localization)];
+                    },
+                    body: AnimatedBuilder(
+                      animation: _animationController,
+                      builder: (context, child) {
+                        return FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: _buildGuestEventsView(localization),
+                        );
+                      },
+                    ),
                   ),
-                );
-              },
+                ],
+              ),
+            ),
+          );
+        }
+
+        // For authenticated users - show full interface
+        return Scaffold(
+          body: DecorativeBackground(
+            showGifts: true,
+            child: Stack(
+              children: [
+                // Content
+                NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) {
+                    return [
+                      _buildSliverAppBar(localization),
+                      _buildSliverTabBar(localization),
+                    ];
+                  },
+                  body: AnimatedBuilder(
+                    animation: _animationController,
+                    builder: (context, child) {
+                      return FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildMyEventsTab(localization),
+                            _buildInvitedEventsTab(localization),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildSliverAppBar() {
+  Widget _buildSliverAppBar(LocalizationService localization) {
     return SliverAppBar(
       expandedHeight: 120,
       floating: true,
@@ -185,14 +246,14 @@ class _EventsScreenState extends State<EventsScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Events',
+              localization.translate('events.title'),
               style: AppStyles.headingMedium.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
-              '${_getUpcomingEventsCount()} upcoming events',
+              '${_getUpcomingEventsCount()} ${localization.translate('events.upcomingEvents')}',
               style: AppStyles.bodySmall.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -218,10 +279,7 @@ class _EventsScreenState extends State<EventsScreen>
         // Filter Button
         IconButton(
           onPressed: _showFilterOptions,
-          icon: Icon(
-            Icons.filter_list_outlined,
-            color: AppColors.textPrimary,
-          ),
+          icon: Icon(Icons.filter_list_outlined, color: AppColors.textPrimary),
           style: IconButton.styleFrom(
             backgroundColor: AppColors.surface,
             padding: const EdgeInsets.all(12),
@@ -232,7 +290,7 @@ class _EventsScreenState extends State<EventsScreen>
     );
   }
 
-  Widget _buildSliverTabBar() {
+  Widget _buildSliverTabBar(LocalizationService localization) {
     return SliverPersistentHeader(
       pinned: true,
       delegate: _SliverTabBarDelegate(
@@ -250,19 +308,22 @@ class _EventsScreenState extends State<EventsScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('My Events'),
+                  Text(localization.translate('events.myEvents')),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: AppColors.accent.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.accent,
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       '${_myEvents.length}',
                       style: AppStyles.caption.copyWith(
-                        color: AppColors.accent,
-                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -273,10 +334,13 @@ class _EventsScreenState extends State<EventsScreen>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Invited'),
+                  Text(localization.translate('events.invited')),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.secondary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
@@ -298,12 +362,12 @@ class _EventsScreenState extends State<EventsScreen>
     );
   }
 
-  Widget _buildMyEventsTab() {
+  Widget _buildMyEventsTab(LocalizationService localization) {
     return RefreshIndicator(
       onRefresh: _refreshEvents,
       color: AppColors.accent,
       child: _myEvents.isEmpty
-          ? _buildEmptyMyEvents()
+          ? _buildEmptyMyEvents(localization)
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: _myEvents.length + 1, // +1 for bottom padding
@@ -311,21 +375,25 @@ class _EventsScreenState extends State<EventsScreen>
                 if (index == _myEvents.length) {
                   return const SizedBox(height: 100); // Bottom padding for FAB
                 }
-                return _buildEventCard(_myEvents[index]);
+                return _buildEventCard(_myEvents[index], localization);
               },
             ),
     );
   }
 
-  Widget _buildInvitedEventsTab() {
-    final upcomingEvents = _invitedEvents.where((e) => e.status == EventStatus.upcoming).toList();
-    final pastEvents = _invitedEvents.where((e) => e.status == EventStatus.completed).toList();
+  Widget _buildInvitedEventsTab(LocalizationService localization) {
+    final upcomingEvents = _invitedEvents
+        .where((e) => e.status == EventStatus.upcoming)
+        .toList();
+    final pastEvents = _invitedEvents
+        .where((e) => e.status == EventStatus.completed)
+        .toList();
 
     return RefreshIndicator(
       onRefresh: _refreshEvents,
       color: AppColors.secondary,
       child: _invitedEvents.isEmpty
-          ? _buildEmptyInvitedEvents()
+          ? _buildEmptyInvitedEvents(localization)
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -333,19 +401,28 @@ class _EventsScreenState extends State<EventsScreen>
                 children: [
                   // Upcoming Events
                   if (upcomingEvents.isNotEmpty) ...[
-                    _buildSectionHeader('Upcoming Events'),
+                    _buildSectionHeader(
+                      localization.translate('events.upcomingEvents'),
+                    ),
                     const SizedBox(height: 12),
-                    ...upcomingEvents.map((event) => _buildEventCard(event)),
+                    ...upcomingEvents.map(
+                      (event) => _buildEventCard(event, localization),
+                    ),
                     const SizedBox(height: 24),
                   ],
-                  
+
                   // Past Events
                   if (pastEvents.isNotEmpty) ...[
-                    _buildSectionHeader('Past Events'),
+                    _buildSectionHeader(
+                      localization.translate('events.pastEvents'),
+                    ),
                     const SizedBox(height: 12),
-                    ...pastEvents.map((event) => _buildEventCard(event)),
+                    ...pastEvents.map(
+                      (event) => _buildEventCard(event, localization),
+                    ),
+                    const SizedBox(height: 24),
                   ],
-                  
+
                   const SizedBox(height: 100), // Bottom padding
                 ],
               ),
@@ -366,18 +443,20 @@ class _EventsScreenState extends State<EventsScreen>
     );
   }
 
-  Widget _buildEventCard(EventSummary event) {
+  Widget _buildEventCard(EventSummary event, LocalizationService localization) {
     final isPast = event.status == EventStatus.completed;
     final daysUntil = event.date.difference(DateTime.now()).inDays;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
-        border: isPast 
+        border: isPast
             ? Border.all(color: AppColors.textTertiary.withOpacity(0.3))
-            : Border.all(color: _getEventTypeColor(event.type).withOpacity(0.3)),
+            : Border.all(
+                color: _getEventTypeColor(event.type).withOpacity(0.3),
+              ),
         boxShadow: [
           BoxShadow(
             color: AppColors.textTertiary.withOpacity(0.1),
@@ -423,8 +502,8 @@ class _EventsScreenState extends State<EventsScreen>
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: isPast 
-                            ? AppColors.textTertiary 
+                        color: isPast
+                            ? AppColors.textTertiary
                             : _getEventTypeColor(event.type),
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -434,9 +513,9 @@ class _EventsScreenState extends State<EventsScreen>
                         size: 28,
                       ),
                     ),
-                    
+
                     const SizedBox(width: 16),
-                    
+
                     // Event Info
                     Expanded(
                       child: Column(
@@ -446,7 +525,9 @@ class _EventsScreenState extends State<EventsScreen>
                             event.name,
                             style: AppStyles.headingSmall.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: isPast ? AppColors.textSecondary : AppColors.textPrimary,
+                              color: isPast
+                                  ? AppColors.textSecondary
+                                  : AppColors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -479,16 +560,19 @@ class _EventsScreenState extends State<EventsScreen>
                         ],
                       ),
                     ),
-                    
+
                     // Date Badge
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: isPast
                             ? AppColors.textTertiary.withOpacity(0.1)
                             : daysUntil <= 7
-                                ? AppColors.warning.withOpacity(0.1)
-                                : AppColors.info.withOpacity(0.1),
+                            ? AppColors.warning.withOpacity(0.1)
+                            : AppColors.info.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -499,8 +583,8 @@ class _EventsScreenState extends State<EventsScreen>
                               color: isPast
                                   ? AppColors.textTertiary
                                   : daysUntil <= 7
-                                      ? AppColors.warning
-                                      : AppColors.info,
+                                  ? AppColors.warning
+                                  : AppColors.info,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -510,8 +594,8 @@ class _EventsScreenState extends State<EventsScreen>
                               color: isPast
                                   ? AppColors.textTertiary
                                   : daysUntil <= 7
-                                      ? AppColors.warning
-                                      : AppColors.info,
+                                  ? AppColors.warning
+                                  : AppColors.info,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -521,7 +605,7 @@ class _EventsScreenState extends State<EventsScreen>
                   ],
                 ),
               ),
-              
+
               // Content
               Padding(
                 padding: const EdgeInsets.all(20),
@@ -539,9 +623,9 @@ class _EventsScreenState extends State<EventsScreen>
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Stats Row
                     Row(
                       children: [
@@ -567,9 +651,9 @@ class _EventsScreenState extends State<EventsScreen>
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Action Buttons
                     if (!isPast) ...[
                       Row(
@@ -577,7 +661,7 @@ class _EventsScreenState extends State<EventsScreen>
                           if (event.isCreatedByMe) ...[
                             Expanded(
                               child: CustomButton(
-                                text: 'Manage Event',
+                                text: localization.translate('ui.manageEvent'),
                                 onPressed: () => _manageEvent(event),
                                 variant: ButtonVariant.outline,
                                 customColor: _getEventTypeColor(event.type),
@@ -586,7 +670,7 @@ class _EventsScreenState extends State<EventsScreen>
                             const SizedBox(width: 12),
                             Expanded(
                               child: CustomButton(
-                                text: 'View Wishlist',
+                                text: localization.translate('ui.viewWishlist'),
                                 onPressed: () => _viewEventWishlist(event),
                                 variant: ButtonVariant.primary,
                                 customColor: _getEventTypeColor(event.type),
@@ -604,7 +688,7 @@ class _EventsScreenState extends State<EventsScreen>
                             const SizedBox(width: 12),
                             Expanded(
                               child: CustomButton(
-                                text: 'View Wishlist',
+                                text: localization.translate('ui.viewWishlist'),
                                 onPressed: () => _viewEventWishlist(event),
                                 variant: ButtonVariant.primary,
                                 customColor: _getEventTypeColor(event.type),
@@ -640,11 +724,7 @@ class _EventsScreenState extends State<EventsScreen>
   }) {
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 16,
-          color: color,
-        ),
+        Icon(icon, size: 16, color: color),
         const SizedBox(width: 4),
         Text(
           value,
@@ -656,15 +736,13 @@ class _EventsScreenState extends State<EventsScreen>
         const SizedBox(width: 4),
         Text(
           label,
-          style: AppStyles.caption.copyWith(
-            color: AppColors.textTertiary,
-          ),
+          style: AppStyles.caption.copyWith(color: AppColors.textTertiary),
         ),
       ],
     );
   }
 
-  Widget _buildEmptyMyEvents() {
+  Widget _buildEmptyMyEvents(LocalizationService localization) {
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -685,14 +763,14 @@ class _EventsScreenState extends State<EventsScreen>
           ),
           const SizedBox(height: 24),
           Text(
-            'No Events Created',
+            localization.translate('events.noEvents'),
             style: AppStyles.headingMedium.copyWith(
               color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            'Create your first event to start planning celebrations and sharing wishlists with friends.',
+            localization.translate('events.createEvent'),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textTertiary,
               height: 1.5,
@@ -701,19 +779,19 @@ class _EventsScreenState extends State<EventsScreen>
           ),
           const SizedBox(height: 32),
           CustomButton(
-            text: 'Create Event',
+            text: localization.translate('events.createEvent'),
             onPressed: () {
               AppRoutes.pushNamed(context, AppRoutes.createEvent);
             },
-            variant: ButtonVariant.gradient,
-            gradientColors: [AppColors.accent, AppColors.secondary],
+            variant: ButtonVariant.primary,
+            customColor: AppColors.accent,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyInvitedEvents() {
+  Widget _buildEmptyInvitedEvents(LocalizationService localization) {
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
@@ -734,14 +812,14 @@ class _EventsScreenState extends State<EventsScreen>
           ),
           const SizedBox(height: 24),
           Text(
-            'No Event Invitations',
+            localization.translate('events.noInvitations'),
             style: AppStyles.headingMedium.copyWith(
               color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            'When friends invite you to their events, you\'ll see them here.',
+            localization.translate('events.invited'),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textTertiary,
               height: 1.5,
@@ -755,8 +833,12 @@ class _EventsScreenState extends State<EventsScreen>
 
   // Helper Methods
   int _getUpcomingEventsCount() {
-    final myUpcoming = _myEvents.where((e) => e.status == EventStatus.upcoming).length;
-    final invitedUpcoming = _invitedEvents.where((e) => e.status == EventStatus.upcoming).length;
+    final myUpcoming = _myEvents
+        .where((e) => e.status == EventStatus.upcoming)
+        .length;
+    final invitedUpcoming = _invitedEvents
+        .where((e) => e.status == EventStatus.upcoming)
+        .length;
     return myUpcoming + invitedUpcoming;
   }
 
@@ -803,8 +885,20 @@ class _EventsScreenState extends State<EventsScreen>
   }
 
   String _getMonthName(int month) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return months[month - 1];
   }
 
@@ -819,20 +913,12 @@ class _EventsScreenState extends State<EventsScreen>
 
   void _viewEventWishlist(EventSummary event) {
     // Navigate to event wishlist screen
-    Navigator.pushNamed(
-      context,
-      AppRoutes.eventWishlist,
-      arguments: event,
-    );
+    Navigator.pushNamed(context, AppRoutes.eventWishlist, arguments: event);
   }
 
   void _manageEvent(EventSummary event) {
     // Navigate to event management screen
-    Navigator.pushNamed(
-      context,
-      AppRoutes.eventManagement,
-      arguments: event,
-    );
+    Navigator.pushNamed(context, AppRoutes.eventManagement, arguments: event);
   }
 
   void _showCalendarView() {
@@ -841,11 +927,9 @@ class _EventsScreenState extends State<EventsScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Calendar View'),
-        content: Container(
+        content: SizedBox(
           height: 300,
-          child: Center(
-            child: Text('Calendar view coming soon!'),
-          ),
+          child: Center(child: Text('Calendar view coming soon!')),
         ),
         actions: [
           TextButton(
@@ -869,10 +953,7 @@ class _EventsScreenState extends State<EventsScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Filter Events',
-              style: AppStyles.headingSmall,
-            ),
+            Text('Filter Events', style: AppStyles.headingSmall),
             const SizedBox(height: 24),
             // Filter options would go here
             Text('Filter options coming soon!'),
@@ -888,6 +969,472 @@ class _EventsScreenState extends State<EventsScreen>
     setState(() {
       // Update events data
     });
+  }
+
+  // Guest-specific methods
+  Widget _buildGuestSliverAppBar(LocalizationService localization) {
+    return SliverAppBar(
+      expandedHeight: 120,
+      floating: true,
+      pinned: false,
+      flexibleSpace: FlexibleSpaceBar(
+        title: Text(
+          localization.translate('navigation.events'),
+          style: AppStyles.headingMedium.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: false,
+        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppColors.background,
+                AppColors.background.withOpacity(0.8),
+              ],
+            ),
+          ),
+        ),
+      ),
+      backgroundColor: AppColors.background,
+      surfaceTintColor: Colors.transparent,
+      leading: IconButton(
+        onPressed: () => Navigator.pop(context),
+        icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+      ),
+      actions: [
+        // Search Button
+        IconButton(
+          onPressed: () => _showGuestSearch(localization),
+          icon: Icon(Icons.search, color: AppColors.textPrimary),
+          style: IconButton.styleFrom(
+            backgroundColor: AppColors.surface,
+            padding: const EdgeInsets.all(12),
+          ),
+        ),
+        const SizedBox(width: 16),
+      ],
+    );
+  }
+
+  Widget _buildGuestEventsView(LocalizationService localization) {
+    if (_isSearching &&
+        _searchResults.isEmpty &&
+        _searchController.text.isNotEmpty) {
+      return _buildGuestEmptySearch();
+    }
+
+    if (_isSearching && _searchResults.isNotEmpty) {
+      return _buildGuestSearchResults(localization);
+    }
+
+    return _buildGuestEmptyState(localization);
+  }
+
+  Widget _buildGuestEmptyState(LocalizationService localization) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          const SizedBox(height: 60),
+          Icon(Icons.event_outlined, size: 80, color: AppColors.textTertiary),
+          const SizedBox(height: 24),
+          Text(
+            localization.translate('guest.events.empty.title'),
+            style: AppStyles.heading4.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            localization.translate('guest.events.empty.description'),
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          CustomButton(
+            text: localization.translate(
+              'guest.events.empty.searchPlaceholder',
+            ),
+            onPressed: () => _showGuestSearch(localization),
+            variant: ButtonVariant.gradient,
+            icon: Icons.search,
+          ),
+          const SizedBox(height: 20),
+          CustomButton(
+            text: localization.translate('guest.quickActions.loginForMore'),
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.login);
+            },
+            variant: ButtonVariant.outline,
+            icon: Icons.login,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuestEmptySearch() {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off, size: 64, color: AppColors.textTertiary),
+          const SizedBox(height: 16),
+          Text(
+            localization.translate('guest.events.search.noResults'),
+            style: AppStyles.heading4.copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            localization.translate('guest.events.search.noResultsDescription'),
+            style: AppStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuestSearchResults(LocalizationService localization) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        return _buildGuestEventCard(_searchResults[index], localization);
+      },
+    );
+  }
+
+  Widget _buildGuestEventCard(
+    EventSummary event,
+    LocalizationService localization,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _getEventTypeColor(event.type).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _getEventTypeIcon(event.type),
+                  color: _getEventTypeColor(event.type),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.name,
+                      style: AppStyles.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (event.hostName != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '${localization.translate('common.by')} ${event.hostName}',
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  Text(
+                    '${event.date.day}',
+                    style: AppStyles.heading4.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    _getMonthName(event.date.month),
+                    style: AppStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (event.description != null) ...[
+            Text(
+              event.description!,
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (event.location != null) ...[
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  size: 16,
+                  color: AppColors.textTertiary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  event.location!,
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
+          Row(
+            children: [
+              _buildGuestEventStat(
+                icon: Icons.people_outline,
+                value: '${event.acceptedCount}/${event.invitedCount}',
+                label: localization.translate('guest.events.card.attendees'),
+              ),
+              const SizedBox(width: 16),
+              _buildGuestEventStat(
+                icon: Icons.card_giftcard,
+                value: '${event.wishlistItemCount}',
+                label: localization.translate('wishlists.items'),
+              ),
+              const Spacer(),
+              CustomButton(
+                text: localization.translate('guest.events.card.viewDetails'),
+                onPressed: () => _showGuestEventDetails(event),
+                variant: ButtonVariant.outline,
+                size: ButtonSize.small,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuestEventStat({
+    required IconData icon,
+    required String value,
+    required String label,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppColors.textTertiary),
+        const SizedBox(width: 4),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: AppStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
+            ),
+            Text(
+              label,
+              style: AppStyles.caption.copyWith(color: AppColors.textTertiary),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _showGuestSearch(LocalizationService localization) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.borderLight,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    localization.translate('guest.events.search.title'),
+                    style: AppStyles.heading4.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: localization.translate(
+                        'guest.events.empty.searchPlaceholder',
+                      ),
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onChanged: _performGuestSearch,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: _isSearching && _searchResults.isNotEmpty
+                  ? ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: _searchResults.length,
+                      itemBuilder: (context, index) {
+                        return _buildGuestEventCard(
+                          _searchResults[index],
+                          localization,
+                        );
+                      },
+                    )
+                  : _searchController.text.isEmpty
+                  ? _buildGuestSearchSuggestions()
+                  : _buildGuestEmptySearch(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGuestSearchSuggestions() {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            localization.translate('guest.events.search.popular'),
+            style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildSearchChip(localization.translate('events.birthday')),
+              _buildSearchChip(localization.translate('events.wedding')),
+              _buildSearchChip(localization.translate('events.graduation')),
+              _buildSearchChip(localization.translate('events.other')),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchChip(String text) {
+    return GestureDetector(
+      onTap: () {
+        _searchController.text = text;
+        _performGuestSearch(text);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        ),
+        child: Text(
+          text,
+          style: AppStyles.bodySmall.copyWith(color: AppColors.primary),
+        ),
+      ),
+    );
+  }
+
+  void _performGuestSearch(String query) {
+    setState(() {
+      _isSearching = query.isNotEmpty;
+      if (query.isEmpty) {
+        _searchResults.clear();
+      } else {
+        // Simple search simulation
+        _searchResults = _publicEvents
+            .where(
+              (event) =>
+                  event.name.toLowerCase().contains(query.toLowerCase()) ||
+                  (event.description?.toLowerCase().contains(
+                        query.toLowerCase(),
+                      ) ??
+                      false),
+            )
+            .toList();
+      }
+    });
+  }
+
+  void _showGuestEventDetails(EventSummary event) {
+    GuestRestrictionDialog.show(
+      context,
+      'تفاصيل الفعالية',
+      customMessage: 'سجل دخولك لعرض تفاصيل الفعالية الكاملة والتفاعل معها.',
+    );
   }
 }
 
@@ -909,10 +1456,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Container(
-      color: AppColors.background,
-      child: _tabBar,
-    );
+    return Container(color: AppColors.background, child: _tabBar);
   }
 
   @override
@@ -958,6 +1502,7 @@ enum EventType {
   anniversary,
   graduation,
   holiday,
+  vacation,
   babyShower,
   houseWarming,
   retirement,
@@ -965,9 +1510,4 @@ enum EventType {
   other,
 }
 
-enum EventStatus {
-  upcoming,
-  ongoing,
-  completed,
-  cancelled,
-}
+enum EventStatus { upcoming, ongoing, completed, cancelled }

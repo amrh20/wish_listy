@@ -1,5 +1,5 @@
 name: wish_listy
-description: "WishLink - Connect through thoughtful gifting. A modern Flutter app for creating and sharing gift wishlists with friends and family."
+description: "WishListy - Connect through thoughtful gifting. A modern Flutter app for creating and sharing gift wishlists with friends and family."
 
 # Prevent accidental publishing
 publish_to: 'none'
@@ -14,6 +14,10 @@ environment:
 # Main dependencies - Optimized for faster builds
 dependencies:
   flutter:
+    sdk: flutter
+
+  # Flutter Localizations
+  flutter_localizations:
     sdk: flutter
 
   # UI Icons
@@ -33,13 +37,15 @@ dependencies:
   shared_preferences: ^2.2.2
   
   # Basic utilities
-  intl: ^0.19.0
+  intl: ^0.20.2
   url_launcher: ^6.2.4
   share_plus: ^7.2.2
   
+  # Google Fonts for Cairo font
+  google_fonts: ^6.1.0
+  
   # Basic device info
   device_info_plus: ^9.1.2
-  package_info_plus: ^8.3.1
   
   # QR code generation
   qr_flutter: ^4.1.0
@@ -48,7 +54,7 @@ dependencies:
   table_calendar: ^3.0.9
   
   # Basic notifications
-  flutter_local_notifications: ^16.3.2
+  flutter_local_notifications: ^17.2.3
 
 dev_dependencies:
   flutter_test:
@@ -64,6 +70,9 @@ dev_dependencies:
   # Code generation
   json_annotation: ^4.8.1
   json_serializable: ^6.7.1
+  
+  # App icon generation
+  flutter_launcher_icons: ^0.13.1
 
 # Flutter configuration
 flutter:
@@ -74,6 +83,7 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/animations/
+    - assets/translations/
 
 # Removed heavy dependencies for faster builds:
 # - Firebase packages (firebase_core, firebase_auth, etc.) - Can be added later
@@ -95,3 +105,15 @@ flutter:
 # 3. Reduce dependency conflicts
 # 4. Keep essential functionality working
 # 5. Allow easy addition of features later when needed
+
+# App Icon Configuration
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
+  remove_alpha_ios: true
+  # Android specific settings
+  android_gravity: center
+  adaptive_icon_padding: true

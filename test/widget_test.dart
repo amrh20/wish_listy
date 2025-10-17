@@ -9,22 +9,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:wish_listy/main.dart';
+import 'package:wish_listy/services/localization_service.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+  testWidgets('App loads successfully', (WidgetTester tester) async {
+    // Create a mock localization service
+    final localizationService = LocalizationService();
+    await localizationService.initialize();
+
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const WishListyApp());
+    await tester.pumpWidget(MyApp(localizationService: localizationService));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify that the app loads without crashing
+    expect(find.byType(MaterialApp), findsOneWidget);
   });
 }

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
-import '../../utils/app_routes.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/animated_background.dart';
+import '../../models/wishlist_model.dart';
+import '../../widgets/decorative_background.dart';
 
 class WishlistItemsScreen extends StatefulWidget {
   final String wishlistName;
@@ -34,7 +33,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   String _selectedFilter = 'all';
   String _searchQuery = '';
   final _searchController = TextEditingController();
@@ -43,68 +42,58 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
   final List<WishlistItem> _items = [
     WishlistItem(
       id: '1',
+      wishlistId: '1',
       name: 'iPhone 15 Pro',
       description: 'Latest iPhone with amazing camera and performance',
-      price: 999.99,
       priority: ItemPriority.high,
-      category: 'Electronics',
       imageUrl: null,
-      isPurchased: false,
-      addedBy: 'Me',
-      addedDate: DateTime.now().subtract(Duration(days: 5)),
-      notes: 'Preferably in Space Black color',
+      status: ItemStatus.desired,
+      createdAt: DateTime.now().subtract(Duration(days: 5)),
+      updatedAt: DateTime.now().subtract(Duration(days: 5)),
     ),
     WishlistItem(
       id: '2',
+      wishlistId: '1',
       name: 'Nike Air Max 270',
       description: 'Comfortable running shoes for daily workouts',
-      price: 129.99,
       priority: ItemPriority.medium,
-      category: 'Fashion',
       imageUrl: null,
-      isPurchased: true,
-      addedBy: 'Sarah',
-      addedDate: DateTime.now().subtract(Duration(days: 10)),
-      notes: 'Size 42, any color is fine',
+      status: ItemStatus.purchased,
+      createdAt: DateTime.now().subtract(Duration(days: 10)),
+      updatedAt: DateTime.now().subtract(Duration(days: 10)),
     ),
     WishlistItem(
       id: '3',
+      wishlistId: '1',
       name: 'Kindle Paperwhite',
       description: 'E-reader with waterproof design and long battery life',
-      price: 139.99,
       priority: ItemPriority.low,
-      category: 'Books',
       imageUrl: null,
-      isPurchased: false,
-      addedBy: 'Me',
-      addedDate: DateTime.now().subtract(Duration(days: 15)),
-      notes: '8GB version is sufficient',
+      status: ItemStatus.desired,
+      createdAt: DateTime.now().subtract(Duration(days: 15)),
+      updatedAt: DateTime.now().subtract(Duration(days: 15)),
     ),
     WishlistItem(
       id: '4',
+      wishlistId: '1',
       name: 'KitchenAid Mixer',
       description: 'Professional stand mixer for baking enthusiasts',
-      price: 299.99,
       priority: ItemPriority.high,
-      category: 'Home & Kitchen',
       imageUrl: null,
-      isPurchased: false,
-      addedBy: 'Emma',
-      addedDate: DateTime.now().subtract(Duration(days: 20)),
-      notes: 'Red color preferred',
+      status: ItemStatus.desired,
+      createdAt: DateTime.now().subtract(Duration(days: 20)),
+      updatedAt: DateTime.now().subtract(Duration(days: 20)),
     ),
     WishlistItem(
       id: '5',
+      wishlistId: '1',
       name: 'Sony WH-1000XM4',
       description: 'Wireless noise-canceling headphones',
-      price: 349.99,
       priority: ItemPriority.medium,
-      category: 'Electronics',
       imageUrl: null,
-      isPurchased: false,
-      addedBy: 'Me',
-      addedDate: DateTime.now().subtract(Duration(days: 25)),
-      notes: 'Great for travel and work',
+      status: ItemStatus.desired,
+      createdAt: DateTime.now().subtract(Duration(days: 25)),
+      updatedAt: DateTime.now().subtract(Duration(days: 25)),
     ),
   ];
 
@@ -121,21 +110,20 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   void _startAnimations() {
@@ -151,16 +139,20 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
 
   List<WishlistItem> get _filteredItems {
     return _items.where((item) {
-      final matchesSearch = item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                           item.description.toLowerCase().contains(_searchQuery.toLowerCase());
-      
+      final matchesSearch =
+          item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          (item.description?.toLowerCase().contains(
+                _searchQuery.toLowerCase(),
+              ) ??
+              false);
+
       switch (_selectedFilter) {
         case 'all':
           return matchesSearch;
         case 'available':
-          return matchesSearch && !item.isPurchased;
+          return matchesSearch && item.status != ItemStatus.purchased;
         case 'purchased':
-          return matchesSearch && item.isPurchased;
+          return matchesSearch && item.status == ItemStatus.purchased;
         case 'high_priority':
           return matchesSearch && item.priority == ItemPriority.high;
         default:
@@ -172,60 +164,52 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.secondary.withOpacity(0.03),
-              AppColors.primary.withOpacity(0.02),
-            ],
-          ),
-          
-          // Content
-          SafeArea(
-            child: Column(
-              children: [
-                // Header
-                _buildHeader(),
-                
-                // Content
-                Expanded(
-                  child: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: SlideTransition(
-                          position: _slideAnimation,
-                          child: Column(
-                            children: [
-                              // Stats Card
-                              _buildStatsCard(),
-                              
-                              const SizedBox(height: 20),
-                              
-                              // Search and Filters
-                              _buildSearchAndFilters(),
-                              
-                              const SizedBox(height: 20),
-                              
-                              // Items List
-                              Expanded(
-                                child: _buildItemsList(),
-                              ),
-                            ],
+      body: DecorativeBackground(
+        showGifts: true,
+        child: Stack(
+          children: [
+            // Content
+            SafeArea(
+              child: Column(
+                children: [
+                  // Header
+                  _buildHeader(),
+
+                  // Content
+                  Expanded(
+                    child: AnimatedBuilder(
+                      animation: _animationController,
+                      builder: (context, child) {
+                        return FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: SlideTransition(
+                            position: _slideAnimation,
+                            child: Column(
+                              children: [
+                                // Stats Card
+                                _buildStatsCard(),
+
+                                const SizedBox(height: 20),
+
+                                // Search and Filters
+                                _buildSearchAndFilters(),
+
+                                const SizedBox(height: 20),
+
+                                // Items List
+                                Expanded(child: _buildItemsList()),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -330,11 +314,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
               color: AppColors.primary,
             ),
           ),
-          Container(
-            width: 1,
-            height: 40,
-            color: AppColors.borderLight,
-          ),
+          Container(width: 1, height: 40, color: AppColors.borderLight),
           Expanded(
             child: _buildStatItem(
               icon: Icons.check_circle_outline,
@@ -343,11 +323,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
               color: AppColors.success,
             ),
           ),
-          Container(
-            width: 1,
-            height: 40,
-            color: AppColors.borderLight,
-          ),
+          Container(width: 1, height: 40, color: AppColors.borderLight),
           Expanded(
             child: _buildStatItem(
               icon: Icons.attach_money_outlined,
@@ -369,11 +345,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
   }) {
     return Column(
       children: [
-        Icon(
-          icon,
-          color: color,
-          size: 24,
-        ),
+        Icon(icon, color: color, size: 24),
         const SizedBox(height: 8),
         Text(
           value,
@@ -384,9 +356,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
         ),
         Text(
           label,
-          style: AppStyles.caption.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppStyles.caption.copyWith(color: AppColors.textSecondary),
         ),
       ],
     );
@@ -407,19 +377,25 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
             },
             decoration: InputDecoration(
               hintText: 'Search items...',
-              prefixIcon: Icon(Icons.search_outlined, color: AppColors.textTertiary),
+              prefixIcon: Icon(
+                Icons.search_outlined,
+                color: AppColors.textTertiary,
+              ),
               filled: true,
               fillColor: AppColors.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -427,11 +403,23 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
               children: [
                 _buildFilterChip('all', 'All', Icons.all_inclusive),
                 const SizedBox(width: 8),
-                _buildFilterChip('available', 'Available', Icons.shopping_bag_outlined),
+                _buildFilterChip(
+                  'available',
+                  'Available',
+                  Icons.shopping_bag_outlined,
+                ),
                 const SizedBox(width: 8),
-                _buildFilterChip('purchased', 'Purchased', Icons.check_circle_outline),
+                _buildFilterChip(
+                  'purchased',
+                  'Purchased',
+                  Icons.check_circle_outline,
+                ),
                 const SizedBox(width: 8),
-                _buildFilterChip('high_priority', 'High Priority', Icons.priority_high),
+                _buildFilterChip(
+                  'high_priority',
+                  'High Priority',
+                  Icons.priority_high,
+                ),
               ],
             ),
           ),
@@ -442,7 +430,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
 
   Widget _buildFilterChip(String value, String label, IconData icon) {
     final isSelected = _selectedFilter == value;
-    
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -504,7 +492,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: item.isPurchased 
+          color: item.status == ItemStatus.purchased
               ? AppColors.success.withOpacity(0.3)
               : AppColors.borderLight,
           width: 1,
@@ -539,14 +527,14 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                     ),
                   ),
                   child: Icon(
-                    _getCategoryIcon(item.category),
+                    _getCategoryIcon('General'),
                     color: _getPriorityColor(item.priority),
                     size: 24,
                   ),
                 ),
-                
+
                 const SizedBox(width: 16),
-                
+
                 // Item Details
                 Expanded(
                   child: Column(
@@ -559,15 +547,18 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                               item.name,
                               style: AppStyles.bodyMedium.copyWith(
                                 fontWeight: FontWeight.w600,
-                                decoration: item.isPurchased 
-                                    ? TextDecoration.lineThrough 
+                                decoration: item.status == ItemStatus.purchased
+                                    ? TextDecoration.lineThrough
                                     : null,
                               ),
                             ),
                           ),
-                          if (item.isPurchased)
+                          if (item.status == ItemStatus.purchased)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.success,
                                 borderRadius: BorderRadius.circular(12),
@@ -582,27 +573,34 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                             ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 4),
-                      
-                      Text(
-                        item.description,
-                        style: AppStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
+
+                      if (item.description != null &&
+                          item.description!.isNotEmpty)
+                        Text(
+                          item.description!,
+                          style: AppStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      
+
                       const SizedBox(height: 8),
-                      
+
                       Row(
                         children: [
                           // Priority Badge
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
-                              color: _getPriorityColor(item.priority).withOpacity(0.1),
+                              color: _getPriorityColor(
+                                item.priority,
+                              ).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -613,23 +611,24 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                               ),
                             ),
                           ),
-                          
+
                           const SizedBox(width: 8),
-                          
+
                           // Price
                           Text(
-                            '\$${item.price.toStringAsFixed(2)}',
+                            item.priceRange?.displayPrice ??
+                                'Price not specified',
                             style: AppStyles.bodyMedium.copyWith(
                               color: AppColors.warning,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          
+
                           const Spacer(),
-                          
+
                           // Added by
                           Text(
-                            'by ${item.addedBy}',
+                            'by Me',
                             style: AppStyles.caption.copyWith(
                               color: AppColors.textTertiary,
                             ),
@@ -667,9 +666,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
           const SizedBox(height: 8),
           Text(
             'Try adjusting your search or filters',
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textTertiary,
-            ),
+            style: AppStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
           ),
         ],
       ),
@@ -684,6 +681,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
         return AppColors.warning;
       case ItemPriority.low:
         return AppColors.success;
+      case ItemPriority.urgent:
+        return AppColors.accent;
     }
   }
 
@@ -695,6 +694,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
         return 'Medium';
       case ItemPriority.low:
         return 'Low';
+      case ItemPriority.urgent:
+        return 'Urgent';
     }
   }
 
@@ -715,41 +716,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
 
   void _openItemDetails(WishlistItem item) {
     // Navigate to item details screen
-    Navigator.pushNamed(
-      context,
-      '/item-details',
-      arguments: item,
-    );
+    Navigator.pushNamed(context, '/item-details', arguments: item);
   }
 }
 
-// Data Models
-enum ItemPriority { low, medium, high }
-
-class WishlistItem {
-  final String id;
-  final String name;
-  final String description;
-  final double price;
-  final ItemPriority priority;
-  final String category;
-  final String? imageUrl;
-  final bool isPurchased;
-  final String addedBy;
-  final DateTime addedDate;
-  final String? notes;
-
-  WishlistItem({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.price,
-    required this.priority,
-    required this.category,
-    this.imageUrl,
-    required this.isPurchased,
-    required this.addedBy,
-    required this.addedDate,
-    this.notes,
-  });
-}
+// Data Models - Using models from wishlist_model.dart instead

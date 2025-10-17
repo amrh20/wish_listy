@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
-import 'dart:math' as math;
+import '../services/localization_service.dart';
 
-class CustomBottomNavigation extends StatefulWidget {
+class CustomBottomNavigation extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
 
@@ -15,395 +15,113 @@ class CustomBottomNavigation extends StatefulWidget {
   });
 
   @override
-  State<CustomBottomNavigation> createState() => _CustomBottomNavigationState();
-}
-
-class _CustomBottomNavigationState extends State<CustomBottomNavigation>
-    with TickerProviderStateMixin {
-  late List<AnimationController> _controllers;
-  late List<Animation<double>> _scaleAnimations;
-  late List<Animation<double>> _bounceAnimations;
-  late List<AnimationController> _particleControllers;
-  late List<List<Animation<double>>> _particleAnimations;
-
-  @override
-  void initState() {
-    super.initState();
-    
-    _controllers = List.generate(5, (index) => AnimationController(
-      duration: Duration(milliseconds: 300 + (index * 50)),
-      vsync: this,
-    ));
-    
-    _scaleAnimations = _controllers.map((controller) => 
-      Tween<double>(begin: 1.0, end: 1.1).animate(
-        CurvedAnimation(parent: controller, curve: Curves.easeInOut)
-      )
-    ).toList();
-    
-    _bounceAnimations = _controllers.map((controller) => 
-      Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: controller, curve: Curves.bounceOut)
-      )
-    ).toList();
-
-    // Particle animations for each tab
-    _particleControllers = List.generate(5, (index) => AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    ));
-    
-    _particleAnimations = List.generate(5, (index) => 
-      List.generate(8, (particleIndex) => Tween<double>(
-        begin: 0.0,
-        end: 1.0,
-      ).animate(CurvedAnimation(
-        parent: _particleControllers[index],
-        curve: Curves.easeOut,
-      )))
-    );
-    
-    // Start initial animations
-    for (int i = 0; i < _controllers.length; i++) {
-      Future.delayed(Duration(milliseconds: i * 100), () {
-        if (mounted) _controllers[i].forward();
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
-    for (var controller in _particleControllers) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final items = [
-      {
-        'icon': _buildCustomHomeIcon,
-        'activeIcon': _buildCustomHomeIconActive,
-        'label': 'Home',
-        'gradient': AppColors.primaryGradient,
-        'color': AppColors.primary,
-      },
-      {
-        'icon': _buildCustomWishlistIcon,
-        'activeIcon': _buildCustomWishlistIconActive,
-        'label': 'Wishlist',
-        'gradient': AppColors.pinkGradient,
-        'color': AppColors.pink,
-      },
-      {
-        'icon': _buildCustomEventsIcon,
-        'activeIcon': _buildCustomEventsIconActive,
-        'label': 'Events',
-        'gradient': AppColors.tealGradient,
-        'color': AppColors.secondary,
-      },
-      {
-        'icon': _buildCustomFriendsIcon,
-        'activeIcon': _buildCustomFriendsIconActive,
-        'label': 'Friends',
-        'gradient': AppColors.indigoGradient,
-        'color': AppColors.indigo,
-      },
-      {
-        'icon': _buildCustomProfileIcon,
-        'activeIcon': _buildCustomProfileIconActive,
-        'label': 'Profile',
-        'gradient': AppColors.orangeGradient,
-        'color': AppColors.orange,
-      },
-    ];
+    return Consumer<LocalizationService>(
+      builder: (context, localization, child) {
+        if (!context.mounted) return const SizedBox.shrink();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.glass,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-        ),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: 30,
-            offset: const Offset(0, -10),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: items.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              final isActive = widget.currentIndex == index;
+        final navigationItems = [
+          {
+            'icon': Icons.home_outlined,
+            'activeIcon': Icons.home_rounded,
+            'label': localization.translate('navigation.home'),
+            'color': AppColors.primary,
+          },
+          {
+            'icon': Icons.favorite_outline,
+            'activeIcon': Icons.favorite_rounded,
+            'label': localization.translate('navigation.wishlist'),
+            'color': AppColors.secondary,
+          },
+          {
+            'icon': Icons.celebration_outlined,
+            'activeIcon': Icons.celebration_rounded,
+            'label': localization.translate('navigation.events'),
+            'color': AppColors.accent,
+          },
+          {
+            'icon': Icons.people_outline,
+            'activeIcon': Icons.people_rounded,
+            'label': localization.translate('navigation.friends'),
+            'color': AppColors.info,
+          },
+          {
+            'icon': Icons.person_outline,
+            'activeIcon': Icons.person_rounded,
+            'label': localization.translate('navigation.profile'),
+            'color': AppColors.warning,
+          },
+        ];
 
-              return AnimatedBuilder(
-                animation: _controllers[index],
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: isActive ? _scaleAnimations[index].value : 1.0,
-                    child: Stack(
-                      children: [
-                        // Particle effects for active tab
-                        if (isActive) _buildParticleEffects(index, item['color']),
-                        _buildNavigationItem(
-                          item: item,
-                          isActive: isActive,
-                          onTap: () {
-                            // Haptic feedback
-                            HapticFeedback.lightImpact();
-                            if (isActive) {
-                              HapticFeedback.mediumImpact();
-                            }
-                            
-                            widget.onTap(index);
-                            _controllers[index].forward().then((_) {
-                              _controllers[index].reverse();
-                            });
-                            
-                            // Trigger particle animation
-                            if (isActive) {
-                              _particleControllers[index].forward().then((_) {
-                                _particleControllers[index].reset();
-                              });
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            }).toList(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildParticleEffects(int tabIndex, Color color) {
-    return AnimatedBuilder(
-      animation: _particleControllers[tabIndex],
-      builder: (context, child) {
-        return Stack(
-          children: List.generate(8, (particleIndex) {
-            final animation = _particleAnimations[tabIndex][particleIndex];
-            final angle = (particleIndex * 45) * (math.pi / 180);
-            final radius = 40.0 * animation.value;
-            final x = math.cos(angle) * radius;
-            final y = math.sin(angle) * radius;
-            
-            return Positioned(
-              left: 20 + x,
-              top: 12 + y,
-              child: Transform.scale(
-                scale: (1.0 - animation.value) * 0.5,
-                child: Container(
-                  width: 4,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(1.0 - animation.value),
-                    shape: BoxShape.circle,
-                  ),
-                ),
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.textTertiary.withOpacity(0.1),
+                offset: const Offset(0, -4),
+                blurRadius: 20,
+                spreadRadius: 0,
               ),
-            );
-          }),
+            ],
+          ),
+          child: SafeArea(
+            child: Container(
+              height: 80,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: navigationItems.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  final isActive = currentIndex == index;
+
+                  return _buildNavigationButton(item, index, isActive);
+                }).toList(),
+              ),
+            ),
+          ),
         );
       },
     );
   }
 
-  Widget _buildNavigationItem({
-    required Map<String, dynamic> item,
-    required bool isActive,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildNavigationButton(
+    Map<String, dynamic> item,
+    int index,
+    bool isActive,
+  ) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () => onTap(index),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          gradient: isActive ? item['gradient'] : null,
-          color: isActive ? null : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: isActive ? [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ] : null,
+          color: isActive ? item['color'].withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 200),
               child: Icon(
                 isActive ? item['activeIcon'] : item['icon'],
                 key: ValueKey(isActive),
-                color: isActive ? AppColors.textWhite : AppColors.textLight,
-                size: 26,
+                color: isActive ? item['color'] : AppColors.textTertiary,
+                size: 24,
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              item['label'],
+            const SizedBox(height: 4),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
               style: AppStyles.caption.copyWith(
-                color: isActive ? AppColors.textWhite : AppColors.textLight,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 11,
+                color: isActive ? item['color'] : AppColors.textTertiary,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
               ),
+              child: Text(item['label']),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomHomeIcon() {
-    return Container(
-      width: 26,
-      height: 26,
-      child: CustomPaint(
-        painter: HomeIconPainter(
-          color: AppColors.textLight,
-          isActive: false,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomHomeIconActive() {
-    return Container(
-      width: 26,
-      height: 26,
-      child: CustomPaint(
-        painter: HomeIconPainter(
-          color: AppColors.textWhite,
-          isActive: true,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomWishlistIcon() {
-    return Container(
-      width: 26,
-      height: 26,
-      child: CustomPaint(
-        painter: WishlistIconPainter(
-          color: AppColors.textLight,
-          isActive: false,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomWishlistIconActive() {
-    return Container(
-      width: 26,
-      height: 26,
-      child: CustomPaint(
-        painter: WishlistIconPainter(
-          color: AppColors.textWhite,
-          isActive: true,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomEventsIcon() {
-    return Container(
-      width: 26,
-      height: 26,
-      child: CustomPaint(
-        painter: EventsIconPainter(
-          color: AppColors.textLight,
-          isActive: false,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomEventsIconActive() {
-    return Container(
-      width: 26,
-      height: 26,
-      child: CustomPaint(
-        painter: EventsIconPainter(
-          color: AppColors.textWhite,
-          isActive: true,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomFriendsIcon() {
-    return Container(
-      width: 26,
-      height: 26,
-      child: CustomPaint(
-        painter: FriendsIconPainter(
-          color: AppColors.textLight,
-          isActive: false,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomFriendsIconActive() {
-    return Container(
-      width: 26,
-      height: 26,
-      child: CustomPaint(
-        painter: FriendsIconPainter(
-          color: AppColors.textWhite,
-          isActive: true,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomProfileIcon() {
-    return Container(
-      width: 26,
-      height: 26,
-      child: CustomPaint(
-        painter: ProfileIconPainter(
-          color: AppColors.textLight,
-          isActive: false,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomProfileIconActive() {
-    return Container(
-      width: 26,
-      height: 26,
-      child: CustomPaint(
-        painter: ProfileIconPainter(
-          color: AppColors.textWhite,
-          isActive: true,
         ),
       ),
     );
@@ -462,8 +180,16 @@ class HomeIconPainter extends CustomPainter {
         ..color = color
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset(size.width * 0.7, size.height * 0.3), 1.5, sparklePaint);
-      canvas.drawCircle(Offset(size.width * 0.3, size.height * 0.25), 1.0, sparklePaint);
+      canvas.drawCircle(
+        Offset(size.width * 0.7, size.height * 0.3),
+        1.5,
+        sparklePaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.3, size.height * 0.25),
+        1.0,
+        sparklePaint,
+      );
     }
   }
 
@@ -509,11 +235,31 @@ class WishlistIconPainter extends CustomPainter {
     // Bow
     final bowPath = Path();
     bowPath.moveTo(size.width * 0.5, size.height * 0.25);
-    bowPath.quadraticBezierTo(size.width * 0.4, size.height * 0.2, size.width * 0.35, size.height * 0.25);
-    bowPath.quadraticBezierTo(size.width * 0.4, size.height * 0.3, size.width * 0.5, size.height * 0.25);
+    bowPath.quadraticBezierTo(
+      size.width * 0.4,
+      size.height * 0.2,
+      size.width * 0.35,
+      size.height * 0.25,
+    );
+    bowPath.quadraticBezierTo(
+      size.width * 0.4,
+      size.height * 0.3,
+      size.width * 0.5,
+      size.height * 0.25,
+    );
     bowPath.moveTo(size.width * 0.5, size.height * 0.25);
-    bowPath.quadraticBezierTo(size.width * 0.6, size.height * 0.2, size.width * 0.65, size.height * 0.25);
-    bowPath.quadraticBezierTo(size.width * 0.6, size.height * 0.3, size.width * 0.5, size.height * 0.25);
+    bowPath.quadraticBezierTo(
+      size.width * 0.6,
+      size.height * 0.2,
+      size.width * 0.65,
+      size.height * 0.25,
+    );
+    bowPath.quadraticBezierTo(
+      size.width * 0.6,
+      size.height * 0.3,
+      size.width * 0.5,
+      size.height * 0.25,
+    );
 
     canvas.drawPath(boxPath, paint);
     canvas.drawPath(ribbonVPath, paint);
@@ -526,8 +272,16 @@ class WishlistIconPainter extends CustomPainter {
         ..color = color
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset(size.width * 0.15, size.height * 0.4), 1.0, sparklePaint);
-      canvas.drawCircle(Offset(size.width * 0.85, size.height * 0.6), 1.5, sparklePaint);
+      canvas.drawCircle(
+        Offset(size.width * 0.15, size.height * 0.4),
+        1.0,
+        sparklePaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.85, size.height * 0.6),
+        1.5,
+        sparklePaint,
+      );
     }
   }
 
@@ -577,11 +331,31 @@ class EventsIconPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     // Simple dots representing dates
-    canvas.drawCircle(Offset(size.width * 0.35, size.height * 0.55), 1.5, datePaint);
-    canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.55), 1.5, datePaint);
-    canvas.drawCircle(Offset(size.width * 0.65, size.height * 0.55), 1.5, datePaint);
-    canvas.drawCircle(Offset(size.width * 0.35, size.height * 0.7), 1.5, datePaint);
-    canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.7), 1.5, datePaint);
+    canvas.drawCircle(
+      Offset(size.width * 0.35, size.height * 0.55),
+      1.5,
+      datePaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.55),
+      1.5,
+      datePaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.65, size.height * 0.55),
+      1.5,
+      datePaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.35, size.height * 0.7),
+      1.5,
+      datePaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.7),
+      1.5,
+      datePaint,
+    );
 
     canvas.drawPath(calendarPath, paint);
     canvas.drawPath(topPath, paint);
@@ -593,9 +367,21 @@ class EventsIconPainter extends CustomPainter {
         ..color = color
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset(size.width * 0.15, size.height * 0.2), 1.0, sparklePaint);
-      canvas.drawCircle(Offset(size.width * 0.85, size.height * 0.2), 1.0, sparklePaint);
-      canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.15), 1.5, sparklePaint);
+      canvas.drawCircle(
+        Offset(size.width * 0.15, size.height * 0.2),
+        1.0,
+        sparklePaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.85, size.height * 0.2),
+        1.0,
+        sparklePaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.5, size.height * 0.15),
+        1.5,
+        sparklePaint,
+      );
     }
   }
 
@@ -622,10 +408,12 @@ class FriendsIconPainter extends CustomPainter {
 
     // Left person
     final leftHeadPath = Path();
-    leftHeadPath.addOval(Rect.fromCircle(
-      center: Offset(size.width * 0.3, size.height * 0.35),
-      radius: size.width * 0.12,
-    ));
+    leftHeadPath.addOval(
+      Rect.fromCircle(
+        center: Offset(size.width * 0.3, size.height * 0.35),
+        radius: size.width * 0.12,
+      ),
+    );
 
     final leftBodyPath = Path();
     leftBodyPath.moveTo(size.width * 0.3, size.height * 0.47);
@@ -635,10 +423,12 @@ class FriendsIconPainter extends CustomPainter {
 
     // Right person
     final rightHeadPath = Path();
-    rightHeadPath.addOval(Rect.fromCircle(
-      center: Offset(size.width * 0.7, size.height * 0.35),
-      radius: size.width * 0.12,
-    ));
+    rightHeadPath.addOval(
+      Rect.fromCircle(
+        center: Offset(size.width * 0.7, size.height * 0.35),
+        radius: size.width * 0.12,
+      ),
+    );
 
     final rightBodyPath = Path();
     rightBodyPath.moveTo(size.width * 0.7, size.height * 0.47);
@@ -663,8 +453,16 @@ class FriendsIconPainter extends CustomPainter {
         ..color = color
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.25), 1.0, sparklePaint);
-      canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.85), 1.0, sparklePaint);
+      canvas.drawCircle(
+        Offset(size.width * 0.5, size.height * 0.25),
+        1.0,
+        sparklePaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.5, size.height * 0.85),
+        1.0,
+        sparklePaint,
+      );
     }
   }
 
@@ -691,10 +489,12 @@ class ProfileIconPainter extends CustomPainter {
 
     // Head
     final headPath = Path();
-    headPath.addOval(Rect.fromCircle(
-      center: Offset(size.width * 0.5, size.height * 0.35),
-      radius: size.width * 0.15,
-    ));
+    headPath.addOval(
+      Rect.fromCircle(
+        center: Offset(size.width * 0.5, size.height * 0.35),
+        radius: size.width * 0.15,
+      ),
+    );
 
     // Body
     final bodyPath = Path();
@@ -706,21 +506,30 @@ class ProfileIconPainter extends CustomPainter {
 
     // Eyes
     final leftEyePath = Path();
-    leftEyePath.addOval(Rect.fromCircle(
-      center: Offset(size.width * 0.42, size.height * 0.32),
-      radius: size.width * 0.03,
-    ));
+    leftEyePath.addOval(
+      Rect.fromCircle(
+        center: Offset(size.width * 0.42, size.height * 0.32),
+        radius: size.width * 0.03,
+      ),
+    );
 
     final rightEyePath = Path();
-    rightEyePath.addOval(Rect.fromCircle(
-      center: Offset(size.width * 0.58, size.height * 0.32),
-      radius: size.width * 0.03,
-    ));
+    rightEyePath.addOval(
+      Rect.fromCircle(
+        center: Offset(size.width * 0.58, size.height * 0.32),
+        radius: size.width * 0.03,
+      ),
+    );
 
     // Smile
     final smilePath = Path();
     smilePath.moveTo(size.width * 0.42, size.height * 0.4);
-    smilePath.quadraticBezierTo(size.width * 0.5, size.height * 0.45, size.width * 0.58, size.height * 0.4);
+    smilePath.quadraticBezierTo(
+      size.width * 0.5,
+      size.height * 0.45,
+      size.width * 0.58,
+      size.height * 0.4,
+    );
 
     canvas.drawPath(headPath, paint);
     canvas.drawPath(bodyPath, paint);
@@ -734,9 +543,21 @@ class ProfileIconPainter extends CustomPainter {
         ..color = color
         ..style = PaintingStyle.fill;
 
-      canvas.drawCircle(Offset(size.width * 0.25, size.height * 0.25), 1.0, sparklePaint);
-      canvas.drawCircle(Offset(size.width * 0.75, size.height * 0.25), 1.0, sparklePaint);
-      canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.15), 1.5, sparklePaint);
+      canvas.drawCircle(
+        Offset(size.width * 0.25, size.height * 0.25),
+        1.0,
+        sparklePaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.75, size.height * 0.25),
+        1.0,
+        sparklePaint,
+      );
+      canvas.drawCircle(
+        Offset(size.width * 0.5, size.height * 0.15),
+        1.5,
+        sparklePaint,
+      );
     }
   }
 

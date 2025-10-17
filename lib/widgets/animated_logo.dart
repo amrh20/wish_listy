@@ -1,6 +1,3 @@
-
-
-
 import 'package:flutter/material.dart';
 import 'dart:math';
 import '../constants/app_colors.dart';
@@ -11,14 +8,14 @@ class AnimatedLogo extends StatefulWidget {
   final Color? color;
   final Duration duration;
   final bool showPulse;
-  
+
   const AnimatedLogo({
-    Key? key,
+    super.key,
     this.size = 100,
     this.color,
     this.duration = const Duration(seconds: 2),
     this.showPulse = true,
-  }) : super(key: key);
+  });
 
   @override
   State<AnimatedLogo> createState() => _AnimatedLogoState();
@@ -50,29 +47,23 @@ class _AnimatedLogoState extends State<AnimatedLogo>
       vsync: this,
     );
 
-    _rotationAnimation = Tween<double>(
-      begin: 0.0,
-      end: 2 * pi,
-    ).animate(CurvedAnimation(
-      parent: _rotationController,
-      curve: Curves.easeInOutCubic,
-    ));
+    _rotationAnimation = Tween<double>(begin: 0.0, end: 2 * pi).animate(
+      CurvedAnimation(
+        parent: _rotationController,
+        curve: Curves.easeInOutCubic,
+      ),
+    );
 
-    _pulseAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
+    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _rotationController,
-      curve: const Interval(0.0, 0.5, curve: Curves.elasticOut),
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _rotationController,
+        curve: const Interval(0.0, 0.5, curve: Curves.elasticOut),
+      ),
+    );
   }
 
   void _startAnimations() {
@@ -95,8 +86,8 @@ class _AnimatedLogoState extends State<AnimatedLogo>
       animation: Listenable.merge([_rotationController, _pulseController]),
       builder: (context, child) {
         return Transform.scale(
-          scale: widget.showPulse 
-              ? _pulseAnimation.value 
+          scale: widget.showPulse
+              ? _pulseAnimation.value
               : _scaleAnimation.value,
           child: Transform.rotate(
             angle: _rotationAnimation.value,
@@ -133,12 +124,7 @@ class LoadingWidget extends StatelessWidget {
   final Color? color;
   final double size;
 
-  const LoadingWidget({
-    Key? key,
-    this.message,
-    this.color,
-    this.size = 50,
-  }) : super(key: key);
+  const LoadingWidget({super.key, this.message, this.color, this.size = 50});
 
   @override
   Widget build(BuildContext context) {
@@ -174,12 +160,12 @@ class CustomErrorWidget extends StatelessWidget {
   final IconData? icon;
 
   const CustomErrorWidget({
-    Key? key,
+    super.key,
     required this.title,
     required this.message,
     this.onRetry,
     this.icon,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

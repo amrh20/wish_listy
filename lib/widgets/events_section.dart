@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_styles.dart';
 import '../models/event.dart';
+import '../utils/app_routes.dart'; // Added import
 
 class EventsSection extends StatefulWidget {
   final List<Event> events;
@@ -21,6 +22,7 @@ class _EventsSectionState extends State<EventsSection>
     with TickerProviderStateMixin {
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
+  int? _hoveredIndex; // Added hover state
 
   @override
   void initState() {
@@ -50,250 +52,232 @@ class _EventsSectionState extends State<EventsSection>
 
   @override
   Widget build(BuildContext context) {
-    return AnimationLimiter(
-      child: Column(
-        children: AnimationConfiguration.toStaggeredList(
-          duration: const Duration(milliseconds: 800),
-          childAnimationBuilder: (widget) => SlideAnimation(
-            verticalOffset: 50.0,
-            child: FadeInAnimation(child: widget),
-          ),
-          children: [
-            Padding(
+    return Column(
+      children: [
+        if (widget.events.isEmpty)
+          _buildEmptyState()
+        else
+          SizedBox(
+            height: 160, // Increased height to prevent overflow
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '📅 Upcoming Events',
-                    style: AppStyles.heading4.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  if (widget.onSeeAll != null)
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: widget.onSeeAll,
-                          borderRadius: BorderRadius.circular(20),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            child: Text(
-                              'See all',
-                              style: AppStyles.bodyMedium.copyWith(
-                                color: AppColors.textWhite,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+              itemCount: widget.events.length,
+              itemBuilder: (context, index) {
+                final event = widget.events[index];
+                return _buildEventCard(event, index);
+              },
             ),
-            const SizedBox(height: 20),
-            SlideTransition(
-              position: _slideAnimation,
-              child: SizedBox(
-                height: 140,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  itemCount: widget.events.length,
-                  itemBuilder: (context, index) {
-                    return AnimationConfiguration.staggeredList(
-                      position: index,
-                      duration: const Duration(milliseconds: 600),
-                      child: SlideAnimation(
-                        horizontalOffset: 50.0,
-                        child: FadeInAnimation(
-                          child: Container(
-                            margin: EdgeInsets.only(
-                              right: index == widget.events.length - 1 ? 0 : 20,
-                            ),
-                            child: _buildEventCard(widget.events[index], index),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.event_busy,
+            size: 50,
+            color: AppColors.textLight,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'No upcoming events yet!',
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textLight,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildEventCard(Event event, int index) {
-    return Container(
-      width: 300,
-      decoration: AppStyles.glassCardDecoration.copyWith(
-        boxShadow: [
-          BoxShadow(
-            color: event.iconColor.withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+    final isHovered = _hoveredIndex == index;
+    
+    return GestureDetector( // Added GestureDetector for tap
+      onTap: () {
+        // Navigate to Event Details Screen
+        AppRoutes.pushNamed(
+          context,
+          AppRoutes.eventDetails,
+          arguments: {
+            'eventId': event.id,
+          },
+        );
+      },
+      child: MouseRegion( // Added MouseRegion for cursor pointer
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hoveredIndex = index),
+        onExit: (_) => setState(() => _hoveredIndex = null),
+        child: AnimatedContainer( // Added AnimatedContainer for smooth transitions
+          duration: const Duration(milliseconds: 200),
+          transform: isHovered ? (Matrix4.identity()..scale(1.02)) : Matrix4.identity(),
+          width: 300,
+          decoration: AppStyles.glassCardDecoration.copyWith(
+            boxShadow: [
+              BoxShadow(
+                color: event.iconColor.withOpacity(isHovered ? 0.3 : 0.2),
+                blurRadius: isHovered ? 25 : 20,
+                offset: Offset(0, isHovered ? 10 : 8),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Row(
-          children: [
-            // Event Icon with Glow
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    event.iconColor.withOpacity(0.2),
-                    event.iconColor.withOpacity(0.1),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: event.iconColor.withOpacity(0.3),
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: event.iconColor.withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  event.icon,
-                  style: const TextStyle(fontSize: 28),
-                ),
-              ),
-            ),
-            
-            const SizedBox(width: 20),
-            
-            // Event Details
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+          child: ClipRRect( // Added ClipRRect to prevent overflow
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Row(
                 children: [
-                  Text(
-                    event.title,
-                    style: AppStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
+                  // Event Icon with Glow
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
+                    width: 56,
+                    height: 56,
                     decoration: BoxDecoration(
-                      gradient: AppColors.infoGradient,
-                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        colors: [
+                          event.iconColor.withOpacity(isHovered ? 0.3 : 0.2),
+                          event.iconColor.withOpacity(isHovered ? 0.2 : 0.1),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: event.iconColor.withOpacity(isHovered ? 0.4 : 0.3),
+                        width: isHovered ? 3 : 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: event.iconColor.withOpacity(isHovered ? 0.4 : 0.3),
+                          blurRadius: isHovered ? 20 : 15,
+                          offset: Offset(0, isHovered ? 8 : 5),
+                        ),
+                      ],
                     ),
-                    child: Text(
-                      event.formattedDate,
-                      style: AppStyles.bodySmall.copyWith(
-                        color: AppColors.textWhite,
-                        fontWeight: FontWeight.w600,
+                    child: Center(
+                      child: Text(
+                        event.icon,
+                        style: TextStyle(
+                          fontSize: isHovered ? 30 : 28,
+                        ),
                       ),
                     ),
+                  ),
+                  
+                  const SizedBox(width: 20),
+                  
+                  // Event Details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          event.title,
+                          style: AppStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: AppColors.infoGradient,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            event.formattedDate,
+                            style: AppStyles.bodySmall.copyWith(
+                              color: AppColors.textWhite,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Participants with Beautiful Avatars
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: [
+                          ...event.participants.take(3).map((participant) => Container(
+                            margin: const EdgeInsets.only(right: 6),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.surface,
+                                  width: isHovered ? 3 : 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.shadow,
+                                    blurRadius: isHovered ? 12 : 8,
+                                    offset: Offset(0, isHovered ? 4 : 2),
+                                  ),
+                                ],
+                              ),
+                              child: CircleAvatar(
+                                radius: isHovered ? 20 : 18,
+                                backgroundImage: NetworkImage(participant),
+                                onBackgroundImageError: (exception, stackTrace) {
+                                  // Handle error
+                                },
+                              ),
+                            ),
+                          )),
+                          if (event.participants.length > 3)
+                            Container(
+                              margin: const EdgeInsets.only(left: 4),
+                              width: isHovered ? 40 : 36,
+                              height: isHovered ? 40 : 36,
+                              decoration: BoxDecoration(
+                                gradient: AppColors.primaryGradient,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withOpacity(isHovered ? 0.4 : 0.3),
+                                    blurRadius: isHovered ? 12 : 8,
+                                    offset: Offset(0, isHovered ? 6 : 2),
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '+${event.participants.length - 3}',
+                                  style: AppStyles.caption.copyWith(
+                                    color: AppColors.textWhite,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            
-            // Participants with Beautiful Avatars
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  children: [
-                    ...event.participants.take(3).map((participant) => Container(
-                      margin: const EdgeInsets.only(right: 6),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.surface,
-                            width: 2,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.shadow,
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: CircleAvatar(
-                          radius: 18,
-                          backgroundImage: NetworkImage(participant),
-                          onBackgroundImageError: (exception, stackTrace) {
-                            // Handle error
-                          },
-                        ),
-                      ),
-                    )),
-                    if (event.participants.length > 3)
-                      Container(
-                        margin: const EdgeInsets.only(left: 4),
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          gradient: AppColors.primaryGradient,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            '+${event.participants.length - 3}',
-                            style: AppStyles.caption.copyWith(
-                              color: AppColors.textWhite,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );

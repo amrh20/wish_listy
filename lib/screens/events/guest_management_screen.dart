@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
-import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/animated_background.dart';
+import '../../widgets/decorative_background.dart';
 import 'events_screen.dart';
 
 class GuestManagementScreen extends StatefulWidget {
   final EventSummary event;
 
-  const GuestManagementScreen({
-    super.key,
-    required this.event,
-  });
+  const GuestManagementScreen({super.key, required this.event});
 
   @override
   _GuestManagementScreenState createState() => _GuestManagementScreenState();
@@ -23,7 +19,7 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
-  
+
   String _selectedTab = 'invited';
   final _searchController = TextEditingController();
   String _searchQuery = '';
@@ -93,21 +89,20 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   void _startAnimations() {
@@ -123,9 +118,10 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
 
   List<Guest> get _filteredGuests {
     return _guests.where((guest) {
-      final matchesSearch = guest.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                           guest.email.toLowerCase().contains(_searchQuery.toLowerCase());
-      
+      final matchesSearch =
+          guest.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          guest.email.toLowerCase().contains(_searchQuery.toLowerCase());
+
       switch (_selectedTab) {
         case 'invited':
           return matchesSearch && guest.status == GuestStatus.invited;
@@ -144,60 +140,47 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.secondary.withOpacity(0.03),
-              AppColors.primary.withOpacity(0.02),
+      body: DecorativeBackground(
+        showGifts: true,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header
+              _buildHeader(),
+
+              // Content
+              Expanded(
+                child: AnimatedBuilder(
+                  animation: _animationController,
+                  builder: (context, child) {
+                    return FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: Column(
+                          children: [
+                            // Stats Cards
+                            _buildStatsCards(),
+
+                            const SizedBox(height: 20),
+
+                            // Search and Tabs
+                            _buildSearchAndTabs(),
+
+                            const SizedBox(height: 20),
+
+                            // Guest List
+                            Expanded(child: _buildGuestList()),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
-          
-          // Content
-          SafeArea(
-            child: Column(
-              children: [
-                // Header
-                _buildHeader(),
-                
-                // Content
-                Expanded(
-                  child: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: SlideTransition(
-                          position: _slideAnimation,
-                          child: Column(
-                            children: [
-                              // Stats Cards
-                              _buildStatsCards(),
-                              
-                              const SizedBox(height: 20),
-                              
-                              // Search and Tabs
-                              _buildSearchAndTabs(),
-                              
-                              const SizedBox(height: 20),
-                              
-                              // Guest List
-                              Expanded(
-                                child: _buildGuestList(),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -261,9 +244,15 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
 
   Widget _buildStatsCards() {
     final totalGuests = _guests.length;
-    final acceptedGuests = _guests.where((g) => g.rsvpStatus == RSVPStatus.accepted).length;
-    final pendingGuests = _guests.where((g) => g.rsvpStatus == RSVPStatus.pending).length;
-    final declinedGuests = _guests.where((g) => g.rsvpStatus == RSVPStatus.declined).length;
+    final acceptedGuests = _guests
+        .where((g) => g.rsvpStatus == RSVPStatus.accepted)
+        .length;
+    final pendingGuests = _guests
+        .where((g) => g.rsvpStatus == RSVPStatus.pending)
+        .length;
+    final declinedGuests = _guests
+        .where((g) => g.rsvpStatus == RSVPStatus.declined)
+        .length;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -320,18 +309,11 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
       child: Column(
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: 20,
-          ),
+          Icon(icon, color: color, size: 20),
           const SizedBox(height: 8),
           Text(
             value,
@@ -342,9 +324,7 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
           ),
           Text(
             label,
-            style: AppStyles.caption.copyWith(
-              color: AppColors.textTertiary,
-            ),
+            style: AppStyles.caption.copyWith(color: AppColors.textTertiary),
           ),
         ],
       ),
@@ -366,19 +346,25 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
             },
             decoration: InputDecoration(
               hintText: 'Search guests...',
-              prefixIcon: Icon(Icons.search_outlined, color: AppColors.textTertiary),
+              prefixIcon: Icon(
+                Icons.search_outlined,
+                color: AppColors.textTertiary,
+              ),
               filled: true,
               fillColor: AppColors.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Tab Bar
           Container(
             decoration: BoxDecoration(
@@ -401,7 +387,7 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
 
   Widget _buildTab(String value, String label, IconData icon) {
     final isSelected = _selectedTab == value;
-    
+
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -488,10 +474,14 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: _getRSVPStatusColor(guest.rsvpStatus).withOpacity(0.1),
+                        color: _getRSVPStatusColor(
+                          guest.rsvpStatus,
+                        ).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(25),
                         border: Border.all(
-                          color: _getRSVPStatusColor(guest.rsvpStatus).withOpacity(0.3),
+                          color: _getRSVPStatusColor(
+                            guest.rsvpStatus,
+                          ).withOpacity(0.3),
                           width: 1,
                         ),
                       ),
@@ -505,9 +495,9 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(width: 16),
-                    
+
                     // Guest Info
                     Expanded(
                       child: Column(
@@ -525,7 +515,10 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                               ),
                               // RSVP Status Badge
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: _getRSVPStatusColor(guest.rsvpStatus),
                                   borderRadius: BorderRadius.circular(12),
@@ -540,24 +533,27 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                               ),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 4),
-                          
+
                           Text(
                             guest.email,
                             style: AppStyles.bodySmall.copyWith(
                               color: AppColors.textSecondary,
                             ),
                           ),
-                          
+
                           const SizedBox(height: 8),
-                          
+
                           Row(
                             children: [
                               // Plus One Badge
                               if (guest.plusOne)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.info.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
@@ -570,13 +566,16 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                                     ),
                                   ),
                                 ),
-                              
+
                               if (guest.plusOne) const SizedBox(width: 8),
-                              
+
                               // Dietary Restrictions
                               if (guest.dietaryRestrictions != null)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: AppColors.warning.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(8),
@@ -596,10 +595,10 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                     ),
                   ],
                 ),
-                
+
                 // Action Buttons
                 const SizedBox(height: 16),
-                
+
                 Row(
                   children: [
                     Expanded(
@@ -611,9 +610,9 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
                         icon: Icons.notification_add_outlined,
                       ),
                     ),
-                    
+
                     const SizedBox(width: 12),
-                    
+
                     Expanded(
                       child: CustomButton(
                         text: 'Update Status',
@@ -638,11 +637,7 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.people_outline,
-            size: 64,
-            color: AppColors.textTertiary,
-          ),
+          Icon(Icons.people_outline, size: 64, color: AppColors.textTertiary),
           const SizedBox(height: 16),
           Text(
             'No guests found',
@@ -653,9 +648,7 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
           const SizedBox(height: 8),
           Text(
             'Try adjusting your search or filters',
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textTertiary,
-            ),
+            style: AppStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
           ),
         ],
       ),
@@ -663,6 +656,28 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
   }
 
   // Helper Methods
+  String _getStatusDisplayName(GuestStatus status) {
+    switch (status) {
+      case GuestStatus.invited:
+        return 'Invited';
+      case GuestStatus.confirmed:
+        return 'Confirmed';
+      case GuestStatus.cancelled:
+        return 'Cancelled';
+    }
+  }
+
+  String _getRSVPDisplayName(RSVPStatus status) {
+    switch (status) {
+      case RSVPStatus.accepted:
+        return 'Accepted';
+      case RSVPStatus.declined:
+        return 'Declined';
+      case RSVPStatus.pending:
+        return 'Pending';
+    }
+  }
+
   Color _getRSVPStatusColor(RSVPStatus status) {
     switch (status) {
       case RSVPStatus.accepted:
@@ -687,27 +702,216 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
 
   // Action Handlers
   void _addNewGuest() {
-    // Navigate to add guest screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Add guest functionality coming soon!'),
-        backgroundColor: AppColors.info,
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Add Guest'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Email or Username',
+                hintText: 'Enter email or username',
+                prefixIcon: Icon(Icons.person_add),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: InputDecoration(
+                labelText: 'Personal Message (Optional)',
+                hintText: 'Add a personal message',
+                prefixIcon: Icon(Icons.message),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Guest invitation sent!'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            },
+            child: Text('Send Invitation'),
+          ),
+        ],
       ),
     );
   }
 
   void _openGuestDetails(Guest guest) {
-    // Navigate to guest details screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Guest details coming soon!'),
-        backgroundColor: AppColors.info,
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Guest Details'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  child: Text(
+                    guest.name[0].toUpperCase(),
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        guest.name,
+                        style: AppStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        guest.email,
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildDetailRow('Status', _getStatusDisplayName(guest.status)),
+            _buildDetailRow('RSVP', _getRSVPDisplayName(guest.rsvpStatus)),
+            _buildDetailRow(
+              'Invited',
+              '${guest.invitedDate.day}/${guest.invitedDate.month}/${guest.invitedDate.year}',
+            ),
+            if (guest.dietaryRestrictions != null)
+              _buildDetailRow(
+                'Dietary Restrictions',
+                guest.dietaryRestrictions!,
+              ),
+            if (guest.notes != null) _buildDetailRow('Notes', guest.notes!),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+          if (guest.rsvpStatus == RSVPStatus.pending)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _sendReminder(guest);
+              },
+              child: Text('Send Reminder'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: AppStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(child: Text(value, style: AppStyles.bodySmall)),
+        ],
+      ),
+    );
+  }
+
+  void _updateGuestStatus(Guest guest) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Update ${guest.name}\'s Status'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.check_circle, color: AppColors.success),
+              title: Text('Mark as Confirmed'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${guest.name} marked as confirmed!'),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.cancel, color: AppColors.error),
+              title: Text('Mark as Cancelled'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${guest.name} marked as cancelled!'),
+                    backgroundColor: AppColors.warning,
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.send, color: AppColors.info),
+              title: Text('Send Reminder'),
+              onTap: () {
+                Navigator.pop(context);
+                _sendReminder(guest);
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+        ],
       ),
     );
   }
 
   void _sendReminder(Guest guest) {
-    // Send reminder functionality
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Reminder sent to ${guest.name}!'),
@@ -715,20 +919,11 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
       ),
     );
   }
-
-  void _updateGuestStatus(Guest guest) {
-    // Update guest status functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Update status for ${guest.name} coming soon!'),
-        backgroundColor: AppColors.info,
-      ),
-    );
-  }
 }
 
 // Data Models
 enum GuestStatus { invited, confirmed, cancelled }
+
 enum RSVPStatus { pending, accepted, declined }
 
 class Guest {

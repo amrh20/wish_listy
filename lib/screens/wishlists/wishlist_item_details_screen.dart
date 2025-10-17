@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
-import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/animated_background.dart';
 import '../events/event_details_screen.dart';
@@ -9,13 +8,11 @@ import '../events/event_details_screen.dart';
 class WishlistItemDetailsScreen extends StatefulWidget {
   final WishlistItemPreview item;
 
-  const WishlistItemDetailsScreen({
-    super.key,
-    required this.item,
-  });
+  const WishlistItemDetailsScreen({super.key, required this.item});
 
   @override
-  _WishlistItemDetailsScreenState createState() => _WishlistItemDetailsScreenState();
+  _WishlistItemDetailsScreenState createState() =>
+      _WishlistItemDetailsScreenState();
 }
 
 class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
@@ -37,21 +34,20 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
+      ),
+    );
 
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.2),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
   }
 
   void _startAnimations() {
@@ -77,14 +73,14 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
               AppColors.primary.withOpacity(0.02),
             ],
           ),
-          
+
           // Content
           SafeArea(
             child: Column(
               children: [
                 // Header
                 _buildHeader(),
-                
+
                 // Content
                 Expanded(
                   child: AnimatedBuilder(
@@ -101,22 +97,22 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
                               children: [
                                 // Item Image Placeholder
                                 _buildItemImage(),
-                                
+
                                 const SizedBox(height: 24),
-                                
+
                                 // Item Details
                                 _buildItemDetails(),
-                                
+
                                 const SizedBox(height: 24),
-                                
+
                                 // Purchase Status
                                 _buildPurchaseStatus(),
-                                
+
                                 const SizedBox(height: 32),
-                                
+
                                 // Action Buttons
                                 _buildActionButtons(),
-                                
+
                                 const SizedBox(height: 100), // Bottom padding
                               ],
                             ),
@@ -197,22 +193,19 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.borderLight, width: 1),
       ),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              widget.item.isPurchased 
+              widget.item.isPurchased
                   ? Icons.check_circle_outline
                   : Icons.card_giftcard_outlined,
               size: 64,
-              color: widget.item.isPurchased 
-                  ? AppColors.success 
+              color: widget.item.isPurchased
+                  ? AppColors.success
                   : AppColors.secondary,
             ),
             const SizedBox(height: 16),
@@ -234,46 +227,43 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.borderLight, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Item Information',
-            style: AppStyles.headingSmall.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+            style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.w600),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           _buildDetailRow(
             icon: Icons.card_giftcard_outlined,
             label: 'Name',
             value: widget.item.name,
             iconColor: AppColors.secondary,
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           _buildDetailRow(
             icon: Icons.attach_money_outlined,
             label: 'Price',
             value: widget.item.price,
             iconColor: AppColors.primary,
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           _buildDetailRow(
             icon: Icons.info_outline,
             label: 'Status',
             value: widget.item.isPurchased ? 'Purchased' : 'Available',
-            iconColor: widget.item.isPurchased ? AppColors.success : AppColors.info,
+            iconColor: widget.item.isPurchased
+                ? AppColors.success
+                : AppColors.info,
           ),
         ],
       ),
@@ -295,15 +285,11 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
             color: iconColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(
-            icon,
-            color: iconColor,
-            size: 20,
-          ),
+          child: Icon(icon, color: iconColor, size: 20),
         ),
-        
+
         const SizedBox(width: 16),
-        
+
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,8 +305,12 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
                 value,
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
-                  decoration: widget.item.isPurchased ? TextDecoration.lineThrough : null,
-                  color: widget.item.isPurchased ? AppColors.textTertiary : AppColors.textPrimary,
+                  decoration: widget.item.isPurchased
+                      ? TextDecoration.lineThrough
+                      : null,
+                  color: widget.item.isPurchased
+                      ? AppColors.textTertiary
+                      : AppColors.textPrimary,
                 ),
               ),
             ],
@@ -334,12 +324,12 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: widget.item.isPurchased 
+        color: widget.item.isPurchased
             ? AppColors.success.withOpacity(0.1)
             : AppColors.info.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: widget.item.isPurchased 
+          color: widget.item.isPurchased
               ? AppColors.success.withOpacity(0.3)
               : AppColors.info.withOpacity(0.3),
           width: 1,
@@ -348,7 +338,7 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
       child: Row(
         children: [
           Icon(
-            widget.item.isPurchased 
+            widget.item.isPurchased
                 ? Icons.check_circle_outline
                 : Icons.info_outline,
             color: widget.item.isPurchased ? AppColors.success : AppColors.info,
@@ -363,12 +353,14 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
                   widget.item.isPurchased ? 'Item Purchased' : 'Item Available',
                   style: AppStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: widget.item.isPurchased ? AppColors.success : AppColors.info,
+                    color: widget.item.isPurchased
+                        ? AppColors.success
+                        : AppColors.info,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  widget.item.isPurchased 
+                  widget.item.isPurchased
                       ? 'This item has been purchased for the event'
                       : 'This item is still available for purchase',
                   style: AppStyles.bodySmall.copyWith(
@@ -395,9 +387,9 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
             customColor: AppColors.secondary,
             icon: Icons.bookmark_outline,
           ),
-        
+
         if (!widget.item.isPurchased) const SizedBox(height: 12),
-        
+
         // View Similar Items Button
         CustomButton(
           text: 'View Similar Items',
@@ -406,9 +398,9 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
           customColor: AppColors.info,
           icon: Icons.search_outlined,
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Back to Wishlist Button
         CustomButton(
           text: 'Back to Wishlist',
@@ -438,7 +430,7 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
         backgroundColor: AppColors.success,
       ),
     );
-    
+
     // TODO: Implement item reservation logic
   }
 
@@ -449,7 +441,7 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
         backgroundColor: AppColors.info,
       ),
     );
-    
+
     // TODO: Navigate to similar items search
   }
 }

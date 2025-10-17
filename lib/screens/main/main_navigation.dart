@@ -1,11 +1,13 @@
-
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
-import '../../utils/app_theme.dart';
+import '../../widgets/bottom_navigation.dart';
+import '../../widgets/language_switcher.dart';
+import '../../services/localization_service.dart';
+import '../../services/auth_service.dart';
+import '../../widgets/guest_restriction_dialog.dart';
 import 'home_screen.dart';
 import '../wishlists/my_wishlists_screen.dart';
 import '../events/events_screen.dart';
@@ -13,8 +15,10 @@ import '../friends/friends_screen.dart';
 import '../profile/profile_screen.dart';
 
 class MainNavigation extends StatefulWidget {
+  const MainNavigation({super.key});
+
   @override
-  _MainNavigationState createState() => _MainNavigationState();
+  State<MainNavigation> createState() => _MainNavigationState();
 }
 
 class _MainNavigationState extends State<MainNavigation>
@@ -22,40 +26,6 @@ class _MainNavigationState extends State<MainNavigation>
   int _currentIndex = 0;
   late PageController _pageController;
   late AnimationController _fabAnimationController;
-  late Animation<double> _fabScaleAnimation;
-
-  final List<NavigationItem> _navigationItems = [
-    NavigationItem(
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-      label: 'Home',
-      color: AppColors.primary,
-    ),
-    NavigationItem(
-      icon: Icons.favorite_outline,
-      activeIcon: Icons.favorite_rounded,
-      label: 'Wishlists',
-      color: AppColors.secondary,
-    ),
-    NavigationItem(
-      icon: Icons.celebration_outlined,
-      activeIcon: Icons.celebration_rounded,
-      label: 'Events',
-      color: AppColors.accent,
-    ),
-    NavigationItem(
-      icon: Icons.people_outline,
-      activeIcon: Icons.people_rounded,
-      label: 'Friends',
-      color: AppColors.info,
-    ),
-    NavigationItem(
-      icon: Icons.person_outline,
-      activeIcon: Icons.person_rounded,
-      label: 'Profile',
-      color: AppColors.warning,
-    ),
-  ];
 
   @override
   void initState() {
@@ -70,14 +40,6 @@ class _MainNavigationState extends State<MainNavigation>
       vsync: this,
     );
 
-    _fabScaleAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fabAnimationController,
-      curve: Curves.elasticOut,
-    ));
-
     _fabAnimationController.forward();
   }
 
@@ -89,6 +51,25 @@ class _MainNavigationState extends State<MainNavigation>
   }
 
   void _onTabTapped(int index) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    
+    // Check if guest user is trying to access restricted features
+    if (authService.isGuest) {
+      if (index == 1) { // Wishlists - allow but show limited view
+        // Allow access but the screen will handle guest limitations
+      } else if (index == 2) { // Events - allow but show limited view
+        // Allow access but the screen will handle guest limitations  
+      } else if (index == 3) { // Friends - restricted for guests
+        GuestRestrictionDialog.show(context, 'الأصدقاء', 
+          customMessage: 'يجب تسجيل الدخول لإدارة قائمة الأصدقاء والتواصل معهم.');
+        return;
+      } else if (index == 4) { // Profile - restricted for guests
+        GuestRestrictionDialog.show(context, 'الملف الشخصي',
+          customMessage: 'يجب تسجيل الدخول لعرض وتعديل ملفك الشخصي.');
+        return;
+      }
+    }
+
     if (_currentIndex == index) {
       // Double tap to scroll to top or refresh
       _handleDoubleTap(index);
@@ -137,94 +118,338 @@ class _MainNavigationState extends State<MainNavigation>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: PageView(
-        controller: _pageController,
-        onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        children: [
-          HomeScreen(),
-          MyWishlistsScreen(),
-          EventsScreen(),
-          FriendsScreen(),
-          ProfileScreen(),
-        ],
-      ),
-      
-      // Custom Bottom Navigation Bar
-      bottomNavigationBar: _buildBottomNavigationBar(),
-      
-      // Floating Action Button (conditional)
-      floatingActionButton: _buildFloatingActionButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    return Consumer<LocalizationService>(
+      builder: (context, localization, child) {
+        if (!mounted) return const SizedBox.shrink();
+
+        return Scaffold(
+          body: PageView(
+            controller: _pageController,
+            onPageChanged: (index) {
+              if (mounted) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              }
+            },
+            children: [
+              HomeScreen(),
+              MyWishlistsScreen(),
+              EventsScreen(),
+              FriendsScreen(),
+              ProfileScreen(),
+            ],
+          ),
+
+          // Custom Bottom Navigation Bar
+          bottomNavigationBar: CustomBottomNavigation(
+            currentIndex: _currentIndex,
+            onTap: _onTabTapped,
+          ),
+
+          // Floating Action Button (conditional)
+          floatingActionButton: _buildFloatingActionButton(),
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        );
+      },
     );
   }
 
-  Widget _buildBottomNavigationBar() {
+  Widget? _buildFloatingActionButton() {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    
+    switch (_currentIndex) {
+      case 0: // Home
+        return _buildHomeFAB();
+      case 1: // Wishlists
+        return authService.isGuest ? null : _buildWishlistFAB();
+      case 2: // Events
+        return authService.isGuest ? null : _buildEventFAB();
+      case 3: // Friends
+        return authService.isGuest ? null : _buildFriendFAB();
+      case 4: // Profile
+        return authService.isGuest ? null : _buildProfileFAB();
+      default:
+        return null;
+    }
+  }
+
+  Widget _buildHomeFAB() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.textTertiary.withOpacity(0.1),
-            offset: const Offset(0, -4),
-            blurRadius: 20,
-            spreadRadius: 0,
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: SafeArea(
-        child: Container(
-          height: 80,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: _navigationItems.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              final isActive = _currentIndex == index;
-              
-              return _buildNavigationButton(item, index, isActive);
-            }).toList(),
-          ),
-        ),
+      child: FloatingActionButton(
+        onPressed: () {
+          final authService = Provider.of<AuthService>(context, listen: false);
+          if (authService.isGuest) {
+            GuestRestrictionDialog.show(context, 'الإجراءات السريعة',
+              customMessage: 'يجب تسجيل الدخول لإنشاء القوائم والفعاليات وإضافة الأصدقاء.');
+          } else {
+            // Show quick actions menu
+            _showQuickActionsMenu(context);
+          }
+        },
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
   }
 
-  Widget _buildNavigationButton(NavigationItem item, int index, bool isActive) {
-    return GestureDetector(
-      onTap: () => _onTabTapped(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? item.color.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Icon(
-                isActive ? item.activeIcon : item.icon,
-                key: ValueKey(isActive),
-                color: isActive ? item.color : AppColors.textTertiary,
-                size: 24,
+  Widget _buildWishlistFAB() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.pinkGradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.pink.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: FloatingActionButton(
+        onPressed: () {
+          // Navigate to create wishlist
+          Navigator.pushNamed(context, '/create-wishlist');
+        },
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
+      ),
+    );
+  }
+
+  Widget _buildEventFAB() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.tealGradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.secondary.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: FloatingActionButton(
+        onPressed: () {
+          // Navigate to create event
+          Navigator.pushNamed(context, '/create-event');
+        },
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
+      ),
+    );
+  }
+
+  Widget _buildFriendFAB() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.indigoGradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.indigo.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: FloatingActionButton(
+        onPressed: () {
+          // Navigate to add friend
+          Navigator.pushNamed(context, '/add-friend');
+        },
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
+      ),
+    );
+  }
+
+  Widget _buildProfileFAB() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.orangeGradient,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.orange.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: FloatingActionButton(
+        onPressed: () {
+          // Navigate to edit profile
+          Navigator.pushNamed(context, '/edit-profile');
+        },
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: const Icon(Icons.edit, color: Colors.white, size: 28),
+      ),
+    );
+  }
+
+  void _showQuickActionsMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Consumer<LocalizationService>(
+        builder: (context, localization, child) {
+          if (!context.mounted) return const SizedBox.shrink();
+
+          return Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
               ),
             ),
-            const SizedBox(height: 4),
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.borderLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        localization.translate('home.quickActions'),
+                        style: AppStyles.heading4.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildQuickActionCard(
+                              icon: Icons.card_giftcard,
+                              title: localization.translate(
+                                'home.createWishlist',
+                              ),
+                              gradient: AppColors.pinkGradient,
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.pushNamed(
+                                  context,
+                                  '/create-wishlist',
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildQuickActionCard(
+                              icon: Icons.event,
+                              title: localization.translate('home.createEvent'),
+                              gradient: AppColors.tealGradient,
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.pushNamed(context, '/create-event');
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildQuickActionCard(
+                              icon: Icons.person_add,
+                              title: localization.translate('home.addFriend'),
+                              gradient: AppColors.indigoGradient,
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.pushNamed(context, '/add-friend');
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildQuickActionCard(
+                              icon: Icons.language,
+                              title: localization.translate('app.language'),
+                              gradient: AppColors.orangeGradient,
+                              onTap: () {
+                                Navigator.pop(context);
+                                _showLanguageDialog(context);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCard({
+    required IconData icon,
+    required String title,
+    required LinearGradient gradient,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: Colors.white, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              title,
               style: AppStyles.caption.copyWith(
-                color: isActive ? item.color : AppColors.textTertiary,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
               ),
-              child: Text(item.label),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -232,56 +457,11 @@ class _MainNavigationState extends State<MainNavigation>
     );
   }
 
-  Widget? _buildFloatingActionButton() {
-    // Show FAB only on specific tabs
-    if (_currentIndex == 1) {
-      // Wishlists tab
-      return AnimatedBuilder(
-        animation: _fabScaleAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _fabScaleAnimation.value,
-            child: FloatingActionButton(
-              onPressed: () {
-                // Navigate to add item screen
-                Navigator.pushNamed(context, '/add-item');
-              },
-              backgroundColor: AppColors.secondary,
-              elevation: 8,
-              child: const Icon(
-                Icons.add_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-          );
-        },
-      );
-    } else if (_currentIndex == 2) {
-      // Events tab
-      return AnimatedBuilder(
-        animation: _fabScaleAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _fabScaleAnimation.value,
-            child: FloatingActionButton(
-              onPressed: () {
-                // Navigate to create event screen
-                Navigator.pushNamed(context, '/create-event');
-              },
-              backgroundColor: AppColors.accent,
-              elevation: 8,
-              child: const Icon(
-                Icons.celebration_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-          );
-        },
-      );
-    }
-    return null;
+  void _showLanguageDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const LanguageSelectionDialog(),
+    );
   }
 }
 

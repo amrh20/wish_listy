@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
-import '../../widgets/animated_background.dart';
+import '../../widgets/decorative_background.dart';
+import '../../widgets/guest_restriction_dialog.dart';
+import '../../services/localization_service.dart';
+import '../../services/auth_service.dart';
 
 class MyWishlistsScreen extends StatefulWidget {
+  const MyWishlistsScreen({super.key});
+
   @override
   _MyWishlistsScreenState createState() => _MyWishlistsScreenState();
 }
@@ -16,8 +21,11 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   late TabController _tabController;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  final TextEditingController _searchController = TextEditingController();
+  List<UserProfile> _searchResults = [];
+  bool _isSearching = false;
 
-  // Mock data - replace with real data from your backend
+  // Mock data for authenticated users
   final List<WishlistSummary> _publicWishlists = [
     WishlistSummary(
       id: '1',
@@ -27,6 +35,31 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
       totalValue: 450.0,
       lastUpdated: DateTime.now().subtract(Duration(days: 2)),
       imageUrl: null,
+    ),
+  ];
+
+  // Mock public users and wishlists for guest search
+  final List<UserProfile> _publicUsers = [
+    UserProfile(
+      id: 'user1',
+      name: 'أحمد محمد',
+      profilePicture: null,
+      publicWishlistsCount: 3,
+      totalWishlistItems: 25,
+    ),
+    UserProfile(
+      id: 'user2',
+      name: 'سارة أحمد',
+      profilePicture: null,
+      publicWishlistsCount: 2,
+      totalWishlistItems: 18,
+    ),
+    UserProfile(
+      id: 'user3',
+      name: 'محمد علي',
+      profilePicture: null,
+      publicWishlistsCount: 1,
+      totalWishlistItems: 12,
     ),
   ];
 
@@ -67,13 +100,9 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   void _startAnimations() {
@@ -84,53 +113,88 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   void dispose() {
     _tabController.dispose();
     _animationController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          // Animated Background
-          AnimatedBackground(
-            colors: [
-              AppColors.background,
-              AppColors.secondary.withOpacity(0.02),
-              AppColors.primary.withOpacity(0.01),
-            ],
-          ),
-          
-          // Content
-          NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              return [
-                _buildSliverAppBar(),
-                _buildSliverTabBar(),
-              ];
-            },
-            body: AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) {
-                return FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildPublicWishlistTab(),
-                      _buildEventWishlistsTab(),
-                    ],
+    return Consumer2<LocalizationService, AuthService>(
+      builder: (context, localization, authService, child) {
+        // For guest users - show different interface
+        if (authService.isGuest) {
+          return Scaffold(
+            body: DecorativeBackground(
+              showGifts: true,
+              child: Stack(
+                children: [
+                  // Content
+                  NestedScrollView(
+                    headerSliverBuilder: (context, innerBoxIsScrolled) {
+                      return [_buildGuestSliverAppBar(localization)];
+                    },
+                    body: AnimatedBuilder(
+                      animation: _animationController,
+                      builder: (context, child) {
+                        return FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: _buildGuestWishlistsView(localization),
+                        );
+                      },
+                    ),
                   ),
-                );
-              },
+                ],
+              ),
+            ),
+          );
+        }
+
+        // For authenticated users - show full interface
+        return Scaffold(
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.addItem);
+            },
+            backgroundColor: AppColors.accent,
+            child: Icon(Icons.add, color: Colors.white, size: 28),
+          ),
+          body: DecorativeBackground(
+            showGifts: true,
+            child: Stack(
+              children: [
+                // Content
+                NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) {
+                    return [
+                      _buildSliverAppBar(localization),
+                      _buildSliverTabBar(localization),
+                    ];
+                  },
+                  body: AnimatedBuilder(
+                    animation: _animationController,
+                    builder: (context, child) {
+                      return FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _buildPublicWishlistTab(localization),
+                            _buildEventWishlistsTab(localization),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildSliverAppBar() {
+  Widget _buildSliverAppBar(LocalizationService localization) {
     return SliverAppBar(
       expandedHeight: 100,
       floating: true,
@@ -139,7 +203,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
-          'My Wishlists',
+          localization.translate('wishlists.myWishlists'),
           style: AppStyles.headingMedium.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
@@ -153,10 +217,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
           onPressed: () {
             _showSearchBottomSheet();
           },
-          icon: Icon(
-            Icons.search_rounded,
-            color: AppColors.textPrimary,
-          ),
+          icon: Icon(Icons.search_rounded, color: AppColors.textPrimary),
           style: IconButton.styleFrom(
             backgroundColor: AppColors.surface,
             padding: const EdgeInsets.all(12),
@@ -166,10 +227,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
         // Menu Button
         PopupMenuButton<String>(
           onSelected: _handleMenuAction,
-          icon: Icon(
-            Icons.more_vert_rounded,
-            color: AppColors.textPrimary,
-          ),
+          icon: Icon(Icons.more_vert_rounded, color: AppColors.textPrimary),
           style: IconButton.styleFrom(
             backgroundColor: AppColors.surface,
             padding: const EdgeInsets.all(12),
@@ -184,7 +242,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                 children: [
                   Icon(Icons.download_outlined, size: 20),
                   SizedBox(width: 12),
-                  Text('Export Wishlists'),
+                  Text(localization.translate('common.export')),
                 ],
               ),
             ),
@@ -194,7 +252,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                 children: [
                   Icon(Icons.settings_outlined, size: 20),
                   SizedBox(width: 12),
-                  Text('Wishlist Settings'),
+                  Text(localization.translate('profile.settings')),
                 ],
               ),
             ),
@@ -205,7 +263,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
     );
   }
 
-  Widget _buildSliverTabBar() {
+  Widget _buildSliverTabBar(LocalizationService localization) {
     return SliverPersistentHeader(
       pinned: true,
       delegate: _SliverTabBarDelegate(
@@ -219,16 +277,16 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
             fontWeight: FontWeight.w600,
           ),
           unselectedLabelStyle: AppStyles.bodyMedium,
-          tabs: const [
-            Tab(text: 'Public Wishlist'),
-            Tab(text: 'Event Wishlists'),
+          tabs: [
+            Tab(text: localization.translate('wishlists.publicWishlist')),
+            Tab(text: localization.translate('wishlists.eventWishlists')),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPublicWishlistTab() {
+  Widget _buildPublicWishlistTab(LocalizationService localization) {
     return RefreshIndicator(
       onRefresh: _refreshWishlists,
       color: AppColors.secondary,
@@ -242,11 +300,11 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
               _buildWishlistCard(_publicWishlists.first, isPublic: true),
               const SizedBox(height: 24),
             ],
-            
+
             // Quick Stats
             _buildQuickStats(),
             const SizedBox(height: 24),
-            
+
             // Recent Items
             _buildRecentItems(),
             const SizedBox(height: 100), // Bottom padding for FAB
@@ -256,7 +314,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
     );
   }
 
-  Widget _buildEventWishlistsTab() {
+  Widget _buildEventWishlistsTab(LocalizationService localization) {
     return RefreshIndicator(
       onRefresh: _refreshWishlists,
       color: AppColors.secondary,
@@ -276,235 +334,270 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   Widget _buildWishlistCard(WishlistSummary wishlist, {bool isPublic = false}) {
-    final progress = wishlist.itemCount > 0 
-        ? wishlist.purchasedCount / wishlist.itemCount 
-        : 0.0;
+    return Consumer<LocalizationService>(
+      builder: (context, localization, child) {
+        final progress = wishlist.itemCount > 0
+            ? wishlist.purchasedCount / wishlist.itemCount
+            : 0.0;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textTertiary.withOpacity(0.1),
-            offset: const Offset(0, 4),
-            blurRadius: 12,
-            spreadRadius: 0,
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.textTertiary.withOpacity(0.1),
+                offset: const Offset(0, 4),
+                blurRadius: 12,
+                spreadRadius: 0,
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: isPublic
-                    ? [AppColors.secondary.withOpacity(0.1), AppColors.primary.withOpacity(0.1)]
-                    : [AppColors.accent.withOpacity(0.1), AppColors.secondary.withOpacity(0.1)],
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: isPublic ? AppColors.secondary : AppColors.accent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    isPublic ? Icons.favorite_rounded : Icons.celebration_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        wishlist.name,
-                        style: AppStyles.headingSmall.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      if (wishlist.eventDate != null)
-                        Text(
-                          _formatEventDate(wishlist.eventDate!),
-                          style: AppStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        )
-                      else
-                        Text(
-                          'Updated ${_formatLastUpdated(wishlist.lastUpdated)}',
-                          style: AppStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                PopupMenuButton<String>(
-                  onSelected: (value) => _handleWishlistAction(value, wishlist),
-                  icon: Icon(
-                    Icons.more_vert_rounded,
-                    color: AppColors.textSecondary,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'edit',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit_outlined, size: 18),
-                          SizedBox(width: 8),
-                          Text('Edit'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'share',
-                      child: Row(
-                        children: [
-                          Icon(Icons.share_outlined, size: 18),
-                          SizedBox(width: 8),
-                          Text('Share'),
-                        ],
-                      ),
-                    ),
-                    if (!isPublic)
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                            SizedBox(width: 8),
-                            Text('Delete', style: TextStyle(color: AppColors.error)),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isPublic
+                        ? [
+                            AppColors.secondary.withOpacity(0.1),
+                            AppColors.primary.withOpacity(0.1),
+                          ]
+                        : [
+                            AppColors.accent.withOpacity(0.1),
+                            AppColors.secondary.withOpacity(0.1),
                           ],
-                        ),
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: isPublic
+                            ? AppColors.secondary
+                            : AppColors.accent,
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      child: Icon(
+                        isPublic
+                            ? Icons.favorite_rounded
+                            : Icons.celebration_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            wishlist.name,
+                            style: AppStyles.headingSmall.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          if (wishlist.eventDate != null)
+                            Text(
+                              _formatEventDate(
+                                wishlist.eventDate!,
+                                localization,
+                              ),
+                              style: AppStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            )
+                          else
+                            Text(
+                              '${localization.translate('wishlists.updated')} ${_formatLastUpdated(wishlist.lastUpdated, localization)}',
+                              style: AppStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      onSelected: (value) =>
+                          _handleWishlistAction(value, wishlist),
+                      icon: Icon(
+                        Icons.more_vert_rounded,
+                        color: AppColors.textSecondary,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_outlined, size: 18),
+                              SizedBox(width: 8),
+                              Text(localization.translate('common.edit')),
+                            ],
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'share',
+                          child: Row(
+                            children: [
+                              Icon(Icons.share_outlined, size: 18),
+                              SizedBox(width: 8),
+                              Text(localization.translate('common.share')),
+                            ],
+                          ),
+                        ),
+                        if (!isPublic)
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.delete_outline,
+                                  size: 18,
+                                  color: AppColors.error,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  localization.translate('common.delete'),
+                                  style: TextStyle(color: AppColors.error),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          
-          // Stats
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                // Progress Bar
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+
+              // Stats
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    // Progress Bar
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Progress',
-                          style: AppStyles.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              localization.translate('wishlists.progress'),
+                              style: AppStyles.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              '${wishlist.purchasedCount}/${wishlist.itemCount} ${localization.translate('wishlists.items')}',
+                              style: AppStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          '${wishlist.purchasedCount}/${wishlist.itemCount} items',
-                          style: AppStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            backgroundColor: AppColors.surfaceVariant,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              isPublic ? AppColors.secondary : AppColors.accent,
+                            ),
+                            minHeight: 6,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        backgroundColor: AppColors.surfaceVariant,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          isPublic ? AppColors.secondary : AppColors.accent,
+
+                    const SizedBox(height: 20),
+
+                    // Stats Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatItem(
+                            icon: Icons.inventory_2_outlined,
+                            label: localization.translate(
+                              'wishlists.totalItems',
+                            ),
+                            value: '${wishlist.itemCount}',
+                            color: AppColors.primary,
+                          ),
                         ),
-                        minHeight: 6,
-                      ),
+                        Expanded(
+                          child: _buildStatItem(
+                            icon: Icons.check_circle_outline,
+                            label: localization.translate(
+                              'wishlists.purchasedItems',
+                            ),
+                            value: '${wishlist.purchasedCount}',
+                            color: AppColors.success,
+                          ),
+                        ),
+                        Expanded(
+                          child: _buildStatItem(
+                            icon: Icons.attach_money_outlined,
+                            label: localization.translate(
+                              'wishlists.totalValue',
+                            ),
+                            value: '\$${wishlist.totalValue.toInt()}',
+                            color: AppColors.warning,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Action Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CustomButton(
+                            text: localization.translate('wishlists.viewItems'),
+                            onPressed: () => _viewWishlistItems(wishlist),
+                            variant: ButtonVariant.outline,
+                            customColor: isPublic
+                                ? AppColors.secondary
+                                : AppColors.accent,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: CustomButton(
+                            text: localization.translate('wishlists.addItem'),
+                            onPressed: () => _addItemToWishlist(wishlist),
+                            variant: ButtonVariant.primary,
+                            customColor: isPublic
+                                ? AppColors.secondary
+                                : AppColors.accent,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                
-                const SizedBox(height: 20),
-                
-                // Stats Row
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatItem(
-                        icon: Icons.inventory_2_outlined,
-                        label: 'Total Items',
-                        value: '${wishlist.itemCount}',
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildStatItem(
-                        icon: Icons.check_circle_outline,
-                        label: 'Purchased',
-                        value: '${wishlist.purchasedCount}',
-                        color: AppColors.success,
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildStatItem(
-                        icon: Icons.attach_money_outlined,
-                        label: 'Total Value',
-                        value: '\$${wishlist.totalValue.toInt()}',
-                        color: AppColors.warning,
-                      ),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 20),
-                
-                // Action Buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        text: 'View Items',
-                        onPressed: () => _viewWishlistItems(wishlist),
-                        variant: ButtonVariant.outline,
-                        customColor: isPublic ? AppColors.secondary : AppColors.accent,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: CustomButton(
-                        text: 'Add Item',
-                        onPressed: () => _addItemToWishlist(wishlist),
-                        variant: ButtonVariant.primary,
-                        customColor: isPublic ? AppColors.secondary : AppColors.accent,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -516,11 +609,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   }) {
     return Column(
       children: [
-        Icon(
-          icon,
-          color: color,
-          size: 20,
-        ),
+        Icon(icon, color: color, size: 20),
         const SizedBox(height: 8),
         Text(
           value,
@@ -532,9 +621,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
         const SizedBox(height: 4),
         Text(
           label,
-          style: AppStyles.caption.copyWith(
-            color: AppColors.textTertiary,
-          ),
+          style: AppStyles.caption.copyWith(color: AppColors.textTertiary),
           textAlign: TextAlign.center,
         ),
       ],
@@ -542,47 +629,52 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   Widget _buildQuickStats() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Quick Stats',
-            style: AppStyles.headingSmall,
+    return Consumer<LocalizationService>(
+      builder: (context, localization, child) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
           ),
-          const SizedBox(height: 16),
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: _buildQuickStatItem(
-                  title: 'Total Wishlists',
-                  value: '${_publicWishlists.length + _eventWishlists.length}',
-                  color: AppColors.primary,
-                ),
+              Text(
+                localization.translate('wishlists.quickStats'),
+                style: AppStyles.headingSmall,
               ),
-              Expanded(
-                child: _buildQuickStatItem(
-                  title: 'Total Items',
-                  value: '${_getTotalItems()}',
-                  color: AppColors.accent,
-                ),
-              ),
-              Expanded(
-                child: _buildQuickStatItem(
-                  title: 'Friends',
-                  value: '24',
-                  color: AppColors.secondary,
-                ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildQuickStatItem(
+                      title: localization.translate('wishlists.totalWishlists'),
+                      value:
+                          '${_publicWishlists.length + _eventWishlists.length}',
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildQuickStatItem(
+                      title: localization.translate('wishlists.totalItems'),
+                      value: '${_getTotalItems()}',
+                      color: AppColors.accent,
+                    ),
+                  ),
+                  Expanded(
+                    child: _buildQuickStatItem(
+                      title: localization.translate('wishlists.friends'),
+                      value: '24',
+                      color: AppColors.secondary,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -603,9 +695,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
         const SizedBox(height: 4),
         Text(
           title,
-          style: AppStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
-          ),
+          style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
           textAlign: TextAlign.center,
         ),
       ],
@@ -613,180 +703,203 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   Widget _buildRecentItems() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Recent Items',
-                style: AppStyles.headingSmall,
-              ),
-              TextButton(
-                onPressed: () {
-                  // View all items
-                },
-                child: Text(
-                  'View All',
-                  style: AppStyles.bodyMedium.copyWith(
-                    color: AppColors.secondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Recent items list
-          _buildRecentItemsList(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecentItemsList() {
-    // Mock recent items
-    final recentItems = [
-      'iPhone 15 Pro',
-      'Nike Air Jordan Sneakers',
-      'MacBook Air M2',
-    ];
-
-    return Column(
-      children: recentItems.map((item) {
+    return Consumer<LocalizationService>(
+      builder: (context, localization, child) {
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.surfaceVariant,
-            borderRadius: BorderRadius.circular(8),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.secondary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.card_giftcard_outlined,
-                  color: AppColors.secondary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  item,
-                  style: AppStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w500,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    localization.translate('wishlists.recentItems'),
+                    style: AppStyles.headingSmall,
                   ),
-                ),
+                  TextButton(
+                    onPressed: () {
+                      // Navigate to all items
+                    },
+                    child: Text(
+                      localization.translate('wishlists.viewAll'),
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.secondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: AppColors.textTertiary,
+              const SizedBox(height: 16),
+              // Mock recent items
+              _buildRecentItemCard(
+                'iPhone 15 Pro',
+                '\$999',
+                Icons.phone_android,
+              ),
+              const SizedBox(height: 12),
+              _buildRecentItemCard(
+                'Nike Air Jordan Sneakers',
+                '\$180',
+                Icons.sports_soccer,
+              ),
+              const SizedBox(height: 12),
+              _buildRecentItemCard(
+                'MacBook Air M2',
+                '\$1,199',
+                Icons.laptop_mac,
               ),
             ],
           ),
         );
-      }).toList(),
+      },
     );
   }
 
-  Widget _buildEmptyEventWishlists() {
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildRecentItemCard(String title, String price, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
         children: [
           Container(
-            width: 120,
-            height: 120,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(60),
+              color: AppColors.secondary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              Icons.celebration_outlined,
-              size: 60,
-              color: AppColors.accent,
+            child: Icon(icon, color: AppColors.secondary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  price,
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 24),
-          Text(
-            'No Event Wishlists Yet',
-            style: AppStyles.headingMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Create wishlists for special events like birthdays, weddings, and holidays to make gift-giving easier for your friends.',
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textTertiary,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          CustomButton(
-            text: 'Create Event Wishlist',
-            onPressed: () {
-              AppRoutes.pushNamed(context, AppRoutes.createEvent);
-            },
-            variant: ButtonVariant.gradient,
-            gradientColors: [AppColors.accent, AppColors.secondary],
+          Icon(
+            Icons.arrow_forward_ios,
+            size: 16,
+            color: AppColors.textTertiary,
           ),
         ],
       ),
     );
   }
 
+  Widget _buildEmptyEventWishlists() {
+    return Consumer<LocalizationService>(
+      builder: (context, localization, child) {
+        return Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.celebration_outlined,
+                size: 80,
+                color: AppColors.textLight,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                localization.translate('wishlists.noEventWishlists'),
+                style: AppStyles.headingMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                localization.translate('wishlists.noEventWishlistsDescription'),
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              CustomButton(
+                text: localization.translate('wishlists.createEventWishlist'),
+                onPressed: () {
+                  // Navigate to create event wishlist
+                },
+                variant: ButtonVariant.primary,
+                customColor: AppColors.secondary,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   // Helper Methods
-  String _formatEventDate(DateTime date) {
+  String _formatEventDate(DateTime date, LocalizationService localization) {
     final now = DateTime.now();
     final difference = date.difference(now).inDays;
-    
+
     if (difference < 0) {
-      return 'Event passed';
+      return localization.translate('wishlists.eventPassed');
     } else if (difference == 0) {
-      return 'Today!';
+      return localization.translate('wishlists.today');
     } else if (difference == 1) {
-      return 'Tomorrow';
+      return localization.translate('wishlists.tomorrow');
     } else if (difference < 7) {
-      return 'In $difference days';
+      return localization
+          .translate('wishlists.inDays')
+          .replaceAll('{days}', '$difference');
     } else {
-      return 'In ${(difference / 7).ceil()} weeks';
+      return localization
+          .translate('wishlists.inWeeks')
+          .replaceAll('{weeks}', '${(difference / 7).ceil()}');
     }
   }
 
-  String _formatLastUpdated(DateTime date) {
+  String _formatLastUpdated(DateTime date, LocalizationService localization) {
     final now = DateTime.now();
-    final difference = now.difference(date);
-    
-    if (difference.inDays > 0) {
-      return '${difference.inDays} days ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} hours ago';
+    final difference = now.difference(date).inDays;
+
+    if (difference == 0) {
+      return localization.translate('common.today');
+    } else if (difference == 1) {
+      return localization.translate('common.yesterday');
     } else {
-      return '${difference.inMinutes} minutes ago';
+      return localization
+          .translate('wishlists.daysAgo')
+          .replaceAll('{days}', '$difference');
     }
   }
 
   int _getTotalItems() {
-    return _publicWishlists.fold(0, (sum, wishlist) => sum + wishlist.itemCount) +
-           _eventWishlists.fold(0, (sum, wishlist) => sum + wishlist.itemCount);
+    return _publicWishlists.fold(
+          0,
+          (sum, wishlist) => sum + wishlist.itemCount,
+        ) +
+        _eventWishlists.fold(0, (sum, wishlist) => sum + wishlist.itemCount);
   }
 
   // Action Handlers
@@ -830,9 +943,11 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   void _addItemToWishlist(WishlistSummary wishlist) {
-    AppRoutes.pushNamed(context, AppRoutes.addItem, arguments: {
-      'wishlistId': wishlist.id,
-    });
+    AppRoutes.pushNamed(
+      context,
+      AppRoutes.addItem,
+      arguments: {'wishlistId': wishlist.id},
+    );
   }
 
   void _exportWishlists() {
@@ -866,6 +981,374 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
       // Update data
     });
   }
+
+  // Guest-specific methods
+  Widget _buildGuestSliverAppBar(LocalizationService localization) {
+    return SliverAppBar(
+      expandedHeight: 120,
+      floating: true,
+      pinned: false,
+      flexibleSpace: FlexibleSpaceBar(
+        title: Text(
+          localization.translate('navigation.wishlist'),
+          style: AppStyles.headingMedium.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: false,
+        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+      ),
+      backgroundColor: AppColors.background,
+      surfaceTintColor: Colors.transparent,
+      leading: IconButton(
+        onPressed: () => Navigator.pop(context),
+        icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+      ),
+      actions: [
+        // Search Button
+        IconButton(
+          onPressed: () => _showGuestUserSearch(localization),
+          icon: Icon(Icons.search, color: AppColors.textPrimary),
+          style: IconButton.styleFrom(
+            backgroundColor: AppColors.surface,
+            padding: const EdgeInsets.all(12),
+          ),
+        ),
+        const SizedBox(width: 16),
+      ],
+    );
+  }
+
+  Widget _buildGuestWishlistsView(LocalizationService localization) {
+    if (_isSearching &&
+        _searchResults.isEmpty &&
+        _searchController.text.isNotEmpty) {
+      return _buildGuestEmptySearch();
+    }
+
+    if (_isSearching && _searchResults.isNotEmpty) {
+      return _buildGuestSearchResults(localization);
+    }
+
+    return _buildGuestEmptyState(localization);
+  }
+
+  Widget _buildGuestEmptyState(LocalizationService localization) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          const SizedBox(height: 60),
+          Icon(Icons.favorite_outline, size: 80, color: AppColors.textTertiary),
+          const SizedBox(height: 24),
+          Text(
+            localization.translate('guest.wishlists.empty.title'),
+            style: AppStyles.heading4.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            localization.translate('guest.wishlists.empty.description'),
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 32),
+          CustomButton(
+            text: localization.translate(
+              'guest.wishlists.empty.searchPlaceholder',
+            ),
+            onPressed: () => _showGuestUserSearch(localization),
+            variant: ButtonVariant.gradient,
+            icon: Icons.search,
+          ),
+          const SizedBox(height: 20),
+          CustomButton(
+            text: localization.translate('guest.quickActions.loginForMore'),
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.login);
+            },
+            variant: ButtonVariant.outline,
+            icon: Icons.login,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuestEmptySearch() {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off, size: 64, color: AppColors.textTertiary),
+          const SizedBox(height: 16),
+          Text(
+            localization.translate('guest.wishlists.search.noResults'),
+            style: AppStyles.heading4.copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            localization.translate(
+              'guest.wishlists.search.noResultsDescription',
+            ),
+            style: AppStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuestSearchResults(LocalizationService localization) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        return _buildGuestUserCard(_searchResults[index], localization);
+      },
+    );
+  }
+
+  Widget _buildGuestUserCard(
+    UserProfile user,
+    LocalizationService localization,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderLight, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 30,
+                backgroundColor: AppColors.primary.withOpacity(0.1),
+                child: user.profilePicture != null
+                    ? ClipOval(
+                        child: Image.network(
+                          user.profilePicture!,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : Icon(Icons.person, color: AppColors.primary, size: 32),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.name,
+                      style: AppStyles.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${user.publicWishlistsCount} ${localization.translate('guest.wishlists.userCard.public')}',
+                      style: AppStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  Icon(Icons.favorite, color: AppColors.secondary, size: 20),
+                  Text(
+                    '${user.totalWishlistItems}',
+                    style: AppStyles.bodySmall.copyWith(
+                      color: AppColors.secondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    localization.translate('wishlists.items'),
+                    style: AppStyles.caption.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: CustomButton(
+                  text: localization.translate(
+                    'guest.wishlists.userCard.viewProfile',
+                  ),
+                  onPressed: () => _showGuestUserWishlists(user),
+                  variant: ButtonVariant.gradient,
+                  size: ButtonSize.small,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showGuestUserSearch(LocalizationService localization) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.borderLight,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    localization.translate('guest.wishlists.search.title'),
+                    style: AppStyles.heading4.copyWith(
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: localization.translate(
+                        'guest.wishlists.empty.searchPlaceholder',
+                      ),
+                      prefixIcon: Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onChanged: _performGuestUserSearch,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: _isSearching && _searchResults.isNotEmpty
+                  ? ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: _searchResults.length,
+                      itemBuilder: (context, index) {
+                        return _buildGuestUserCard(
+                          _searchResults[index],
+                          localization,
+                        );
+                      },
+                    )
+                  : _searchController.text.isEmpty
+                  ? _buildGuestUserSearchSuggestions()
+                  : _buildGuestEmptySearch(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGuestUserSearchSuggestions() {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            localization.translate('guest.wishlists.search.suggestions'),
+            style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          ..._publicUsers
+              .take(3)
+              .map(
+                (user) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: _buildGuestUserCard(
+                    user,
+                    Provider.of<LocalizationService>(context, listen: false),
+                  ),
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+
+  void _performGuestUserSearch(String query) {
+    setState(() {
+      _isSearching = query.isNotEmpty;
+      if (query.isEmpty) {
+        _searchResults.clear();
+      } else {
+        // Simple search simulation
+        _searchResults = _publicUsers
+            .where(
+              (user) => user.name.toLowerCase().contains(query.toLowerCase()),
+            )
+            .toList();
+      }
+    });
+  }
+
+  void _showGuestUserWishlists(UserProfile user) {
+    GuestRestrictionDialog.show(
+      context,
+      'قوائم المستخدم',
+      customMessage:
+          'سجل دخولك لعرض قوائم الأمنيات الكاملة للمستخدمين والتفاعل معها.',
+    );
+  }
 }
 
 // Custom SliverTabBarDelegate
@@ -886,10 +1369,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Container(
-      color: AppColors.background,
-      child: _tabBar,
-    );
+    return Container(color: AppColors.background, child: _tabBar);
   }
 
   @override
@@ -898,7 +1378,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   }
 }
 
-// Mock data model
+// Mock data models
 class WishlistSummary {
   final String id;
   final String name;
@@ -918,5 +1398,21 @@ class WishlistSummary {
     required this.lastUpdated,
     this.imageUrl,
     this.eventDate,
+  });
+}
+
+class UserProfile {
+  final String id;
+  final String name;
+  final String? profilePicture;
+  final int publicWishlistsCount;
+  final int totalWishlistItems;
+
+  UserProfile({
+    required this.id,
+    required this.name,
+    this.profilePicture,
+    required this.publicWishlistsCount,
+    required this.totalWishlistItems,
   });
 }

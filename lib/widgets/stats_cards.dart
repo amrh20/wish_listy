@@ -15,221 +15,192 @@ class StatsCards extends StatefulWidget {
   State<StatsCards> createState() => _StatsCardsState();
 }
 
-class _StatsCardsState extends State<StatsCards>
-    with TickerProviderStateMixin {
-  late List<AnimationController> _controllers;
-  late List<Animation<double>> _scaleAnimations;
-  late List<Animation<double>> _rotateAnimations;
-
-  @override
-  void initState() {
-    super.initState();
-    
-    _controllers = List.generate(4, (index) => AnimationController(
-      duration: Duration(milliseconds: 600 + (index * 100)),
-      vsync: this,
-    ));
-    
-    _scaleAnimations = _controllers.map((controller) => 
-      Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: controller, curve: Curves.elasticOut)
-      )
-    ).toList();
-    
-    _rotateAnimations = _controllers.map((controller) => 
-      Tween<double>(begin: 0.0, end: 0.1).animate(
-        CurvedAnimation(parent: controller, curve: Curves.easeInOut)
-      )
-    ).toList();
-    
-    // Start animations with delay
-    for (int i = 0; i < _controllers.length; i++) {
-      Future.delayed(Duration(milliseconds: i * 150), () {
-        if (mounted) _controllers[i].forward();
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
+class _StatsCardsState extends State<StatsCards> {
   @override
   Widget build(BuildContext context) {
     final stats = [
       {
-        'title': 'My Wishes',
-        'count': widget.user.wishCount,
+        'count': 12,
+        'label': 'Wishes',
         'icon': Icons.card_giftcard,
-        'gradient': AppColors.primaryGradient,
-        'iconGradient': AppColors.pinkGradient,
-        'emoji': '🎁',
+        'color': AppColors.pink,
+        'gradient': AppColors.pinkGradient,
       },
       {
-        'title': 'Reserved',
-        'count': widget.user.reservedCount,
+        'count': 3,
+        'label': 'Reserved',
         'icon': Icons.check_circle,
+        'color': AppColors.success,
         'gradient': AppColors.successGradient,
-        'iconGradient': AppColors.tealGradient,
-        'emoji': '✅',
       },
       {
-        'title': 'Friends',
-        'count': widget.user.friendsCount,
+        'count': 25,
+        'label': 'Friends',
         'icon': Icons.people,
-        'gradient': AppColors.warningGradient,
-        'iconGradient': AppColors.indigoGradient,
-        'emoji': '👥',
+        'color': AppColors.indigo,
+        'gradient': AppColors.indigoGradient,
       },
       {
-        'title': 'Events',
-        'count': widget.user.eventsCount,
+        'count': 8,
+        'label': 'Events',
         'icon': Icons.event,
-        'gradient': AppColors.infoGradient,
-        'iconGradient': AppColors.accentGradient,
-        'emoji': '📅',
+        'color': AppColors.secondary,
+        'gradient': AppColors.tealGradient,
       },
     ];
 
-    return AnimationLimiter(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: GridView.builder(
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '📊 Statistics',
+                style: AppStyles.heading4.copyWith(
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            crossAxisSpacing: 20,
-            mainAxisSpacing: 20,
-            childAspectRatio: 1.4,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 2.2, // Increased aspect ratio to prevent overflow
           ),
           itemCount: stats.length,
           itemBuilder: (context, index) {
             final stat = stats[index];
-            return AnimatedBuilder(
-              animation: _controllers[index],
-              builder: (context, child) {
-                return Transform.scale(
-                  scale: _scaleAnimations[index].value,
-                  child: Transform.rotate(
-                    angle: _rotateAnimations[index].value,
-                    child: _buildStatCard(stat, index),
-                  ),
-                );
-              },
-            );
+            return _buildStatCard(stat);
           },
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildStatCard(Map<String, dynamic> stat, int index) {
+  Widget _buildStatCard(Map<String, dynamic> stat) {
     return Container(
       decoration: AppStyles.cardDecoration.copyWith(
         gradient: stat['gradient'],
       ),
-      child: Stack(
-        children: [
-          // Background Pattern
-          Positioned(
-            top: -20,
-            right: -20,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                shape: BoxShape.circle,
+      child: ClipRRect( // Added ClipRRect to prevent overflow
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            // Background Pattern - Reduced size to prevent overflow
+            Positioned(
+              top: -15,
+              right: -15,
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
-          ),
-          Positioned(
-            bottom: -30,
-            left: -30,
-            child: Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                shape: BoxShape.circle,
+            Positioned(
+              bottom: -20,
+              left: -20,
+              child: Container(
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  shape: BoxShape.circle,
+                ),
               ),
             ),
-          ),
-          
-          // Content
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      stat['title'],
-                      style: AppStyles.bodyMedium.copyWith(
-                        color: AppColors.textWhite,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: stat['iconGradient'],
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+            
+            // Content - Reduced padding to prevent overflow
+            Padding(
+              padding: const EdgeInsets.all(16.0), // Reduced from 20.0
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          stat['label'] ?? 'Unknown',
+                          style: AppStyles.bodyMedium.copyWith(
+                            color: AppColors.textWhite,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14, // Reduced from 15
                           ),
-                        ],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      child: Text(
-                        stat['emoji'],
-                        style: const TextStyle(fontSize: 20),
+                      Container(
+                        padding: const EdgeInsets.all(10), // Reduced from 12
+                        decoration: BoxDecoration(
+                          color: stat['color']?.withOpacity(0.2) ?? Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10), // Reduced from 12
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 8, // Reduced from 10
+                              offset: const Offset(0, 3), // Reduced from 4
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          stat['icon'] ?? Icons.help,
+                          color: stat['color'] ?? Colors.white,
+                          size: 18, // Reduced from 20
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      stat['count'].toString(),
-                      style: AppStyles.heading2.copyWith(
-                        color: AppColors.textWhite,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withOpacity(0.3),
-                            offset: const Offset(0, 2),
-                            blurRadius: 4,
-                          ),
-                        ],
+                    ],
+                  ),
+                  const SizedBox(height: 8), // Added spacing
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        (stat['count'] ?? 0).toString(),
+                        style: AppStyles.heading2.copyWith(
+                          color: AppColors.textWhite,
+                          fontSize: 24, // Reduced from 28
+                          fontWeight: FontWeight.w800,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.3),
+                              offset: const Offset(0, 2),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    Text(
-                      'items',
-                      style: AppStyles.caption.copyWith(
-                        color: AppColors.textWhite.withOpacity(0.8),
-                        fontSize: 12,
+                      Text(
+                        'items',
+                        style: AppStyles.caption.copyWith(
+                          color: AppColors.textWhite.withOpacity(0.8),
+                          fontSize: 11, // Reduced from 12
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
