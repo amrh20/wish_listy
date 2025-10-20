@@ -569,14 +569,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: _buildActionCard(
                     icon: Icons.add_circle_outline,
                     title: localization.translate(
-                      'home.quickActionsCards.addItem',
+                      'home.quickActionsCards.createWishlist',
                     ),
                     subtitle: localization.translate(
-                      'home.quickActionsCards.addItemSubtext',
+                      'home.quickActionsCards.createWishlistSubtext',
                     ),
                     color: AppColors.primary,
                     onTap: () {
-                      AppRoutes.pushNamed(context, AppRoutes.addItem);
+                      AppRoutes.pushNamed(context, AppRoutes.createWishlist);
                     },
                   ),
                 ),

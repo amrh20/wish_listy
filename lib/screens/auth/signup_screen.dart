@@ -30,7 +30,6 @@ class _SignupScreenState extends State<SignupScreen>
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
-  final int _currentStep = 0;
 
   @override
   void initState() {
@@ -201,11 +200,6 @@ class _SignupScreenState extends State<SignupScreen>
                               ),
 
                               const SizedBox(height: 20),
-
-                              // Progress Indicator
-                              _buildProgressIndicator(),
-
-                              const SizedBox(height: 40),
 
                               // Header
                               Column(
@@ -469,29 +463,6 @@ class _SignupScreenState extends State<SignupScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget _buildProgressIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          for (int i = 0; i < 3; i++)
-            Expanded(
-              child: Container(
-                height: 4,
-                margin: EdgeInsets.only(right: i < 2 ? 8 : 0),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2),
-                  color: i <= _currentStep
-                      ? AppColors.primary
-                      : AppColors.textTertiary.withOpacity(0.3),
-                ),
-              ),
-            ),
-        ],
-      ),
     );
   }
 }

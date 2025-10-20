@@ -4,7 +4,6 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
-import '../../widgets/animated_background.dart';
 import '../../services/localization_service.dart';
 
 class CreateEventScreen extends StatefulWidget {
@@ -33,6 +32,12 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   String _selectedPrivacy = 'friends_only';
   String _selectedEventMode = 'in_person';
   final _meetingLinkController = TextEditingController();
+
+  // New variables for enhanced features
+  String? _selectedWishlistId;
+  String? _selectedWishlistName;
+  List<String> _invitedFriends = [];
+  String? _coverImagePath;
 
   final List<EventTypeOption> _eventTypes = [
     EventTypeOption(
@@ -168,10 +173,6 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
-                                      // Progress Indicator
-                                      _buildProgressIndicator(),
-                                      const SizedBox(height: 32),
-
                                       // Event Type Selection
                                       _buildEventTypeSelection(localization),
                                       const SizedBox(height: 24),
@@ -274,6 +275,11 @@ class _CreateEventScreenState extends State<CreateEventScreen>
 
                                       // Wishlist Option
                                       _buildWishlistOption(localization),
+
+                                      const SizedBox(height: 24),
+
+                                      // Invite Guests Section
+                                      _buildInviteGuestsSection(localization),
 
                                       const SizedBox(height: 32),
 
@@ -384,29 +390,6 @@ class _CreateEventScreenState extends State<CreateEventScreen>
               padding: const EdgeInsets.all(12),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProgressIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          for (int i = 0; i < 4; i++)
-            Expanded(
-              child: Container(
-                height: 4,
-                margin: EdgeInsets.only(right: i < 3 ? 8 : 0),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2),
-                  color: i == 0
-                      ? _getSelectedEventTypeColor()
-                      : AppColors.textTertiary.withOpacity(0.3),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -1093,7 +1076,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                           children: [
                             Text(
                               localization.translate(
-                                'events.noUsePublicWishlist',
+                                'events.noLinkExistingWishlist',
                               ),
                               style: AppStyles.bodyMedium.copyWith(
                                 fontWeight: !_createWishlist
@@ -1106,7 +1089,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                             ),
                             Text(
                               localization.translate(
-                                'events.noUsePublicWishlistDescription',
+                                'events.noLinkExistingWishlistDescription',
                               ),
                               style: AppStyles.bodySmall.copyWith(
                                 color: AppColors.textSecondary,
@@ -1127,12 +1110,436 @@ class _CreateEventScreenState extends State<CreateEventScreen>
               ),
             ],
           ),
+
+          // Wishlist Selection (when linking to existing)
+          if (!_createWishlist) ...[
+            const SizedBox(height: 16),
+            _buildWishlistSelection(localization),
+          ],
         ],
       ),
     );
   }
 
+  Widget _buildWishlistSelection(LocalizationService localization) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.info.withOpacity(0.3), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            localization.translate('events.selectWishlist'),
+            style: AppStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _showWishlistSelectionModal,
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.textTertiary.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.favorite_rounded, color: AppColors.info, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _selectedWishlistName ??
+                          localization.translate(
+                            'events.selectWishlistPlaceholder',
+                          ),
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: _selectedWishlistName != null
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    color: AppColors.textTertiary,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showWishlistSelectionModal() {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+
+    // Mock wishlists data
+    final wishlists = [
+      {'id': 'wishlist_1', 'name': 'My Birthday Wishlist', 'privacy': 'public'},
+      {'id': 'wishlist_2', 'name': 'Holiday Gifts', 'privacy': 'friends'},
+      {'id': 'wishlist_3', 'name': 'Wedding Registry', 'privacy': 'public'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textTertiary.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Title
+            Text(
+              localization.translate('events.selectWishlist'),
+              style: AppStyles.headingSmall.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Wishlist List
+            ...wishlists.map((wishlist) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  onTap: () {
+                    setState(() {
+                      _selectedWishlistId = wishlist['id'];
+                      _selectedWishlistName = wishlist['name'];
+                    });
+                    Navigator.pop(context);
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  tileColor: AppColors.surface,
+                  leading: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.info.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.favorite_rounded,
+                      color: AppColors.info,
+                      size: 24,
+                    ),
+                  ),
+                  title: Text(
+                    wishlist['name']!,
+                    style: AppStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    _getPrivacyLabel(wishlist['privacy']!),
+                    style: AppStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  trailing: _selectedWishlistId == wishlist['id']
+                      ? Icon(
+                          Icons.check_circle,
+                          color: AppColors.info,
+                          size: 20,
+                        )
+                      : null,
+                ),
+              );
+            }).toList(),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getPrivacyLabel(String privacy) {
+    switch (privacy) {
+      case 'public':
+        return 'Public';
+      case 'private':
+        return 'Private';
+      case 'friends':
+        return 'Friends Only';
+      default:
+        return privacy;
+    }
+  }
+
+  Widget _buildInviteGuestsSection(LocalizationService localization) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.textTertiary.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.people_outline, color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                localization.translate('events.inviteGuests'),
+                style: AppStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Invited friends count
+          if (_invitedFriends.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: AppColors.primary, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    localization.translate(
+                      'events.friendsInvited',
+                      args: {'count': _invitedFriends.length.toString()},
+                    ),
+                    style: AppStyles.bodySmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Invite Friends Button
+          CustomButton(
+            text: localization.translate('events.inviteFriends'),
+            onPressed: _navigateToInviteGuests,
+            variant: ButtonVariant.outline,
+            icon: Icons.person_add_outlined,
+            fullWidth: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToInviteGuests() {
+    // Navigate to invite guests screen
+    // This would typically navigate to a screen where users can select friends
+    // For now, we'll show a placeholder
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Invite guests feature coming soon!'),
+        backgroundColor: AppColors.info,
+      ),
+    );
+  }
+
+  Widget _buildCoverImageOption(LocalizationService localization) {
+    return GestureDetector(
+      onTap: _showImageSourceDialog,
+      child: Container(
+        width: double.infinity,
+        height: 120,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.textTertiary.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: _coverImagePath != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(_coverImagePath!, fit: BoxFit.cover),
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.add_photo_alternate_outlined,
+                    color: AppColors.textTertiary,
+                    size: 32,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    localization.translate('events.addCoverPhoto'),
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  void _showImageSourceDialog() {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textTertiary.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Title
+            Text(
+              localization.translate('events.addCoverPhoto'),
+              style: AppStyles.headingSmall.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Options
+            Row(
+              children: [
+                Expanded(
+                  child: _buildImageSourceOption(
+                    icon: Icons.photo_library_outlined,
+                    title: 'Gallery',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickImageFromGallery();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildImageSourceOption(
+                    icon: Icons.camera_alt_outlined,
+                    title: 'Camera',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickImageFromCamera();
+                    },
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageSourceOption({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.textTertiary.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 32, color: AppColors.primary),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _pickImageFromGallery() {
+    // Mock implementation - in real app, use image_picker
+    setState(() {
+      _coverImagePath = 'assets/images/sample_cover.jpg';
+    });
+  }
+
+  void _pickImageFromCamera() {
+    // Mock implementation - in real app, use image_picker
+    setState(() {
+      _coverImagePath = 'assets/images/sample_cover.jpg';
+    });
+  }
+
   Widget _buildEventPreview() {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
     final selectedEventType = _eventTypes.firstWhere(
       (type) => type.id == _selectedEventType,
       orElse: () => _eventTypes.first,
@@ -1167,6 +1574,10 @@ class _CreateEventScreenState extends State<CreateEventScreen>
               ),
             ],
           ),
+          const SizedBox(height: 16),
+
+          // Cover Image Option
+          _buildCoverImageOption(localization),
           const SizedBox(height: 16),
 
           // Preview Card
@@ -1573,47 +1984,47 @@ class _CreateEventScreenState extends State<CreateEventScreen>
             // Action Buttons
             Column(
               children: [
-                if (_createWishlist) ...[
-                  CustomButton(
-                    text: localization.translate('events.addWishlistItems'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pop();
-                      // Navigate to add wishlist items
-                    },
-                    variant: ButtonVariant.primary,
-                    customColor: selectedEventType.color,
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                Row(
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        text: localization.translate('events.inviteFriends'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          Navigator.of(context).pop();
-                          // Navigate to invite friends
-                        },
-                        variant: ButtonVariant.outline,
-                        customColor: selectedEventType.color,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: CustomButton(
-                        text: localization.translate('events.viewEvent'),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          Navigator.of(context).pop();
-                          // Navigate to event details
-                        },
-                        variant: ButtonVariant.primary,
-                        customColor: selectedEventType.color,
-                      ),
-                    ),
+                // Primary Action: Invite Guests Now
+                CustomButton(
+                  text: localization.translate('events.inviteGuestsNow'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pop();
+                    _navigateToInviteGuests();
+                  },
+                  variant: ButtonVariant.gradient,
+                  gradientColors: [
+                    selectedEventType.color,
+                    selectedEventType.color.withOpacity(0.8),
                   ],
+                  icon: Icons.person_add_outlined,
+                  fullWidth: true,
+                ),
+                const SizedBox(height: 12),
+
+                // Secondary Action: View Event
+                CustomButton(
+                  text: localization.translate('events.viewEvent'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pop();
+                    // Navigate to event details
+                  },
+                  variant: ButtonVariant.outline,
+                  customColor: selectedEventType.color,
+                  fullWidth: true,
+                ),
+                const SizedBox(height: 12),
+
+                // Tertiary Action: Done
+                CustomButton(
+                  text: localization.translate('events.done'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pop();
+                  },
+                  variant: ButtonVariant.text,
+                  fullWidth: true,
                 ),
               ],
             ),

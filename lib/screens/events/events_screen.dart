@@ -25,6 +25,11 @@ class _EventsScreenState extends State<EventsScreen>
   List<EventSummary> _searchResults = [];
   bool _isSearching = false;
 
+  // Filter and sort variables
+  String _selectedSortOption = 'date_upcoming';
+  String? _selectedEventType;
+  List<EventSummary> _filteredEvents = [];
+
   // Mock events data for authenticated users
   final List<EventSummary> _myEvents = [
     EventSummary(
@@ -138,6 +143,7 @@ class _EventsScreenState extends State<EventsScreen>
     _tabController = TabController(length: 2, vsync: this);
     _initializeAnimations();
     _startAnimations();
+    _applyFilters();
   }
 
   void _initializeAnimations() {
@@ -153,6 +159,37 @@ class _EventsScreenState extends State<EventsScreen>
 
   void _startAnimations() {
     _animationController.forward();
+  }
+
+  void _applyFilters() {
+    List<EventSummary> allEvents = [..._myEvents, ..._invitedEvents];
+
+    // Apply event type filter
+    if (_selectedEventType != null) {
+      allEvents = allEvents
+          .where(
+            (event) =>
+                event.type.toString().split('.').last == _selectedEventType,
+          )
+          .toList();
+    }
+
+    // Apply sorting
+    switch (_selectedSortOption) {
+      case 'date_upcoming':
+        allEvents.sort((a, b) => a.date.compareTo(b.date));
+        break;
+      case 'date_latest':
+        allEvents.sort((a, b) => b.date.compareTo(a.date));
+        break;
+      case 'name_az':
+        allEvents.sort((a, b) => a.name.compareTo(b.name));
+        break;
+    }
+
+    setState(() {
+      _filteredEvents = allEvents;
+    });
   }
 
   @override
@@ -227,6 +264,14 @@ class _EventsScreenState extends State<EventsScreen>
                 ),
               ],
             ),
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.createEvent);
+            },
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            child: Icon(Icons.add_rounded),
           ),
         );
       },
@@ -363,36 +408,43 @@ class _EventsScreenState extends State<EventsScreen>
   }
 
   Widget _buildMyEventsTab(LocalizationService localization) {
+    final myFilteredEvents = _filteredEvents
+        .where((e) => e.isCreatedByMe)
+        .toList();
+
     return RefreshIndicator(
       onRefresh: _refreshEvents,
       color: AppColors.accent,
-      child: _myEvents.isEmpty
+      child: myFilteredEvents.isEmpty
           ? _buildEmptyMyEvents(localization)
           : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: _myEvents.length + 1, // +1 for bottom padding
+              itemCount: myFilteredEvents.length + 1, // +1 for bottom padding
               itemBuilder: (context, index) {
-                if (index == _myEvents.length) {
+                if (index == myFilteredEvents.length) {
                   return const SizedBox(height: 100); // Bottom padding for FAB
                 }
-                return _buildEventCard(_myEvents[index], localization);
+                return _buildEventCard(myFilteredEvents[index], localization);
               },
             ),
     );
   }
 
   Widget _buildInvitedEventsTab(LocalizationService localization) {
-    final upcomingEvents = _invitedEvents
+    final invitedFilteredEvents = _filteredEvents
+        .where((e) => !e.isCreatedByMe)
+        .toList();
+    final upcomingEvents = invitedFilteredEvents
         .where((e) => e.status == EventStatus.upcoming)
         .toList();
-    final pastEvents = _invitedEvents
+    final pastEvents = invitedFilteredEvents
         .where((e) => e.status == EventStatus.completed)
         .toList();
 
     return RefreshIndicator(
       onRefresh: _refreshEvents,
       color: AppColors.secondary,
-      child: _invitedEvents.isEmpty
+      child: invitedFilteredEvents.isEmpty
           ? _buildEmptyInvitedEvents(localization)
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -912,8 +964,249 @@ class _EventsScreenState extends State<EventsScreen>
   }
 
   void _viewEventWishlist(EventSummary event) {
-    // Navigate to event wishlist screen
-    Navigator.pushNamed(context, AppRoutes.eventWishlist, arguments: event);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+    // Mock data for associated wishlists
+    List<Map<String, dynamic>> associatedWishlists = _getAssociatedWishlists(
+      event,
+    );
+
+    if (associatedWishlists.length == 1) {
+      // Navigate directly to the single wishlist
+      Navigator.pushNamed(
+        context,
+        AppRoutes.wishlistItems,
+        arguments: {
+          'wishlistId': associatedWishlists.first['id'],
+          'wishlistName': associatedWishlists.first['name'],
+          'totalItems': associatedWishlists.first['totalItems'],
+          'purchasedItems': associatedWishlists.first['purchasedItems'],
+          'totalValue': associatedWishlists.first['totalValue'],
+          'isFriendWishlist': false,
+        },
+      );
+    } else if (associatedWishlists.length > 1) {
+      // Show modal to select wishlist
+      _showWishlistSelectionModal(event, associatedWishlists, localization);
+    } else {
+      // No wishlists associated
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(localization.translate('events.noWishlistsAssociated')),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+    }
+  }
+
+  List<Map<String, dynamic>> _getAssociatedWishlists(EventSummary event) {
+    // Mock data - in real app, this would come from API
+    switch (event.id) {
+      case '1': // My Birthday Party
+        return [
+          {
+            'id': 'wishlist_1',
+            'name': 'Birthday Wishlist',
+            'privacy': 'public',
+            'totalItems': 12,
+            'purchasedItems': 3,
+            'totalValue': 450.0,
+          },
+        ];
+      case '2': // Housewarming Party
+        return [
+          {
+            'id': 'wishlist_2a',
+            'name': 'Home Essentials',
+            'privacy': 'public',
+            'totalItems': 8,
+            'purchasedItems': 2,
+            'totalValue': 320.0,
+          },
+          {
+            'id': 'wishlist_2b',
+            'name': 'Kitchen Items',
+            'privacy': 'friends',
+            'totalItems': 5,
+            'purchasedItems': 1,
+            'totalValue': 180.0,
+          },
+        ];
+      case '3': // Sarah's Wedding
+        return [
+          {
+            'id': 'wishlist_3',
+            'name': 'Wedding Registry',
+            'privacy': 'public',
+            'totalItems': 25,
+            'purchasedItems': 8,
+            'totalValue': 1200.0,
+          },
+        ];
+      default:
+        return [];
+    }
+  }
+
+  void _showWishlistSelectionModal(
+    EventSummary event,
+    List<Map<String, dynamic>> wishlists,
+    LocalizationService localization,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textTertiary.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Title
+            Text(
+              localization.translate('events.selectWishlist'),
+              style: AppStyles.headingSmall.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              localization
+                  .translate('events.hasWishlists')
+                  .replaceAll('{eventName}', event.name)
+                  .replaceAll('{count}', wishlists.length.toString()),
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Wishlist List
+            ...wishlists.map((wishlist) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.wishlistItems,
+                      arguments: {
+                        'wishlistId': wishlist['id'],
+                        'wishlistName': wishlist['name'],
+                        'totalItems': wishlist['totalItems'],
+                        'purchasedItems': wishlist['purchasedItems'],
+                        'totalValue': wishlist['totalValue'],
+                        'isFriendWishlist': false,
+                      },
+                    );
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  tileColor: AppColors.surface,
+                  leading: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: _getEventTypeColor(event.type).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.favorite_rounded,
+                      color: _getEventTypeColor(event.type),
+                      size: 24,
+                    ),
+                  ),
+                  title: Text(
+                    wishlist['name'],
+                    style: AppStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      Text(
+                        '${wishlist['totalItems']} items • ${wishlist['purchasedItems']} purchased',
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(
+                            _getPrivacyIcon(wishlist['privacy']),
+                            size: 14,
+                            color: AppColors.textTertiary,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _getPrivacyLabel(wishlist['privacy']),
+                            style: AppStyles.caption.copyWith(
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  trailing: Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              );
+            }).toList(),
+
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getPrivacyIcon(String privacy) {
+    switch (privacy) {
+      case 'public':
+        return Icons.public;
+      case 'private':
+        return Icons.lock;
+      case 'friends':
+        return Icons.people;
+      default:
+        return Icons.help;
+    }
+  }
+
+  String _getPrivacyLabel(String privacy) {
+    switch (privacy) {
+      case 'public':
+        return 'Public';
+      case 'private':
+        return 'Private';
+      case 'friends':
+        return 'Friends Only';
+      default:
+        return privacy;
+    }
   }
 
   void _manageEvent(EventSummary event) {
@@ -942,10 +1235,13 @@ class _EventsScreenState extends State<EventsScreen>
   }
 
   void _showFilterOptions() {
-    // Show filter options
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
     showModalBottomSheet(
       context: context,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Container(
@@ -953,14 +1249,183 @@ class _EventsScreenState extends State<EventsScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Filter Events', style: AppStyles.headingSmall),
+            // Handle
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textTertiary.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Title
+            Text(
+              localization.translate('events.filterAndSort'),
+              style: AppStyles.headingSmall.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 24),
-            // Filter options would go here
-            Text('Filter options coming soon!'),
+
+            // Sort Options
+            _buildSortSection(localization),
+            const SizedBox(height: 24),
+
+            // Filter Options
+            _buildFilterSection(localization),
+            const SizedBox(height: 24),
+
+            // Action Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: CustomButton(
+                    text: localization.translate('events.clearAll'),
+                    onPressed: () {
+                      setState(() {
+                        _selectedSortOption = 'date_upcoming';
+                        _selectedEventType = null;
+                      });
+                      _applyFilters();
+                      Navigator.pop(context);
+                    },
+                    variant: ButtonVariant.outline,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: CustomButton(
+                    text: localization.translate('events.apply'),
+                    onPressed: () {
+                      _applyFilters();
+                      Navigator.pop(context);
+                    },
+                    variant: ButtonVariant.gradient,
+                    gradientColors: [AppColors.primary, AppColors.secondary],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildSortSection(LocalizationService localization) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          localization.translate('events.sortBy'),
+          style: AppStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...['date_upcoming', 'date_latest', 'name_az'].map((option) {
+          return RadioListTile<String>(
+            title: Text(_getSortOptionLabel(option)),
+            value: option,
+            groupValue: _selectedSortOption,
+            onChanged: (value) {
+              setState(() {
+                _selectedSortOption = value!;
+              });
+            },
+            activeColor: AppColors.primary,
+            contentPadding: EdgeInsets.zero,
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Widget _buildFilterSection(LocalizationService localization) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          localization.translate('events.filterByEventType'),
+          style: AppStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        RadioListTile<String?>(
+          title: Text(localization.translate('events.allTypes')),
+          value: null,
+          groupValue: _selectedEventType,
+          onChanged: (value) {
+            setState(() {
+              _selectedEventType = value;
+            });
+          },
+          activeColor: AppColors.primary,
+          contentPadding: EdgeInsets.zero,
+        ),
+        ...[
+          'birthday',
+          'wedding',
+          'anniversary',
+          'graduation',
+          'houseWarming',
+        ].map((type) {
+          return RadioListTile<String?>(
+            title: Text(_getEventTypeLabel(type)),
+            value: type,
+            groupValue: _selectedEventType,
+            onChanged: (value) {
+              setState(() {
+                _selectedEventType = value;
+              });
+            },
+            activeColor: AppColors.primary,
+            contentPadding: EdgeInsets.zero,
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  String _getSortOptionLabel(String option) {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+    switch (option) {
+      case 'date_upcoming':
+        return localization.translate('events.dateUpcomingFirst');
+      case 'date_latest':
+        return localization.translate('events.dateLatestFirst');
+      case 'name_az':
+        return localization.translate('events.nameAZ');
+      default:
+        return option;
+    }
+  }
+
+  String _getEventTypeLabel(String type) {
+    switch (type) {
+      case 'birthday':
+        return 'Birthday';
+      case 'wedding':
+        return 'Wedding';
+      case 'anniversary':
+        return 'Anniversary';
+      case 'graduation':
+        return 'Graduation';
+      case 'houseWarming':
+        return 'Housewarming';
+      default:
+        return type;
+    }
   }
 
   Future<void> _refreshEvents() async {
@@ -969,6 +1434,7 @@ class _EventsScreenState extends State<EventsScreen>
     setState(() {
       // Update events data
     });
+    _applyFilters();
   }
 
   // Guest-specific methods
