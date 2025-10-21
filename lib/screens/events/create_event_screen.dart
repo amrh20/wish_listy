@@ -37,7 +37,6 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   String? _selectedWishlistId;
   String? _selectedWishlistName;
   List<String> _invitedFriends = [];
-  String? _coverImagePath;
 
   final List<EventTypeOption> _eventTypes = [
     EventTypeOption(
@@ -220,7 +219,15 @@ class _CreateEventScreenState extends State<CreateEventScreen>
 
                                       const SizedBox(height: 24),
 
-                                      // Location
+                                      // Event Privacy
+                                      _buildEventPrivacySection(localization),
+                                      const SizedBox(height: 24),
+
+                                      // Event Mode
+                                      _buildEventModeSection(localization),
+                                      const SizedBox(height: 24),
+
+                                      // Location (moved under Event Mode)
                                       CustomTextField(
                                         controller: _locationController,
                                         label: localization.translate(
@@ -262,15 +269,6 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                                           },
                                         ),
                                       ],
-
-                                      const SizedBox(height: 24),
-
-                                      // Event Privacy
-                                      _buildEventPrivacySection(localization),
-                                      const SizedBox(height: 24),
-
-                                      // Event Mode
-                                      _buildEventModeSection(localization),
                                       const SizedBox(height: 24),
 
                                       // Wishlist Option
@@ -1370,176 +1368,294 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   }
 
   void _navigateToInviteGuests() {
-    // Navigate to invite guests screen
-    // This would typically navigate to a screen where users can select friends
-    // For now, we'll show a placeholder
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Invite guests feature coming soon!'),
-        backgroundColor: AppColors.info,
-      ),
-    );
+    _showFriendsSelectionModal();
   }
 
-  Widget _buildCoverImageOption(LocalizationService localization) {
-    return GestureDetector(
-      onTap: _showImageSourceDialog,
-      child: Container(
-        width: double.infinity,
-        height: 120,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.textTertiary.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: _coverImagePath != null
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(_coverImagePath!, fit: BoxFit.cover),
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.add_photo_alternate_outlined,
-                    color: AppColors.textTertiary,
-                    size: 32,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    localization.translate('events.addCoverPhoto'),
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
-
-  void _showImageSourceDialog() {
+  void _showFriendsSelectionModal() {
     final localization = Provider.of<LocalizationService>(
       context,
       listen: false,
     );
+
+    // Mock friends data - in real app, this would come from API
+    final List<Map<String, dynamic>> mockFriends = [
+      {
+        'id': '1',
+        'name': 'Ahmed Ali',
+        'email': 'ahmed@example.com',
+        'avatar': null,
+      },
+      {
+        'id': '2',
+        'name': 'Sara Mohamed',
+        'email': 'sara@example.com',
+        'avatar': null,
+      },
+      {
+        'id': '3',
+        'name': 'Omar Hassan',
+        'email': 'omar@example.com',
+        'avatar': null,
+      },
+      {
+        'id': '4',
+        'name': 'Fatma Ibrahim',
+        'email': 'fatma@example.com',
+        'avatar': null,
+      },
+      {
+        'id': '5',
+        'name': 'Youssef Ahmed',
+        'email': 'youssef@example.com',
+        'avatar': null,
+      },
+    ];
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textTertiary.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Title
-            Text(
-              localization.translate('events.addCoverPhoto'),
-              style: AppStyles.headingSmall.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Options
-            Row(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            padding: const EdgeInsets.all(24),
+            child: Column(
               children: [
+                // Handle
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.textTertiary.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Header
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        localization.translate('events.inviteFriends'),
+                        style: AppStyles.headingSmall.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (_invitedFriends.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          '${_invitedFriends.length} ${localization.translate('events.selected')}',
+                          style: AppStyles.bodySmall.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Search Field
+                CustomTextField(
+                  controller: TextEditingController(),
+                  label: localization.translate('events.searchFriends'),
+                  hint: localization.translate('events.searchFriendsHint'),
+                  prefixIcon: Icons.search,
+                ),
+                const SizedBox(height: 16),
+
+                // Select All Button
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      localization.translate('events.selectAll'),
+                      style: AppStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        setModalState(() {
+                          if (_invitedFriends.length == mockFriends.length) {
+                            // If all are selected, deselect all
+                            _invitedFriends.clear();
+                          } else {
+                            // Select all friends
+                            _invitedFriends = mockFriends
+                                .map((friend) => friend['name'] as String)
+                                .toList();
+                          }
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _invitedFriends.length == mockFriends.length
+                              ? AppColors.primary
+                              : AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.primary,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _invitedFriends.length == mockFriends.length
+                                  ? Icons.check
+                                  : Icons.add,
+                              size: 16,
+                              color:
+                                  _invitedFriends.length == mockFriends.length
+                                  ? Colors.white
+                                  : AppColors.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _invitedFriends.length == mockFriends.length
+                                  ? localization.translate('events.deselectAll')
+                                  : localization.translate('events.selectAll'),
+                              style: AppStyles.bodySmall.copyWith(
+                                color:
+                                    _invitedFriends.length == mockFriends.length
+                                    ? Colors.white
+                                    : AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Friends List
                 Expanded(
-                  child: _buildImageSourceOption(
-                    icon: Icons.photo_library_outlined,
-                    title: 'Gallery',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickImageFromGallery();
+                  child: ListView.builder(
+                    itemCount: mockFriends.length,
+                    itemBuilder: (context, index) {
+                      final friend = mockFriends[index];
+                      final isSelected = _invitedFriends.contains(
+                        friend['name'],
+                      );
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          onTap: () {
+                            setModalState(() {
+                              if (isSelected) {
+                                _invitedFriends.remove(friend['name']);
+                              } else {
+                                _invitedFriends.add(friend['name']);
+                              }
+                            });
+                          },
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          tileColor: isSelected
+                              ? AppColors.primary.withOpacity(0.1)
+                              : AppColors.surface,
+                          leading: CircleAvatar(
+                            backgroundColor: AppColors.primary.withOpacity(0.1),
+                            child: Text(
+                              friend['name'][0].toUpperCase(),
+                              style: AppStyles.bodyMedium.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            friend['name'],
+                            style: AppStyles.bodyMedium.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          subtitle: Text(
+                            friend['email'],
+                            style: AppStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          trailing: isSelected
+                              ? Icon(
+                                  Icons.check_circle,
+                                  color: AppColors.primary,
+                                  size: 24,
+                                )
+                              : Icon(
+                                  Icons.radio_button_unchecked,
+                                  color: AppColors.textTertiary,
+                                  size: 24,
+                                ),
+                        ),
+                      );
                     },
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildImageSourceOption(
-                    icon: Icons.camera_alt_outlined,
-                    title: 'Camera',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickImageFromCamera();
-                    },
-                  ),
+
+                const SizedBox(height: 20),
+
+                // Action Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        text: localization.translate('common.cancel'),
+                        onPressed: () => Navigator.pop(context),
+                        variant: ButtonVariant.outline,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: CustomButton(
+                        text: localization.translate('events.inviteSelected'),
+                        onPressed: () {
+                          setState(() {});
+                          Navigator.pop(context);
+                        },
+                        variant: ButtonVariant.gradient,
+                        gradientColors: [
+                          AppColors.primary,
+                          AppColors.secondary,
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-
-            const SizedBox(height: 20),
-          ],
-        ),
+          );
+        },
       ),
     );
-  }
-
-  Widget _buildImageSourceOption({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.textTertiary.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 32, color: AppColors.primary),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _pickImageFromGallery() {
-    // Mock implementation - in real app, use image_picker
-    setState(() {
-      _coverImagePath = 'assets/images/sample_cover.jpg';
-    });
-  }
-
-  void _pickImageFromCamera() {
-    // Mock implementation - in real app, use image_picker
-    setState(() {
-      _coverImagePath = 'assets/images/sample_cover.jpg';
-    });
   }
 
   Widget _buildEventPreview() {
-    final localization = Provider.of<LocalizationService>(
-      context,
-      listen: false,
-    );
     final selectedEventType = _eventTypes.firstWhere(
       (type) => type.id == _selectedEventType,
       orElse: () => _eventTypes.first,
@@ -1574,10 +1690,6 @@ class _CreateEventScreenState extends State<CreateEventScreen>
               ),
             ],
           ),
-          const SizedBox(height: 16),
-
-          // Cover Image Option
-          _buildCoverImageOption(localization),
           const SizedBox(height: 16),
 
           // Preview Card
