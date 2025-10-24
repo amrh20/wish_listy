@@ -6,7 +6,6 @@ import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/decorative_background.dart';
 import '../../widgets/custom_text_field.dart';
-import '../../widgets/animated_background.dart';
 import '../../services/localization_service.dart';
 
 class FriendsScreen extends StatefulWidget {
@@ -447,7 +446,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                   ],
                 ),
 
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
 
                 // Friend Info
                 Expanded(
@@ -459,6 +458,8 @@ class _FriendsScreenState extends State<FriendsScreen>
                         style: AppStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                       const SizedBox(height: 4),
                       Row(
@@ -469,23 +470,31 @@ class _FriendsScreenState extends State<FriendsScreen>
                             color: AppColors.textTertiary,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            '${friend.mutualFriends} ${localization.translate('ui.mutualFriends')}',
-                            style: AppStyles.bodySmall.copyWith(
-                              color: AppColors.textTertiary,
+                          Expanded(
+                            child: Text(
+                              '${friend.mutualFriends} ${localization.translate('ui.mutualFriends')}',
+                              style: AppStyles.bodySmall.copyWith(
+                                color: AppColors.textTertiary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                           Icon(
                             Icons.favorite_outline,
                             size: 14,
                             color: AppColors.textTertiary,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            '${friend.wishlistCount} ${localization.translate('ui.wishlists')}',
-                            style: AppStyles.bodySmall.copyWith(
-                              color: AppColors.textTertiary,
+                          Expanded(
+                            child: Text(
+                              '${friend.wishlistCount} ${localization.translate('ui.wishlists')}',
+                              style: AppStyles.bodySmall.copyWith(
+                                color: AppColors.textTertiary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           ),
                         ],
@@ -503,68 +512,13 @@ class _FriendsScreenState extends State<FriendsScreen>
                               ? FontWeight.w500
                               : FontWeight.normal,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ],
                   ),
                 ),
 
-                // Action Button
-                PopupMenuButton<String>(
-                  onSelected: (value) => _handleFriendAction(value, friend),
-                  icon: Icon(Icons.more_vert, color: AppColors.textTertiary),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'view_profile',
-                      child: Row(
-                        children: [
-                          Icon(Icons.person_outline, size: 18),
-                          SizedBox(width: 8),
-                          Text('View Profile'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'view_wishlists',
-                      child: Row(
-                        children: [
-                          Icon(Icons.favorite_outline, size: 18),
-                          SizedBox(width: 8),
-                          Text('View Wishlists'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'send_message',
-                      child: Row(
-                        children: [
-                          Icon(Icons.message_outlined, size: 18),
-                          SizedBox(width: 8),
-                          Text('Send Message'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: 'unfriend',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.person_remove_outlined,
-                            size: 18,
-                            color: AppColors.accent,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Unfriend',
-                            style: TextStyle(color: AppColors.accent),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -842,22 +796,6 @@ class _FriendsScreenState extends State<FriendsScreen>
     }
   }
 
-  void _handleFriendAction(String action, Friend friend) {
-    switch (action) {
-      case 'view_profile':
-        _viewFriendProfile(friend);
-        break;
-      case 'view_wishlists':
-        _viewFriendWishlists(friend);
-        break;
-      case 'send_message':
-        _sendMessage(friend);
-        break;
-      case 'unfriend':
-        _confirmUnfriend(friend);
-        break;
-    }
-  }
 
   void _handleFriendRequest(FriendRequest request, bool accept) {
     setState(() {
@@ -910,48 +848,6 @@ class _FriendsScreenState extends State<FriendsScreen>
     );
   }
 
-  void _viewFriendWishlists(Friend friend) {
-    // Navigate to friend's wishlists
-  }
-
-  void _sendMessage(Friend friend) {
-    // Open messaging
-  }
-
-  void _confirmUnfriend(Friend friend) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Unfriend ${friend.name}?'),
-        content: Text(
-          'Are you sure you want to remove ${friend.name} from your friends list?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                _friends.remove(friend);
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    '${friend.name} has been removed from your friends',
-                  ),
-                  backgroundColor: AppColors.accent,
-                ),
-              );
-            },
-            child: Text('Unfriend', style: TextStyle(color: AppColors.accent)),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showAddFriendDialog() {
     final emailController = TextEditingController();

@@ -52,20 +52,22 @@ class _MainNavigationState extends State<MainNavigation>
 
   void _onTabTapped(int index) {
     final authService = Provider.of<AuthService>(context, listen: false);
-    
+
     // Check if guest user is trying to access restricted features
     if (authService.isGuest) {
-      if (index == 1) { // Wishlists - allow but show limited view
+      if (index == 1) {
+        // Wishlists - allow but show limited view
         // Allow access but the screen will handle guest limitations
-      } else if (index == 2) { // Events - allow but show limited view
-        // Allow access but the screen will handle guest limitations  
-      } else if (index == 3) { // Friends - restricted for guests
-        GuestRestrictionDialog.show(context, 'الأصدقاء', 
-          customMessage: 'يجب تسجيل الدخول لإدارة قائمة الأصدقاء والتواصل معهم.');
+      } else if (index == 2) {
+        // Events - allow but show limited view
+        // Allow access but the screen will handle guest limitations
+      } else if (index == 3) {
+        // Friends - restricted for guests
+        GuestRestrictionDialog.show(context, 'Friends');
         return;
-      } else if (index == 4) { // Profile - restricted for guests
-        GuestRestrictionDialog.show(context, 'الملف الشخصي',
-          customMessage: 'يجب تسجيل الدخول لعرض وتعديل ملفك الشخصي.');
+      } else if (index == 4) {
+        // Profile - restricted for guests
+        GuestRestrictionDialog.show(context, 'Profile');
         return;
       }
     }
@@ -157,7 +159,7 @@ class _MainNavigationState extends State<MainNavigation>
 
   Widget? _buildFloatingActionButton() {
     final authService = Provider.of<AuthService>(context, listen: false);
-    
+
     switch (_currentIndex) {
       case 0: // Home
         return _buildHomeFAB();
@@ -191,8 +193,12 @@ class _MainNavigationState extends State<MainNavigation>
         onPressed: () {
           final authService = Provider.of<AuthService>(context, listen: false);
           if (authService.isGuest) {
-            GuestRestrictionDialog.show(context, 'الإجراءات السريعة',
-              customMessage: 'يجب تسجيل الدخول لإنشاء القوائم والفعاليات وإضافة الأصدقاء.');
+            GuestRestrictionDialog.show(
+              context,
+              'الإجراءات السريعة',
+              customMessage:
+                  'يجب تسجيل الدخول لإنشاء القوائم والفعاليات وإضافة الأصدقاء.',
+            );
           } else {
             // Show quick actions menu
             _showQuickActionsMenu(context);

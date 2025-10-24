@@ -320,15 +320,18 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   Widget _buildActionButtons(LocalizationService localization) {
     return Column(
       children: [
-        // Get Started Button
+        // Get Started Button (Guest Mode)
         CustomButton(
           text: localization.translate('welcome.getStarted'),
           onPressed: () async {
             // Set user as guest
-            final authService = Provider.of<AuthService>(context, listen: false);
+            final authService = Provider.of<AuthService>(
+              context,
+              listen: false,
+            );
             await authService.loginAsGuest();
-            
-            // Navigate to main app in guest mode
+
+            // Navigate to guest user scenario
             Navigator.pushNamedAndRemoveUntil(
               context,
               AppRoutes.mainNavigation,

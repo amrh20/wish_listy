@@ -75,33 +75,54 @@ class _LoginScreenState extends State<LoginScreen>
 
     setState(() => _isLoading = true);
 
-    try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final success = await authService.login(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-      );
+    // TODO: Uncomment when backend is ready
+    // try {
+    //   final authService = Provider.of<AuthService>(context, listen: false);
+    //   final success = await authService.login(
+    //     _emailController.text.trim(),
+    //     _passwordController.text.trim(),
+    //   );
 
-      if (success && mounted) {
-        // Navigate to main app
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          AppRoutes.mainNavigation,
-          (route) => false,
-        );
-      }
-    } catch (e) {
-      // Handle login error if needed
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login failed: ${e.toString()}')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+    //   if (success && mounted) {
+    //     // Navigate to main app
+    //     Navigator.pushNamedAndRemoveUntil(
+    //       context,
+    //       AppRoutes.mainNavigation,
+    //       (route) => false,
+    //     );
+    //   }
+    // } catch (e) {
+    //   // Handle login error if needed
+    //   if (mounted) {
+    //     ScaffoldMessenger.of(context).showSnackBar(
+    //       SnackBar(content: Text('Login failed: ${e.toString()}')),
+    //     );
+    //   }
+    // } finally {
+    //   if (mounted) {
+    //     setState(() => _isLoading = false);
+    //   }
+    // }
+
+    // Temporary: Simulate successful login and set user as authenticated
+    await Future.delayed(const Duration(seconds: 2)); // Simulate API call delay
+
+    // Set user as authenticated
+    final authService = Provider.of<AuthService>(context, listen: false);
+    await authService.setAuthenticatedUser(
+      userId: 'user_${DateTime.now().millisecondsSinceEpoch}',
+      userEmail: _emailController.text.trim(),
+      userName: _emailController.text.trim().split('@').first,
+    );
+
+    setState(() => _isLoading = false);
+
+    // Navigate to authenticated user scenario
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.mainNavigation,
+      (route) => false,
+    );
   }
 
   @override
@@ -128,17 +149,60 @@ class _LoginScreenState extends State<LoginScreen>
                             children: [
                               const SizedBox(height: 40),
 
-                              // Back Button
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: IconButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  icon: const Icon(Icons.arrow_back_ios),
-                                  style: IconButton.styleFrom(
-                                    backgroundColor: AppColors.surface,
-                                    padding: const EdgeInsets.all(12),
+                              // Top Row: Back Button and Language Toggle
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  // Back Button
+                                  IconButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    icon: const Icon(Icons.arrow_back_ios),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: AppColors.surface,
+                                      padding: const EdgeInsets.all(12),
+                                    ),
                                   ),
-                                ),
+
+                                  // Language Toggle Button
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: AppColors.border,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: IconButton(
+                                      onPressed: () async {
+                                        await localization.toggleLanguage();
+                                      },
+                                      icon: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            localization
+                                                    .currentLanguageInfo?['flag'] ??
+                                                '🌐',
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Icon(
+                                            Icons.language,
+                                            size: 20,
+                                            color: AppColors.primary,
+                                          ),
+                                        ],
+                                      ),
+                                      tooltip: localization.translate(
+                                        'app.selectLanguage',
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
 
                               const SizedBox(height: 40),

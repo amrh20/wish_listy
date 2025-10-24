@@ -1,22 +1,9 @@
-
-
-
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
-enum ButtonVariant {
-  primary,
-  secondary,
-  outline,
-  text,
-  gradient,
-}
+enum ButtonVariant { primary, secondary, outline, text, gradient }
 
-enum ButtonSize {
-  small,
-  medium,
-  large,
-}
+enum ButtonSize { small, medium, large }
 
 class CustomButton extends StatefulWidget {
   final String text;
@@ -61,13 +48,9 @@ class _CustomButtonState extends State<CustomButton>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -135,13 +118,13 @@ class _CustomButtonState extends State<CustomButton>
 
   BoxDecoration _getButtonDecoration() {
     final isEnabled = widget.onPressed != null && !widget.isLoading;
-    
+
     switch (widget.variant) {
       case ButtonVariant.primary:
         return BoxDecoration(
           color: isEnabled
               ? (widget.customColor ?? AppColors.primary)
-              : AppColors.textTertiary,
+              : (widget.customColor ?? AppColors.primary).withOpacity(0.3),
           borderRadius: BorderRadius.circular(12),
           boxShadow: isEnabled && !_isPressed
               ? [
@@ -155,7 +138,7 @@ class _CustomButtonState extends State<CustomButton>
                 ]
               : [],
         );
-      
+
       case ButtonVariant.secondary:
         return BoxDecoration(
           color: isEnabled
@@ -169,7 +152,7 @@ class _CustomButtonState extends State<CustomButton>
             width: 1,
           ),
         );
-      
+
       case ButtonVariant.outline:
         return BoxDecoration(
           color: Colors.transparent,
@@ -181,7 +164,7 @@ class _CustomButtonState extends State<CustomButton>
             width: 2,
           ),
         );
-      
+
       case ButtonVariant.text:
         return BoxDecoration(
           color: _isPressed
@@ -189,15 +172,13 @@ class _CustomButtonState extends State<CustomButton>
               : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         );
-      
+
       case ButtonVariant.gradient:
         return BoxDecoration(
           gradient: LinearGradient(
-            colors: widget.gradientColors ??
-                [
-                  AppColors.primary,
-                  AppColors.secondary,
-                ],
+            colors:
+                widget.gradientColors ??
+                [AppColors.primary, AppColors.secondary],
           ),
           borderRadius: BorderRadius.circular(12),
           boxShadow: isEnabled && !_isPressed
@@ -239,11 +220,7 @@ class _CustomButtonState extends State<CustomButton>
             ),
             const SizedBox(width: 8),
           ] else if (widget.icon != null) ...[
-            Icon(
-              widget.icon,
-              color: textColor,
-              size: fontSize + 2,
-            ),
+            Icon(widget.icon, color: textColor, size: fontSize + 2),
             const SizedBox(width: 8),
           ],
           Flexible(
@@ -264,6 +241,11 @@ class _CustomButtonState extends State<CustomButton>
 
   Color _getTextColor(bool isEnabled) {
     if (!isEnabled) {
+      // Use white text with opacity for disabled primary buttons
+      if (widget.variant == ButtonVariant.primary ||
+          widget.variant == ButtonVariant.gradient) {
+        return Colors.white.withOpacity(0.6);
+      }
       return AppColors.textTertiary;
     }
 

@@ -108,7 +108,7 @@ class CustomBottomNavigation extends StatelessWidget {
               child: Icon(
                 isActive ? item['activeIcon'] : item['icon'],
                 key: ValueKey(isActive),
-                color: isActive ? item['color'] : AppColors.textTertiary,
+                color: isActive ? item['color'] : AppColors.textPrimary,
                 size: 24,
               ),
             ),
@@ -116,7 +116,7 @@ class CustomBottomNavigation extends StatelessWidget {
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 200),
               style: AppStyles.caption.copyWith(
-                color: isActive ? item['color'] : AppColors.textTertiary,
+                color: isActive ? item['color'] : AppColors.textPrimary,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
               ),
               child: Text(item['label']),

@@ -482,7 +482,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text('Share Profile'),
+                    Text(
+                      'Share Profile',
+                      style: TextStyle(color: AppColors.textPrimary),
+                    ),
                   ],
                 ),
               ),
@@ -503,7 +506,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    Text('Export Data'),
+                    Text(
+                      'Export Data',
+                      style: TextStyle(color: AppColors.textPrimary),
+                    ),
                   ],
                 ),
               ),

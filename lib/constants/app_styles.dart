@@ -3,97 +3,97 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppStyles {
-  // Beautiful Text Styles with Cairo Font
-  static TextStyle get heading1 => GoogleFonts.cairo(
+  // Beautiful Text Styles with Comfortaa Font (Perfect for Gifts App - Rounded & Playful)
+  static TextStyle get heading1 => GoogleFonts.comfortaa(
     fontSize: 36,
     fontWeight: FontWeight.w800,
     color: AppColors.textPrimary,
     height: 1.1,
     letterSpacing: -0.5,
   );
-  
-  static TextStyle get heading2 => GoogleFonts.cairo(
+
+  static TextStyle get heading2 => GoogleFonts.comfortaa(
     fontSize: 28,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     height: 1.2,
     letterSpacing: -0.3,
   );
-  
-  static TextStyle get heading3 => GoogleFonts.cairo(
+
+  static TextStyle get heading3 => GoogleFonts.comfortaa(
     fontSize: 24,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
     height: 1.3,
     letterSpacing: -0.2,
   );
-  
-  static TextStyle get heading4 => GoogleFonts.cairo(
+
+  static TextStyle get heading4 => GoogleFonts.comfortaa(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
     height: 1.4,
     letterSpacing: -0.1,
   );
-  
+
   // Additional text styles
-  static TextStyle get headingLarge => GoogleFonts.cairo(
+  static TextStyle get headingLarge => GoogleFonts.comfortaa(
     fontSize: 32,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     height: 1.2,
   );
 
-  static TextStyle get headingMedium => GoogleFonts.cairo(
+  static TextStyle get headingMedium => GoogleFonts.comfortaa(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
     height: 1.3,
   );
-  
-  static TextStyle get headingSmall => GoogleFonts.cairo(
+
+  static TextStyle get headingSmall => GoogleFonts.comfortaa(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
     height: 1.3,
   );
-  
-  static TextStyle get bodyLarge => GoogleFonts.cairo(
+
+  static TextStyle get bodyLarge => GoogleFonts.comfortaa(
     fontSize: 16,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
     height: 1.5,
   );
-  
-  static TextStyle get bodyMedium => GoogleFonts.cairo(
+
+  static TextStyle get bodyMedium => GoogleFonts.comfortaa(
     fontSize: 14,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
     height: 1.5,
   );
-  
-  static TextStyle get bodySmall => GoogleFonts.cairo(
+
+  static TextStyle get bodySmall => GoogleFonts.comfortaa(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
     height: 1.4,
   );
-  
-  static TextStyle get caption => GoogleFonts.cairo(
+
+  static TextStyle get caption => GoogleFonts.comfortaa(
     fontSize: 11,
     fontWeight: FontWeight.w400,
     color: AppColors.textTertiary,
     height: 1.3,
   );
-  
-  static TextStyle get button => GoogleFonts.cairo(
+
+  static TextStyle get button => GoogleFonts.comfortaa(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     color: AppColors.textWhite,
     height: 1.4,
     letterSpacing: 0.2,
   );
-  
+
   static TextStyle get overline => const TextStyle(
     fontSize: 10,
     fontWeight: FontWeight.w600,
@@ -102,7 +102,7 @@ class AppStyles {
     letterSpacing: 1.5,
     fontFamily: 'Inter',
   );
-  
+
   // Enhanced Card Styles with Beautiful Shadows
   static BoxDecoration get cardDecoration => BoxDecoration(
     color: AppColors.card,
@@ -122,7 +122,7 @@ class AppStyles {
       ),
     ],
   );
-  
+
   static BoxDecoration get cardDecorationLight => BoxDecoration(
     color: AppColors.card,
     borderRadius: BorderRadius.circular(16),
@@ -135,7 +135,7 @@ class AppStyles {
       ),
     ],
   );
-  
+
   static BoxDecoration get cardDecorationHover => BoxDecoration(
     color: AppColors.cardHover,
     borderRadius: BorderRadius.circular(20),
@@ -148,15 +148,12 @@ class AppStyles {
       ),
     ],
   );
-  
+
   // Glassmorphism Card Style
   static BoxDecoration get glassCardDecoration => BoxDecoration(
     color: AppColors.glass,
     borderRadius: BorderRadius.circular(20),
-    border: Border.all(
-      color: AppColors.borderLight,
-      width: 1,
-    ),
+    border: Border.all(color: AppColors.borderLight, width: 1),
     boxShadow: [
       BoxShadow(
         color: AppColors.shadowLight,
@@ -166,20 +163,18 @@ class AppStyles {
       ),
     ],
   );
-  
+
   // Beautiful Button Styles
   static ButtonStyle get primaryButton => ElevatedButton.styleFrom(
     backgroundColor: AppColors.primary,
     foregroundColor: AppColors.textWhite,
     elevation: 0,
     shadowColor: Colors.transparent,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-    ),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
     textStyle: button,
   );
-  
+
   static ButtonStyle get secondaryButton => ElevatedButton.styleFrom(
     backgroundColor: AppColors.secondary,
     foregroundColor: AppColors.textPrimary,
@@ -192,29 +187,25 @@ class AppStyles {
     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
     textStyle: button.copyWith(color: AppColors.textPrimary),
   );
-  
+
   static ButtonStyle get outlineButton => OutlinedButton.styleFrom(
     foregroundColor: AppColors.primary,
     side: BorderSide(color: AppColors.primary, width: 2),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-    ),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
     textStyle: button.copyWith(color: AppColors.primary),
   );
-  
+
   static ButtonStyle get gradientButton => ElevatedButton.styleFrom(
     backgroundColor: Colors.transparent,
     foregroundColor: AppColors.textWhite,
     elevation: 0,
     shadowColor: Colors.transparent,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-    ),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
     textStyle: button,
   );
-  
+
   // Enhanced Input Styles
   static InputDecoration get inputDecoration => InputDecoration(
     filled: true,
@@ -238,7 +229,7 @@ class AppStyles {
     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
     hintStyle: bodyMedium.copyWith(color: AppColors.textMuted),
   );
-  
+
   // Special Effects Styles
   static BoxDecoration get neonGlow => BoxDecoration(
     borderRadius: BorderRadius.circular(20),
@@ -257,7 +248,7 @@ class AppStyles {
       ),
     ],
   );
-  
+
   static BoxDecoration get softGlow => BoxDecoration(
     borderRadius: BorderRadius.circular(20),
     boxShadow: [
@@ -269,7 +260,7 @@ class AppStyles {
       ),
     ],
   );
-  
+
   // Animation Curves
   static const Curve bounceCurve = Curves.bounceOut;
   static const Curve elasticCurve = Curves.elasticOut;

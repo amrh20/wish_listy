@@ -265,7 +265,9 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          ..._searchResults.map((user) => _buildUserCard(user, localization)),
+          ..._searchResults
+              .map((user) => _buildUserCard(user, localization))
+              .toList(),
         ],
       ),
     );
@@ -317,11 +319,14 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
               ],
             ),
           ),
-          CustomButton(
-            text: localization.translate('friends.sendRequest'),
-            onPressed: () => _sendFriendRequest(user, localization),
-            variant: ButtonVariant.primary,
-            size: ButtonSize.small,
+          const SizedBox(width: 12),
+          Flexible(
+            child: CustomButton(
+              text: localization.translate('friends.sendRequest'),
+              onPressed: () => _sendFriendRequest(user, localization),
+              variant: ButtonVariant.primary,
+              size: ButtonSize.small,
+            ),
           ),
         ],
       ),
@@ -428,7 +433,9 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          ...suggestions.map((user) => _buildUserCard(user, localization)),
+          ...suggestions
+              .map((user) => _buildUserCard(user, localization))
+              .toList(),
         ],
       ),
     );

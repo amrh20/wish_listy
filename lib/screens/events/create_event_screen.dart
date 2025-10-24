@@ -5,6 +5,7 @@ import '../../constants/app_styles.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../services/localization_service.dart';
+import '../../widgets/events/index.dart';
 
 class CreateEventScreen extends StatefulWidget {
   const CreateEventScreen({super.key});
@@ -34,8 +35,6 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   final _meetingLinkController = TextEditingController();
 
   // New variables for enhanced features
-  String? _selectedWishlistId;
-  String? _selectedWishlistName;
   List<String> _invitedFriends = [];
 
   final List<EventTypeOption> _eventTypes = [
@@ -153,7 +152,10 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                 child: Column(
                   children: [
                     // Header
-                    _buildHeader(localization),
+                    CreateEventHeaderWidget(
+                      onBackPressed: () => Navigator.pop(context),
+                      onHelpPressed: _showHelpDialog,
+                    ),
 
                     // Form
                     Expanded(
@@ -173,7 +175,17 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                                         CrossAxisAlignment.stretch,
                                     children: [
                                       // Event Type Selection
-                                      _buildEventTypeSelection(localization),
+                                      EventTypeSelectionWidget(
+                                        eventTypes: _eventTypes,
+                                        selectedEventType: _selectedEventType,
+                                        selectedColor:
+                                            _getSelectedEventTypeColor(),
+                                        onEventTypeChanged: (type) {
+                                          setState(() {
+                                            _selectedEventType = type;
+                                          });
+                                        },
+                                      ),
                                       const SizedBox(height: 24),
 
                                       // Event Name
@@ -215,16 +227,37 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                                       const SizedBox(height: 24),
 
                                       // Date and Time Section
-                                      _buildDateTimeSection(),
+                                      DateTimeSectionWidget(
+                                        selectedDate: _selectedDate,
+                                        selectedTime: _selectedTime,
+                                        onDateSelected: _selectDate,
+                                        onTimeSelected: _selectTime,
+                                        formatDate: _formatDate,
+                                        formatTime: _formatTime,
+                                      ),
 
                                       const SizedBox(height: 24),
 
                                       // Event Privacy
-                                      _buildEventPrivacySection(localization),
+                                      EventPrivacyWidget(
+                                        selectedPrivacy: _selectedPrivacy,
+                                        onPrivacyChanged: (privacy) {
+                                          setState(() {
+                                            _selectedPrivacy = privacy;
+                                          });
+                                        },
+                                      ),
                                       const SizedBox(height: 24),
 
                                       // Event Mode
-                                      _buildEventModeSection(localization),
+                                      EventModeWidget(
+                                        selectedMode: _selectedEventMode,
+                                        onModeChanged: (mode) {
+                                          setState(() {
+                                            _selectedEventMode = mode;
+                                          });
+                                        },
+                                      ),
                                       const SizedBox(height: 24),
 
                                       // Location (moved under Event Mode)
@@ -272,51 +305,53 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                                       const SizedBox(height: 24),
 
                                       // Wishlist Option
-                                      _buildWishlistOption(localization),
+                                      WishlistOptionWidget(
+                                        createWishlist: _createWishlist,
+                                        onWishlistChanged: (create) {
+                                          setState(() {
+                                            _createWishlist = create;
+                                          });
+                                        },
+                                      ),
 
                                       const SizedBox(height: 24),
 
                                       // Invite Guests Section
-                                      _buildInviteGuestsSection(localization),
+                                      InviteGuestsWidget(
+                                        invitedFriends: _invitedFriends,
+                                        onInvitePressed:
+                                            _navigateToInviteGuests,
+                                      ),
 
                                       const SizedBox(height: 32),
 
                                       // Preview Section
-                                      _buildEventPreview(),
+                                      EventPreviewWidget(
+                                        eventName: _nameController.text,
+                                        selectedDate: _selectedDate,
+                                        selectedTime: _selectedTime,
+                                        location: _locationController.text,
+                                        selectedEventType: _eventTypes
+                                            .firstWhere(
+                                              (type) =>
+                                                  type.id == _selectedEventType,
+                                              orElse: () => _eventTypes.first,
+                                            ),
+                                        formatDate: _formatDate,
+                                        formatTime: _formatTime,
+                                      ),
 
                                       const SizedBox(height: 32),
 
-                                      // Create Button
-                                      CustomButton(
-                                        text: localization.translate(
-                                          'events.createEvent',
-                                        ),
-                                        onPressed: () =>
+                                      // Action Buttons
+                                      CreateEventActionsWidget(
+                                        onCreatePressed: () =>
                                             _createEvent(localization),
+                                        onSaveDraftPressed: _saveDraft,
                                         isLoading: _isLoading,
-                                        variant: ButtonVariant.gradient,
-                                        gradientColors: [
-                                          _getSelectedEventTypeColor(),
-                                          AppColors.accent,
-                                        ],
-                                      ),
-
-                                      const SizedBox(height: 16),
-
-                                      // Save Draft Button
-                                      CustomButton(
-                                        text: localization.translate(
-                                          'events.saveAsDraft',
-                                        ),
-                                        onPressed: _saveDraft,
-                                        variant: ButtonVariant.outline,
-                                        customColor:
+                                        primaryColor:
                                             _getSelectedEventTypeColor(),
                                       ),
-
-                                      const SizedBox(
-                                        height: 100,
-                                      ), // Bottom padding
                                     ],
                                   ),
                                 ),
@@ -333,1037 +368,6 @@ class _CreateEventScreenState extends State<CreateEventScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget _buildHeader(LocalizationService localization) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withOpacity(0.9),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textTertiary.withOpacity(0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.surfaceVariant,
-              padding: const EdgeInsets.all(12),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  localization.translate('events.createEventTitle'),
-                  style: AppStyles.headingSmall.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  localization.translate('events.createEventSubtitle'),
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Help Button
-          IconButton(
-            onPressed: _showHelpDialog,
-            icon: const Icon(Icons.help_outline),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.surfaceVariant,
-              padding: const EdgeInsets.all(12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEventTypeSelection(LocalizationService localization) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _getSelectedEventTypeColor().withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.category_outlined,
-                color: _getSelectedEventTypeColor(),
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                localization.translate('events.whatAreYouCelebrating'),
-                style: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Event Type Grid
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final itemWidth =
-                  (constraints.maxWidth - 18) / 4; // 18 = 6*3 (spacing)
-              final itemHeight = itemWidth * 1.1; // Slightly taller than wide
-              final gridHeight = (itemHeight * 2) + 6; // 2 rows + spacing
-
-              return SizedBox(
-                height: gridHeight,
-                child: GridView.builder(
-                  shrinkWrap: false,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    crossAxisSpacing: 6,
-                    mainAxisSpacing: 6,
-                    childAspectRatio: itemWidth / itemHeight,
-                  ),
-                  itemCount: _eventTypes.length,
-                  itemBuilder: (context, index) {
-                    final eventType = _eventTypes[index];
-                    final isSelected = _selectedEventType == eventType.id;
-
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedEventType = eventType.id;
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? eventType.color.withOpacity(0.1)
-                              : AppColors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: isSelected
-                                ? eventType.color
-                                : AppColors.textTertiary.withOpacity(0.3),
-                            width: isSelected ? 2 : 1,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              eventType.emoji,
-                              style: const TextStyle(fontSize: 18),
-                            ),
-                            const SizedBox(height: 1),
-                            Icon(
-                              eventType.icon,
-                              color: isSelected
-                                  ? eventType.color
-                                  : AppColors.textTertiary,
-                              size: 14,
-                            ),
-                            const SizedBox(height: 1),
-                            Text(
-                              eventType.name,
-                              style: AppStyles.caption.copyWith(
-                                color: isSelected
-                                    ? eventType.color
-                                    : AppColors.textTertiary,
-                                fontWeight: isSelected
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                                fontSize: 9,
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDateTimeSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.schedule_outlined, color: AppColors.info, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'When is your event?',
-                style: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          Row(
-            children: [
-              // Date Selector
-              Expanded(
-                child: GestureDetector(
-                  onTap: _selectDate,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _selectedDate != null
-                            ? AppColors.info
-                            : AppColors.textTertiary.withOpacity(0.3),
-                        width: _selectedDate != null ? 2 : 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today_outlined,
-                          color: _selectedDate != null
-                              ? AppColors.info
-                              : AppColors.textTertiary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Date',
-                                style: AppStyles.caption.copyWith(
-                                  color: AppColors.textTertiary,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _selectedDate != null
-                                    ? _formatDate(_selectedDate!)
-                                    : 'Select date',
-                                style: AppStyles.bodyMedium.copyWith(
-                                  color: _selectedDate != null
-                                      ? AppColors.textPrimary
-                                      : AppColors.textTertiary,
-                                  fontWeight: _selectedDate != null
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // Time Selector
-              Expanded(
-                child: GestureDetector(
-                  onTap: _selectTime,
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _selectedTime != null
-                            ? AppColors.info
-                            : AppColors.textTertiary.withOpacity(0.3),
-                        width: _selectedTime != null ? 2 : 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.access_time_outlined,
-                          color: _selectedTime != null
-                              ? AppColors.info
-                              : AppColors.textTertiary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Time',
-                                style: AppStyles.caption.copyWith(
-                                  color: AppColors.textTertiary,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _selectedTime != null
-                                    ? _formatTime(_selectedTime!)
-                                    : 'Select time',
-                                style: AppStyles.bodyMedium.copyWith(
-                                  color: _selectedTime != null
-                                      ? AppColors.textPrimary
-                                      : AppColors.textTertiary,
-                                  fontWeight: _selectedTime != null
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEventPrivacySection(LocalizationService localization) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.privacy_tip_outlined,
-                color: AppColors.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                localization.translate('events.eventPrivacy'),
-                style: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            localization.translate('events.whoCanSeeThisEvent'),
-            style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildPrivacyOption(
-                'public',
-                localization.translate('events.public'),
-                localization.translate('events.publicDescription'),
-                Icons.public,
-                AppColors.success,
-                localization,
-              ),
-              _buildPrivacyOption(
-                'friends_only',
-                localization.translate('events.friendsOnly'),
-                localization.translate('events.friendsOnlyDescription'),
-                Icons.people_outline,
-                AppColors.info,
-                localization,
-              ),
-              _buildPrivacyOption(
-                'private',
-                localization.translate('events.private'),
-                localization.translate('events.privateDescription'),
-                Icons.lock_outline,
-                AppColors.warning,
-                localization,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPrivacyOption(
-    String value,
-    String title,
-    String description,
-    IconData icon,
-    Color color,
-    LocalizationService localization,
-  ) {
-    final isSelected = _selectedPrivacy == value;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedPrivacy = value;
-        });
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? color : AppColors.textTertiary.withOpacity(0.3),
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? color : AppColors.textTertiary,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppStyles.bodyMedium.copyWith(
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                      color: isSelected ? color : AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    description,
-                    style: AppStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected) Icon(Icons.check_circle, color: color, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEventModeSection(LocalizationService localization) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.accent.withOpacity(0.2), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.event_available_outlined,
-                color: AppColors.accent,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                localization.translate('events.eventMode'),
-                style: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            localization.translate('events.howWillPeopleAttend'),
-            style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildModeOption(
-                'in_person',
-                localization.translate('events.inPerson'),
-                localization.translate('events.inPersonDescription'),
-                Icons.location_on_outlined,
-                AppColors.success,
-                localization,
-              ),
-              _buildModeOption(
-                'online',
-                localization.translate('events.online'),
-                localization.translate('events.onlineDescription'),
-                Icons.video_call_outlined,
-                AppColors.info,
-                localization,
-              ),
-              _buildModeOption(
-                'hybrid',
-                localization.translate('events.hybrid'),
-                localization.translate('events.hybridDescription'),
-                Icons.connect_without_contact_outlined,
-                AppColors.warning,
-                localization,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildModeOption(
-    String value,
-    String title,
-    String description,
-    IconData icon,
-    Color color,
-    LocalizationService localization,
-  ) {
-    final isSelected = _selectedEventMode == value;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedEventMode = value;
-        });
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? color : AppColors.textTertiary.withOpacity(0.3),
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? color : AppColors.textTertiary,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppStyles.bodyMedium.copyWith(
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                      color: isSelected ? color : AppColors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    description,
-                    style: AppStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (isSelected) Icon(Icons.check_circle, color: color, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWishlistOption(LocalizationService localization) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _createWishlist
-              ? AppColors.secondary.withOpacity(0.3)
-              : AppColors.textTertiary.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.card_giftcard_outlined,
-                color: AppColors.secondary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                localization.translate('events.eventWishlist'),
-                style: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          Column(
-            children: [
-              // Yes Option
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _createWishlist = true;
-                  });
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _createWishlist
-                        ? AppColors.secondary.withOpacity(0.1)
-                        : AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _createWishlist
-                          ? AppColors.secondary
-                          : AppColors.textTertiary.withOpacity(0.3),
-                      width: _createWishlist ? 2 : 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.check_circle,
-                        color: _createWishlist
-                            ? AppColors.secondary
-                            : AppColors.textTertiary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              localization.translate(
-                                'events.yesCreateWishlist',
-                              ),
-                              style: AppStyles.bodyMedium.copyWith(
-                                fontWeight: _createWishlist
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                                color: _createWishlist
-                                    ? AppColors.secondary
-                                    : AppColors.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              localization.translate(
-                                'events.yesCreateWishlistDescription',
-                              ),
-                              style: AppStyles.bodySmall.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (_createWishlist)
-                        Icon(
-                          Icons.check_circle,
-                          color: AppColors.secondary,
-                          size: 20,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // No Option
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _createWishlist = false;
-                  });
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: !_createWishlist
-                        ? AppColors.info.withOpacity(0.1)
-                        : AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: !_createWishlist
-                          ? AppColors.info
-                          : AppColors.textTertiary.withOpacity(0.3),
-                      width: !_createWishlist ? 2 : 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.cancel_outlined,
-                        color: !_createWishlist
-                            ? AppColors.info
-                            : AppColors.textTertiary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              localization.translate(
-                                'events.noLinkExistingWishlist',
-                              ),
-                              style: AppStyles.bodyMedium.copyWith(
-                                fontWeight: !_createWishlist
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                                color: !_createWishlist
-                                    ? AppColors.info
-                                    : AppColors.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              localization.translate(
-                                'events.noLinkExistingWishlistDescription',
-                              ),
-                              style: AppStyles.bodySmall.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (!_createWishlist)
-                        Icon(
-                          Icons.check_circle,
-                          color: AppColors.info,
-                          size: 20,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // Wishlist Selection (when linking to existing)
-          if (!_createWishlist) ...[
-            const SizedBox(height: 16),
-            _buildWishlistSelection(localization),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWishlistSelection(LocalizationService localization) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.info.withOpacity(0.3), width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            localization.translate('events.selectWishlist'),
-            style: AppStyles.bodyMedium.copyWith(
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          GestureDetector(
-            onTap: _showWishlistSelectionModal,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppColors.textTertiary.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.favorite_rounded, color: AppColors.info, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _selectedWishlistName ??
-                          localization.translate(
-                            'events.selectWishlistPlaceholder',
-                          ),
-                      style: AppStyles.bodyMedium.copyWith(
-                        color: _selectedWishlistName != null
-                            ? AppColors.textPrimary
-                            : AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    Icons.arrow_drop_down,
-                    color: AppColors.textTertiary,
-                    size: 20,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showWishlistSelectionModal() {
-    final localization = Provider.of<LocalizationService>(
-      context,
-      listen: false,
-    );
-
-    // Mock wishlists data
-    final wishlists = [
-      {'id': 'wishlist_1', 'name': 'My Birthday Wishlist', 'privacy': 'public'},
-      {'id': 'wishlist_2', 'name': 'Holiday Gifts', 'privacy': 'friends'},
-      {'id': 'wishlist_3', 'name': 'Wedding Registry', 'privacy': 'public'},
-    ];
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textTertiary.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Title
-            Text(
-              localization.translate('events.selectWishlist'),
-              style: AppStyles.headingSmall.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Wishlist List
-            ...wishlists.map((wishlist) {
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  onTap: () {
-                    setState(() {
-                      _selectedWishlistId = wishlist['id'];
-                      _selectedWishlistName = wishlist['name'];
-                    });
-                    Navigator.pop(context);
-                  },
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  tileColor: AppColors.surface,
-                  leading: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.info.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.favorite_rounded,
-                      color: AppColors.info,
-                      size: 24,
-                    ),
-                  ),
-                  title: Text(
-                    wishlist['name']!,
-                    style: AppStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  subtitle: Text(
-                    _getPrivacyLabel(wishlist['privacy']!),
-                    style: AppStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  trailing: _selectedWishlistId == wishlist['id']
-                      ? Icon(
-                          Icons.check_circle,
-                          color: AppColors.info,
-                          size: 20,
-                        )
-                      : null,
-                ),
-              );
-            }).toList(),
-
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _getPrivacyLabel(String privacy) {
-    switch (privacy) {
-      case 'public':
-        return 'Public';
-      case 'private':
-        return 'Private';
-      case 'friends':
-        return 'Friends Only';
-      default:
-        return privacy;
-    }
-  }
-
-  Widget _buildInviteGuestsSection(LocalizationService localization) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.textTertiary.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.people_outline, color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                localization.translate('events.inviteGuests'),
-                style: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Invited friends count
-          if (_invitedFriends.isNotEmpty) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.check_circle, color: AppColors.primary, size: 16),
-                  const SizedBox(width: 8),
-                  Text(
-                    localization.translate(
-                      'events.friendsInvited',
-                      args: {'count': _invitedFriends.length.toString()},
-                    ),
-                    style: AppStyles.bodySmall.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // Invite Friends Button
-          CustomButton(
-            text: localization.translate('events.inviteFriends'),
-            onPressed: _navigateToInviteGuests,
-            variant: ButtonVariant.outline,
-            icon: Icons.person_add_outlined,
-            fullWidth: true,
-          ),
-        ],
-      ),
     );
   }
 
@@ -1651,125 +655,6 @@ class _CreateEventScreenState extends State<CreateEventScreen>
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildEventPreview() {
-    final selectedEventType = _eventTypes.firstWhere(
-      (type) => type.id == _selectedEventType,
-      orElse: () => _eventTypes.first,
-    );
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: selectedEventType.color.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.preview_outlined,
-                color: selectedEventType.color,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Event Preview',
-                style: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Preview Card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  selectedEventType.color.withOpacity(0.1),
-                  selectedEventType.color.withOpacity(0.05),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: selectedEventType.color.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: selectedEventType.color,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    selectedEventType.icon,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _nameController.text.isEmpty
-                            ? 'Your Event Name'
-                            : _nameController.text,
-                        style: AppStyles.bodyLarge.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      if (_selectedDate != null) ...[
-                        Text(
-                          '${_formatDate(_selectedDate!)}${_selectedTime != null ? ' at ${_formatTime(_selectedTime!)}' : ''}',
-                          style: AppStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ] else ...[
-                        Text(
-                          'Date & Time TBD',
-                          style: AppStyles.bodySmall.copyWith(
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      ],
-                      if (_locationController.text.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          _locationController.text,
-                          style: AppStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -2145,21 +1030,4 @@ class _CreateEventScreenState extends State<CreateEventScreen>
       ),
     );
   }
-}
-
-// Event Type Option Model
-class EventTypeOption {
-  final String id;
-  final String name;
-  final IconData icon;
-  final Color color;
-  final String emoji;
-
-  EventTypeOption({
-    required this.id,
-    required this.name,
-    required this.icon,
-    required this.color,
-    required this.emoji,
-  });
 }

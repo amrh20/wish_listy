@@ -15,6 +15,7 @@ import '../screens/events/create_event_screen.dart';
 import '../screens/events/event_details_screen.dart';
 import '../screens/events/event_management_screen.dart';
 import '../screens/events/event_wishlist_screen.dart';
+import '../widgets/events/event_card.dart';
 import '../screens/friends/friends_screen.dart';
 import '../screens/friends/friend_profile_screen.dart';
 import '../screens/profile/profile_screen.dart';

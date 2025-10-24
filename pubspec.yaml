@@ -29,8 +29,8 @@ dependencies:
   # State management - Only one needed
   provider: ^6.1.2
   
-  # Basic networking
-  http: ^1.1.2
+  # Advanced networking with interceptors and better error handling
+  dio: ^5.4.0
   connectivity_plus: ^5.0.2
   
   # Local storage
@@ -50,8 +50,8 @@ dependencies:
   # QR code generation
   qr_flutter: ^4.1.0
   
-  # Calendar
-  table_calendar: ^3.0.9
+  # Calendar widget
+  table_calendar: ^3.1.2
   
   # Basic notifications
   flutter_local_notifications: ^17.2.3

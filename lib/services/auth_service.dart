@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'auth_api_service.dart';
+import 'api_service.dart';
 
 enum UserState { guest, authenticated, loading }
 
@@ -22,7 +24,7 @@ class AuthService extends ChangeNotifier {
   String? get userEmail => _userEmail;
   String? get userName => _userName;
 
-  // Initialize auth state
+  // Initialize auth state and load saved token
   Future<void> initialize() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -33,6 +35,12 @@ class AuthService extends ChangeNotifier {
         _userEmail = prefs.getString('user_email');
         _userName = prefs.getString('user_name');
         _userState = UserState.authenticated;
+
+        // Load and set auth token if available
+        final token = prefs.getString('auth_token');
+        if (token != null) {
+          ApiService().setAuthToken(token);
+        }
       } else {
         _userState = UserState.guest;
       }
@@ -58,42 +66,158 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Login with credentials
+  // Set user as authenticated (for temporary login without API)
+  Future<void> setAuthenticatedUser({
+    required String userId,
+    required String userEmail,
+    required String userName,
+  }) async {
+    _userState = UserState.authenticated;
+    _userId = userId;
+    _userEmail = userEmail;
+    _userName = userName;
+
+    // Save to local storage
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_logged_in', true);
+    await prefs.setString('user_id', _userId!);
+    await prefs.setString('user_email', _userEmail!);
+    await prefs.setString('user_name', _userName!);
+
+    notifyListeners();
+  }
+
+  // Login with credentials using real API
   Future<bool> login(String email, String password) async {
     try {
-      // Simulate API call - accept any credentials for now
-      await Future.delayed(const Duration(seconds: 2));
+      // Call the API service to login
+      final authApiService = AuthApiService();
+      final response = await authApiService.login(
+        email: email,
+        password: password,
+      );
 
-      _userState = UserState.authenticated;
-      _userId = 'user_${DateTime.now().millisecondsSinceEpoch}';
-      _userEmail = email;
-      _userName = email.split('@').first;
+      // Check if login was successful
+      if (response['success'] == true) {
+        // Extract user data from response
+        final userData = response['user'] ?? response['data'];
+        final token = response['token'];
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('is_logged_in', true);
-      await prefs.setString('user_id', _userId!);
-      await prefs.setString('user_email', _userEmail!);
-      await prefs.setString('user_name', _userName!);
+        // Update user state
+        _userState = UserState.authenticated;
+        _userId =
+            userData?['id'] ?? 'user_${DateTime.now().millisecondsSinceEpoch}';
+        _userEmail = userData?['email'] ?? email;
+        _userName = userData?['name'] ?? email.split('@').first;
 
-      notifyListeners();
-      return true;
+        // Save to local storage
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('is_logged_in', true);
+        await prefs.setString('user_id', _userId!);
+        await prefs.setString('user_email', _userEmail!);
+        await prefs.setString('user_name', _userName!);
+
+        // Save auth token if available
+        if (token != null) {
+          await prefs.setString('auth_token', token);
+          // Set token in API service for future requests
+          ApiService().setAuthToken(token);
+        }
+
+        notifyListeners();
+        return true;
+      } else {
+        // Login failed
+        return false;
+      }
     } catch (e) {
+      // Handle any errors
       return false;
     }
   }
 
-  // Logout
+  // Register new user using real API
+  Future<bool> register({
+    required String username, // email or phone
+    required String fullName,
+    required String password,
+  }) async {
+    try {
+      // Call the API service to register
+      final authApiService = AuthApiService();
+      final response = await authApiService.register(
+        username: username,
+        fullName: fullName,
+        password: password,
+      );
+
+      // Check if registration was successful
+      if (response['success'] == true) {
+        // Extract user data from response
+        final userData = response['user'] ?? response['data'];
+        final token = response['token'];
+
+        // Update user state
+        _userState = UserState.authenticated;
+        _userId =
+            userData?['id'] ?? 'user_${DateTime.now().millisecondsSinceEpoch}';
+        _userEmail =
+            userData?['username'] ??
+            username; // username could be email or phone
+        _userName = userData?['fullName'] ?? fullName;
+
+        // Save to local storage
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('is_logged_in', true);
+        await prefs.setString('user_id', _userId!);
+        await prefs.setString('user_email', _userEmail!);
+        await prefs.setString('user_name', _userName!);
+
+        // Save auth token if available
+        if (token != null) {
+          await prefs.setString('auth_token', token);
+          // Set token in API service for future requests
+          ApiService().setAuthToken(token);
+        }
+
+        notifyListeners();
+        return true;
+      } else {
+        // Registration failed
+        return false;
+      }
+    } catch (e) {
+      // Handle any errors
+      return false;
+    }
+  }
+
+  // Logout using real API
   Future<void> logout() async {
+    try {
+      // Call API service to logout
+      final authApiService = AuthApiService();
+      await authApiService.logout();
+    } catch (e) {
+      // Even if API logout fails, clear local data
+    }
+
+    // Clear local state
     _userState = UserState.guest;
     _userId = null;
     _userEmail = null;
     _userName = null;
 
+    // Clear local storage
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_logged_in', false);
     await prefs.remove('user_id');
     await prefs.remove('user_email');
     await prefs.remove('user_name');
+    await prefs.remove('auth_token');
+
+    // Clear API service token
+    ApiService().clearAuthToken();
 
     notifyListeners();
   }

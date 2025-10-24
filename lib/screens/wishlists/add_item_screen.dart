@@ -24,6 +24,9 @@ class _AddItemScreenState extends State<AddItemScreen>
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _linkController = TextEditingController();
+  final _storeNameController = TextEditingController();
+  final _storeLocationController = TextEditingController();
+  final _brandKeywordsController = TextEditingController();
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -33,7 +36,8 @@ class _AddItemScreenState extends State<AddItemScreen>
   String _selectedWishlist = 'public';
   String _selectedPriority = 'medium';
   String? _selectedImagePath;
-  String _selectedInputType = 'link'; // 'link' or 'image'
+  String _selectedWhereToFind = 'online'; // 'online', 'physical', 'anywhere'
+  List<String> _productLinks = [];
 
   final List<String> _priorities = ['low', 'medium', 'high', 'urgent'];
   final List<String> _wishlists = [
@@ -85,6 +89,9 @@ class _AddItemScreenState extends State<AddItemScreen>
     _nameController.dispose();
     _descriptionController.dispose();
     _linkController.dispose();
+    _storeNameController.dispose();
+    _storeLocationController.dispose();
+    _brandKeywordsController.dispose();
     super.dispose();
   }
 
@@ -175,10 +182,8 @@ class _AddItemScreenState extends State<AddItemScreen>
 
                                         const SizedBox(height: 20),
 
-                                        // Product Link or Image Section
-                                        _buildProductLinkOrImageSection(
-                                          localization,
-                                        ),
+                                        // Where to Find Section
+                                        _buildWhereToFindSection(localization),
 
                                         const SizedBox(height: 24),
 
@@ -425,7 +430,7 @@ class _AddItemScreenState extends State<AddItemScreen>
     );
   }
 
-  Widget _buildProductLinkOrImageSection(LocalizationService localization) {
+  Widget _buildWhereToFindSection(LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -437,10 +442,14 @@ class _AddItemScreenState extends State<AddItemScreen>
         children: [
           Row(
             children: [
-              Icon(Icons.link_outlined, color: AppColors.primary, size: 20),
+              Icon(
+                Icons.location_on_outlined,
+                color: AppColors.primary,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
-                localization.translate('wishlists.productLinkOrImage'),
+                localization.translate('wishlists.whereToFind'),
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -449,187 +458,291 @@ class _AddItemScreenState extends State<AddItemScreen>
           ),
           const SizedBox(height: 16),
 
-          // Input Type Selection
+          // Where to Find Options
           Row(
             children: [
               Expanded(
-                child: GestureDetector(
+                child: _buildWhereToFindOption(
+                  icon: Icons.shopping_cart_outlined,
+                  title: localization.translate('wishlists.onlineStore'),
+                  isSelected: _selectedWhereToFind == 'online',
                   onTap: () {
                     setState(() {
-                      _selectedInputType = 'link';
+                      _selectedWhereToFind = 'online';
                       _selectedImagePath = null;
                     });
                   },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _selectedInputType == 'link'
-                          ? AppColors.primary.withOpacity(0.1)
-                          : AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _selectedInputType == 'link'
-                            ? AppColors.primary
-                            : AppColors.textTertiary.withOpacity(0.3),
-                        width: _selectedInputType == 'link' ? 2 : 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.link_outlined,
-                          color: _selectedInputType == 'link'
-                              ? AppColors.primary
-                              : AppColors.textTertiary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          localization.translate('wishlists.productLink'),
-                          style: AppStyles.bodySmall.copyWith(
-                            color: _selectedInputType == 'link'
-                                ? AppColors.primary
-                                : AppColors.textTertiary,
-                            fontWeight: _selectedInputType == 'link'
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
-                child: GestureDetector(
+                child: _buildWhereToFindOption(
+                  icon: Icons.store_outlined,
+                  title: localization.translate('wishlists.physicalStore'),
+                  isSelected: _selectedWhereToFind == 'physical',
                   onTap: () {
                     setState(() {
-                      _selectedInputType = 'image';
-                      _linkController.clear();
+                      _selectedWhereToFind = 'physical';
+                      _productLinks.clear();
                     });
                   },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _selectedInputType == 'image'
-                          ? AppColors.primary.withOpacity(0.1)
-                          : AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _selectedInputType == 'image'
-                            ? AppColors.primary
-                            : AppColors.textTertiary.withOpacity(0.3),
-                        width: _selectedInputType == 'image' ? 2 : 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.photo_library_outlined,
-                          color: _selectedInputType == 'image'
-                              ? AppColors.primary
-                              : AppColors.textTertiary,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          localization.translate('wishlists.uploadImage'),
-                          style: AppStyles.bodySmall.copyWith(
-                            color: _selectedInputType == 'image'
-                                ? AppColors.primary
-                                : AppColors.textTertiary,
-                            fontWeight: _selectedInputType == 'image'
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildWhereToFindOption(
+                  icon: Icons.help_outline,
+                  title: localization.translate('wishlists.anywhere'),
+                  isSelected: _selectedWhereToFind == 'anywhere',
+                  onTap: () {
+                    setState(() {
+                      _selectedWhereToFind = 'anywhere';
+                      _productLinks.clear();
+                    });
+                  },
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
-          // Content based on selected type
-          if (_selectedInputType == 'link') ...[
-            // Product Link Input
-            CustomTextField(
-              controller: _linkController,
-              label: localization.translate('wishlists.productLinkOptional'),
-              hint: localization.translate('wishlists.linkToStorePageOptional'),
-              prefixIcon: Icons.link_outlined,
-              keyboardType: TextInputType.url,
-              validator: (value) {
-                if (value != null && value.isNotEmpty) {
-                  if (!_isValidUrl(value)) {
-                    return localization.translate(
-                      'wishlists.pleaseEnterValidUrl',
-                    );
-                  }
-                }
-                return null;
-              },
-            ),
-          ] else ...[
-            // Image Upload Options
-            if (_selectedImagePath == null) ...[
-              _buildImageUploadOption(
-                icon: Icons.photo_library_outlined,
-                label: localization.translate('wishlists.uploadImage'),
-                onTap: _pickImageFromGallery,
-              ),
-            ] else ...[
-              // Selected Image Preview
-              Container(
-                height: 150,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: AppColors.surfaceVariant,
-                ),
-                child: Stack(
-                  children: [
-                    Center(
-                      child: Icon(
-                        Icons.image_outlined,
-                        size: 60,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _selectedImagePath = null;
-                          });
-                        },
-                        icon: Icon(Icons.close, color: AppColors.error),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          padding: const EdgeInsets.all(4),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
+          // Conditional Content based on selection
+          _buildConditionalContent(localization),
         ],
       ),
+    );
+  }
+
+  Widget _buildWhereToFindOption({
+    required IconData icon,
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.1)
+              : AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.textTertiary.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : AppColors.textTertiary,
+              size: 20,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: AppStyles.caption.copyWith(
+                color: isSelected ? AppColors.primary : AppColors.textTertiary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConditionalContent(LocalizationService localization) {
+    switch (_selectedWhereToFind) {
+      case 'online':
+        return _buildOnlineStoreContent(localization);
+      case 'physical':
+        return _buildPhysicalStoreContent(localization);
+      case 'anywhere':
+        return _buildAnywhereContent(localization);
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildOnlineStoreContent(LocalizationService localization) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Product Links
+        Text(
+          localization.translate('wishlists.productLinks'),
+          style: AppStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Existing Links
+        if (_productLinks.isNotEmpty) ...[
+          ..._productLinks.asMap().entries.map((entry) {
+            int index = entry.key;
+            String link = entry.value;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppColors.textTertiary.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.link, color: AppColors.primary, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      link,
+                      style: AppStyles.bodySmall,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _productLinks.removeAt(index);
+                      });
+                    },
+                    icon: Icon(Icons.close, color: AppColors.error, size: 16),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+        ],
+
+        // Add Link Field
+        Row(
+          children: [
+            Expanded(
+              child: CustomTextField(
+                controller: _linkController,
+                label: localization.translate('wishlists.addProductLink'),
+                hint: localization.translate('wishlists.enterProductUrl'),
+                prefixIcon: Icons.link_outlined,
+                keyboardType: TextInputType.url,
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    if (!_isValidUrl(value)) {
+                      return localization.translate(
+                        'wishlists.pleaseEnterValidUrl',
+                      );
+                    }
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: () {
+                if (_linkController.text.isNotEmpty &&
+                    _isValidUrl(_linkController.text)) {
+                  setState(() {
+                    _productLinks.add(_linkController.text);
+                    _linkController.clear();
+                  });
+                }
+              },
+              icon: Icon(Icons.add, color: AppColors.primary),
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.primary.withOpacity(0.1),
+                padding: const EdgeInsets.all(12),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // Upload Image Option
+        _buildImageUploadOption(
+          icon: Icons.photo_library_outlined,
+          label: localization.translate('wishlists.uploadImage'),
+          onTap: _pickImageFromGallery,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPhysicalStoreContent(LocalizationService localization) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Store Name
+        CustomTextField(
+          controller: _storeNameController,
+          label: localization.translate('wishlists.storeName'),
+          hint: localization.translate('wishlists.enterStoreName'),
+          prefixIcon: Icons.store_outlined,
+        ),
+        const SizedBox(height: 16),
+
+        // Store Location
+        CustomTextField(
+          controller: _storeLocationController,
+          label: localization.translate('wishlists.storeLocation'),
+          hint: localization.translate('wishlists.enterStoreLocation'),
+          prefixIcon: Icons.location_on_outlined,
+          suffixIcon: IconButton(
+            icon: Icon(Icons.map_outlined),
+            onPressed: _selectLocationFromMap,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Upload Image
+        _buildImageUploadOption(
+          icon: Icons.camera_alt_outlined,
+          label: localization.translate('wishlists.takePhoto'),
+          onTap: _pickImageFromGallery,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnywhereContent(LocalizationService localization) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Brand or Keywords
+        CustomTextField(
+          controller: _brandKeywordsController,
+          label: localization.translate('wishlists.brandOrKeywords'),
+          hint: localization.translate('wishlists.enterBrandOrKeywords'),
+          prefixIcon: Icons.tag_outlined,
+        ),
+        const SizedBox(height: 16),
+
+        // Upload Image
+        _buildImageUploadOption(
+          icon: Icons.photo_library_outlined,
+          label: localization.translate('wishlists.uploadImage'),
+          onTap: _pickImageFromGallery,
+        ),
+      ],
     );
   }
 
@@ -638,6 +751,43 @@ class _AddItemScreenState extends State<AddItemScreen>
     required String label,
     required VoidCallback onTap,
   }) {
+    if (_selectedImagePath != null) {
+      return Container(
+        height: 150,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: AppColors.surfaceVariant,
+        ),
+        child: Stack(
+          children: [
+            Center(
+              child: Icon(
+                Icons.image_outlined,
+                size: 60,
+                color: AppColors.textTertiary,
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedImagePath = null;
+                  });
+                },
+                icon: Icon(Icons.close, color: AppColors.error),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  padding: const EdgeInsets.all(4),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -785,6 +935,16 @@ class _AddItemScreenState extends State<AddItemScreen>
     });
   }
 
+  void _selectLocationFromMap() {
+    // Mock implementation - in real app, open map picker
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Map picker coming soon!'),
+        backgroundColor: AppColors.info,
+      ),
+    );
+  }
+
   void _showSuccessMessage(LocalizationService localization) {
     showDialog(
       context: context,
@@ -869,7 +1029,8 @@ class _AddItemScreenState extends State<AddItemScreen>
     setState(() {
       _selectedPriority = 'medium';
       _selectedImagePath = null;
-      _selectedInputType = 'link';
+      _selectedWhereToFind = 'online';
+      _productLinks.clear();
     });
   }
 }

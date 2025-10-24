@@ -3,7 +3,7 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/decorative_background.dart';
-import 'events_screen.dart';
+import '../../widgets/events/event_card.dart';
 
 class GuestManagementScreen extends StatefulWidget {
   final EventSummary event;

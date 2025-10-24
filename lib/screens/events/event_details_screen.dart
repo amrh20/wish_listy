@@ -4,9 +4,8 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/animated_background.dart';
 import '../../services/localization_service.dart';
-import 'events_screen.dart';
+import '../../widgets/events/event_card.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final String eventId;
@@ -1350,8 +1349,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         return localization.translate('events.maybe');
       case AttendanceStatus.pending:
         return localization.translate('events.pending');
-      default:
-        return localization.translate('events.respond');
     }
   }
 
@@ -1365,8 +1362,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         return Icons.help_outline;
       case AttendanceStatus.pending:
         return Icons.schedule_outlined;
-      default:
-        return Icons.question_mark_outlined;
     }
   }
 

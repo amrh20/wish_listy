@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
-import '../../constants/app_styles.dart';
 import '../../services/localization_service.dart';
 import '../../utils/app_routes.dart';
-import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
+import '../../widgets/signup/signup_header_widget.dart';
+import '../../widgets/signup/signup_form_widget.dart';
+import '../../widgets/signup/signup_terms_widget.dart';
+import '../../widgets/signup/signup_actions_widget.dart';
 
+/// Refactored Signup Screen
+/// Now uses separate widgets for better organization and maintainability
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -17,8 +20,8 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _fullNameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -30,14 +33,31 @@ class _SignupScreenState extends State<SignupScreen>
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
+  bool _isFormValid = false;
+
+  // Error messages for each field
+  String? _fullNameError;
+  String? _usernameError;
+  String? _passwordError;
+  String? _confirmPasswordError;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _startAnimations();
+    _setupFormValidation();
   }
 
+  /// Setup form validation listeners
+  void _setupFormValidation() {
+    _fullNameController.addListener(_validateForm);
+    _usernameController.addListener(_validateForm);
+    _passwordController.addListener(_validateForm);
+    _confirmPasswordController.addListener(_validateForm);
+  }
+
+  /// Initialize animations
   void _initializeAnimations() {
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1200),
@@ -60,104 +80,184 @@ class _SignupScreenState extends State<SignupScreen>
         );
   }
 
+  /// Start animations
   void _startAnimations() {
     _animationController.forward();
+  }
+
+  /// Validate the entire form and update button state
+  void _validateForm() {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+
+    // Check if all fields have content
+    final hasFullName = _fullNameController.text.trim().isNotEmpty;
+    final hasUsername = _usernameController.text.trim().isNotEmpty;
+    final hasPassword = _passwordController.text.isNotEmpty;
+    final hasConfirmPassword = _confirmPasswordController.text.isNotEmpty;
+
+    // Simple validation for now
+    String? fullNameError;
+    String? usernameError;
+    String? passwordError;
+    String? confirmPasswordError;
+
+    // Full name validation
+    if (hasFullName && _fullNameController.text.trim().length < 2) {
+      fullNameError = localization.translate('auth.nameMinLength');
+    }
+
+    // Username validation (email or phone)
+    if (hasUsername) {
+      final username = _usernameController.text.trim();
+      final isEmail = RegExp(
+        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+      ).hasMatch(username);
+      final isPhone = RegExp(r'^\+?[1-9]\d{1,14}$').hasMatch(username);
+      if (!isEmail && !isPhone) {
+        usernameError = localization.translate('auth.invalidEmailOrPhone');
+      }
+    }
+
+    // Password validation
+    if (hasPassword && _passwordController.text.length < 8) {
+      passwordError = localization.translate('auth.passwordMinLength');
+    }
+
+    // Confirm password validation
+    if (hasConfirmPassword &&
+        _passwordController.text != _confirmPasswordController.text) {
+      confirmPasswordError = localization.translate('auth.passwordsDoNotMatch');
+    }
+
+    // Check if all fields are valid
+    final fullNameValid = hasFullName && fullNameError == null;
+    final usernameValid = hasUsername && usernameError == null;
+    final passwordValid = hasPassword && passwordError == null;
+    final confirmPasswordValid =
+        hasConfirmPassword && confirmPasswordError == null;
+
+    // Update form validity state
+    final isFormValid =
+        fullNameValid &&
+        usernameValid &&
+        passwordValid &&
+        confirmPasswordValid &&
+        _agreeToTerms;
+
+    // Update state if there are changes
+    if (_isFormValid != isFormValid ||
+        _fullNameError != fullNameError ||
+        _usernameError != usernameError ||
+        _passwordError != passwordError ||
+        _confirmPasswordError != confirmPasswordError) {
+      setState(() {
+        _isFormValid = isFormValid;
+        _fullNameError = fullNameError;
+        _usernameError = usernameError;
+        _passwordError = passwordError;
+        _confirmPasswordError = confirmPasswordError;
+      });
+    }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
-    _nameController.dispose();
-    _emailController.dispose();
+    _fullNameController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
+  /// Handle user registration - Temporarily disabled API until backend is ready
   Future<void> _handleSignup() async {
     if (!_formKey.currentState!.validate()) return;
+
     if (!_agreeToTerms) {
-      // Get localization service from context
       final localization = Provider.of<LocalizationService>(
         context,
         listen: false,
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localization.translate('auth.agreeToTermsError')),
-          backgroundColor: AppColors.error,
-        ),
-      );
+      _showErrorSnackBar(localization.translate('auth.agreeToTermsError'));
       return;
     }
 
     setState(() => _isLoading = true);
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    // TODO: Uncomment when backend is ready
+    // try {
+    //   final registrationRequest = RegistrationRequest.fromForm(
+    //     fullName: _fullNameController.text,
+    //     username: _usernameController.text,
+    //     password: _passwordController.text,
+    //   );
+
+    //   final authApiService = AuthApiService();
+    //   final response = await authApiService.register(
+    //     username: registrationRequest.username,
+    //     fullName: registrationRequest.fullName,
+    //     password: registrationRequest.password,
+    //   );
+
+    //   setState(() => _isLoading = false);
+
+    //   if (response['success'] == true) {
+    //     _showSuccessDialog(response);
+    //   } else {
+    //     _showErrorSnackBar(response['message'] ?? 'Registration failed');
+    //   }
+    // } on ApiException catch (e) {
+    //   setState(() => _isLoading = false);
+    //   _showErrorSnackBar(e.message);
+    // } catch (e) {
+    //   setState(() => _isLoading = false);
+    //   _showErrorSnackBar('An unexpected error occurred. Please try again.');
+    // }
+
+    // Temporary: Simulate successful registration and navigate to home
+    await Future.delayed(const Duration(seconds: 2)); // Simulate API call delay
 
     setState(() => _isLoading = false);
 
-    // Show success message and navigate to verification or main app
-    _showSuccessDialog();
+    // Navigate directly to home screen
+    Navigator.pushReplacementNamed(context, AppRoutes.mainNavigation);
   }
 
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Consumer<LocalizationService>(
-        builder: (context, localization, child) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+  /// Show error message as a top toast
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.check_circle_outline,
-                    color: AppColors.success,
-                    size: 40,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  localization.translate('auth.accountCreated'),
-                  style: AppStyles.headingMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  localization.translate('auth.verifyEmail'),
-                  style: AppStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                CustomButton(
-                  text: localization.translate('auth.continue'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    AppRoutes.pushNamedAndRemoveUntil(
-                      context,
-                      AppRoutes.mainNavigation,
-                    );
-                  },
-                  variant: ButtonVariant.primary,
-                ),
-              ],
-            ),
-          );
-        },
+          ],
+        ),
+        backgroundColor: AppColors.error,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(top: 60, left: 16, right: 16, bottom: 0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
       ),
     );
   }
@@ -184,269 +284,118 @@ class _SignupScreenState extends State<SignupScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              const SizedBox(height: 40),
-
-                              // Back Button
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: IconButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  icon: const Icon(Icons.arrow_back_ios),
-                                  style: IconButton.styleFrom(
-                                    backgroundColor: AppColors.surface,
-                                    padding: const EdgeInsets.all(12),
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 20),
-
-                              // Header
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              // Top Row: Back Button and Language Toggle
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    localization.translate(
-                                      'auth.createAccount',
-                                    ),
-                                    style: AppStyles.headingLarge.copyWith(
-                                      fontSize: 32,
+                                  // Back Button
+                                  IconButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    icon: const Icon(Icons.arrow_back_ios),
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: AppColors.surface,
+                                      padding: const EdgeInsets.all(12),
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    localization.translate('welcome.subtitle'),
-                                    style: AppStyles.bodyLarge.copyWith(
-                                      color: AppColors.textSecondary,
+
+                                  // Language Toggle Button
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.surface,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: AppColors.border,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: IconButton(
+                                      onPressed: () async {
+                                        await localization.toggleLanguage();
+                                      },
+                                      icon: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            localization
+                                                    .currentLanguageInfo?['flag'] ??
+                                                '🌐',
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Icon(
+                                            Icons.language,
+                                            size: 20,
+                                            color: AppColors.primary,
+                                          ),
+                                        ],
+                                      ),
+                                      tooltip: localization.translate(
+                                        'app.selectLanguage',
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
 
-                              const SizedBox(height: 48),
+                              const SizedBox(height: 20),
+
+                              // Header Widget
+                              const SignupHeaderWidget(),
 
                               // Signup Form
                               Form(
                                 key: _formKey,
                                 child: Column(
                                   children: [
-                                    // Name Field
-                                    CustomTextField(
-                                      controller: _nameController,
-                                      label: localization.translate(
-                                        'auth.fullName',
-                                      ),
-                                      hint: localization.translate(
-                                        'auth.enterFullName',
-                                      ),
-                                      prefixIcon: Icons.person_outlined,
-                                      isRequired: true,
-                                      validator: (value) {
-                                        if (value?.isEmpty ?? true) {
-                                          return localization.translate(
-                                            'auth.pleaseEnterFullName',
-                                          );
-                                        }
-                                        if (value!.length < 2) {
-                                          return localization.translate(
-                                            'auth.nameMinLength',
-                                          );
-                                        }
-                                        return null;
+                                    // Form Fields Widget
+                                    SignupFormWidget(
+                                      fullNameController: _fullNameController,
+                                      usernameController: _usernameController,
+                                      passwordController: _passwordController,
+                                      confirmPasswordController:
+                                          _confirmPasswordController,
+                                      obscurePassword: _obscurePassword,
+                                      obscureConfirmPassword:
+                                          _obscureConfirmPassword,
+                                      fullNameError: _fullNameError,
+                                      usernameError: _usernameError,
+                                      passwordError: _passwordError,
+                                      confirmPasswordError:
+                                          _confirmPasswordError,
+                                      onPasswordToggle: () {
+                                        setState(() {
+                                          _obscurePassword = !_obscurePassword;
+                                        });
+                                      },
+                                      onConfirmPasswordToggle: () {
+                                        setState(() {
+                                          _obscureConfirmPassword =
+                                              !_obscureConfirmPassword;
+                                        });
                                       },
                                     ),
 
-                                    const SizedBox(height: 20),
-
-                                    // Email Field
-                                    CustomTextField(
-                                      controller: _emailController,
-                                      label: localization.translate(
-                                        'auth.email',
-                                      ),
-                                      hint: localization.translate(
-                                        'auth.enterEmail',
-                                      ),
-                                      keyboardType: TextInputType.emailAddress,
-                                      prefixIcon: Icons.email_outlined,
-                                      isRequired: true,
-                                      validator: (value) {
-                                        if (value?.isEmpty ?? true) {
-                                          return localization.translate(
-                                            'auth.pleaseEnterEmail',
-                                          );
-                                        }
-                                        if (!RegExp(
-                                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                        ).hasMatch(value!)) {
-                                          return localization.translate(
-                                            'auth.pleaseEnterValidEmail',
-                                          );
-                                        }
-                                        return null;
-                                      },
-                                    ),
-
-                                    const SizedBox(height: 20),
-
-                                    // Password Field
-                                    CustomTextField(
-                                      controller: _passwordController,
-                                      label: localization.translate(
-                                        'auth.password',
-                                      ),
-                                      hint: localization.translate(
-                                        'auth.createPassword',
-                                      ),
-                                      obscureText: _obscurePassword,
-                                      prefixIcon: Icons.lock_outlined,
-                                      isRequired: true,
-                                      suffixIcon: IconButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _obscurePassword =
-                                                !_obscurePassword;
-                                          });
-                                        },
-                                        icon: Icon(
-                                          _obscurePassword
-                                              ? Icons.visibility_outlined
-                                              : Icons.visibility_off_outlined,
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        if (value?.isEmpty ?? true) {
-                                          return 'Please enter a password';
-                                        }
-                                        if (value!.length < 8) {
-                                          return 'Password must be at least 8 characters';
-                                        }
-                                        return null;
-                                      },
-                                    ),
-
-                                    const SizedBox(height: 20),
-
-                                    // Confirm Password Field
-                                    CustomTextField(
-                                      controller: _confirmPasswordController,
-                                      label: localization.translate(
-                                        'auth.confirmPassword',
-                                      ),
-                                      hint: localization.translate(
-                                        'auth.confirmPasswordHint',
-                                      ),
-                                      obscureText: _obscureConfirmPassword,
-                                      prefixIcon: Icons.lock_outlined,
-                                      isRequired: true,
-                                      suffixIcon: IconButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _obscureConfirmPassword =
-                                                !_obscureConfirmPassword;
-                                          });
-                                        },
-                                        icon: Icon(
-                                          _obscureConfirmPassword
-                                              ? Icons.visibility_outlined
-                                              : Icons.visibility_off_outlined,
-                                        ),
-                                      ),
-                                      validator: (value) {
-                                        if (value?.isEmpty ?? true) {
-                                          return localization.translate(
-                                            'auth.pleaseConfirmPassword',
-                                          );
-                                        }
-                                        if (value != _passwordController.text) {
-                                          return localization.translate(
-                                            'auth.passwordsDoNotMatch',
-                                          );
-                                        }
-                                        return null;
+                                    // Terms and Conditions Widget
+                                    SignupTermsWidget(
+                                      agreeToTerms: _agreeToTerms,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _agreeToTerms = value ?? false;
+                                        });
+                                        _validateForm();
                                       },
                                     ),
 
                                     const SizedBox(height: 32),
 
-                                    // Terms and Conditions
-                                    Row(
-                                      children: [
-                                        Checkbox(
-                                          value: _agreeToTerms,
-                                          onChanged: (value) {
-                                            setState(() {
-                                              _agreeToTerms = value ?? false;
-                                            });
-                                          },
-                                          activeColor: AppColors.primary,
-                                        ),
-                                        Expanded(
-                                          child: Text(
-                                            localization.translate(
-                                              'auth.termsAndConditions',
-                                            ),
-                                            style: AppStyles.bodyMedium
-                                                .copyWith(
-                                                  color:
-                                                      AppColors.textSecondary,
-                                                ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-
-                                    const SizedBox(height: 32),
-
-                                    // Signup Button
-                                    CustomButton(
-                                      text: _isLoading
-                                          ? localization.translate(
-                                              'auth.creatingAccount',
-                                            )
-                                          : localization.translate(
-                                              'auth.signup',
-                                            ),
-                                      onPressed: _isLoading
-                                          ? null
-                                          : _handleSignup,
-                                      variant: ButtonVariant.primary,
-                                    ),
-
-                                    const SizedBox(height: 24),
-
-                                    // Login Link
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          localization.translate(
-                                            'auth.alreadyHaveAccount',
-                                          ),
-                                          style: AppStyles.bodyMedium.copyWith(
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                        GestureDetector(
-                                          onTap: () {
-                                            Navigator.pushReplacementNamed(
-                                              context,
-                                              AppRoutes.login,
-                                            );
-                                          },
-                                          child: Text(
-                                            localization.translate(
-                                              'auth.login',
-                                            ),
-                                            style: AppStyles.bodyMedium
-                                                .copyWith(
-                                                  color: AppColors.primary,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                          ),
-                                        ),
-                                      ],
+                                    // Actions Widget (Button and Login Link)
+                                    SignupActionsWidget(
+                                      isLoading: _isLoading,
+                                      isFormValid: _isFormValid,
+                                      onSignupPressed: _handleSignup,
                                     ),
                                   ],
                                 ),
