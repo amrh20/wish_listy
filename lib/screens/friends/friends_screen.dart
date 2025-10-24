@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../utils/app_routes.dart';
@@ -353,15 +354,31 @@ class _FriendsScreenState extends State<FriendsScreen>
       color: AppColors.secondary,
       child: filteredFriends.isEmpty
           ? _buildEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: filteredFriends.length + 1, // +1 for bottom padding
-              itemBuilder: (context, index) {
-                if (index == filteredFriends.length) {
-                  return const SizedBox(height: 100); // Bottom padding for FAB
-                }
-                return _buildFriendCard(filteredFriends[index], localization);
-              },
+          : AnimationLimiter(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: filteredFriends.length + 1, // +1 for bottom padding
+                itemBuilder: (context, index) {
+                  if (index == filteredFriends.length) {
+                    return const SizedBox(
+                      height: 100,
+                    ); // Bottom padding for FAB
+                  }
+                  return AnimationConfiguration.staggeredList(
+                    position: index,
+                    duration: const Duration(milliseconds: 375),
+                    child: SlideAnimation(
+                      verticalOffset: 50.0,
+                      child: FadeInAnimation(
+                        child: _buildFriendCard(
+                          filteredFriends[index],
+                          localization,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
     );
   }
@@ -372,15 +389,26 @@ class _FriendsScreenState extends State<FriendsScreen>
       color: AppColors.secondary,
       child: _friendRequests.isEmpty
           ? _buildEmptyFriendRequests()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _friendRequests.length + 1,
-              itemBuilder: (context, index) {
-                if (index == _friendRequests.length) {
-                  return const SizedBox(height: 100);
-                }
-                return _buildFriendRequestCard(_friendRequests[index]);
-              },
+          : AnimationLimiter(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _friendRequests.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == _friendRequests.length) {
+                    return const SizedBox(height: 100);
+                  }
+                  return AnimationConfiguration.staggeredList(
+                    position: index,
+                    duration: const Duration(milliseconds: 375),
+                    child: SlideAnimation(
+                      verticalOffset: 50.0,
+                      child: FadeInAnimation(
+                        child: _buildFriendRequestCard(_friendRequests[index]),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
     );
   }
@@ -518,7 +546,6 @@ class _FriendsScreenState extends State<FriendsScreen>
                     ],
                   ),
                 ),
-
               ],
             ),
           ),
@@ -796,7 +823,6 @@ class _FriendsScreenState extends State<FriendsScreen>
     }
   }
 
-
   void _handleFriendRequest(FriendRequest request, bool accept) {
     setState(() {
       _friendRequests.remove(request);
@@ -847,7 +873,6 @@ class _FriendsScreenState extends State<FriendsScreen>
       arguments: {'friendId': friend.id},
     );
   }
-
 
   void _showAddFriendDialog() {
     final emailController = TextEditingController();

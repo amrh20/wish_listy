@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:animations/animations.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_styles.dart';
 import '../../widgets/bottom_navigation.dart';
@@ -24,13 +25,11 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation>
     with TickerProviderStateMixin {
   int _currentIndex = 0;
-  late PageController _pageController;
   late AnimationController _fabAnimationController;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
     _initializeFabAnimation();
   }
 
@@ -45,7 +44,6 @@ class _MainNavigationState extends State<MainNavigation>
 
   @override
   void dispose() {
-    _pageController.dispose();
     _fabAnimationController.dispose();
     super.dispose();
   }
@@ -82,18 +80,29 @@ class _MainNavigationState extends State<MainNavigation>
       _currentIndex = index;
     });
 
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOutCubic,
-    );
-
     // Haptic feedback
     HapticFeedback.lightImpact();
 
     // Animate FAB
     _fabAnimationController.reset();
     _fabAnimationController.forward();
+  }
+
+  Widget _getCurrentScreen() {
+    switch (_currentIndex) {
+      case 0:
+        return const HomeScreen();
+      case 1:
+        return const MyWishlistsScreen();
+      case 2:
+        return const EventsScreen();
+      case 3:
+        return const FriendsScreen();
+      case 4:
+        return const ProfileScreen();
+      default:
+        return const HomeScreen();
+    }
   }
 
   void _handleDoubleTap(int index) {
@@ -125,22 +134,16 @@ class _MainNavigationState extends State<MainNavigation>
         if (!mounted) return const SizedBox.shrink();
 
         return Scaffold(
-          body: PageView(
-            controller: _pageController,
-            onPageChanged: (index) {
-              if (mounted) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              }
+          body: PageTransitionSwitcher(
+            duration: const Duration(milliseconds: 300),
+            transitionBuilder: (child, primaryAnimation, secondaryAnimation) {
+              return FadeThroughTransition(
+                animation: primaryAnimation,
+                secondaryAnimation: secondaryAnimation,
+                child: child,
+              );
             },
-            children: [
-              HomeScreen(),
-              MyWishlistsScreen(),
-              EventsScreen(),
-              FriendsScreen(),
-              ProfileScreen(),
-            ],
+            child: _getCurrentScreen(),
           ),
 
           // Custom Bottom Navigation Bar

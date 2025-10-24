@@ -22,39 +22,27 @@ dependencies:
 
   # UI Icons
   cupertino_icons: ^1.0.8
-
-  # Essential UI packages
-  flutter_svg: ^2.0.10+1
   
   # State management - Only one needed
   provider: ^6.1.2
   
   # Advanced networking with interceptors and better error handling
   dio: ^5.4.0
-  connectivity_plus: ^5.0.2
   
   # Local storage
   shared_preferences: ^2.2.2
   
-  # Basic utilities
-  intl: ^0.20.2
-  url_launcher: ^6.2.4
-  share_plus: ^7.2.2
-  
   # Google Fonts for Cairo font
   google_fonts: ^6.1.0
   
-  # Basic device info
-  device_info_plus: ^9.1.2
+  # Smooth page transitions
+  animations: ^2.0.11
   
-  # QR code generation
-  qr_flutter: ^4.1.0
+  # Staggered animations for lists
+  flutter_staggered_animations: ^1.1.1
   
   # Calendar widget
   table_calendar: ^3.1.2
-  
-  # Basic notifications
-  flutter_local_notifications: ^17.2.3
 
 dev_dependencies:
   flutter_test:
