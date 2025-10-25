@@ -1,37 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'services/localization_service.dart';
-import 'services/auth_service.dart';
-import 'utils/app_theme.dart';
-import 'utils/app_routes.dart';
-import 'screens/splash_screen.dart';
+import 'core/services/localization_service.dart';
+import 'features/auth/data/repository/auth_repository.dart';
+import 'core/theme/app_theme.dart';
+import 'core/utils/app_routes.dart';
+import 'core/widgets/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Create instances of services
   final localizationService = LocalizationService();
-  final authService = AuthService();
-  
+  final authRepository = AuthRepository();
+
   // Initialize services
   await localizationService.initialize();
-  await authService.initialize();
-  
-  runApp(MyApp(
-    localizationService: localizationService,
-    authService: authService,
-  ));
+  await authRepository.initialize();
+
+  runApp(
+    MyApp(
+      localizationService: localizationService,
+      authRepository: authRepository,
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   final LocalizationService localizationService;
-  final AuthService authService;
-  
+  final AuthRepository authRepository;
+
   const MyApp({
     super.key,
     required this.localizationService,
-    required this.authService,
+    required this.authRepository,
   });
 
   @override
@@ -41,9 +43,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<LocalizationService>(
           create: (_) => localizationService,
         ),
-        ChangeNotifierProvider<AuthService>(
-          create: (_) => authService,
-        ),
+        ChangeNotifierProvider<AuthRepository>(create: (_) => authRepository),
       ],
       child: Consumer<LocalizationService>(
         builder: (context, localization, child) {
@@ -54,17 +54,15 @@ class MyApp extends StatelessWidget {
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.system,
             locale: Locale(localization.currentLanguage),
-            supportedLocales: const [
-              Locale('en', 'US'),
-              Locale('ar', 'SA'),
-            ],
+            supportedLocales: const [Locale('en', 'US'), Locale('ar', 'SA')],
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
             localeResolutionCallback: (locale, supportedLocales) {
-              if (locale != null && localization.isLanguageSupported(locale.languageCode)) {
+              if (locale != null &&
+                  localization.isLanguageSupported(locale.languageCode)) {
                 return locale;
               }
               return const Locale('en');

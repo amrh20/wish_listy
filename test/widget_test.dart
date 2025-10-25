@@ -9,7 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:wish_listy/main.dart';
-import 'package:wish_listy/services/localization_service.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 
 void main() {
   testWidgets('App loads successfully', (WidgetTester tester) async {
@@ -18,7 +19,12 @@ void main() {
     await localizationService.initialize();
 
     // Build our app and trigger a frame.
-    await tester.pumpWidget(MyApp(localizationService: localizationService));
+    await tester.pumpWidget(
+      MyApp(
+        localizationService: localizationService,
+        authRepository: AuthRepository(),
+      ),
+    );
 
     // Verify that the app loads without crashing
     expect(find.byType(MaterialApp), findsOneWidget);

@@ -1,0 +1,20 @@
+---
+alwaysApply: true
+---
+Always use the Cubit pattern from the `flutter_bloc` package for state management. For every feature, create a dedicated Cubit to handle its logic and state. Avoid using `StatefulWidget` for managing complex screen state; use `BlocBuilder` or `BlocListener` instead.
+
+Structure the project by feature. Each feature (e.g., authentication, events, profile) must have its own folder inside `lib/features/`. Inside each feature folder, create sub-folders for `cubit`, `models`, `repository`, and `widgets`. All screen-level widgets should be placed in a `screens` sub-folder.
+
+All API calls must be handled within a `Repository` class. Use the `dio` package for making HTTP requests. The UI (Widgets) and Cubits must not call `dio` directly; they should only call methods from the repository. The repository is responsible for fetching data and handling API-specific errors.
+
+
+Do not use hardcoded colors, font sizes, or spacing values. All styling constants (colors, text styles, padding values) must be defined in a central theme file (e.g., `lib/core/theme/app_theme.dart`). Use `Theme.of(context)` to access these values within widgets.
+
+
+All file names must use `snake_case` (e.g., `add_wish_screen.dart`, `event_model.dart`). Cubit files should be named `[feature]_cubit.dart`. Repository files should be named `[feature]_repository.dart`. Screen files should end with `_screen.dart`.
+
+
+When a piece of UI is repeated in more than one place, or if a widget becomes too large (more than 150 lines), extract it into its own `StatelessWidget`. Name the new widget file descriptively (e.g., `primary_button.dart`, `user_avatar.dart`).
+
+For every JSON object returned from the API, create a corresponding Model class. The class must include a `fromJson` factory constructor to parse the JSON map and a `toJson` method to convert it back. Use the `equatable` package to simplify value equality checks.
+
