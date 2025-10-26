@@ -7,11 +7,7 @@ class WishesSection extends StatefulWidget {
   final List<Wish> wishes;
   final VoidCallback? onSeeAll;
 
-  const WishesSection({
-    super.key,
-    required this.wishes,
-    this.onSeeAll,
-  });
+  const WishesSection({super.key, required this.wishes, this.onSeeAll});
 
   @override
   State<WishesSection> createState() => _WishesSectionState();
@@ -26,20 +22,17 @@ class _WishesSectionState extends State<WishesSection>
   @override
   void initState() {
     super.initState();
-    
+
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.5),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOutCubic,
-    ));
-    
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+          CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
+        );
+
     _slideController.forward();
   }
 
@@ -74,7 +67,7 @@ class _WishesSectionState extends State<WishesSection>
 
   Widget _buildWishCard(Wish wish, int index) {
     final isHovered = _hoveredIndex == index;
-    
+
     return MouseRegion(
       onEnter: (_) => setState(() => _hoveredIndex = index),
       onExit: (_) => setState(() => _hoveredIndex = null),
@@ -82,10 +75,11 @@ class _WishesSectionState extends State<WishesSection>
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
         width: 240,
-        decoration: isHovered 
+        decoration: isHovered
             ? AppStyles.cardDecorationHover
             : AppStyles.cardDecorationLight,
-        child: ClipRRect( // Added ClipRRect to prevent overflow
+        child: ClipRRect(
+          // Added ClipRRect to prevent overflow
           borderRadius: BorderRadius.circular(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,8 +125,8 @@ class _WishesSectionState extends State<WishesSection>
                       duration: const Duration(milliseconds: 300),
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: wish.isFavorite 
-                            ? AppColors.accent 
+                        color: wish.isFavorite
+                            ? AppColors.accent
                             : AppColors.surface.withOpacity(0.9),
                         shape: BoxShape.circle,
                         boxShadow: [
@@ -144,9 +138,11 @@ class _WishesSectionState extends State<WishesSection>
                         ],
                       ),
                       child: Icon(
-                        wish.isFavorite ? Icons.favorite : Icons.favorite_border,
-                        color: wish.isFavorite 
-                            ? AppColors.textWhite 
+                        wish.isFavorite
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: wish.isFavorite
+                            ? AppColors.textWhite
                             : AppColors.textLight,
                         size: 18,
                       ),
@@ -167,7 +163,7 @@ class _WishesSectionState extends State<WishesSection>
                     ),
                 ],
               ),
-              
+
               // Wish Details
               Padding(
                 padding: const EdgeInsets.all(20.0),
@@ -196,32 +192,6 @@ class _WishesSectionState extends State<WishesSection>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.3),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            '\$${wish.price.toStringAsFixed(2)}',
-                            style: AppStyles.bodyLarge.copyWith(
-                              color: AppColors.textWhite,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -271,9 +241,7 @@ class _WishesSectionState extends State<WishesSection>
           const SizedBox(height: 10),
           Text(
             'No wishes yet!',
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textLight,
-            ),
+            style: AppStyles.bodyMedium.copyWith(color: AppColors.textLight),
           ),
         ],
       ),

@@ -425,117 +425,155 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     required String lastUpdated,
     required List<String> previewItems,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.background,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          Navigator.pushNamed(
+            context,
+            AppRoutes.wishlistItems,
+            arguments: {
+              'wishlistName': 'Sarah\'s $name',
+              'wishlistId': '1',
+              'totalItems': itemCount,
+              'purchasedItems': 0,
+              'totalValue': 0.0,
+              'isFriendWishlist': true,
+              'friendName': 'Sarah Johnson',
+            },
+          );
+        },
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.textTertiary.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: AppColors.secondary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.favorite_outline,
-              color: AppColors.secondary,
-              size: 24,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.textTertiary.withOpacity(0.2),
+              width: 1,
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '$itemCount items • Updated $lastUpdated',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
+                child: const Icon(
+                  Icons.favorite_outline,
+                  color: AppColors.secondary,
+                  size: 24,
                 ),
-                if (previewItems.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Preview:',
-                    style: TextStyle(
-                      color: AppColors.textTertiary,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$itemCount items • Updated $lastUpdated',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    if (previewItems.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Preview:',
+                        style: TextStyle(
+                          color: AppColors.textTertiary,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: previewItems.take(3).map((item) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceVariant,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              item,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 10,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'view') {
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.wishlistItems,
+                      arguments: {
+                        'wishlistName': 'Sarah\'s $name',
+                        'wishlistId': '1',
+                        'totalItems': itemCount,
+                        'purchasedItems': 0,
+                        'totalValue': 0.0,
+                        'isFriendWishlist': true,
+                        'friendName': 'Sarah Johnson',
+                      },
+                    );
+                  }
+                },
+                itemBuilder: (BuildContext context) => [
+                  const PopupMenuItem<String>(
+                    value: 'view',
+                    child: Row(
+                      children: [
+                        Icon(Icons.visibility_outlined, size: 18),
+                        SizedBox(width: 8),
+                        Text('View Wishlist'),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: previewItems.take(3).map((item) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          item,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 10,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
                 ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushNamed(
-                context,
-                AppRoutes.wishlistItems,
-                arguments: {
-                  'wishlistName': 'Sarah\'s $name',
-                  'wishlistId': '1',
-                  'totalItems': itemCount,
-                  'purchasedItems': 0,
-                  'totalValue': 0.0,
-                  'isFriendWishlist': true,
-                  'friendName': 'Sarah Johnson',
-                },
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              foregroundColor: AppColors.secondary,
-              side: const BorderSide(color: AppColors.secondary),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.more_vert,
+                    color: AppColors.textSecondary,
+                    size: 18,
+                  ),
+                ),
               ),
-            ),
-            child: const Text('View Wishlist', style: TextStyle(fontSize: 12)),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

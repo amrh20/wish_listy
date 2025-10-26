@@ -5,28 +5,30 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 
-/// Model for user profile
-class UserProfile {
+/// Model for public wishlist
+class PublicWishlist {
   final String id;
   final String name;
-  final String? profilePicture;
-  final int publicWishlistsCount;
-  final int totalWishlistItems;
+  final String ownerName;
+  final int itemCount;
+  final String? description;
+  final DateTime lastUpdated;
 
-  UserProfile({
+  PublicWishlist({
     required this.id,
     required this.name,
-    this.profilePicture,
-    required this.publicWishlistsCount,
-    required this.totalWishlistItems,
+    required this.ownerName,
+    required this.itemCount,
+    this.description,
+    required this.lastUpdated,
   });
 }
 
 /// Guest view widget for wishlists
 class GuestWishlistsViewWidget extends StatefulWidget {
-  final List<UserProfile> publicUsers;
+  final List<PublicWishlist> publicWishlists;
 
-  const GuestWishlistsViewWidget({super.key, required this.publicUsers});
+  const GuestWishlistsViewWidget({super.key, required this.publicWishlists});
 
   @override
   State<GuestWishlistsViewWidget> createState() =>
@@ -35,7 +37,7 @@ class GuestWishlistsViewWidget extends StatefulWidget {
 
 class _GuestWishlistsViewWidgetState extends State<GuestWishlistsViewWidget> {
   final TextEditingController _searchController = TextEditingController();
-  List<UserProfile> _searchResults = [];
+  List<PublicWishlist> _searchResults = [];
   bool _isSearching = false;
 
   @override
@@ -48,9 +50,17 @@ class _GuestWishlistsViewWidgetState extends State<GuestWishlistsViewWidget> {
     setState(() {
       _isSearching = query.isNotEmpty;
       if (_isSearching) {
-        _searchResults = widget.publicUsers
+        _searchResults = widget.publicWishlists
             .where(
-              (user) => user.name.toLowerCase().contains(query.toLowerCase()),
+              (wishlist) =>
+                  wishlist.name.toLowerCase().contains(query.toLowerCase()) ||
+                  wishlist.ownerName.toLowerCase().contains(
+                    query.toLowerCase(),
+                  ) ||
+                  (wishlist.description?.toLowerCase().contains(
+                        query.toLowerCase(),
+                      ) ??
+                      false),
             )
             .toList();
       } else {
@@ -125,9 +135,7 @@ class _GuestWishlistsViewWidgetState extends State<GuestWishlistsViewWidget> {
             controller: _searchController,
             onChanged: _onSearchChanged,
             decoration: InputDecoration(
-              hintText: localization.translate(
-                'wishlists.searchPublicWishlists',
-              ),
+              hintText: localization.translate('wishlists.searchWishlists'),
               prefixIcon: Icon(
                 Icons.search_rounded,
                 color: AppColors.textSecondary,
@@ -142,7 +150,7 @@ class _GuestWishlistsViewWidgetState extends State<GuestWishlistsViewWidget> {
           ),
           const SizedBox(height: 24),
 
-          // Search results or public users
+          // Search results or public wishlists
           if (_isSearching && _searchResults.isNotEmpty) ...[
             Text(
               localization.translate('wishlists.searchResults'),
@@ -152,18 +160,18 @@ class _GuestWishlistsViewWidgetState extends State<GuestWishlistsViewWidget> {
             ),
             const SizedBox(height: 12),
             ..._searchResults
-                .map((user) => _buildUserCard(user, localization))
+                .map((wishlist) => _buildWishlistCard(wishlist, localization))
                 .toList(),
-          ] else if (!_isSearching) ...[
+          ] else if (!_isSearching && widget.publicWishlists.isNotEmpty) ...[
             Text(
-              localization.translate('wishlists.popularUsers'),
+              localization.translate('wishlists.publicWishlists'),
               style: AppStyles.headingSmall.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 12),
-            ...widget.publicUsers
-                .map((user) => _buildUserCard(user, localization))
+            ...widget.publicWishlists
+                .map((wishlist) => _buildWishlistCard(wishlist, localization))
                 .toList(),
           ] else ...[
             Center(
@@ -193,7 +201,10 @@ class _GuestWishlistsViewWidgetState extends State<GuestWishlistsViewWidget> {
     );
   }
 
-  Widget _buildUserCard(UserProfile user, LocalizationService localization) {
+  Widget _buildWishlistCard(
+    PublicWishlist wishlist,
+    LocalizationService localization,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -212,21 +223,33 @@ class _GuestWishlistsViewWidgetState extends State<GuestWishlistsViewWidget> {
         leading: CircleAvatar(
           radius: 28,
           backgroundColor: AppColors.primary.withOpacity(0.1),
-          child: Text(
-            user.name[0],
-            style: AppStyles.headingSmall.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
-            ),
+          child: Icon(
+            Icons.favorite_outline,
+            color: AppColors.primary,
+            size: 24,
           ),
         ),
         title: Text(
-          user.name,
+          wishlist.name,
           style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text(
-          '${user.publicWishlistsCount} ${localization.translate("wishlists.publicWishlists")} • ${user.totalWishlistItems} ${localization.translate("wishlists.items")}',
-          style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${localization.translate("wishlists.by")} ${wishlist.ownerName}',
+              style: AppStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '${wishlist.itemCount} ${localization.translate("wishlists.items")} • ${localization.translate("wishlists.updated")} ${_formatDate(wishlist.lastUpdated)}',
+              style: AppStyles.bodySmall.copyWith(
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ],
         ),
         trailing: Icon(
           Icons.arrow_forward_ios_rounded,
@@ -236,5 +259,20 @@ class _GuestWishlistsViewWidgetState extends State<GuestWishlistsViewWidget> {
         onTap: _showGuestRestrictionDialog,
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date).inDays;
+
+    if (difference == 0) {
+      return 'today';
+    } else if (difference == 1) {
+      return 'yesterday';
+    } else if (difference < 7) {
+      return '$difference days ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
   }
 }

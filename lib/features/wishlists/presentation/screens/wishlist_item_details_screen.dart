@@ -148,7 +148,7 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios),
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
             style: IconButton.styleFrom(
               backgroundColor: AppColors.surfaceVariant,
               padding: const EdgeInsets.all(12),
@@ -245,15 +245,6 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
             label: 'Name',
             value: widget.item.name,
             iconColor: AppColors.secondary,
-          ),
-
-          const SizedBox(height: 12),
-
-          _buildDetailRow(
-            icon: Icons.attach_money_outlined,
-            label: 'Price',
-            value: widget.item.price,
-            iconColor: AppColors.primary,
           ),
 
           const SizedBox(height: 12),

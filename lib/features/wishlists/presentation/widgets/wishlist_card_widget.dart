@@ -13,7 +13,6 @@ class WishlistSummary {
   final String name;
   final int itemCount;
   final int purchasedCount;
-  final double totalValue;
   final DateTime lastUpdated;
   final WishlistPrivacy privacy;
   final String? imageUrl;
@@ -25,7 +24,6 @@ class WishlistSummary {
     required this.name,
     required this.itemCount,
     required this.purchasedCount,
-    required this.totalValue,
     required this.lastUpdated,
     this.privacy = WishlistPrivacy.public,
     this.imageUrl,
@@ -227,11 +225,6 @@ class WishlistCardWidget extends StatelessWidget {
                     Icons.check_circle_rounded,
                     '${wishlist.purchasedCount} ${localization.translate("wishlists.purchased")}',
                     AppColors.success,
-                  ),
-                  _buildStatChip(
-                    Icons.attach_money_rounded,
-                    '\$${wishlist.totalValue.toStringAsFixed(2)}',
-                    AppColors.accent,
                   ),
                   _buildStatChip(
                     Icons.access_time_rounded,

@@ -35,7 +35,6 @@ class _AddItemScreenState extends State<AddItemScreen>
   bool _isLoading = false;
   String _selectedWishlist = 'public';
   String _selectedPriority = 'medium';
-  String? _selectedImagePath;
   String _selectedWhereToFind = 'online'; // 'online', 'physical', 'anywhere'
   List<String> _productLinks = [];
 
@@ -235,7 +234,7 @@ class _AddItemScreenState extends State<AddItemScreen>
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios),
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
             style: IconButton.styleFrom(
               backgroundColor: AppColors.surfaceVariant,
               padding: const EdgeInsets.all(12),
@@ -469,7 +468,6 @@ class _AddItemScreenState extends State<AddItemScreen>
                   onTap: () {
                     setState(() {
                       _selectedWhereToFind = 'online';
-                      _selectedImagePath = null;
                     });
                   },
                 ),
@@ -676,13 +674,6 @@ class _AddItemScreenState extends State<AddItemScreen>
         ),
 
         const SizedBox(height: 16),
-
-        // Upload Image Option
-        _buildImageUploadOption(
-          icon: Icons.photo_library_outlined,
-          label: localization.translate('wishlists.uploadImage'),
-          onTap: _pickImageFromGallery,
-        ),
       ],
     );
   }
@@ -712,13 +703,6 @@ class _AddItemScreenState extends State<AddItemScreen>
           ),
         ),
         const SizedBox(height: 16),
-
-        // Upload Image
-        _buildImageUploadOption(
-          icon: Icons.camera_alt_outlined,
-          label: localization.translate('wishlists.takePhoto'),
-          onTap: _pickImageFromGallery,
-        ),
       ],
     );
   }
@@ -735,82 +719,7 @@ class _AddItemScreenState extends State<AddItemScreen>
           prefixIcon: Icons.tag_outlined,
         ),
         const SizedBox(height: 16),
-
-        // Upload Image
-        _buildImageUploadOption(
-          icon: Icons.photo_library_outlined,
-          label: localization.translate('wishlists.uploadImage'),
-          onTap: _pickImageFromGallery,
-        ),
       ],
-    );
-  }
-
-  Widget _buildImageUploadOption({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    if (_selectedImagePath != null) {
-      return Container(
-        height: 150,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: AppColors.surfaceVariant,
-        ),
-        child: Stack(
-          children: [
-            Center(
-              child: Icon(
-                Icons.image_outlined,
-                size: 60,
-                color: AppColors.textTertiary,
-              ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: IconButton(
-                onPressed: () {
-                  setState(() {
-                    _selectedImagePath = null;
-                  });
-                },
-                icon: Icon(Icons.close, color: AppColors.error),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  padding: const EdgeInsets.all(4),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.info.withOpacity(0.3), width: 1),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: AppColors.info, size: 24),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -929,12 +838,6 @@ class _AddItemScreenState extends State<AddItemScreen>
     );
   }
 
-  void _pickImageFromGallery() {
-    setState(() {
-      _selectedImagePath = 'gallery_image.jpg';
-    });
-  }
-
   void _selectLocationFromMap() {
     // Mock implementation - in real app, open map picker
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1028,7 +931,6 @@ class _AddItemScreenState extends State<AddItemScreen>
     _linkController.clear();
     setState(() {
       _selectedPriority = 'medium';
-      _selectedImagePath = null;
       _selectedWhereToFind = 'online';
       _productLinks.clear();
     });

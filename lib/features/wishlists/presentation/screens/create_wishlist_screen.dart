@@ -185,7 +185,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios),
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
             style: IconButton.styleFrom(
               backgroundColor: AppColors.surfaceVariant,
               padding: const EdgeInsets.all(12),
@@ -584,7 +584,6 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                           'wishlistName': _nameController.text,
                           'totalItems': 0,
                           'purchasedItems': 0,
-                          'totalValue': 0.0,
                           'isFriendWishlist': false,
                         },
                       );

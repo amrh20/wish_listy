@@ -3,13 +3,13 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
+import 'package:wish_listy/core/utils/app_routes.dart';
 
 class WishlistItemsScreen extends StatefulWidget {
   final String wishlistName;
   final String wishlistId;
   final int totalItems;
   final int purchasedItems;
-  final double totalValue;
   final bool isFriendWishlist;
   final String? friendName;
 
@@ -19,7 +19,6 @@ class WishlistItemsScreen extends StatefulWidget {
     required this.wishlistId,
     required this.totalItems,
     required this.purchasedItems,
-    required this.totalValue,
     this.isFriendWishlist = false,
     this.friendName,
   });
@@ -231,7 +230,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios),
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
             style: IconButton.styleFrom(
               backgroundColor: AppColors.surfaceVariant,
               padding: const EdgeInsets.all(12),
@@ -321,15 +320,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
               value: '${widget.purchasedItems}',
               label: 'Purchased',
               color: AppColors.success,
-            ),
-          ),
-          Container(width: 1, height: 40, color: AppColors.borderLight),
-          Expanded(
-            child: _buildStatItem(
-              icon: Icons.attach_money_outlined,
-              value: '\$${widget.totalValue.toStringAsFixed(0)}',
-              label: 'Total Value',
-              color: AppColors.warning,
             ),
           ),
         ],
@@ -612,18 +602,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                             ),
                           ),
 
-                          const SizedBox(width: 8),
-
-                          // Price
-                          Text(
-                            item.priceRange?.displayPrice ??
-                                'Price not specified',
-                            style: AppStyles.bodyMedium.copyWith(
-                              color: AppColors.warning,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-
                           const Spacer(),
 
                           // Added by
@@ -638,11 +616,99 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                     ],
                   ),
                 ),
+
+                // Action Buttons
+                if (!widget.isFriendWishlist) ...[
+                  const SizedBox(width: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Edit Button
+                      IconButton(
+                        onPressed: () => _editItem(item),
+                        icon: const Icon(
+                          Icons.edit_outlined,
+                          color: Colors.black,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppColors.surfaceVariant,
+                          padding: const EdgeInsets.all(8),
+                          minimumSize: const Size(36, 36),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      // Delete Button
+                      IconButton(
+                        onPressed: () => _deleteItem(item),
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.red,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.red.withOpacity(0.1),
+                          padding: const EdgeInsets.all(8),
+                          minimumSize: const Size(36, 36),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  void _editItem(WishlistItem item) {
+    // Navigate to edit item screen
+    Navigator.pushNamed(
+      context,
+      AppRoutes.addItem,
+      arguments: {
+        'wishlistId': widget.wishlistId,
+        'wishlistName': widget.wishlistName,
+        'itemId': item.id,
+        'isEditing': true,
+        'item': item,
+      },
+    ).then((_) {
+      // Refresh the list when returning from edit screen
+      setState(() {});
+    });
+  }
+
+  void _deleteItem(WishlistItem item) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Item'),
+          content: Text('Are you sure you want to delete "${item.name}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  _items.removeWhere((element) => element.id == item.id);
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${item.name} deleted successfully'),
+                    backgroundColor: AppColors.success,
+                  ),
+                );
+              },
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -716,7 +782,20 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
 
   void _openItemDetails(WishlistItem item) {
     // Navigate to item details screen
-    Navigator.pushNamed(context, '/item-details', arguments: item);
+    Navigator.pushNamed(
+      context,
+      AppRoutes.itemDetails,
+      arguments: {
+        'id': item.id,
+        'wishlistId': item.wishlistId,
+        'title': item.name,
+        'name': item.name,
+        'description': item.description,
+        'imageUrl': item.imageUrl,
+        'priority': item.priority.toString().split('.').last,
+        'status': item.status.toString().split('.').last,
+      },
+    );
   }
 }
 

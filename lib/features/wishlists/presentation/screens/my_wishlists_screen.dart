@@ -7,6 +7,7 @@ import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import '../widgets/index.dart';
+import '../widgets/guest_wishlists_view_widget.dart';
 
 class MyWishlistsScreen extends StatefulWidget {
   const MyWishlistsScreen({super.key});
@@ -20,7 +21,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   late TabController _mainTabController;
   late AnimationController _animationController;
   final TextEditingController _searchController = TextEditingController();
-  List<UserProfile> _searchResults = [];
+  List<PublicWishlist> _searchResults = [];
   bool _isSearching = false;
 
   // Mock data - Personal Wishlists (not linked to events)
@@ -30,7 +31,6 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
       name: 'My General Wishlist',
       itemCount: 12,
       purchasedCount: 3,
-      totalValue: 450.0,
       lastUpdated: DateTime.now().subtract(Duration(days: 2)),
       privacy: WishlistPrivacy.public,
       imageUrl: null,
@@ -40,7 +40,6 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
       name: 'Dream Gadgets',
       itemCount: 6,
       purchasedCount: 1,
-      totalValue: 890.0,
       lastUpdated: DateTime.now().subtract(Duration(days: 7)),
       privacy: WishlistPrivacy.private,
       imageUrl: null,
@@ -54,7 +53,6 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
       name: 'Birthday Wishlist 2024',
       itemCount: 8,
       purchasedCount: 2,
-      totalValue: 320.0,
       lastUpdated: DateTime.now().subtract(Duration(days: 1)),
       privacy: WishlistPrivacy.onlyInvited,
       imageUrl: null,
@@ -66,7 +64,6 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
       name: 'Christmas Wishlist',
       itemCount: 15,
       purchasedCount: 0,
-      totalValue: 680.0,
       lastUpdated: DateTime.now().subtract(Duration(days: 5)),
       privacy: WishlistPrivacy.public,
       imageUrl: null,
@@ -75,28 +72,31 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
     ),
   ];
 
-  // Mock public users for guest search
-  final List<UserProfile> _publicUsers = [
-    UserProfile(
-      id: 'user1',
-      name: 'أحمد محمد',
-      profilePicture: null,
-      publicWishlistsCount: 3,
-      totalWishlistItems: 25,
+  // Mock public wishlists for guest search
+  final List<PublicWishlist> _publicWishlists = [
+    PublicWishlist(
+      id: 'wishlist1',
+      name: 'My General Wishlist',
+      ownerName: 'أحمد محمد',
+      itemCount: 15,
+      description: 'A collection of general items I would love to have',
+      lastUpdated: DateTime.now().subtract(Duration(days: 2)),
     ),
-    UserProfile(
-      id: 'user2',
-      name: 'سارة أحمد',
-      profilePicture: null,
-      publicWishlistsCount: 2,
-      totalWishlistItems: 18,
+    PublicWishlist(
+      id: 'wishlist2',
+      name: 'Tech Gadgets',
+      ownerName: 'سارة أحمد',
+      itemCount: 8,
+      description: 'Latest technology and gadgets',
+      lastUpdated: DateTime.now().subtract(Duration(days: 5)),
     ),
-    UserProfile(
-      id: 'user3',
-      name: 'محمد علي',
-      profilePicture: null,
-      publicWishlistsCount: 1,
-      totalWishlistItems: 12,
+    PublicWishlist(
+      id: 'wishlist3',
+      name: 'Home Decor',
+      ownerName: 'محمد علي',
+      itemCount: 12,
+      description: 'Beautiful home decoration items',
+      lastUpdated: DateTime.now().subtract(Duration(days: 1)),
     ),
   ];
 
@@ -168,7 +168,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                     // Guest Wishlists View
                     Expanded(
                       child: GuestWishlistsViewWidget(
-                        publicUsers: _publicUsers,
+                        publicWishlists: _publicWishlists,
                       ),
                     ),
                   ],
@@ -237,7 +237,6 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
         'wishlistName': wishlist.name,
         'totalItems': wishlist.itemCount,
         'purchasedItems': wishlist.purchasedCount,
-        'totalValue': wishlist.totalValue,
         'isFriendWishlist': false,
       },
     );

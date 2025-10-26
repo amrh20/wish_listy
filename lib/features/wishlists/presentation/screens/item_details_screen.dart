@@ -157,7 +157,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios),
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
             style: IconButton.styleFrom(
               backgroundColor: AppColors.surfaceVariant,
               padding: const EdgeInsets.all(12),
@@ -273,17 +273,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           ),
 
           const SizedBox(height: 16),
-
-          // Price
-          _buildInfoRow(
-            icon: Icons.attach_money_outlined,
-            label: 'Price',
-            value:
-                widget.item.priceRange?.displayPrice ?? 'Price not specified',
-            iconColor: AppColors.warning,
-          ),
-
-          const SizedBox(height: 12),
 
           // Category
           _buildInfoRow(
@@ -497,65 +486,71 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
           const SizedBox(height: 16),
 
-          Row(
-            children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _isPurchased
-                        ? AppColors.success.withOpacity(0.1)
-                        : AppColors.warning.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _isPurchased
-                          ? AppColors.success.withOpacity(0.3)
-                          : AppColors.warning.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        _isPurchased ? Icons.check_circle : Icons.schedule,
-                        color: _isPurchased
-                            ? AppColors.success
-                            : AppColors.warning,
-                        size: 24,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _isPurchased ? 'Purchased' : 'Available',
-                        style: AppStyles.bodyMedium.copyWith(
-                          color: _isPurchased
-                              ? AppColors.success
-                              : AppColors.warning,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+          // Status Card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: _isPurchased
+                  ? AppColors.success.withOpacity(0.15)
+                  : AppColors.warning.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _isPurchased
+                    ? AppColors.success.withOpacity(0.4)
+                    : AppColors.warning.withOpacity(0.4),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: _isPurchased
+                      ? AppColors.success.withOpacity(0.1)
+                      : AppColors.warning.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Icon(
+                  _isPurchased ? Icons.check_circle : Icons.schedule,
+                  color: _isPurchased ? AppColors.success : AppColors.warning,
+                  size: 28,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _isPurchased ? 'Purchased' : 'Available',
+                  style: AppStyles.bodyLarge.copyWith(
+                    color: _isPurchased ? AppColors.success : AppColors.warning,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ),
+              ],
+            ),
+          ),
 
-              const SizedBox(width: 12),
+          const SizedBox(height: 16),
 
-              // Toggle Button
-              Expanded(
-                child: CustomButton(
-                  text: _isPurchased
-                      ? 'Mark as Available'
-                      : 'Mark as Purchased',
-                  onPressed: _togglePurchaseStatus,
-                  variant: _isPurchased
-                      ? ButtonVariant.outline
-                      : ButtonVariant.primary,
-                  customColor: _isPurchased
-                      ? AppColors.success
-                      : AppColors.success,
+          // Action Button
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: _isPurchased
+                      ? AppColors.warning.withOpacity(0.3)
+                      : AppColors.success.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
                 ),
-              ),
-            ],
+              ],
+            ),
+            child: CustomButton(
+              text: _isPurchased ? 'Mark as Available' : 'Mark as Purchased',
+              onPressed: _togglePurchaseStatus,
+              variant: ButtonVariant.primary,
+              customColor: _isPurchased ? AppColors.warning : AppColors.success,
+            ),
           ),
         ],
       ),
