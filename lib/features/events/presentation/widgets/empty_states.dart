@@ -12,50 +12,60 @@ class EmptyMyEvents extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(60),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                gradient: AppColors.accentGradient,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.accent.withOpacity(0.3),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.celebration_outlined,
+                size: 60,
+                color: Colors.white,
+              ),
             ),
-            child: Icon(
-              Icons.celebration_outlined,
-              size: 60,
-              color: AppColors.accent,
+            const SizedBox(height: 24),
+            Text(
+              localization.translate('events.noEventsYet'),
+              style: AppStyles.headingMedium.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            localization.translate('events.noEvents'),
-            style: AppStyles.headingMedium.copyWith(
-              color: AppColors.textSecondary,
+            const SizedBox(height: 12),
+            Text(
+              localization.translate('events.createFirstEventDescription'),
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            localization.translate('events.createEvent'),
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textTertiary,
-              height: 1.5,
+            const SizedBox(height: 32),
+            CustomButton(
+              text: localization.translate('events.createEvent'),
+              onPressed: () {
+                AppRoutes.pushNamed(context, AppRoutes.createEvent);
+              },
+              customColor: AppColors.accent,
+              icon: Icons.add_rounded,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          CustomButton(
-            text: localization.translate('events.createEvent'),
-            onPressed: () {
-              AppRoutes.pushNamed(context, AppRoutes.createEvent);
-            },
-            variant: ButtonVariant.primary,
-            customColor: AppColors.accent,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -68,41 +78,47 @@ class EmptyInvitedEvents extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: AppColors.secondary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(60),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                gradient: AppColors.secondaryGradient,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.secondary.withOpacity(0.3),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.mail_outline, size: 60, color: Colors.white),
             ),
-            child: Icon(
-              Icons.mail_outline,
-              size: 60,
-              color: AppColors.secondary,
+            const SizedBox(height: 24),
+            Text(
+              localization.translate('events.noInvitationsYet'),
+              style: AppStyles.headingMedium.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            localization.translate('events.noInvitations'),
-            style: AppStyles.headingMedium.copyWith(
-              color: AppColors.textSecondary,
+            const SizedBox(height: 12),
+            Text(
+              localization.translate('events.noInvitationsDescription'),
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            localization.translate('events.invited'),
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textTertiary,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

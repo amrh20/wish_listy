@@ -182,9 +182,9 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
         return Scaffold(
           floatingActionButton: WishlistFabWidget(
             onCreatePersonalWishlist: () =>
-                _showCreateWishlistDialog(isEvent: false),
+                _navigateToCreateWishlist(isEvent: false),
             onCreateEventWishlist: () =>
-                _showCreateWishlistDialog(isEvent: true),
+                _navigateToCreateWishlist(isEvent: true),
           ),
           body: DecorativeBackground(
             showGifts: true,
@@ -212,7 +212,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
                         onAddItem: _navigateToAddItem,
                         onMenuAction: _handleWishlistAction,
                         onCreateEventWishlist: () =>
-                            _showCreateWishlistDialog(isEvent: true),
+                            _navigateToCreateWishlist(isEvent: true),
                         onRefresh: _refreshWishlists,
                       ),
                       FriendsWishlistsTabWidget(),
@@ -246,6 +246,15 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
     Navigator.pushNamed(context, AppRoutes.addItem, arguments: wishlist.id);
   }
 
+  void _navigateToCreateWishlist({bool isEvent = false}) {
+    // TODO: Navigate to create wishlist screen when it's implemented
+    Navigator.pushNamed(
+      context,
+      AppRoutes.createWishlist,
+      arguments: {'isEvent': isEvent},
+    );
+  }
+
   // Action handlers
   void _handleMenuAction(String action) {
     switch (action) {
@@ -276,16 +285,6 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
         _showDeleteConfirmation(wishlist);
         break;
     }
-  }
-
-  void _showCreateWishlistDialog({bool isEvent = false}) {
-    // TODO: Implement create wishlist dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Create ${isEvent ? "event" : ""} wishlist dialog'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   void _showEditWishlistDialog(WishlistSummary wishlist) {

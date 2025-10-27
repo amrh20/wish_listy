@@ -42,48 +42,55 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Personal Wishlists Section
-            _buildSectionHeader(
-              localization.translate('wishlists.personalWishlists'),
-              Icons.favorite_border_rounded,
-              AppColors.primary,
-            ),
+            if (personalWishlists.isNotEmpty || eventWishlists.isNotEmpty)
+              _buildSectionHeader(
+                localization.translate('wishlists.personalWishlists'),
+                Icons.favorite_border_rounded,
+                AppColors.primary,
+              ),
             const SizedBox(height: 12),
-            ...personalWishlists
-                .map(
-                  (wishlist) => WishlistCardWidget(
-                    wishlist: wishlist,
-                    isEvent: false,
-                    onTap: () => onWishlistTap(wishlist),
-                    onAddItem: () => onAddItem(wishlist),
-                    onMenuAction: (action) => onMenuAction(action, wishlist),
-                  ),
-                )
-                .toList(),
-
-            const SizedBox(height: 24),
-
-            // Event Wishlists Section
-            _buildSectionHeader(
-              localization.translate('wishlists.eventWishlists'),
-              Icons.celebration_rounded,
-              AppColors.accent,
-            ),
-            const SizedBox(height: 12),
-
-            if (eventWishlists.isEmpty)
-              _buildEmptyEventWishlists(localization)
+            if (personalWishlists.isEmpty && eventWishlists.isEmpty)
+              _buildEmptyState(localization)
             else
-              ...eventWishlists
+              ...personalWishlists
                   .map(
                     (wishlist) => WishlistCardWidget(
                       wishlist: wishlist,
-                      isEvent: true,
+                      isEvent: false,
                       onTap: () => onWishlistTap(wishlist),
                       onAddItem: () => onAddItem(wishlist),
                       onMenuAction: (action) => onMenuAction(action, wishlist),
                     ),
                   )
                   .toList(),
+
+            const SizedBox(height: 24),
+
+            // Event Wishlists Section (only show if there are any wishlists)
+            if (personalWishlists.isNotEmpty || eventWishlists.isNotEmpty) ...[
+              _buildSectionHeader(
+                localization.translate('wishlists.eventWishlists'),
+                Icons.celebration_rounded,
+                AppColors.accent,
+              ),
+              const SizedBox(height: 12),
+
+              if (eventWishlists.isEmpty)
+                _buildEmptyEventWishlists(localization)
+              else
+                ...eventWishlists
+                    .map(
+                      (wishlist) => WishlistCardWidget(
+                        wishlist: wishlist,
+                        isEvent: true,
+                        onTap: () => onWishlistTap(wishlist),
+                        onAddItem: () => onAddItem(wishlist),
+                        onMenuAction: (action) =>
+                            onMenuAction(action, wishlist),
+                      ),
+                    )
+                    .toList(),
+            ],
 
             const SizedBox(height: 100), // Bottom padding for FAB
           ],
@@ -112,6 +119,65 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEmptyState(LocalizationService localization) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.favorite_border_rounded,
+                size: 60,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              localization.translate('wishlists.noWishlistsYet'),
+              style: AppStyles.headingMedium.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              localization.translate(
+                'wishlists.createFirstWishlistDescription',
+              ),
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            CustomButton(
+              text: localization.translate('wishlists.createWishlist'),
+              onPressed: onCreateEventWishlist,
+              customColor: AppColors.primary,
+              icon: Icons.add_rounded,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

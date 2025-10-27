@@ -35,7 +35,7 @@ class FriendsWishlistsTabWidget extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              localization.translate('wishlists.noFriendsWishlistsYet'),
+              localization.translate('friends.noFriendsWishlistsYet'),
               style: AppStyles.headingMedium.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -44,7 +44,7 @@ class FriendsWishlistsTabWidget extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              localization.translate('wishlists.addFriendsToSeeTheirWishlists'),
+              localization.translate('friends.addFriendsToSeeTheirWishlists'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),

@@ -18,3 +18,147 @@ When a piece of UI is repeated in more than one place, or if a widget becomes to
 
 For every JSON object returned from the API, create a corresponding Model class. The class must include a `fromJson` factory constructor to parse the JSON map and a `toJson` method to convert it back. Use the `equatable` package to simplify value equality checks.
 
+**Over-arching Principle: Pragmatism over Premature Optimization.**
+
+Our goal is to build a clean, maintainable app, but we must also be practical and avoid over-engineering. Always choose the simplest solution that effectively solves the problem at hand, while keeping future scalability in mind.
+
+**When in Doubt: Start Simple, Refactor Later**
+
+If you're unsure whether to use `setState` or `Cubit`, start with `setState`. You can always refactor to `Cubit` later if the state needs to be shared or becomes complex. It's much easier to refactor simple code into complex code than the other way around.
+
+Remember: "Make it work, make it right, make it fast" - in that order.
+
+Here are specific guidelines to balance complexity:
+
+**1. State Management: When to use `setState` vs. `Cubit` vs. `Provider`/`InheritedWidget`**
+
+*   **Use `setState` for Local, Ephemeral UI State:** You **should** use `setState` inside a `StatefulWidget` for state that is purely local to a single widget and does not affect the rest of the app.
+    *   **Good Examples:** 
+        * Managing the visibility of a password field (`bool _obscurePassword = true`)
+        * Controlling the animation of a single button (`bool _isAnimating = false`)
+        * Tracking the current tab index in a `TabBar` (`int _currentTab = 0`)
+        * Form validation error messages shown inline
+        * Dropdown menu open/close state
+        * Modal bottom sheet visibility
+    *   **Bad Example:** Managing user login status, fetching data from an API, tracking the contents of a shopping cart. This is business state, not UI state.
+
+*   **Use `Provider`/`InheritedWidget` when:** 
+    * Data needs to be accessed by multiple widgets in the tree without going through constructor parameters
+    * You want to avoid prop drilling (passing data through many layers)
+    * State management is needed but too simple for Cubit (e.g., theme settings, language preference)
+    * **Example:** User's current theme (light/dark), app language setting
+
+*   **Use `Cubit` for Business Logic and Shared Screen State:** You **must** use a `Cubit` when the state:
+    * Needs to be shared between multiple widgets across different screens
+    * Represents data fetched from an external source (API, database)
+    * Impacts the business logic of the application (e.g., user is authenticated, an item is in the wishlist)
+    * Is complex and has multiple possible states (loading, success, error)
+    * Requires async operations (network calls, database queries)
+    * **Examples:** User authentication, shopping cart items, fetched posts/listings, payment processing
+
+**Code Examples:**
+
+❌ **Don't Do This (Over-engineered for simple state):**
+```dart
+// Creating a Cubit just to toggle a checkbox - this is overkill!
+class CheckboxCubit extends Cubit<bool> {
+  CheckboxCubit() : super(false);
+  void toggle() => emit(!state);
+}
+
+class MyCheckbox extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<CheckboxCubit, bool>(
+      builder: (context, isChecked) {
+        return Checkbox(
+          value: isChecked,
+          onChanged: (_) => context.read<CheckboxCubit>().toggle(),
+        );
+      },
+    );
+  }
+}
+```
+
+✅ **Do This Instead (Simple and appropriate):**
+```dart
+class MyCheckbox extends StatefulWidget {
+  @override
+  _MyCheckboxState createState() => _MyCheckboxState();
+}
+
+class _MyCheckboxState extends State<MyCheckbox> {
+  bool _isChecked = false;
+  
+  @override
+  Widget build(BuildContext context) {
+    return Checkbox(
+      value: _isChecked,
+      onChanged: (value) => setState(() => _isChecked = value!),
+    );
+  }
+}
+```
+
+**2. Code Abstraction: When to create a new Class/Widget vs. keeping it simple**
+
+*   **Avoid Premature Abstraction:** Do not create a new class, widget, or function just for the sake of abstraction if it's only used in one single place and the code is simple.
+*   **Follow the "Rule of Three":**
+    1.  The first time you write a piece of code, just write it.
+    2.  The second time you find yourself writing the *exact same* code, it's okay to copy-paste.
+    3.  The **third** time you need the same code, it's a clear signal that you must refactor it into a reusable widget, function, or class.
+
+**Example Progression:**
+
+1st Time:
+```dart
+// Writing the widget directly in the screen
+Container(
+  padding: EdgeInsets.all(16),
+  decoration: BoxDecoration(...),
+  child: Text("Item 1"),
+)
+```
+
+2nd Time (copy-paste is okay):
+```dart
+// Still in the screen, just duplicated
+Container(...), Container(...),
+```
+
+3rd Time (NOW refactor):
+```dart
+// Extract to reusable widget
+class ItemCard extends StatelessWidget {
+  final String text;
+  const ItemCard({required this.text});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Container(...);
+  }
+}
+```
+
+**3. External Packages: Be Minimalist**
+
+Before adding any new external package from `pub.dev`, ask these questions:
+
+1. **Will it save significant development time?** (5+ hours to build it yourself)
+2. **Is it well-maintained?** (Recent updates, good documentation, active community)
+3. **Does it handle complex functionality?** (Hard to build from scratch)
+4. **Is the bundle size impact acceptable?** (Avoid adding 50MB for a simple feature)
+
+**Packages You Should Use:** `flutter_bloc`, `dio`, `lottie` (for complex animations), `provider`, `equatable`
+
+**Packages to Avoid:** Any package that does something you can easily do yourself (e.g., a simple spinner, basic form validation, simple UI widgets that Flutter already provides)
+
+**Summary for the AI:**
+
+Before you write code, ask yourself:
+1. "What is the simplest, cleanest way to solve this specific problem right now?"
+2. "Will this code need to be shared or reused?"
+3. "If I'm unsure between simple and complex, which one can I refactor easier later?"
+
+If you have to choose between a "perfect but complex" solution and a "good enough and simple" solution for a simple problem, **choose the simple one.** The simple solution that works today is better than the perfect solution that arrives never.
