@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/widgets/top_navigation.dart';
 import 'package:wish_listy/core/widgets/bottom_navigation.dart';
 import 'package:wish_listy/core/widgets/language_switcher.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
@@ -123,22 +125,31 @@ class _MainNavigationState extends State<MainNavigation>
       builder: (context, localization, child) {
         if (!mounted) return const SizedBox.shrink();
 
-        return Scaffold(
-          body: IndexedStack(
-            index: _currentIndex,
-            children: _screens,
-          ),
-
-          // Custom Bottom Navigation Bar
-          bottomNavigationBar: CustomBottomNavigation(
-            currentIndex: _currentIndex,
-            onTap: _onTabTapped,
-          ),
-
-          // Floating Action Button (conditional)
-          floatingActionButton: _buildFloatingActionButton(),
-          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-        );
+        // Use top navigation for web, bottom navigation for mobile
+        if (kIsWeb) {
+          return Scaffold(
+            appBar: PreferredSize(
+              preferredSize: const Size.fromHeight(56),
+              child: CustomTopNavigation(
+                currentIndex: _currentIndex,
+                onTap: _onTabTapped,
+              ),
+            ),
+            body: IndexedStack(index: _currentIndex, children: _screens),
+            floatingActionButton: _buildFloatingActionButton(),
+            floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          );
+        } else {
+          return Scaffold(
+            body: IndexedStack(index: _currentIndex, children: _screens),
+            bottomNavigationBar: CustomBottomNavigation(
+              currentIndex: _currentIndex,
+              onTap: _onTabTapped,
+            ),
+            floatingActionButton: _buildFloatingActionButton(),
+            floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          );
+        }
       },
     );
   }
