@@ -27,6 +27,7 @@ class _MainNavigationState extends State<MainNavigation>
     with TickerProviderStateMixin {
   int _currentIndex = 0;
   late AnimationController _fabAnimationController;
+  final GlobalKey<MyWishlistsScreenState> _wishlistsKey = GlobalKey();
 
   @override
   void initState() {
@@ -81,6 +82,11 @@ class _MainNavigationState extends State<MainNavigation>
       _currentIndex = index;
     });
 
+    // Refresh data when switching to wishlists tab
+    if (index == 1 && _wishlistsKey.currentState != null) {
+      _wishlistsKey.currentState!.refreshWishlists();
+    }
+
     // Haptic feedback
     HapticFeedback.lightImpact();
 
@@ -91,7 +97,7 @@ class _MainNavigationState extends State<MainNavigation>
 
   List<Widget> get _screens => [
     const HomeScreen(),
-    const MyWishlistsScreen(),
+    MyWishlistsScreen(key: _wishlistsKey),
     const EventsScreen(),
     const FriendsScreen(),
     const ProfileScreen(),

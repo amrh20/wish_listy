@@ -41,7 +41,7 @@ class _AddItemScreenState extends State<AddItemScreen>
   String _selectedWhereToFind = 'online'; // 'online', 'physical', 'anywhere'
   List<String> _productLinks = [];
 
-  final List<String> _priorities = ['low', 'medium', 'high', 'urgent'];
+  final List<String> _priorities = ['low', 'medium', 'high'];
   List<Map<String, dynamic>> _wishlists = [];
 
   final WishlistRepository _wishlistRepository = WishlistRepository();
@@ -986,20 +986,44 @@ class _AddItemScreenState extends State<AddItemScreen>
     setState(() => _isLoading = true);
 
     try {
-      // Get URL from product links if online store is selected
+      // Prepare data based on "Where can this gift be found?" selection
       String? url;
-      if (_selectedWhereToFind == 'online' && _productLinks.isNotEmpty) {
-        // Use the first product link as the URL
-        url = _productLinks.first;
-      } else if (_selectedWhereToFind == 'online' && _linkController.text.isNotEmpty) {
-        // Use the link from the input field if no links were added yet
-        url = _linkController.text.trim();
+      String? storeName;
+      String? storeLocation;
+      String? notes;
+
+      if (_selectedWhereToFind == 'online') {
+        // Online Store: use URL
+        if (_productLinks.isNotEmpty) {
+          // Use the first product link as the URL
+          url = _productLinks.first;
+        } else if (_linkController.text.isNotEmpty) {
+          // Use the link from the input field if no links were added yet
+          url = _linkController.text.trim();
+        }
+      } else if (_selectedWhereToFind == 'physical') {
+        // Physical Store: use storeName and storeLocation
+        if (_storeNameController.text.trim().isNotEmpty) {
+          storeName = _storeNameController.text.trim();
+        }
+        if (_storeLocationController.text.trim().isNotEmpty) {
+          storeLocation = _storeLocationController.text.trim();
+        }
+      } else if (_selectedWhereToFind == 'anywhere') {
+        // Anywhere: use notes
+        if (_brandKeywordsController.text.trim().isNotEmpty) {
+          notes = _brandKeywordsController.text.trim();
+        }
       }
 
       debugPrint('📤 AddItemScreen: Adding item to wishlist');
       debugPrint('   Name: ${_nameController.text}');
       debugPrint('   Description: ${_descriptionController.text}');
+      debugPrint('   Where to Find: $_selectedWhereToFind');
       debugPrint('   URL: $url');
+      debugPrint('   Store Name: $storeName');
+      debugPrint('   Store Location: $storeLocation');
+      debugPrint('   Notes: $notes');
       debugPrint('   Priority: $_selectedPriority');
       debugPrint('   WishlistId: $_selectedWishlist');
 
@@ -1010,6 +1034,9 @@ class _AddItemScreenState extends State<AddItemScreen>
             ? null
             : _descriptionController.text.trim(),
         url: url,
+        storeName: storeName,
+        storeLocation: storeLocation,
+        notes: notes,
         priority: _selectedPriority,
         wishlistId: _selectedWishlist,
       );

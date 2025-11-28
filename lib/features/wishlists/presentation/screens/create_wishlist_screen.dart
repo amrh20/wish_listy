@@ -11,7 +11,9 @@ import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
 
 class CreateWishlistScreen extends StatefulWidget {
-  const CreateWishlistScreen({super.key});
+  final String? wishlistId;
+  
+  const CreateWishlistScreen({super.key, this.wishlistId});
 
   @override
   State<CreateWishlistScreen> createState() => _CreateWishlistScreenState();
@@ -22,6 +24,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _customCategoryController = TextEditingController();
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -30,6 +33,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   bool _isLoading = false;
   String _selectedPrivacy = 'public';
   String _selectedCategory = 'general';
+  bool _isCustomCategory = false;
   final WishlistRepository _wishlistRepository = WishlistRepository();
 
   final List<String> _privacyOptions = ['public', 'private', 'friendsOnly'];
@@ -40,12 +44,26 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     'graduation',
     'anniversary',
     'holiday',
+    'babyShower',
+    'housewarming',
+    'custom',
   ];
 
   @override
   void initState() {
     super.initState();
+    debugPrint('🚀 CreateWishlistScreen: initState');
+    debugPrint('   WishlistId: ${widget.wishlistId}');
+    debugPrint('   Is Editing: ${widget.wishlistId != null}');
+    
     _initializeAnimations();
+    // Load wishlist data if editing
+    if (widget.wishlistId != null) {
+      debugPrint('📥 CreateWishlistScreen: Loading wishlist data...');
+      _loadWishlistData();
+    } else {
+      debugPrint('📝 CreateWishlistScreen: Creating new wishlist');
+    }
   }
 
   void _initializeAnimations() {
@@ -75,6 +93,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     _animationController.dispose();
     _nameController.dispose();
     _descriptionController.dispose();
+    _customCategoryController.dispose();
     super.dispose();
   }
 
@@ -218,7 +237,9 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  localization.translate('wishlists.createWishlist'),
+                  widget.wishlistId != null
+                      ? 'Edit Wishlist'
+                      : localization.translate('wishlists.createWishlist'),
                   style: AppStyles.headingSmall.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -370,10 +391,16 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
             runSpacing: 8,
             children: _categoryOptions.map((category) {
               final isSelected = _selectedCategory == category;
+              final isCustom = category == 'custom';
+              
               return GestureDetector(
                 onTap: () {
                   setState(() {
                     _selectedCategory = category;
+                    _isCustomCategory = category == 'custom';
+                    if (category != 'custom') {
+                      _customCategoryController.clear();
+                    }
                   });
                 },
                 child: AnimatedContainer(
@@ -385,45 +412,98 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.secondary
-                        : AppColors.surfaceVariant,
+                        : isCustom
+                            ? AppColors.surfaceVariant.withOpacity(0.5)
+                            : AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected
-                          ? AppColors.secondary
-                          : AppColors.textTertiary.withOpacity(0.3),
-                      width: 1,
-                    ),
+                    border: isCustom && !isSelected
+                        ? Border.all(
+                            color: AppColors.primary.withOpacity(0.4),
+                            width: 1.5,
+                            style: BorderStyle.solid,
+                          )
+                        : Border.all(
+                            color: isSelected
+                                ? AppColors.secondary
+                                : AppColors.textTertiary.withOpacity(0.3),
+                            width: 1,
+                          ),
                   ),
-                  child: Text(
-                    _getCategoryDisplayName(category, localization),
-                    style: AppStyles.bodySmall.copyWith(
-                      color: isSelected
-                          ? Colors.white
-                          : AppColors.textSecondary,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isCustom && !isSelected)
+                        Icon(
+                          Icons.edit_outlined,
+                          size: 14,
+                          color: AppColors.primary,
+                        )
+                      else if (isCustom && isSelected)
+                        Icon(
+                          Icons.edit_outlined,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      if (isCustom) const SizedBox(width: 6),
+                      Text(
+                        _getCategoryDisplayName(category, localization),
+                        style: AppStyles.bodySmall.copyWith(
+                          color: isSelected
+                              ? Colors.white
+                              : isCustom
+                                  ? AppColors.primary
+                                  : AppColors.textSecondary,
+                          fontWeight: isSelected || isCustom
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );
             }).toList(),
           ),
+          // Show custom category input field when "Custom" is selected
+          if (_isCustomCategory) ...[
+            const SizedBox(height: 16),
+            CustomTextField(
+              controller: _customCategoryController,
+              label: 'Custom Category',
+              hint: 'Enter your custom category name',
+              prefixIcon: Icons.edit_outlined,
+              validator: (value) {
+                if (_isCustomCategory && (value?.isEmpty ?? true)) {
+                  return 'Please enter a custom category name';
+                }
+                if (_isCustomCategory && value != null && value.trim().length < 2) {
+                  return 'Category name must be at least 2 characters';
+                }
+                if (_isCustomCategory && value != null && value.trim().length > 50) {
+                  return 'Category name must be less than 50 characters';
+                }
+                return null;
+              },
+            ),
+          ],
         ],
       ),
     );
   }
 
   Widget _buildActionButtons(LocalizationService localization) {
+    final isEditing = widget.wishlistId != null;
     return Column(
       children: [
         CustomButton(
-          text: localization.translate('wishlists.createWishlist'),
+          text: isEditing
+              ? 'Update Wishlist'
+              : localization.translate('wishlists.createWishlist'),
           onPressed: () => _createWishlist(localization),
           isLoading: _isLoading,
           variant: ButtonVariant.gradient,
           gradientColors: [AppColors.primary, AppColors.secondary],
-          icon: Icons.favorite_rounded,
+          icon: isEditing ? Icons.save_rounded : Icons.favorite_rounded,
         ),
         const SizedBox(height: 12),
         CustomButton(
@@ -494,8 +574,64 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         return localization.translate('events.anniversary');
       case 'holiday':
         return localization.translate('common.holiday');
+      case 'babyShower':
+        return 'Baby Shower';
+      case 'housewarming':
+        return 'Housewarming';
+      case 'custom':
+        return 'Other';
       default:
         return category;
+    }
+  }
+
+  /// Load wishlist data when editing
+  Future<void> _loadWishlistData() async {
+    if (widget.wishlistId == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      debugPrint('📥 Loading wishlist data for editing: ${widget.wishlistId}');
+      final wishlistData = await _wishlistRepository.getWishlistById(widget.wishlistId!);
+      
+      debugPrint('✅ Wishlist data loaded: $wishlistData');
+
+      // Populate form fields
+      if (mounted) {
+        final category = wishlistData['category']?.toString() ?? 'general';
+        final isPredefinedCategory = _categoryOptions.contains(category) && category != 'custom';
+        
+        setState(() {
+          _nameController.text = wishlistData['name']?.toString() ?? '';
+          _descriptionController.text = wishlistData['description']?.toString() ?? '';
+          _selectedPrivacy = wishlistData['privacy']?.toString() ?? 'public';
+          
+          if (isPredefinedCategory) {
+            _selectedCategory = category;
+            _isCustomCategory = false;
+            _customCategoryController.clear();
+          } else {
+            // It's a custom category
+            _selectedCategory = 'custom';
+            _isCustomCategory = true;
+            _customCategoryController.text = category;
+          }
+          _isLoading = false;
+        });
+      }
+    } on ApiException catch (e) {
+      debugPrint('❌ Error loading wishlist: ${e.message}');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showErrorSnackBar('Failed to load wishlist: ${e.message}');
+      }
+    } catch (e) {
+      debugPrint('❌ Unexpected error loading wishlist: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showErrorSnackBar('Failed to load wishlist. Please try again.');
+      }
     }
   }
 
@@ -505,50 +641,100 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       return;
     }
 
-    debugPrint('🚀 Starting wishlist creation...');
+    final isEditing = widget.wishlistId != null;
+    
+    // Determine the final category value
+    final finalCategory = _isCustomCategory 
+        ? _customCategoryController.text.trim()
+        : _selectedCategory;
+    
+    // Validate custom category if selected
+    if (_isCustomCategory && finalCategory.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter a custom category name'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+    
+    debugPrint('🚀 Starting wishlist ${isEditing ? "update" : "creation"}...');
     debugPrint('   Name: ${_nameController.text.trim()}');
     debugPrint('   Description: ${_descriptionController.text.trim()}');
     debugPrint('   Privacy: $_selectedPrivacy');
-    debugPrint('   Category: $_selectedCategory');
+    debugPrint('   Category: $finalCategory (isCustom: $_isCustomCategory)');
 
     setState(() => _isLoading = true);
 
     try {
-      // Call API to create wishlist
-      debugPrint('📡 Calling API: POST /api/wishlists');
-      final response = await _wishlistRepository.createWishlist(
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-        privacy: _selectedPrivacy,
-        category: _selectedCategory,
-      );
+      if (isEditing) {
+        // Update existing wishlist
+        debugPrint('📡 Calling API: PUT /api/wishlists/${widget.wishlistId}');
+        final response = await _wishlistRepository.updateWishlist(
+          wishlistId: widget.wishlistId!,
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim(),
+          privacy: _selectedPrivacy,
+          category: finalCategory,
+        );
 
-      debugPrint('✅ API Response received: $response');
+        debugPrint('✅ API Response received: $response');
 
-      setState(() => _isLoading = false);
+        setState(() => _isLoading = false);
 
-      // Check if creation was successful
-      if (response['success'] == true || response['data'] != null) {
-        // Extract wishlist ID from response
-        final wishlistData = response['data'] ?? response;
-        final wishlistId =
-            wishlistData['id']?.toString() ??
-            wishlistData['wishlistId']?.toString() ??
-            'new_wishlist_id';
-
-        // Show success message and navigate
-        if (mounted) {
-          _showSuccessAndNavigate(localization, wishlistId);
+        // Check if update was successful
+        if (response['success'] == true || response['data'] != null || response['wishlist'] != null) {
+          // Show success message and navigate back
+          if (mounted) {
+            _showSuccessAndNavigate(localization, widget.wishlistId!);
+          }
+        } else {
+          // Update failed
+          final errorMessage =
+              response['message']?.toString() ??
+              'Failed to update wishlist. Please try again.';
+          if (mounted) {
+            _showErrorSnackBar(errorMessage);
+          }
         }
       } else {
-        // Creation failed
-        final errorMessage =
-            response['message']?.toString() ??
-            'Failed to create wishlist. Please try again.';
-        if (mounted) {
-          _showErrorSnackBar(errorMessage);
+        // Create new wishlist
+        debugPrint('📡 Calling API: POST /api/wishlists');
+        final response = await _wishlistRepository.createWishlist(
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          privacy: _selectedPrivacy,
+          category: finalCategory,
+        );
+
+        debugPrint('✅ API Response received: $response');
+
+        setState(() => _isLoading = false);
+
+        // Check if creation was successful
+        if (response['success'] == true || response['data'] != null) {
+          // Extract wishlist ID from response
+          final wishlistData = response['data'] ?? response;
+          final wishlistId =
+              wishlistData['id']?.toString() ??
+              wishlistData['wishlistId']?.toString() ??
+              'new_wishlist_id';
+
+          // Show success message and navigate
+          if (mounted) {
+            _showSuccessAndNavigate(localization, wishlistId);
+          }
+        } else {
+          // Creation failed
+          final errorMessage =
+              response['message']?.toString() ??
+              'Failed to create wishlist. Please try again.';
+          if (mounted) {
+            _showErrorSnackBar(errorMessage);
+          }
         }
       }
     } on ApiException catch (e) {
@@ -563,7 +749,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       if (mounted) {
         _showErrorSnackBar('An unexpected error occurred. Please try again.');
       }
-      debugPrint('Create wishlist error: $e');
+      debugPrint('${isEditing ? "Update" : "Create"} wishlist error: $e');
     }
   }
 
@@ -611,7 +797,8 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+        builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         contentPadding: const EdgeInsets.all(24),
         content: Column(
@@ -635,7 +822,9 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
 
             // Title
             Text(
-              localization.translate('wishlists.wishlistCreatedTitle'),
+              widget.wishlistId != null
+                  ? 'Wishlist Updated!'
+                  : localization.translate('wishlists.wishlistCreatedTitle'),
               style: AppStyles.headingMedium.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -646,7 +835,9 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
 
             // Message
             Text(
-              localization.translate('wishlists.wishlistCreatedMessage'),
+              widget.wishlistId != null
+                  ? 'Your wishlist has been updated successfully.'
+                  : localization.translate('wishlists.wishlistCreatedMessage'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -657,78 +848,97 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
             // Action Buttons
             Column(
               children: [
-                // Add Items Button
-                SizedBox(
-                  width: double.infinity,
-                  child: CustomButton(
-                    text: localization.translate(
-                      'wishlists.addItemsToWishlist',
+                if (widget.wishlistId != null) ...[
+                  // Done Button (for editing)
+                  SizedBox(
+                    width: double.infinity,
+                    child: CustomButton(
+                      text: 'Done',
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close dialog
+                        Navigator.of(context).pop(true); // Return to previous screen with result
+                      },
+                      variant: ButtonVariant.gradient,
+                      gradientColors: [AppColors.primary, AppColors.secondary],
+                      icon: Icons.check_rounded,
                     ),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.pushReplacementNamed(
-                        context,
-                        AppRoutes.addItem,
-                        arguments: {
-                          'wishlistId': wishlistId,
-                          'wishlistName': _nameController.text,
-                          'isNewWishlist': true,
-                        },
-                      );
-                    },
-                    variant: ButtonVariant.gradient,
-                    gradientColors: [AppColors.primary, AppColors.secondary],
-                    icon: Icons.add_rounded,
                   ),
-                ),
-                const SizedBox(height: 12),
-
-                // View Wishlist Button
-                SizedBox(
-                  width: double.infinity,
-                  child: CustomButton(
-                    text: localization.translate('wishlists.viewWishlist'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.pushReplacementNamed(
-                        context,
-                        AppRoutes.wishlistItems,
-                        arguments: {
-                          'wishlistId': wishlistId,
-                          'wishlistName': _nameController.text,
-                          'totalItems': 0,
-                          'purchasedItems': 0,
-                          'isFriendWishlist': false,
-                        },
-                      );
-                    },
-                    variant: ButtonVariant.outline,
-                    icon: Icons.visibility_rounded,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Create Another Button
-                SizedBox(
-                  width: double.infinity,
-                  child: CustomButton(
-                    text: localization.translate(
-                      'wishlists.createAnotherWishlist',
+                ] else ...[
+                  // Add Wishes Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: CustomButton(
+                      text: localization.translate(
+                        'wishlists.addItemsToWishlist',
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.pushReplacementNamed(
+                          context,
+                          AppRoutes.addItem,
+                          arguments: {
+                            'wishlistId': wishlistId,
+                            'wishlistName': _nameController.text,
+                            'isNewWishlist': true,
+                          },
+                        );
+                      },
+                      variant: ButtonVariant.gradient,
+                      gradientColors: [AppColors.primary, AppColors.secondary],
+                      icon: Icons.add_rounded,
                     ),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      // Reset form
-                      _nameController.clear();
-                      _descriptionController.clear();
-                      setState(() {
-                        _selectedPrivacy = 'public';
-                        _selectedCategory = 'general';
-                      });
-                    },
-                    variant: ButtonVariant.text,
-                    icon: Icons.add_circle_outline,
                   ),
-                ),
+                  const SizedBox(height: 12),
+
+                  // View Wishlist Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: CustomButton(
+                      text: localization.translate('wishlists.viewWishlist'),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Navigator.pushReplacementNamed(
+                          context,
+                          AppRoutes.wishlistItems,
+                          arguments: {
+                            'wishlistId': wishlistId,
+                            'wishlistName': _nameController.text,
+                            'totalItems': 0,
+                            'purchasedItems': 0,
+                            'isFriendWishlist': false,
+                          },
+                        );
+                      },
+                      variant: ButtonVariant.outline,
+                      icon: Icons.visibility_rounded,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Create Another Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: CustomButton(
+                      text: localization.translate(
+                        'wishlists.createAnotherWishlist',
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        // Reset form
+                        _nameController.clear();
+                        _descriptionController.clear();
+                        _customCategoryController.clear();
+                        setState(() {
+                          _selectedPrivacy = 'public';
+                          _selectedCategory = 'general';
+                          _isCustomCategory = false;
+                        });
+                      },
+                      variant: ButtonVariant.text,
+                      icon: Icons.add_circle_outline,
+                    ),
+                  ),
+                ],
               ],
             ),
           ],

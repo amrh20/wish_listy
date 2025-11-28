@@ -4,6 +4,7 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
+import 'package:wish_listy/core/widgets/unified_app_bar.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
@@ -15,11 +16,11 @@ class MyWishlistsScreen extends StatefulWidget {
   const MyWishlistsScreen({super.key});
 
   @override
-  _MyWishlistsScreenState createState() => _MyWishlistsScreenState();
+  MyWishlistsScreenState createState() => MyWishlistsScreenState();
 }
 
-class _MyWishlistsScreenState extends State<MyWishlistsScreen>
-    with TickerProviderStateMixin {
+class MyWishlistsScreenState extends State<MyWishlistsScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _mainTabController;
   late AnimationController _animationController;
   final TextEditingController _searchController = TextEditingController();
@@ -27,21 +28,66 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   // Wishlist data from API
   List<WishlistSummary> _personalWishlists = [];
   List<WishlistSummary> _eventWishlists = [];
+  List<WishlistSummary> _allPersonalWishlists =
+      []; // Store all personal wishlists for filtering
   bool _isLoading = false;
   String? _errorMessage;
 
+  // Category filtering
+  List<String> _availableCategories = [];
+  String? _selectedCategory; // null means "All"
+  Map<String, String> _wishlistIdToCategory = {}; // Map wishlist ID to category
+
   final WishlistRepository _wishlistRepository = WishlistRepository();
+  bool _hasLoadedOnce = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _mainTabController = TabController(length: 2, vsync: this);
     _mainTabController.addListener(() {
-      setState(() {});
+      setState(() {
+        // Reset category filter when switching tabs
+        if (_mainTabController.index != 0) {
+          _selectedCategory = null;
+        }
+      });
     });
     _initializeAnimations();
     _startAnimations();
     _loadWishlists();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Reload data when app comes to foreground
+    if (state == AppLifecycleState.resumed) {
+      _loadWishlists();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload data when screen becomes visible (useful for IndexedStack)
+    // This ensures data is fresh when navigating back to this screen
+    // Only reload if we've already loaded once (to avoid double loading in initState)
+    if (_hasLoadedOnce) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadWishlists();
+        }
+      });
+    }
+  }
+
+  /// Public method to refresh wishlists (can be called from outside)
+  void refreshWishlists() {
+    if (mounted) {
+      _loadWishlists();
+    }
   }
 
   void _initializeAnimations() {
@@ -57,6 +103,7 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _mainTabController.dispose();
     _animationController.dispose();
     _searchController.dispose();
@@ -124,15 +171,23 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
             showGifts: true,
             child: Column(
               children: [
-                // Top App Bar
-                MyWishlistsHeaderWidget(
-                  onSearchPressed: _showSearchBottomSheet,
-                  onMenuActionExport: _showExportDialog,
-                  onMenuActionSettings: () => _handleMenuAction('settings'),
+                // Unified App Bar
+                UnifiedAppBar(
+                  title: localization.translate('wishlists.myWishlists'),
+                  primaryAction: PrimaryAction.search,
+                  onSearchChanged: () {
+                    // Handle search query change
+                    // You can add search filtering logic here
+                  },
                 ),
 
                 // Main Tab Bar
                 MyWishlistsTabBarWidget(tabController: _mainTabController),
+
+                // Category Filter Tabs (only show if there are categories and on Personal tab)
+                if (_mainTabController.index == 0 &&
+                    _availableCategories.isNotEmpty)
+                  _buildCategoryFilterTabs(),
 
                 // Tab Content
                 Expanded(
@@ -243,24 +298,6 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
     );
   }
 
-  // Action handlers
-  void _handleMenuAction(String action) {
-    switch (action) {
-      case 'export':
-        _showExportDialog();
-        break;
-      case 'settings':
-        // TODO: Navigate to settings when route is available
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Settings coming soon'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        break;
-    }
-  }
-
   void _handleWishlistAction(String action, WishlistSummary wishlist) {
     switch (action) {
       case 'edit':
@@ -276,13 +313,21 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   void _showEditWishlistDialog(WishlistSummary wishlist) {
-    // TODO: Implement edit wishlist dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Edit wishlist: ${wishlist.name}'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    debugPrint('✏️ MyWishlistsScreen: Edit wishlist clicked');
+    debugPrint('   Wishlist ID: ${wishlist.id}');
+    debugPrint('   Wishlist Name: ${wishlist.name}');
+
+    // Navigate to create-wishlist screen with wishlistId for editing
+    Navigator.pushNamed(
+      context,
+      AppRoutes.createWishlist,
+      arguments: {'wishlistId': wishlist.id},
+    ).then((result) {
+      // Refresh wishlists if the edit was successful
+      if (result == true) {
+        _loadWishlists();
+      }
+    });
   }
 
   void _shareWishlist(WishlistSummary wishlist) {
@@ -485,26 +530,6 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
     }
   }
 
-  void _showExportDialog() {
-    // TODO: Implement export dialog
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Export functionality'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _showSearchBottomSheet() {
-    // TODO: Implement search bottom sheet
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Search functionality'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   /// Load wishlists from API
   Future<void> _loadWishlists() async {
     setState(() {
@@ -545,10 +570,36 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
         '✅ MyWishlistsScreen: Personal: ${personalWishlists.length}, Event: ${eventWishlists.length}',
       );
 
+      // Store original wishlist data for category extraction
+      final Map<String, String> wishlistIdToCategory = {};
+      for (final wishlistData in wishlistsData) {
+        final id =
+            wishlistData['id']?.toString() ??
+            wishlistData['_id']?.toString() ??
+            '';
+        final category = wishlistData['category']?.toString();
+        if (id.isNotEmpty && category != null && category.isNotEmpty) {
+          wishlistIdToCategory[id] = category;
+        }
+      }
+
+      // Extract unique categories
+      final categoriesSet = wishlistIdToCategory.values.toSet();
+      final categories = categoriesSet.toList()..sort();
+
+      debugPrint(
+        '📂 MyWishlistsScreen: Found ${categories.length} unique categories: $categories',
+      );
+
       setState(() {
-        _personalWishlists = personalWishlists;
+        _allPersonalWishlists = personalWishlists;
         _eventWishlists = eventWishlists;
+        _availableCategories = categories;
+        _wishlistIdToCategory = wishlistIdToCategory;
         _isLoading = false;
+        _hasLoadedOnce = true;
+        // Apply current filter if any
+        _applyCategoryFilter();
       });
     } on ApiException catch (e) {
       setState(() {
@@ -719,5 +770,171 @@ class _MyWishlistsScreenState extends State<MyWishlistsScreen>
 
   Future<void> _refreshWishlists() async {
     await _loadWishlists();
+  }
+
+  /// Apply category filter to personal wishlists
+  void _applyCategoryFilter() {
+    if (_selectedCategory == null) {
+      // Show all wishlists
+      _personalWishlists = List.from(_allPersonalWishlists);
+    } else {
+      // Filter by selected category
+      _personalWishlists = _allPersonalWishlists.where((wishlist) {
+        final category = _wishlistIdToCategory[wishlist.id];
+        return category == _selectedCategory;
+      }).toList();
+    }
+  }
+
+  /// Build category filter tabs
+  Widget _buildCategoryFilterTabs() {
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            // "All" tab
+            _buildCategoryChip(
+              label: 'All',
+              category: null,
+              isSelected: _selectedCategory == null,
+              icon: Icons.all_inclusive_rounded,
+            ),
+            const SizedBox(width: 8),
+            // Category tabs
+            ..._availableCategories.map((category) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: _buildCategoryChip(
+                  label: _getCategoryDisplayName(category),
+                  category: category,
+                  isSelected: _selectedCategory == category,
+                  icon: _getCategoryIcon(category),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build a category filter chip
+  Widget _buildCategoryChip({
+    required String label,
+    required String? category,
+    required bool isSelected,
+    IconData? icon,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedCategory = category;
+          _applyCategoryFilter();
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.borderLight,
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected ? Colors.white : AppColors.textTertiary,
+              ),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: AppStyles.bodySmall.copyWith(
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Get display name for category
+  String _getCategoryDisplayName(String category) {
+    switch (category.toLowerCase()) {
+      case 'general':
+        return 'General';
+      case 'birthday':
+        return 'Birthday';
+      case 'wedding':
+        return 'Wedding';
+      case 'graduation':
+        return 'Graduation';
+      case 'anniversary':
+        return 'Anniversary';
+      case 'holiday':
+        return 'Holiday';
+      case 'babyshower':
+        return 'Baby Shower';
+      case 'housewarming':
+        return 'Housewarming';
+      case 'custom':
+        return 'Other';
+      default:
+        // Return capitalized category name
+        return category
+            .split(' ')
+            .map((word) {
+              if (word.isEmpty) return word;
+              return word[0].toUpperCase() + word.substring(1).toLowerCase();
+            })
+            .join(' ');
+    }
+  }
+
+  /// Get icon for category
+  IconData? _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'general':
+        return Icons.category_outlined;
+      case 'birthday':
+        return Icons.cake_outlined;
+      case 'wedding':
+        return Icons.favorite_outline;
+      case 'graduation':
+        return Icons.school_outlined;
+      case 'anniversary':
+        return Icons.celebration_outlined;
+      case 'holiday':
+        return Icons.card_giftcard_outlined;
+      case 'babyshower':
+        return Icons.child_care_outlined;
+      case 'housewarming':
+        return Icons.home_outlined;
+      case 'custom':
+        return Icons.edit_outlined;
+      default:
+        return Icons.label_outline;
+    }
   }
 }

@@ -244,7 +244,7 @@ class _GuestWishlistsViewWidgetState extends State<GuestWishlistsViewWidget> {
             ),
             const SizedBox(height: 2),
             Text(
-              '${wishlist.itemCount} ${localization.translate("wishlists.items")} • ${localization.translate("wishlists.updated")} ${_formatDate(wishlist.lastUpdated)}',
+              '${wishlist.itemCount} ${wishlist.itemCount == 1 ? "Wish" : "Wishes"} • ${localization.translate("wishlists.updated")} ${_formatDate(wishlist.lastUpdated)}',
               style: AppStyles.bodySmall.copyWith(
                 color: AppColors.textTertiary,
               ),

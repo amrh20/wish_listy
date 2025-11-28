@@ -506,7 +506,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                     else
                       _buildInfoChip(
                         icon: Icons.inventory_2_outlined,
-                        label: '${_items.length} items',
+                        label: '${_items.length} ${_items.length == 1 ? "Wish" : "Wishes"}',
                         color: AppColors.textSecondary,
                       ),
                     if (_category.isNotEmpty)
@@ -580,7 +580,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
             child: _buildStatItem(
               icon: Icons.inventory_2_outlined,
               value: '$_totalItems',
-              label: 'Total Items',
+              label: 'Total Wishes',
               color: AppColors.primary,
             ),
           ),
@@ -589,7 +589,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
             child: _buildStatItem(
               icon: Icons.check_circle_outline,
               value: '$_purchasedItems',
-              label: 'Purchased',
+              label: 'Gifted',
               color: AppColors.success,
             ),
           ),
@@ -707,7 +707,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                 });
               },
               decoration: InputDecoration(
-                hintText: 'Search items...',
+                hintText: 'Search wishes...',
                 hintStyle: AppStyles.bodyMedium.copyWith(
                   color: AppColors.textTertiary,
                 ),
@@ -759,7 +759,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                 const SizedBox(width: 8),
                 _buildFilterChip(
                   'purchased',
-                  'Purchased',
+                  'Gifted',
                   Icons.check_circle_outline,
                 ),
               ],
@@ -912,7 +912,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                'Purchased',
+                                'Gifted',
                                 style: AppStyles.caption.copyWith(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
@@ -1258,7 +1258,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
             ),
             const SizedBox(height: 24),
             Text(
-              'No Items Yet',
+              'No Wishes Yet',
               style: AppStyles.headingMedium.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
@@ -1266,7 +1266,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
             ),
             const SizedBox(height: 12),
             Text(
-              'This wishlist is empty. Start adding items you wish for!',
+              'This wishlist is empty. Start adding wishes you dream of!',
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -1289,7 +1289,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                   });
                 },
                 icon: const Icon(Icons.add_rounded),
-                label: const Text('Add First Item'),
+                label: const Text('Add First Wish'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -1323,7 +1323,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'No items found',
+              'No wishes found',
               style: AppStyles.headingSmall.copyWith(
                 color: AppColors.textSecondary,
               ),

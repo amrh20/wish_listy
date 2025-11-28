@@ -119,14 +119,23 @@ class WishlistRepository {
     try {
       final requestData = <String, dynamic>{};
       if (name != null) requestData['name'] = name;
-      if (description != null) requestData['description'] = description;
+      // Always include description (even if empty string or null)
+      // API expects description field in the request
+      requestData['description'] = description ?? '';
       if (privacy != null) requestData['privacy'] = privacy;
       if (category != null) requestData['category'] = category;
+
+      debugPrint('📤 WishlistRepository: Updating wishlist: $wishlistId');
+      debugPrint('   Request Data: $requestData');
+      debugPrint('   Endpoint: PUT /api/wishlists/$wishlistId');
 
       final response = await _apiService.put(
         '/wishlists/$wishlistId',
         data: requestData,
       );
+
+      debugPrint('📥 WishlistRepository: Response received: $response');
+      debugPrint('✅ WishlistRepository: Wishlist updated successfully');
 
       return response;
     } on ApiException {
@@ -154,6 +163,9 @@ class WishlistRepository {
   /// [name] - Item name (required)
   /// [description] - Item description (optional)
   /// [url] - Product URL (optional, only for online store)
+  /// [storeName] - Store name (optional, only for physical store)
+  /// [storeLocation] - Store location (optional, only for physical store)
+  /// [notes] - Notes (optional, only for anywhere)
   /// [priority] - Priority: 'low', 'medium', 'high', 'urgent' (required)
   /// [wishlistId] - Wishlist ID (required)
   /// 
@@ -162,6 +174,9 @@ class WishlistRepository {
     required String name,
     String? description,
     String? url,
+    String? storeName,
+    String? storeLocation,
+    String? notes,
     required String priority,
     required String wishlistId,
   }) async {
@@ -178,9 +193,32 @@ class WishlistRepository {
         requestData['description'] = description;
       }
 
-      // Add URL only if provided (for online store)
+      // Add fields based on where to find the gift
+      // URL for online store
       if (url != null && url.isNotEmpty) {
         requestData['url'] = url;
+      } else {
+        requestData['url'] = null;
+      }
+
+      // Store name and location for physical store
+      if (storeName != null && storeName.isNotEmpty) {
+        requestData['storeName'] = storeName;
+      } else {
+        requestData['storeName'] = null;
+      }
+
+      if (storeLocation != null && storeLocation.isNotEmpty) {
+        requestData['storeLocation'] = storeLocation;
+      } else {
+        requestData['storeLocation'] = null;
+      }
+
+      // Notes for anywhere
+      if (notes != null && notes.isNotEmpty) {
+        requestData['notes'] = notes;
+      } else {
+        requestData['notes'] = null;
       }
 
       debugPrint('📤 WishlistRepository: Adding item to wishlist');

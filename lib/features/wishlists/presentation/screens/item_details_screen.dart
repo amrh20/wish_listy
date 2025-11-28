@@ -519,7 +519,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  _isPurchased ? 'Purchased' : 'Available',
+                  _isPurchased ? 'Gifted' : 'Available',
                   style: AppStyles.bodyLarge.copyWith(
                     color: _isPurchased ? AppColors.success : AppColors.warning,
                     fontWeight: FontWeight.w700,
@@ -546,7 +546,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
               ],
             ),
             child: CustomButton(
-              text: _isPurchased ? 'Mark as Available' : 'Mark as Purchased',
+              text: _isPurchased ? 'Mark as Available' : 'Mark as Gifted',
               onPressed: _togglePurchaseStatus,
               variant: ButtonVariant.primary,
               customColor: _isPurchased ? AppColors.warning : AppColors.success,
@@ -703,8 +703,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       SnackBar(
         content: Text(
           _isPurchased
-              ? 'Item marked as purchased! 🎉'
-              : 'Item marked as available! 📝',
+              ? 'Wish marked as gifted! 🎉'
+              : 'Wish marked as available! 📝',
         ),
         backgroundColor: _isPurchased ? AppColors.success : AppColors.info,
         behavior: SnackBarBehavior.floating,

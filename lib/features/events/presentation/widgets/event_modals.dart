@@ -388,7 +388,7 @@ class EventModals {
                         ),
                       ),
                       subtitle: Text(
-                        '${wishlist['itemCount']} ${localization.translate('wishlists.items')}',
+                        '${wishlist['itemCount']} ${wishlist['itemCount'] == 1 ? "Wish" : "Wishes"}',
                         style: AppStyles.bodySmall.copyWith(
                           color: AppColors.textSecondary,
                         ),

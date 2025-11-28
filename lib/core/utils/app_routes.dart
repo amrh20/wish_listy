@@ -91,14 +91,24 @@ class AppRoutes {
     achievements: (context) => AchievementsScreen(),
     leaderboard: (context) => LeaderboardScreen(),
     rewardsStore: (context) => RewardsStoreScreen(),
-    createWishlist: (context) => CreateWishlistScreen(),
+    // createWishlist is handled in onGenerateRoute to support editing with wishlistId
     addFriend: (context) => AddFriendScreen(),
     editProfile: (context) => EditProfileScreen(),
   };
 
   // Route Generator for dynamic routes
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
-    if (settings.name == wishlistItems) {
+    // Handle createWishlist route with optional wishlistId for editing
+    if (settings.name == createWishlist) {
+      final args = settings.arguments as Map<String, dynamic>?;
+      final wishlistId = args?['wishlistId'] as String?;
+      debugPrint('🔍 AppRoutes: createWishlist route');
+      debugPrint('   Arguments: $args');
+      debugPrint('   WishlistId: $wishlistId');
+      return MaterialPageRoute(
+        builder: (context) => CreateWishlistScreen(wishlistId: wishlistId),
+      );
+    } else if (settings.name == wishlistItems) {
       final args = settings.arguments as Map<String, dynamic>;
       return MaterialPageRoute(
         builder: (context) => WishlistItemsScreen(

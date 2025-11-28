@@ -211,7 +211,7 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              widget.item.isPurchased ? 'Item Purchased' : 'Item Image',
+              widget.item.isPurchased ? 'Wish Gifted' : 'Wish Image',
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -252,7 +252,7 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
           _buildDetailRow(
             icon: Icons.info_outline,
             label: 'Status',
-            value: widget.item.isPurchased ? 'Purchased' : 'Available',
+            value: widget.item.isPurchased ? 'Gifted' : 'Available',
             iconColor: widget.item.isPurchased
                 ? AppColors.success
                 : AppColors.info,
@@ -353,7 +353,7 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
                 const SizedBox(height: 4),
                 Text(
                   widget.item.isPurchased
-                      ? 'This item has been purchased for the event'
+                      ? 'This wish has been gifted for the event'
                       : 'This item is still available for purchase',
                   style: AppStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
@@ -370,7 +370,7 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
   Widget _buildActionButtons() {
     return Column(
       children: [
-        // Reserve Item Button (only if not purchased)
+        // Reserve Wish Button (only if not purchased)
         if (!widget.item.isPurchased)
           CustomButton(
             text: 'Reserve Item',
@@ -382,9 +382,9 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
 
         if (!widget.item.isPurchased) const SizedBox(height: 12),
 
-        // View Similar Items Button
+        // View Similar Wishes Button
         CustomButton(
-          text: 'View Similar Items',
+          text: 'View Similar Wishes',
           onPressed: _viewSimilarItems,
           variant: ButtonVariant.outline,
           customColor: AppColors.info,
@@ -429,7 +429,7 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
   void _viewSimilarItems() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Searching for similar items...'),
+        content: Text('Searching for similar wishes...'),
         backgroundColor: AppColors.info,
       ),
     );

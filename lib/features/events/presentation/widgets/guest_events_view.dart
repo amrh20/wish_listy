@@ -251,7 +251,7 @@ class _GuestEventsViewState extends State<GuestEventsView> {
               _buildGuestEventStat(
                 icon: Icons.card_giftcard,
                 value: '${event.wishlistItemCount}',
-                label: widget.localization.translate('wishlists.items'),
+                label: 'Wishes',
               ),
               const Spacer(),
               CustomButton(

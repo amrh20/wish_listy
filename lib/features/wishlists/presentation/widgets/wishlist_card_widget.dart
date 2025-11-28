@@ -240,12 +240,12 @@ class WishlistCardWidget extends StatelessWidget {
                 children: [
                   _buildStatChip(
                     Icons.card_giftcard_rounded,
-                    '${wishlist.itemCount} ${localization.translate("wishlists.items")}',
+                    '${wishlist.itemCount} ${wishlist.itemCount == 1 ? "Wish" : "Wishes"}',
                     AppColors.primary,
                   ),
                   _buildStatChip(
                     Icons.check_circle_rounded,
-                    '${wishlist.purchasedCount} ${localization.translate("wishlists.purchased")}',
+                    '${wishlist.purchasedCount} Gifted',
                     AppColors.success,
                   ),
                   _buildStatChip(
@@ -316,7 +316,7 @@ class WishlistCardWidget extends StatelessWidget {
                   Expanded(
                     flex: 2,
                     child: _buildActionButton(
-                      label: localization.translate('wishlists.viewItems'),
+                      label: 'View Wishes',
                       icon: Icons.visibility_rounded,
                       onPressed: onTap,
                       isPrimary: true,
@@ -325,7 +325,7 @@ class WishlistCardWidget extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildActionButton(
-                      label: localization.translate('wishlists.addItem'),
+                      label: 'Add a Wish',
                       icon: Icons.add_rounded,
                       onPressed: onAddItem,
                       isPrimary: false,
