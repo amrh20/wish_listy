@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
@@ -18,7 +19,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
   late AnimationController _animationController;
@@ -28,12 +29,34 @@ class _LoginScreenState extends State<LoginScreen>
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _rememberMe = false;
+  bool _hasLoadedArguments = false;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _startAnimations();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Load arguments from route only once
+    if (!_hasLoadedArguments) {
+      _hasLoadedArguments = true;
+      // Check if username and password were passed from signup
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args != null && args is Map<String, dynamic>) {
+        final username = args['username'] as String?;
+        final password = args['password'] as String?;
+        if (username != null) {
+          _usernameController.text = username;
+        }
+        if (password != null) {
+          _passwordController.text = password;
+        }
+      }
+    }
   }
 
   void _initializeAnimations() {
@@ -65,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void dispose() {
     _animationController.dispose();
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -75,54 +98,136 @@ class _LoginScreenState extends State<LoginScreen>
 
     setState(() => _isLoading = true);
 
-    // TODO: Uncomment when backend is ready
-    // try {
-    //   final authService = Provider.of<AuthRepository>(context, listen: false);
-    //   final success = await authService.login(
-    //     _emailController.text.trim(),
-    //     _passwordController.text.trim(),
-    //   );
+    try {
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      final success = await authService.loginUser(
+        _usernameController.text.trim(),
+        _passwordController.text.trim(),
+      );
 
-    //   if (success && mounted) {
-    //     // Navigate to main app
-    //     Navigator.pushNamedAndRemoveUntil(
-    //       context,
-    //       AppRoutes.mainNavigation,
-    //       (route) => false,
-    //     );
-    //   }
-    // } catch (e) {
-    //   // Handle login error if needed
-    //   if (mounted) {
-    //     ScaffoldMessenger.of(context).showSnackBar(
-    //       SnackBar(content: Text('Login failed: ${e.toString()}')),
-    //     );
-    //   }
-    // } finally {
-    //   if (mounted) {
-    //     setState(() => _isLoading = false);
-    //   }
-    // }
-
-    // Temporary: Simulate successful login and set user as authenticated
-    await Future.delayed(const Duration(seconds: 2)); // Simulate API call delay
-
-    // Set user as authenticated
-    final authService = Provider.of<AuthRepository>(context, listen: false);
-    await authService.setAuthenticatedUser(
-      userId: 'user_${DateTime.now().millisecondsSinceEpoch}',
-      userEmail: _emailController.text.trim(),
-      userName: _emailController.text.trim().split('@').first,
-    );
-
-    setState(() => _isLoading = false);
-
-    // Navigate to authenticated user scenario
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.mainNavigation,
-      (route) => false,
-    );
+      if (success && mounted) {
+        // Navigate to main app
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.mainNavigation,
+          (route) => false,
+        );
+      } else {
+        // Login failed
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Login failed. Please check your credentials.',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.error,
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.only(
+                top: 60,
+                left: 16,
+                right: 16,
+                bottom: 0,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      }
+    } on ApiException catch (e) {
+      // Handle API-specific errors
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    e.message,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Handle unexpected errors
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'An unexpected error occurred. Please try again.',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+      debugPrint('Login error: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -236,28 +341,32 @@ class _LoginScreenState extends State<LoginScreen>
                                 key: _formKey,
                                 child: Column(
                                   children: [
-                                    // Email Field
+                                    // Username Field (Email or Phone)
                                     CustomTextField(
-                                      controller: _emailController,
+                                      controller: _usernameController,
                                       label: localization.translate(
                                         'auth.email',
                                       ),
-                                      hint: localization.translate(
-                                        'auth.enterEmail',
-                                      ),
-                                      keyboardType: TextInputType.emailAddress,
-                                      prefixIcon: Icons.email_outlined,
+                                      hint: 'Email or Phone',
+                                      keyboardType: TextInputType.text,
+                                      prefixIcon: Icons.person_outline,
                                       validator: (value) {
                                         if (value?.isEmpty ?? true) {
                                           return localization.translate(
                                             'auth.pleaseEnterEmail',
                                           );
                                         }
-                                        if (!RegExp(
-                                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                        ).hasMatch(value!)) {
+                                        // Validate as email or phone
+                                        final authRepository =
+                                            Provider.of<AuthRepository>(
+                                              context,
+                                              listen: false,
+                                            );
+                                        if (!authRepository.isValidUsername(
+                                          value!,
+                                        )) {
                                           return localization.translate(
-                                            'auth.pleaseEnterValidEmail',
+                                            'auth.invalidEmailOrPhone',
                                           );
                                         }
                                         return null;

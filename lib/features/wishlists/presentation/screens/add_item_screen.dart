@@ -8,6 +8,8 @@ import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/widgets/animated_background.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
 
 class AddItemScreen extends StatefulWidget {
   final String? wishlistId;
@@ -33,26 +35,131 @@ class _AddItemScreenState extends State<AddItemScreen>
   late Animation<Offset> _slideAnimation;
 
   bool _isLoading = false;
-  String _selectedWishlist = 'public';
+  bool _isLoadingWishlists = false;
+  String _selectedWishlist = '';
   String _selectedPriority = 'medium';
   String _selectedWhereToFind = 'online'; // 'online', 'physical', 'anywhere'
   List<String> _productLinks = [];
 
   final List<String> _priorities = ['low', 'medium', 'high', 'urgent'];
-  final List<String> _wishlists = [
-    'public',
-    'birthday',
-    'christmas',
-    'anniversary',
-  ];
+  List<Map<String, dynamic>> _wishlists = [];
+
+  final WishlistRepository _wishlistRepository = WishlistRepository();
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _startAnimations();
+    _loadWishlists();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Get wishlistId from route arguments if not provided in constructor
     if (widget.wishlistId != null) {
       _selectedWishlist = widget.wishlistId!;
+    } else {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args != null) {
+        if (args is String) {
+          // If argument is directly a string (wishlistId)
+          _selectedWishlist = args;
+        } else if (args is Map<String, dynamic>) {
+          // If argument is a map with wishlistId
+          final wishlistId = args['wishlistId'] as String?;
+          if (wishlistId != null) {
+            _selectedWishlist = wishlistId;
+          }
+        }
+      }
+    }
+  }
+
+  /// Load wishlists from API
+  Future<void> _loadWishlists() async {
+    setState(() {
+      _isLoadingWishlists = true;
+    });
+
+    try {
+      debugPrint('📡 AddItemScreen: Loading wishlists...');
+      final wishlistsData = await _wishlistRepository.getWishlists();
+      debugPrint('📡 AddItemScreen: Received ${wishlistsData.length} wishlists');
+
+      setState(() {
+        _wishlists = wishlistsData;
+        _isLoadingWishlists = false;
+        
+        // If no wishlist is selected yet and we have wishlists, select the first one
+        if (_selectedWishlist.isEmpty && wishlistsData.isNotEmpty) {
+          final firstWishlistId = wishlistsData.first['id']?.toString() ?? 
+                                  wishlistsData.first['_id']?.toString() ?? '';
+          if (firstWishlistId.isNotEmpty) {
+            _selectedWishlist = firstWishlistId;
+          }
+        }
+        
+        // Ensure the selected wishlist from route arguments is still valid
+        if (_selectedWishlist.isNotEmpty) {
+          final exists = wishlistsData.any((w) {
+            final id = w['id']?.toString() ?? w['_id']?.toString() ?? '';
+            return id == _selectedWishlist;
+          });
+          if (!exists && wishlistsData.isNotEmpty) {
+            // If selected wishlist doesn't exist, select the first one
+            final firstWishlistId = wishlistsData.first['id']?.toString() ?? 
+                                    wishlistsData.first['_id']?.toString() ?? '';
+            if (firstWishlistId.isNotEmpty) {
+              _selectedWishlist = firstWishlistId;
+            }
+          }
+        }
+      });
+    } on ApiException catch (e) {
+      debugPrint('❌ AddItemScreen: Error loading wishlists: ${e.message}');
+      setState(() {
+        _isLoadingWishlists = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Failed to load wishlists: ${e.message}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ AddItemScreen: Unexpected error loading wishlists: $e');
+      setState(() {
+        _isLoadingWishlists = false;
+      });
     }
   }
 
@@ -299,50 +406,75 @@ class _AddItemScreenState extends State<AddItemScreen>
             ],
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _wishlists.map((wishlist) {
-              final isSelected = _selectedWishlist == wishlist;
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedWishlist = wishlist;
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+          if (_isLoadingWishlists)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(),
+              ),
+            )
+          else if (_wishlists.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  'No wishlists found. Please create a wishlist first.',
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
                   ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppColors.primary
-                        : AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _wishlists.map((wishlistData) {
+                final wishlistId = wishlistData['id']?.toString() ?? 
+                                   wishlistData['_id']?.toString() ?? '';
+                final wishlistName = wishlistData['name']?.toString() ?? 'Unnamed';
+                final isSelected = _selectedWishlist == wishlistId;
+                
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedWishlist = wishlistId;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.primary
-                          : AppColors.textTertiary.withOpacity(0.3),
-                      width: 1,
+                          : AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.textTertiary.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      wishlistName,
+                      style: AppStyles.bodySmall.copyWith(
+                        color: isSelected
+                            ? Colors.white
+                            : AppColors.textSecondary,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
+                      ),
                     ),
                   ),
-                  child: Text(
-                    _getWishlistDisplayName(wishlist, localization),
-                    style: AppStyles.bodySmall.copyWith(
-                      color: isSelected
-                          ? Colors.white
-                          : AppColors.textSecondary,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
+                );
+              }).toList(),
+            ),
         ],
       ),
     );
@@ -735,21 +867,23 @@ class _AddItemScreenState extends State<AddItemScreen>
 
   // Helper Methods
   String _getWishlistDisplayName(
-    String wishlist,
+    String wishlistId,
     LocalizationService localization,
   ) {
-    switch (wishlist) {
-      case 'public':
-        return localization.translate('wishlists.publicWishlist');
-      case 'birthday':
-        return localization.translate('wishlists.birthday2024');
-      case 'christmas':
-        return localization.translate('wishlists.christmas2024');
-      case 'anniversary':
-        return localization.translate('wishlists.anniversary');
-      default:
-        return wishlist;
+    // Find wishlist in the loaded list
+    final wishlist = _wishlists.firstWhere(
+      (w) {
+        final id = w['id']?.toString() ?? w['_id']?.toString() ?? '';
+        return id == wishlistId;
+      },
+      orElse: () => <String, dynamic>{},
+    );
+    
+    if (wishlist.isNotEmpty) {
+      return wishlist['name']?.toString() ?? 'Unnamed Wishlist';
     }
+    
+    return wishlistId; // Fallback to ID if not found
   }
 
   String _getPriorityDisplayName(
@@ -813,15 +947,154 @@ class _AddItemScreenState extends State<AddItemScreen>
   Future<void> _saveItem(LocalizationService localization) async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Validate wishlistId
+    if (_selectedWishlist.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Please select a wishlist',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(
+            top: 60,
+            left: 16,
+            right: 16,
+            bottom: 0,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // Get URL from product links if online store is selected
+      String? url;
+      if (_selectedWhereToFind == 'online' && _productLinks.isNotEmpty) {
+        // Use the first product link as the URL
+        url = _productLinks.first;
+      } else if (_selectedWhereToFind == 'online' && _linkController.text.isNotEmpty) {
+        // Use the link from the input field if no links were added yet
+        url = _linkController.text.trim();
+      }
 
-    setState(() => _isLoading = false);
+      debugPrint('📤 AddItemScreen: Adding item to wishlist');
+      debugPrint('   Name: ${_nameController.text}');
+      debugPrint('   Description: ${_descriptionController.text}');
+      debugPrint('   URL: $url');
+      debugPrint('   Priority: $_selectedPriority');
+      debugPrint('   WishlistId: $_selectedWishlist');
 
-    // Show success message
-    _showSuccessMessage(localization);
+      // Call API to add item
+      await _wishlistRepository.addItemToWishlist(
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        url: url,
+        priority: _selectedPriority,
+        wishlistId: _selectedWishlist,
+      );
+
+      debugPrint('✅ AddItemScreen: Item added successfully');
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+        // Show success message
+        _showSuccessMessage(localization);
+      }
+    } on ApiException catch (e) {
+      // Handle API-specific errors
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    e.message,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      // Handle unexpected errors
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'An unexpected error occurred. Please try again.',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+      debugPrint('Add item error: $e');
+    }
   }
 
   void _scanBarcode(LocalizationService localization) {
@@ -853,6 +1126,7 @@ class _AddItemScreenState extends State<AddItemScreen>
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         content: Column(
           mainAxisSize: MainAxisSize.min,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -5,6 +6,7 @@ import 'package:wish_listy/core/widgets/app_logo.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,19 +24,42 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _startSplashSequence() async {
-    print('Splash screen: Starting sequence...');
+    if (kDebugMode) {
+      debugPrint('Splash screen: Starting sequence...');
+    }
 
-    // Wait for splash to complete
-    await Future.delayed(const Duration(seconds: 3));
+    // Wait for splash to complete (minimum 2 seconds for smooth UX)
+    await Future.delayed(const Duration(seconds: 2));
 
-    print('Splash screen: 3 seconds elapsed, attempting navigation...');
+    if (!mounted) return;
 
-    // Navigate to welcome screen
-    if (mounted) {
-      print('Splash screen: Navigating to welcome screen...');
-      Navigator.pushReplacementNamed(context, AppRoutes.welcome);
+    // Get auth repository to check authentication state
+    final authRepository = Provider.of<AuthRepository>(
+      context,
+      listen: false,
+    );
+
+    // Wait for auth initialization if still loading
+    if (authRepository.isLoading) {
+      // Wait a bit more for initialization to complete
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+
+    if (!mounted) return;
+
+    // Check authentication state and navigate accordingly
+    if (authRepository.isAuthenticated) {
+      // User is logged in, navigate to main navigation (home screen)
+      if (kDebugMode) {
+        debugPrint('Splash screen: User is authenticated, navigating to main navigation...');
+      }
+      Navigator.pushReplacementNamed(context, AppRoutes.mainNavigation);
     } else {
-      print('Splash screen: Widget not mounted, cannot navigate');
+      // User is not logged in (guest), navigate to welcome screen
+      if (kDebugMode) {
+        debugPrint('Splash screen: User is guest, navigating to welcome screen...');
+      }
+      Navigator.pushReplacementNamed(context, AppRoutes.welcome);
     }
   }
 

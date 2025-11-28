@@ -181,7 +181,7 @@ class UserLevel {
     id: 'diamond',
     name: 'Gift Deity',
     description: 'You have transcended mere mortal gift-giving!',
-    requiredPoints: 5000,
+    requiredPoints: 4000,
     badgeIcon: '💠',
     badgeColor: Color(0xFF75D5FD),
     perks: [

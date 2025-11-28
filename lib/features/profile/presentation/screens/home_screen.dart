@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
@@ -9,6 +10,8 @@ import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/rewards/data/repository/rewards_repository.dart';
+import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
+import 'package:wish_listy/core/services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,7 +27,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   final ScrollController _scrollController = ScrollController();
   bool _showWelcomeCard = true;
+  bool _hasWishlists = false;
+  bool _isCheckingWishlists = false;
+  int _wishlistCount = 0;
   final RewardsRepository _rewardsRepository = RewardsRepository();
+  final WishlistRepository _wishlistRepository = WishlistRepository();
 
   // Mock data - replace with real data from your backend
   final List<UpcomingEvent> _upcomingEvents = [
@@ -102,7 +109,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     _initializeAnimations();
     _initializeRewards();
+    _checkWishlists();
     _startAnimations();
+  }
+
+  /// Check if user has any wishlists
+  Future<void> _checkWishlists() async {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    
+    // Only check for authenticated users
+    if (!authService.isAuthenticated || authService.isGuest) {
+      return;
+    }
+
+    setState(() {
+      _isCheckingWishlists = true;
+    });
+
+    try {
+      debugPrint('🏠 HomeScreen: Checking for wishlists...');
+      final wishlists = await _wishlistRepository.getWishlists();
+      
+      setState(() {
+        _hasWishlists = wishlists.isNotEmpty;
+        _wishlistCount = wishlists.length;
+        _showWelcomeCard = !_hasWishlists; // Hide welcome card if user has wishlists
+        _isCheckingWishlists = false;
+      });
+
+      debugPrint('🏠 HomeScreen: Has wishlists: $_hasWishlists, Count: $_wishlistCount');
+    } on ApiException catch (e) {
+      debugPrint('⚠️ HomeScreen: Error checking wishlists: ${e.message}');
+      setState(() {
+        _isCheckingWishlists = false;
+        // Keep welcome card visible if there's an error
+      });
+    } catch (e) {
+      debugPrint('⚠️ HomeScreen: Unexpected error checking wishlists: $e');
+      setState(() {
+        _isCheckingWishlists = false;
+      });
+    }
   }
 
   void _initializeRewards() async {
@@ -180,34 +227,44 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         CrossAxisAlignment.start,
                                     children: [
                                       // Guest Mode Welcome Card
-                                      if (authService?.isGuest == true) ...[
+                                      if (authService.isGuest == true) ...[
                                         _buildGuestWelcomeCard(localization),
                                         const SizedBox(height: 24),
                                       ],
 
-                                      // Regular Welcome Card for logged users
-                                      if (authService?.isAuthenticated ==
+                                      // Regular Welcome Card for logged users (only if no wishlists)
+                                      if (authService.isAuthenticated ==
                                               true &&
-                                          _showWelcomeCard) ...[
+                                          _showWelcomeCard &&
+                                          !_hasWishlists &&
+                                          !_isCheckingWishlists) ...[
                                         _buildWelcomeCard(localization),
+                                        const SizedBox(height: 24),
+                                      ],
+
+                                      // Summary Card when user has wishlists (replaces welcome card)
+                                      if (authService.isAuthenticated &&
+                                          _hasWishlists &&
+                                          !_isCheckingWishlists) ...[
+                                        _buildSummaryCard(localization),
                                         const SizedBox(height: 24),
                                       ],
 
                                       // Points & Level Display (only for authenticated users)
                                       if (authService.isAuthenticated) ...[
                                         _buildPointsAndLevel(),
-                                        const SizedBox(height: 24),
+                                        SizedBox(height: _hasWishlists ? 20 : 24),
                                       ],
 
                                       // Recent Achievement (only for authenticated users)
                                       if (authService.isAuthenticated) ...[
                                         const RecentAchievementWidget(),
-                                        const SizedBox(height: 24),
+                                        SizedBox(height: _hasWishlists ? 20 : 24),
                                       ],
 
                                       // Quick Actions (limited for guests)
                                       _buildQuickActions(localization),
-                                      const SizedBox(height: 24),
+                                      SizedBox(height: _hasWishlists ? 20 : 24),
 
                                       // Rewards Quick Actions (only for authenticated users)
                                       if (authService.isAuthenticated) ...[
@@ -240,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       ],
 
                                       // Guest encouragement section
-                                      if (authService?.isGuest == true) ...[
+                                      if (authService.isGuest == true) ...[
                                         _buildGuestEncouragementSection(
                                           localization,
                                         ),
@@ -481,13 +538,171 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               'home.welcomeBanner.createFirstWishlist',
             ),
             onPressed: () {
-              // Navigate to create wishlist
+              Navigator.pushNamed(
+                context,
+                AppRoutes.createWishlist,
+                arguments: {'isEvent': false},
+              );
             },
             variant: ButtonVariant.secondary,
             customColor: Colors.white,
             customTextColor: AppColors.primary,
             size: ButtonSize.small,
             fullWidth: false,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Summary card shown when user has wishlists (replaces welcome card)
+  Widget _buildSummaryCard(LocalizationService localization) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.surface,
+            AppColors.surface,
+            AppColors.primary.withOpacity(0.03),
+          ],
+          stops: const [0.0, 0.7, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.1),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.08),
+            offset: const Offset(0, 4),
+            blurRadius: 16,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Icon Section
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.primary.withOpacity(0.15),
+                  AppColors.secondary.withOpacity(0.15),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              Icons.favorite_rounded,
+              color: AppColors.primary,
+              size: 32,
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Content Section
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Your Wishlists',
+                      style: AppStyles.headingSmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '$_wishlistCount',
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Manage and organize your wishlists',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Quick Action Button
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(context, AppRoutes.myWishlists);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primary,
+                          AppColors.primaryLight,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.3),
+                          offset: const Offset(0, 2),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'View All',
+                          style: AppStyles.bodyMedium.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1077,8 +1292,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _refreshData() async {
-    // Simulate refresh
-    await Future.delayed(const Duration(seconds: 1));
+    // Refresh wishlists check
+    await _checkWishlists();
 
     // Refresh rewards data
     _initializeRewards();

@@ -140,6 +140,8 @@ class SignupFormWidget extends StatelessWidget {
                   obscurePassword
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
+                  color: AppColors.textSecondary,
+                  size: 20,
                 ),
               ),
               validator: (value) {
@@ -190,6 +192,8 @@ class SignupFormWidget extends StatelessWidget {
                   obscureConfirmPassword
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
+                  color: AppColors.textSecondary,
+                  size: 20,
                 ),
               ),
               validator: (value) {

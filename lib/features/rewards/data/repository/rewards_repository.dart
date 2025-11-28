@@ -475,7 +475,7 @@ class RewardsRepository {
     // Mock leaderboard data
     final random = Random();
     return List.generate(50, (index) {
-      final points = 5000 - (index * 50) + random.nextInt(50);
+      final points = 4000 - (index * 50) + random.nextInt(50);
       return LeaderboardEntry(
         userId: 'user_$index',
         userName: _generateMockUserName(),

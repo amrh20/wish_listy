@@ -6,7 +6,9 @@ import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
 
 class CreateWishlistScreen extends StatefulWidget {
   const CreateWishlistScreen({super.key});
@@ -28,6 +30,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   bool _isLoading = false;
   String _selectedPrivacy = 'public';
   String _selectedCategory = 'general';
+  final WishlistRepository _wishlistRepository = WishlistRepository();
 
   final List<String> _privacyOptions = ['public', 'private', 'friendsOnly'];
   final List<String> _categoryOptions = [
@@ -113,9 +116,18 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                                   isRequired: true,
                                   validator: (value) {
                                     if (value?.isEmpty ?? true) {
-                                      return localization.translate(
+                                      final errorMsg = localization.translate(
                                         'wishlists.wishlistNameRequired',
                                       );
+                                      return errorMsg.isNotEmpty
+                                          ? errorMsg
+                                          : 'Wishlist name is required';
+                                    }
+                                    if (value!.trim().length < 2) {
+                                      return 'Wishlist name must be at least 2 characters';
+                                    }
+                                    if (value.trim().length > 100) {
+                                      return 'Wishlist name must be less than 100 characters';
                                     }
                                     return null;
                                   },
@@ -134,6 +146,15 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                                   ),
                                   prefixIcon: Icons.description_outlined,
                                   maxLines: 3,
+                                  validator: (value) {
+                                    // Description is optional, but if provided, validate length
+                                    if (value != null && value.isNotEmpty) {
+                                      if (value.trim().length > 500) {
+                                        return 'Description must be less than 500 characters';
+                                      }
+                                    }
+                                    return null;
+                                  },
                                 ),
 
                                 const SizedBox(height: 24),
@@ -479,20 +500,113 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   }
 
   Future<void> _createWishlist(LocalizationService localization) async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      debugPrint('❌ Form validation failed');
+      return;
+    }
+
+    debugPrint('🚀 Starting wishlist creation...');
+    debugPrint('   Name: ${_nameController.text.trim()}');
+    debugPrint('   Description: ${_descriptionController.text.trim()}');
+    debugPrint('   Privacy: $_selectedPrivacy');
+    debugPrint('   Category: $_selectedCategory');
 
     setState(() => _isLoading = true);
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      // Call API to create wishlist
+      debugPrint('📡 Calling API: POST /api/wishlists');
+      final response = await _wishlistRepository.createWishlist(
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        privacy: _selectedPrivacy,
+        category: _selectedCategory,
+      );
 
-    setState(() => _isLoading = false);
+      debugPrint('✅ API Response received: $response');
 
-    // Show success message and navigate to Add Item screen
-    _showSuccessAndNavigate(localization);
+      setState(() => _isLoading = false);
+
+      // Check if creation was successful
+      if (response['success'] == true || response['data'] != null) {
+        // Extract wishlist ID from response
+        final wishlistData = response['data'] ?? response;
+        final wishlistId =
+            wishlistData['id']?.toString() ??
+            wishlistData['wishlistId']?.toString() ??
+            'new_wishlist_id';
+
+        // Show success message and navigate
+        if (mounted) {
+          _showSuccessAndNavigate(localization, wishlistId);
+        }
+      } else {
+        // Creation failed
+        final errorMessage =
+            response['message']?.toString() ??
+            'Failed to create wishlist. Please try again.';
+        if (mounted) {
+          _showErrorSnackBar(errorMessage);
+        }
+      }
+    } on ApiException catch (e) {
+      // Handle API-specific errors
+      setState(() => _isLoading = false);
+      if (mounted) {
+        _showErrorSnackBar(e.message);
+      }
+    } catch (e) {
+      // Handle unexpected errors
+      setState(() => _isLoading = false);
+      if (mounted) {
+        _showErrorSnackBar('An unexpected error occurred. Please try again.');
+      }
+      debugPrint('Create wishlist error: $e');
+    }
   }
 
-  void _showSuccessAndNavigate(LocalizationService localization) {
+  /// Show error message as a top toast
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.error,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(top: 60, left: 16, right: 16, bottom: 0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessAndNavigate(
+    LocalizationService localization,
+    String wishlistId,
+  ) {
     // Show success dialog with action options
     showDialog(
       context: context,
@@ -556,7 +670,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                         context,
                         AppRoutes.addItem,
                         arguments: {
-                          'wishlistId': 'new_wishlist_id',
+                          'wishlistId': wishlistId,
                           'wishlistName': _nameController.text,
                           'isNewWishlist': true,
                         },
@@ -580,7 +694,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                         context,
                         AppRoutes.wishlistItems,
                         arguments: {
-                          'wishlistId': 'new_wishlist_id',
+                          'wishlistId': wishlistId,
                           'wishlistName': _nameController.text,
                           'totalItems': 0,
                           'purchasedItems': 0,

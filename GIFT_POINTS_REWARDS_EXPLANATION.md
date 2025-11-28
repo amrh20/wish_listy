@@ -101,7 +101,7 @@ enum UserLevels {
   🥈 Silver - Gift Enthusiast   (100 نقطة)
   🥇 Gold - Gift Master         (500 نقطة)
   💎 Platinum - Gift Legend     (1500 نقطة)
-  💠 Diamond - Gift Deity       (5000 نقطة)
+  💠 Diamond - Gift Deity       (4000 نقطة)
 }
 ```
 

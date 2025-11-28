@@ -162,6 +162,7 @@ class WishlistCardWidget extends StatelessWidget {
                       minWidth: 40,
                       minHeight: 40,
                     ),
+                    color: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -170,9 +171,18 @@ class WishlistCardWidget extends StatelessWidget {
                         value: 'edit',
                         child: Row(
                           children: [
-                            Icon(Icons.edit_outlined, size: 18),
-                            SizedBox(width: 12),
-                            Text(localization.translate('common.edit')),
+                            Icon(
+                              Icons.edit_outlined,
+                              size: 18,
+                              color: AppColors.textPrimary,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              localization.translate('common.edit'),
+                              style: AppStyles.bodyMedium.copyWith(
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -180,9 +190,18 @@ class WishlistCardWidget extends StatelessWidget {
                         value: 'share',
                         child: Row(
                           children: [
-                            Icon(Icons.share_outlined, size: 18),
-                            SizedBox(width: 12),
-                            Text(localization.translate('common.share')),
+                            Icon(
+                              Icons.share_outlined,
+                              size: 18,
+                              color: AppColors.textPrimary,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              localization.translate('common.share'),
+                              style: AppStyles.bodyMedium.copyWith(
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -195,10 +214,13 @@ class WishlistCardWidget extends StatelessWidget {
                               size: 18,
                               color: AppColors.error,
                             ),
-                            SizedBox(width: 12),
+                            const SizedBox(width: 12),
                             Text(
                               localization.translate('common.delete'),
-                              style: TextStyle(color: AppColors.error),
+                              style: AppStyles.bodyMedium.copyWith(
+                                color: AppColors.error,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ],
                         ),

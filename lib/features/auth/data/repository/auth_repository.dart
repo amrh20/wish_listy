@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wish_listy/core/services/api_service.dart';
-import 'package:wish_listy/features/auth/data/models/user_model.dart';
 
 /// Authentication Repository
 /// Handles all authentication-related operations including:
@@ -110,26 +109,31 @@ class AuthRepository extends ChangeNotifier {
       };
 
       // Make API call to register endpoint
+      // Endpoint: POST /api/auth/register
       final response = await _apiService.post(
-        '/auth/signup',
+        '/auth/register',
         data: registrationData,
       );
 
       // Return the response data which should contain user info and token
       return response;
+    } on ApiException {
+      // Re-throw ApiException to preserve error details
+      rethrow;
     } catch (e) {
       // Handle any unexpected errors
+      debugPrint('Unexpected registration error: $e');
       throw Exception('Registration failed. Please try again.');
     }
   }
 
-  // Login user with email and password using API
+  // Login user with username and password using API
   Future<Map<String, dynamic>> login({
-    required String email,
+    required String username, // username can be email or phone
     required String password,
   }) async {
     try {
-      final loginData = {'email': email, 'password': password};
+      final loginData = {'username': username, 'password': password};
       final response = await _apiService.post('/auth/login', data: loginData);
       return response;
     } catch (e) {
@@ -138,10 +142,10 @@ class AuthRepository extends ChangeNotifier {
   }
 
   // Login with credentials using real API
-  Future<bool> loginUser(String email, String password) async {
+  Future<bool> loginUser(String username, String password) async {
     try {
       // Call the API to login
-      final response = await login(email: email, password: password);
+      final response = await login(username: username, password: password);
 
       // Check if login was successful
       if (response['success'] == true) {
@@ -153,8 +157,8 @@ class AuthRepository extends ChangeNotifier {
         _userState = UserState.authenticated;
         _userId =
             userData?['id'] ?? 'user_${DateTime.now().millisecondsSinceEpoch}';
-        _userEmail = userData?['email'] ?? email;
-        _userName = userData?['name'] ?? email.split('@').first;
+        _userEmail = userData?['username'] ?? userData?['email'] ?? username;
+        _userName = userData?['fullName'] ?? userData?['name'] ?? username.split('@').first;
 
         // Save to local storage
         final prefs = await SharedPreferences.getInstance();
@@ -273,10 +277,20 @@ class AuthRepository extends ChangeNotifier {
   }
 
   bool isValidPhone(String phone) {
-    // Remove all non-digit characters
-    final cleanPhone = phone.replaceAll(RegExp(r'[^\d]'), '');
-    // Check if it's a valid phone number (7-25 digits)
-    return cleanPhone.length >= 7 && cleanPhone.length <= 25;
+    // Accept phone numbers with or without +, spaces, dashes, parentheses
+    // Remove all non-digit characters except +
+    final cleanPhone = phone.replaceAll(RegExp(r'[\s\-()]'), '');
+    
+    // Check if starts with + (international format) or just digits
+    if (cleanPhone.startsWith('+')) {
+      // International format: + followed by 7-15 digits
+      final digitsOnly = cleanPhone.substring(1).replaceAll(RegExp(r'[^\d]'), '');
+      return digitsOnly.length >= 7 && digitsOnly.length <= 15;
+    } else {
+      // Local format: 7-15 digits only
+      final digitsOnly = cleanPhone.replaceAll(RegExp(r'[^\d]'), '');
+      return digitsOnly.length >= 7 && digitsOnly.length <= 15;
+    }
   }
 
   bool isValidUsername(String username) {
@@ -284,20 +298,9 @@ class AuthRepository extends ChangeNotifier {
   }
 
   String? validatePassword(String password) {
-    if (password.length < 8) {
-      return 'Password must be at least 8 characters long';
-    }
-
-    if (!password.contains(RegExp(r'[A-Z]'))) {
-      return 'Password must contain at least one uppercase letter';
-    }
-
-    if (!password.contains(RegExp(r'[a-z]'))) {
-      return 'Password must contain at least one lowercase letter';
-    }
-
-    if (!password.contains(RegExp(r'[0-9]'))) {
-      return 'Password must contain at least one number';
+    // Minimum 6 characters required
+    if (password.length < 6) {
+      return 'Password must be at least 6 characters long';
     }
 
     return null; // Password is valid

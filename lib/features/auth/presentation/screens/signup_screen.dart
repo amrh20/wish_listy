@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import '../widgets/signup_header_widget.dart';
 import '../widgets/signup_form_widget.dart';
 import '../widgets/signup_terms_widget.dart';
@@ -112,17 +114,17 @@ class _SignupScreenState extends State<SignupScreen>
     // Username validation (email or phone)
     if (hasUsername) {
       final username = _usernameController.text.trim();
-      final isEmail = RegExp(
-        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-      ).hasMatch(username);
-      final isPhone = RegExp(r'^\+?[1-9]\d{1,14}$').hasMatch(username);
-      if (!isEmail && !isPhone) {
+      final authRepository = Provider.of<AuthRepository>(
+        context,
+        listen: false,
+      );
+      if (!authRepository.isValidUsername(username)) {
         usernameError = localization.translate('auth.invalidEmailOrPhone');
       }
     }
 
-    // Password validation
-    if (hasPassword && _passwordController.text.length < 8) {
+    // Password validation - minimum 6 characters
+    if (hasPassword && _passwordController.text.length < 6) {
       passwordError = localization.translate('auth.passwordMinLength');
     }
 
@@ -173,7 +175,7 @@ class _SignupScreenState extends State<SignupScreen>
     super.dispose();
   }
 
-  /// Handle user registration - Temporarily disabled API until backend is ready
+  /// Handle user registration using API
   Future<void> _handleSignup() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -188,47 +190,103 @@ class _SignupScreenState extends State<SignupScreen>
 
     setState(() => _isLoading = true);
 
-    // TODO: Uncomment when backend is ready
-    // try {
-    //   final registrationRequest = RegistrationRequest.fromForm(
-    //     fullName: _fullNameController.text,
-    //     username: _usernameController.text,
-    //     password: _passwordController.text,
-    //   );
+    try {
+      // Get AuthRepository instance
+      final authRepository = Provider.of<AuthRepository>(
+        context,
+        listen: false,
+      );
 
-    //   final authApiService = AuthApiService();
-    //   final response = await authApiService.register(
-    //     username: registrationRequest.username,
-    //     fullName: registrationRequest.fullName,
-    //     password: registrationRequest.password,
-    //   );
+      // Call register API with form data
+      final response = await authRepository.register(
+        fullName: _fullNameController.text.trim(),
+        username: _usernameController.text.trim(),
+        password: _passwordController.text,
+      );
 
-    //   setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
 
-    //   if (response['success'] == true) {
-    //     _showSuccessDialog(response);
-    //   } else {
-    //     _showErrorSnackBar(response['message'] ?? 'Registration failed');
-    //   }
-    // } on ApiException catch (e) {
-    //   setState(() => _isLoading = false);
-    //   _showErrorSnackBar(e.message);
-    // } catch (e) {
-    //   setState(() => _isLoading = false);
-    //   _showErrorSnackBar('An unexpected error occurred. Please try again.');
-    // }
+      // Check if registration was successful
+      if (response['success'] == true) {
+        // Show success toast message
+        if (mounted) {
+          _showSuccessSnackBar('تم التسجيل بنجاح');
 
-    // Temporary: Simulate successful registration and navigate to home
-    await Future.delayed(const Duration(seconds: 2)); // Simulate API call delay
+          // Wait a bit for the toast to be visible, then redirect to login
+          await Future.delayed(const Duration(milliseconds: 1500));
 
-    setState(() => _isLoading = false);
+          // Navigate to login screen with username and password pre-filled
+          if (mounted) {
+            Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.login,
+              arguments: {
+                'username': _usernameController.text.trim(),
+                'password': _passwordController.text,
+              },
+            );
+          }
+        }
+      } else {
+        // Registration failed
+        final errorMessage =
+            response['message']?.toString() ??
+            'Registration failed. Please try again.';
+        _showErrorSnackBar(errorMessage);
+      }
+    } on ApiException catch (e) {
+      // Handle API-specific errors
+      setState(() => _isLoading = false);
+      if (mounted) {
+        _showErrorSnackBar(e.message);
+      }
+    } catch (e) {
+      // Handle unexpected errors
+      setState(() => _isLoading = false);
+      if (mounted) {
+        _showErrorSnackBar('An unexpected error occurred. Please try again.');
+      }
+      // Log error for debugging
+      debugPrint('Signup error: $e');
+    }
+  }
 
-    // Navigate directly to home screen
-    Navigator.pushReplacementNamed(context, AppRoutes.mainNavigation);
+  /// Show success message as a top toast
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.check_circle_outline,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.success,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(top: 60, left: 16, right: 16, bottom: 0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 
   /// Show error message as a top toast
   void _showErrorSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(

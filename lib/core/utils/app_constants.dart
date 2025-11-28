@@ -17,7 +17,7 @@ class AppConstants {
   static const String notificationKey = 'notifications_enabled';
 
   // Validation
-  static const int minPasswordLength = 8;
+  static const int minPasswordLength = 6;
   static const int maxPasswordLength = 50;
   static const int minNameLength = 2;
   static const int maxNameLength = 50;

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
+import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 
@@ -37,70 +39,260 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
   String _searchQuery = '';
   final _searchController = TextEditingController();
 
-  // Mock data for wishlist items
-  final List<WishlistItem> _items = [
-    WishlistItem(
-      id: '1',
-      wishlistId: '1',
-      name: 'iPhone 15 Pro',
-      description: 'Latest iPhone with amazing camera and performance',
-      priority: ItemPriority.high,
-      imageUrl: null,
-      status: ItemStatus.desired,
-      createdAt: DateTime.now().subtract(Duration(days: 5)),
-      updatedAt: DateTime.now().subtract(Duration(days: 5)),
-    ),
-    WishlistItem(
-      id: '2',
-      wishlistId: '1',
-      name: 'Nike Air Max 270',
-      description: 'Comfortable running shoes for daily workouts',
-      priority: ItemPriority.medium,
-      imageUrl: null,
-      status: ItemStatus.purchased,
-      createdAt: DateTime.now().subtract(Duration(days: 10)),
-      updatedAt: DateTime.now().subtract(Duration(days: 10)),
-    ),
-    WishlistItem(
-      id: '3',
-      wishlistId: '1',
-      name: 'Kindle Paperwhite',
-      description: 'E-reader with waterproof design and long battery life',
-      priority: ItemPriority.low,
-      imageUrl: null,
-      status: ItemStatus.desired,
-      createdAt: DateTime.now().subtract(Duration(days: 15)),
-      updatedAt: DateTime.now().subtract(Duration(days: 15)),
-    ),
-    WishlistItem(
-      id: '4',
-      wishlistId: '1',
-      name: 'KitchenAid Mixer',
-      description: 'Professional stand mixer for baking enthusiasts',
-      priority: ItemPriority.high,
-      imageUrl: null,
-      status: ItemStatus.desired,
-      createdAt: DateTime.now().subtract(Duration(days: 20)),
-      updatedAt: DateTime.now().subtract(Duration(days: 20)),
-    ),
-    WishlistItem(
-      id: '5',
-      wishlistId: '1',
-      name: 'Sony WH-1000XM4',
-      description: 'Wireless noise-canceling headphones',
-      priority: ItemPriority.medium,
-      imageUrl: null,
-      status: ItemStatus.desired,
-      createdAt: DateTime.now().subtract(Duration(days: 25)),
-      updatedAt: DateTime.now().subtract(Duration(days: 25)),
-    ),
-  ];
+  // Wishlist data from API
+  List<WishlistItem> _items = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+  int _totalItems = 0;
+  int _purchasedItems = 0;
+  String _wishlistName = '';
+  String _category = '';
+  String _privacy = '';
+  DateTime? _createdAt;
+
+  final WishlistRepository _wishlistRepository = WishlistRepository();
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _startAnimations();
+    _loadWishlistDetails();
+  }
+
+  /// Load wishlist details and items from API
+  Future<void> _loadWishlistDetails() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _wishlistName = widget.wishlistName;
+      _totalItems = widget.totalItems;
+      _purchasedItems = widget.purchasedItems;
+    });
+
+    try {
+      debugPrint('📡 WishlistItemsScreen: Loading wishlist: ${widget.wishlistId}');
+      
+      // Call API to get wishlist details
+      final wishlistData = await _wishlistRepository.getWishlistById(widget.wishlistId);
+      
+      debugPrint('📡 WishlistItemsScreen: Received wishlist data: $wishlistData');
+
+      // Handle both direct fields and nested wishlist object
+      final data = wishlistData['wishlist'] as Map<String, dynamic>? ?? wishlistData;
+      
+      // Parse items from response
+      final itemsList = data['items'] as List<dynamic>? ?? [];
+      final items = itemsList
+          .map((item) => _convertToWishlistItem(item as Map<String, dynamic>))
+          .toList();
+
+      // Get stats if available
+      int totalItems = widget.totalItems;
+      int purchasedItems = widget.purchasedItems;
+
+      if (data['stats'] != null && data['stats'] is Map) {
+        final stats = data['stats'] as Map<String, dynamic>;
+        totalItems = stats['totalItems'] as int? ?? items.length;
+        purchasedItems = stats['purchasedItems'] as int? ?? 0;
+      } else {
+        totalItems = items.length;
+        purchasedItems = items.where((item) => item.status == ItemStatus.purchased).length;
+      }
+
+      // Parse additional wishlist info
+      String category = data['category']?.toString().trim() ?? '';
+      String privacy = data['privacy']?.toString().trim() ?? '';
+      DateTime? createdAt;
+      if (data['createdAt'] != null) {
+        try {
+          createdAt = DateTime.parse(data['createdAt'].toString());
+        } catch (e) {
+          debugPrint('⚠️ Failed to parse createdAt: $e');
+        }
+      }
+
+      debugPrint('📊 WishlistItemsScreen: Parsed additional info');
+      debugPrint('   Category: $category');
+      debugPrint('   Privacy: $privacy');
+      debugPrint('   CreatedAt: $createdAt');
+
+      setState(() {
+        _items = items;
+        _totalItems = totalItems;
+        _purchasedItems = purchasedItems;
+        _wishlistName = data['name']?.toString() ?? widget.wishlistName;
+        _category = category;
+        _privacy = privacy;
+        _createdAt = createdAt;
+        _isLoading = false;
+      });
+
+      debugPrint('✅ WishlistItemsScreen: Loaded ${items.length} items');
+      debugPrint('   Category: $_category');
+      debugPrint('   Privacy: $_privacy');
+      debugPrint('   CreatedAt: $_createdAt');
+    } on ApiException catch (e) {
+      setState(() {
+        _errorMessage = e.message;
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    e.message,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(top: 60, left: 16, right: 16, bottom: 0),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load wishlist. Please try again.';
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'An unexpected error occurred. Please try again.',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(top: 60, left: 16, right: 16, bottom: 0),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        );
+      }
+      debugPrint('Load wishlist error: $e');
+    }
+  }
+
+  /// Convert API response item to WishlistItem
+  WishlistItem _convertToWishlistItem(Map<String, dynamic> data) {
+    // Parse priority
+    ItemPriority priority = ItemPriority.medium;
+    final priorityStr = data['priority']?.toString().toLowerCase() ?? 'medium';
+    switch (priorityStr) {
+      case 'high':
+        priority = ItemPriority.high;
+        break;
+      case 'low':
+        priority = ItemPriority.low;
+        break;
+      case 'urgent':
+        priority = ItemPriority.urgent;
+        break;
+      default:
+        priority = ItemPriority.medium;
+    }
+
+    // Parse status
+    ItemStatus status = ItemStatus.desired;
+    final statusStr = data['status']?.toString().toLowerCase() ?? 'desired';
+    switch (statusStr) {
+      case 'purchased':
+        status = ItemStatus.purchased;
+        break;
+      case 'reserved':
+        status = ItemStatus.reserved;
+        break;
+      default:
+        status = ItemStatus.desired;
+    }
+
+    // Parse dates
+    DateTime createdAt = DateTime.now();
+    if (data['createdAt'] != null) {
+      try {
+        createdAt = DateTime.parse(data['createdAt'].toString());
+      } catch (e) {
+        createdAt = DateTime.now();
+      }
+    } else if (data['created_at'] != null) {
+      try {
+        createdAt = DateTime.parse(data['created_at'].toString());
+      } catch (e) {
+        createdAt = DateTime.now();
+      }
+    }
+
+    DateTime updatedAt = DateTime.now();
+    if (data['updatedAt'] != null) {
+      try {
+        updatedAt = DateTime.parse(data['updatedAt'].toString());
+      } catch (e) {
+        updatedAt = DateTime.now();
+      }
+    } else if (data['updated_at'] != null) {
+      try {
+        updatedAt = DateTime.parse(data['updated_at'].toString());
+      } catch (e) {
+        updatedAt = DateTime.now();
+      }
+    }
+
+    DateTime? purchasedAt;
+    if (data['purchasedAt'] != null) {
+      try {
+        purchasedAt = DateTime.parse(data['purchasedAt'].toString());
+      } catch (e) {
+        // Ignore
+      }
+    } else if (data['purchased_at'] != null) {
+      try {
+        purchasedAt = DateTime.parse(data['purchased_at'].toString());
+      } catch (e) {
+        // Ignore
+      }
+    }
+
+    return WishlistItem(
+      id: data['id']?.toString() ?? data['_id']?.toString() ?? '',
+      wishlistId: widget.wishlistId,
+      name: data['name']?.toString() ?? 'Unnamed Item',
+      description: data['description']?.toString(),
+      link: data['link']?.toString() ?? data['url']?.toString(),
+      imageUrl: data['imageUrl']?.toString() ?? data['image_url']?.toString(),
+      priority: priority,
+      status: status,
+      purchasedBy: data['purchasedBy']?.toString() ?? data['purchased_by']?.toString(),
+      purchasedAt: purchasedAt,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
   }
 
   void _initializeAnimations() {
@@ -152,8 +344,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
           return matchesSearch && item.status != ItemStatus.purchased;
         case 'purchased':
           return matchesSearch && item.status == ItemStatus.purchased;
-        case 'high_priority':
-          return matchesSearch && item.priority == ItemPriority.high;
         default:
           return matchesSearch;
       }
@@ -176,33 +366,87 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
 
                   // Content
                   Expanded(
-                    child: AnimatedBuilder(
-                      animation: _animationController,
-                      builder: (context, child) {
-                        return FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: SlideTransition(
-                            position: _slideAnimation,
+                    child: _isLoading
+                        ? Center(
                             child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                // Stats Card
-                                _buildStatsCard(),
-
-                                const SizedBox(height: 20),
-
-                                // Search and Filters
-                                _buildSearchAndFilters(),
-
-                                const SizedBox(height: 20),
-
-                                // Items List
-                                Expanded(child: _buildItemsList()),
+                                CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.primary,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Loading wishlist...',
+                                  style: AppStyles.bodyMedium.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
                               ],
                             ),
-                          ),
-                        );
-                      },
-                    ),
+                          )
+                        : _errorMessage != null
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.error_outline,
+                                        size: 64,
+                                        color: AppColors.error,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        _errorMessage!,
+                                        style: AppStyles.bodyLarge.copyWith(
+                                          color: AppColors.textPrimary,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                      const SizedBox(height: 24),
+                                      ElevatedButton.icon(
+                                        onPressed: _loadWishlistDetails,
+                                        icon: const Icon(Icons.refresh),
+                                        label: const Text('Retry'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.primary,
+                                          foregroundColor: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : AnimatedBuilder(
+                                animation: _animationController,
+                                builder: (context, child) {
+                                  return FadeTransition(
+                                    opacity: _fadeAnimation,
+                                    child: SlideTransition(
+                                      position: _slideAnimation,
+                                      child: Column(
+                                        children: [
+                                          // Stats Card
+                                          _buildStatsCard(),
+
+                                          const SizedBox(height: 20),
+
+                                          // Search and Filters
+                                          _buildSearchAndFilters(),
+
+                                          const SizedBox(height: 20),
+
+                                          // Items List
+                                          Expanded(child: _buildItemsList()),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                   ),
                 ],
               ),
@@ -242,26 +486,53 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.wishlistName,
+                  _wishlistName.isNotEmpty ? _wishlistName : widget.wishlistName,
                   style: AppStyles.headingSmall.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (widget.isFriendWishlist && widget.friendName != null)
-                  Text(
-                    '${widget.friendName}\'s wishlist',
-                    style: AppStyles.bodySmall.copyWith(
-                      color: AppColors.secondary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  )
-                else
-                  Text(
-                    '${_filteredItems.length} items',
-                    style: AppStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
+                const SizedBox(height: 4),
+                // Additional info row
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 6,
+                  children: [
+                    if (widget.isFriendWishlist && widget.friendName != null)
+                      _buildInfoChip(
+                        icon: Icons.person_outline,
+                        label: '${widget.friendName}\'s wishlist',
+                        color: AppColors.secondary,
+                      )
+                    else
+                      _buildInfoChip(
+                        icon: Icons.inventory_2_outlined,
+                        label: '${_items.length} items',
+                        color: AppColors.textSecondary,
+                      ),
+                    if (_category.isNotEmpty)
+                      _buildInfoChip(
+                        icon: Icons.category_outlined,
+                        label: _category[0].toUpperCase() + _category.substring(1),
+                        color: AppColors.primary,
+                      ),
+                    if (_privacy.isNotEmpty)
+                      _buildInfoChip(
+                        icon: _privacy == 'public' 
+                            ? Icons.public_outlined 
+                            : Icons.lock_outline,
+                        label: _privacy[0].toUpperCase() + _privacy.substring(1),
+                        color: _privacy == 'public' 
+                            ? AppColors.success 
+                            : AppColors.warning,
+                      ),
+                    if (_createdAt != null)
+                      _buildInfoChip(
+                        icon: Icons.calendar_today_outlined,
+                        label: _formatDate(_createdAt!),
+                        color: AppColors.textTertiary,
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -308,7 +579,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
           Expanded(
             child: _buildStatItem(
               icon: Icons.inventory_2_outlined,
-              value: '${widget.totalItems}',
+              value: '$_totalItems',
               label: 'Total Items',
               color: AppColors.primary,
             ),
@@ -317,7 +588,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
           Expanded(
             child: _buildStatItem(
               icon: Icons.check_circle_outline,
-              value: '${widget.purchasedItems}',
+              value: '$_purchasedItems',
               label: 'Purchased',
               color: AppColors.success,
             ),
@@ -352,35 +623,122 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
     );
   }
 
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: AppStyles.caption.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return 'Today';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else if (difference.inDays < 30) {
+      final weeks = (difference.inDays / 7).floor();
+      return weeks == 1 ? '1 week ago' : '$weeks weeks ago';
+    } else if (difference.inDays < 365) {
+      final months = (difference.inDays / 30).floor();
+      return months == 1 ? '1 month ago' : '$months months ago';
+    } else {
+      final years = (difference.inDays / 365).floor();
+      return years == 1 ? '1 year ago' : '$years years ago';
+    }
+  }
+
   Widget _buildSearchAndFilters() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
           // Search Bar
-          TextField(
-            controller: _searchController,
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
-            },
-            decoration: InputDecoration(
-              hintText: 'Search items...',
-              prefixIcon: Icon(
-                Icons.search_outlined,
-                color: AppColors.textTertiary,
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.borderLight,
+                width: 1,
               ),
-              filled: true,
-              fillColor: AppColors.surface,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadowLight.withOpacity(0.1),
+                  offset: const Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Search items...',
+                hintStyle: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textTertiary,
+                ),
+                prefixIcon: Icon(
+                  Icons.search_outlined,
+                  color: AppColors.textTertiary,
+                  size: 20,
+                ),
+                filled: true,
+                fillColor: AppColors.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.secondary,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              style: AppStyles.bodyMedium,
             ),
           ),
 
@@ -403,12 +761,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                   'purchased',
                   'Purchased',
                   Icons.check_circle_outline,
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  'high_priority',
-                  'High Priority',
-                  Icons.priority_high,
                 ),
               ],
             ),
@@ -461,6 +813,12 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
   }
 
   Widget _buildItemsList() {
+    // Check if there are no items at all (not just filtered)
+    if (_items.isEmpty) {
+      return _buildNoItemsState();
+    }
+
+    // Check if filtered items are empty (due to search/filter)
     if (_filteredItems.isEmpty) {
       return _buildEmptyState();
     }
@@ -684,27 +1042,44 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Delete Item'),
-          content: Text('Are you sure you want to delete "${item.name}"?'),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Delete Item',
+            style: AppStyles.headingSmall.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to delete "${item.name}"? This action cannot be undone.',
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              child: Text(
+                'Cancel',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                setState(() {
-                  _items.removeWhere((element) => element.id == item.id);
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${item.name} deleted successfully'),
-                    backgroundColor: AppColors.success,
-                  ),
-                );
+                _performDeleteItem(item);
               },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              child: Text(
+                'Delete',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         );
@@ -712,29 +1087,257 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.search_off_outlined,
-            size: 64,
-            color: AppColors.textTertiary,
+  Future<void> _performDeleteItem(WishlistItem item) async {
+    try {
+      debugPrint('🗑️ WishlistItemsScreen: Deleting item: ${item.id}');
+
+      // Show loading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text('Deleting item...'),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'No items found',
-            style: AppStyles.headingSmall.copyWith(
-              color: AppColors.textSecondary,
+        );
+      }
+
+      // Call API to delete item
+      await _wishlistRepository.deleteItem(item.id);
+
+      debugPrint('✅ WishlistItemsScreen: Item deleted successfully');
+
+      // Reload wishlist details to update the screen
+      await _loadWishlistDetails();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${item.name} deleted successfully',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Try adjusting your search or filters',
-            style: AppStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
+        );
+      }
+    } on ApiException catch (e) {
+      debugPrint('❌ WishlistItemsScreen: Error deleting item: ${e.message}');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Failed to delete item: ${e.message}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-        ],
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ WishlistItemsScreen: Unexpected error deleting item: $e');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'An unexpected error occurred. Please try again.',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Empty state when there are no items in the wishlist at all
+  Widget _buildNoItemsState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.inventory_2_outlined,
+                size: 64,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'No Items Yet',
+              style: AppStyles.headingMedium.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'This wishlist is empty. Start adding items you wish for!',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            if (!widget.isFriendWishlist)
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.addItem,
+                    arguments: {
+                      'wishlistId': widget.wishlistId,
+                      'wishlistName': widget.wishlistName,
+                    },
+                  ).then((_) {
+                    // Refresh the list when returning from add item screen
+                    setState(() {});
+                  });
+                },
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Add First Item'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Empty state when filtered items are empty (due to search/filter)
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off_outlined,
+              size: 64,
+              color: AppColors.textTertiary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No items found',
+              style: AppStyles.headingSmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try adjusting your search or filters',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textTertiary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

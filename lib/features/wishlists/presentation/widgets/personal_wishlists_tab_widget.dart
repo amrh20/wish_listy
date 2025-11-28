@@ -77,7 +77,61 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
 
               if (eventWishlists.isEmpty)
                 _buildEmptyEventWishlists(localization)
-              else
+              else ...[
+                // Search field for event wishlists
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.borderLight,
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.shadowLight.withOpacity(0.1),
+                        offset: const Offset(0, 2),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: localization.translate('wishlists.searchWishlists'),
+                      hintStyle: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        color: AppColors.textTertiary,
+                        size: 20,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.surface,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: AppColors.secondary,
+                          width: 2,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                    ),
+                    style: AppStyles.bodyMedium,
+                  ),
+                ),
                 ...eventWishlists
                     .map(
                       (wishlist) => WishlistCardWidget(
@@ -90,6 +144,7 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
                       ),
                     )
                     .toList(),
+              ],
             ],
 
             const SizedBox(height: 100), // Bottom padding for FAB
