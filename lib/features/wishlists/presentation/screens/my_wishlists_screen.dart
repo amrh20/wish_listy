@@ -11,6 +11,7 @@ import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
 import '../widgets/index.dart';
 import '../widgets/guest_wishlists_view_widget.dart';
+import '../widgets/segmented_control_widget.dart';
 
 class MyWishlistsScreen extends StatefulWidget {
   const MyWishlistsScreen({super.key});
@@ -37,6 +38,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   List<String> _availableCategories = [];
   String? _selectedCategory; // null means "All"
   Map<String, String> _wishlistIdToCategory = {}; // Map wishlist ID to category
+  Map<String, int> _categoryCounts = {}; // Map category to item count
 
   final WishlistRepository _wishlistRepository = WishlistRepository();
   bool _hasLoadedOnce = false;
@@ -181,13 +183,32 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                   },
                 ),
 
-                // Main Tab Bar
-                MyWishlistsTabBarWidget(tabController: _mainTabController),
+                // Segmented Control
+                Padding(
+                  padding: const EdgeInsets.only(top: 20),
+                  child: SegmentedControlWidget(
+                    tabController: _mainTabController,
+                    items: [
+                      SegmentedControlItem(
+                        label: localization.translate('wishlists.myWishlists'),
+                        icon: Icons.favorite_rounded,
+                      ),
+                      SegmentedControlItem(
+                        label: localization.translate(
+                          'wishlists.friendsWishlists',
+                        ),
+                        icon: Icons.people_rounded,
+                      ),
+                    ],
+                  ),
+                ),
 
                 // Category Filter Tabs (only show if there are categories and on Personal tab)
                 if (_mainTabController.index == 0 &&
-                    _availableCategories.isNotEmpty)
+                    _availableCategories.isNotEmpty) ...[
+                  const SizedBox(height: 20),
                   _buildCategoryFilterTabs(),
+                ],
 
                 // Tab Content
                 Expanded(
@@ -570,16 +591,25 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         '✅ MyWishlistsScreen: Personal: ${personalWishlists.length}, Event: ${eventWishlists.length}',
       );
 
-      // Store original wishlist data for category extraction
+      // Store original wishlist data for category extraction and count items
       final Map<String, String> wishlistIdToCategory = {};
+      final Map<String, int> categoryCounts = {};
+      int totalCount = 0;
+
       for (final wishlistData in wishlistsData) {
         final id =
             wishlistData['id']?.toString() ??
             wishlistData['_id']?.toString() ??
             '';
         final category = wishlistData['category']?.toString();
+        final items = wishlistData['items'] as List<dynamic>? ?? [];
+        final itemCount = items.length;
+        totalCount += itemCount;
+
         if (id.isNotEmpty && category != null && category.isNotEmpty) {
           wishlistIdToCategory[id] = category;
+          categoryCounts[category] =
+              (categoryCounts[category] ?? 0) + itemCount;
         }
       }
 
@@ -596,6 +626,8 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         _eventWishlists = eventWishlists;
         _availableCategories = categories;
         _wishlistIdToCategory = wishlistIdToCategory;
+        _categoryCounts = categoryCounts;
+        _categoryCounts['all'] = totalCount; // Store total count
         _isLoading = false;
         _hasLoadedOnce = true;
         // Apply current filter if any
@@ -692,7 +724,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
       case 'private':
         privacy = WishlistPrivacy.private;
         break;
-      case 'friendsonly':
+      case 'friends':
       case 'friends_only':
       case 'onlyinvited':
       case 'only_invited':
@@ -789,7 +821,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   /// Build category filter tabs
   Widget _buildCategoryFilterTabs() {
     return Container(
-      margin: const EdgeInsets.only(top: 8, bottom: 8),
+      margin: const EdgeInsets.only(bottom: 8),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -800,7 +832,8 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
               label: 'All',
               category: null,
               isSelected: _selectedCategory == null,
-              icon: Icons.all_inclusive_rounded,
+              icon: Icons.list_rounded,
+              count: _categoryCounts['all'] ?? 0,
             ),
             const SizedBox(width: 8),
             // Category tabs
@@ -812,6 +845,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                   category: category,
                   isSelected: _selectedCategory == category,
                   icon: _getCategoryIcon(category),
+                  count: _categoryCounts[category] ?? 0,
                 ),
               );
             }),
@@ -827,6 +861,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     required String? category,
     required bool isSelected,
     IconData? icon,
+    int count = 0,
   }) {
     return GestureDetector(
       onTap: () {
@@ -837,23 +872,15 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white,
+          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.borderLight,
-            width: 1.5,
+            width: isSelected ? 1.5 : 1,
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : [],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -862,17 +889,37 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
               Icon(
                 icon,
                 size: 16,
-                color: isSelected ? Colors.white : AppColors.textTertiary,
+                color: isSelected ? AppColors.primary : AppColors.textTertiary,
               ),
               const SizedBox(width: 6),
             ],
             Text(
               label,
               style: AppStyles.bodySmall.copyWith(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
+            if (count > 0) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.textTertiary.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  count.toString(),
+                  style: AppStyles.caption.copyWith(
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -898,17 +945,9 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         return 'Baby Shower';
       case 'housewarming':
         return 'Housewarming';
-      case 'custom':
-        return 'Other';
       default:
-        // Return capitalized category name
-        return category
-            .split(' ')
-            .map((word) {
-              if (word.isEmpty) return word;
-              return word[0].toUpperCase() + word.substring(1).toLowerCase();
-            })
-            .join(' ');
+        // Return category as is (no transformation)
+        return category;
     }
   }
 

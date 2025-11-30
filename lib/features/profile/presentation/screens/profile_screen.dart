@@ -7,6 +7,7 @@ import 'package:wish_listy/core/widgets/custom_button.dart';
 
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -1733,8 +1734,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  void _logout() {
-    // Logout functionality
+  Future<void> _logout() async {
+    // Clear token and local storage
+    await AuthRepository().logout();
+    // Navigate to welcome screen
     AppRoutes.pushNamedAndRemoveUntil(context, AppRoutes.welcome);
   }
 

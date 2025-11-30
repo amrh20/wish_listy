@@ -69,15 +69,17 @@ class CustomTopNavigation extends StatelessWidget {
             bottom: false,
             child: Container(
               height: 56, // Fixed height for the navigation bar
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: navigationItems.asMap().entries.map((entry) {
                   final index = entry.key;
                   final item = entry.value;
                   final isActive = currentIndex == index;
 
-                  return _buildNavigationButton(item, index, isActive);
+                  return Flexible(
+                    child: _buildNavigationButton(item, index, isActive),
+                  );
                 }).toList(),
               ),
             ),
@@ -96,21 +98,24 @@ class CustomTopNavigation extends StatelessWidget {
       onTap: () => onTap(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
           color: isActive ? item['color'].withOpacity(0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 200),
-          style: AppStyles.bodyMedium.copyWith(
-            color: isActive ? item['color'] : AppColors.textPrimary,
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
-          ),
-          child: Text(
-            item['label'],
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+        child: Center(
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 200),
+            style: AppStyles.bodySmall.copyWith(
+              color: isActive ? item['color'] : AppColors.textPrimary,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+            ),
+            child: Text(
+              item['label'],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       ),

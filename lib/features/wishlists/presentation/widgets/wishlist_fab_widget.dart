@@ -158,6 +158,7 @@ class WishlistFabWidget extends StatelessWidget {
       onPressed: () => _showCreateOptions(context),
       backgroundColor: AppColors.primary,
       elevation: 4,
+      heroTag: 'wishlist_fab', // Unique hero tag to avoid conflicts
       child: const Icon(Icons.add_rounded, size: 28, color: Colors.white),
     );
   }

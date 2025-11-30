@@ -169,6 +169,7 @@ class _FriendsScreenState extends State<FriendsScreen>
           floatingActionButton: FloatingActionButton(
             onPressed: _showAddFriendDialog,
             backgroundColor: AppColors.secondary,
+            heroTag: 'friends_fab',
             child: Icon(Icons.person_add_rounded, color: Colors.white),
           ),
         );

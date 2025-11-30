@@ -314,7 +314,6 @@ class WishlistCardWidget extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    flex: 2,
                     child: _buildActionButton(
                       label: 'View Wishes',
                       icon: Icons.visibility_rounded,
@@ -359,7 +358,7 @@ class WishlistCardWidget extends StatelessWidget {
       case WishlistPrivacy.onlyInvited:
         icon = Icons.group_rounded;
         color = AppColors.warning;
-        label = 'Invited';
+        label = 'Friends Only';
         break;
     }
 
@@ -424,9 +423,13 @@ class WishlistCardWidget extends StatelessWidget {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: EdgeInsets.symmetric(
+            vertical: 12,
+            horizontal: isPrimary ? 0 : 8,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
@@ -434,11 +437,14 @@ class WishlistCardWidget extends StatelessWidget {
                 color: isPrimary ? Colors.white : AppColors.primary,
               ),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: AppStyles.bodyMedium.copyWith(
-                  color: isPrimary ? Colors.white : AppColors.primary,
-                  fontWeight: FontWeight.w600,
+              Flexible(
+                child: Text(
+                  label,
+                  style: AppStyles.bodySmall.copyWith(
+                    color: isPrimary ? Colors.white : AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

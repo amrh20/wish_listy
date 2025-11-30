@@ -56,8 +56,17 @@ class _UnifiedAppBarState extends State<UnifiedAppBar> {
     return SafeArea(
       bottom: false,
       child: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.primary.withOpacity(0.05),
+              Colors.white,
+            ],
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         child: Row(
           children: [
             // Title or Search Field
@@ -121,14 +130,36 @@ class _UnifiedAppBarState extends State<UnifiedAppBar> {
                           },
                         ),
                           )
-                    : Text(
+                    : Row(
                         key: const ValueKey('title'),
-                        widget.title,
-                        style: AppStyles.headingLarge.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                        children: [
+                          Icon(
+                            Icons.favorite_rounded,
+                            color: AppColors.primary,
+                            size: 28,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ShaderMask(
+                              shaderCallback: (bounds) => LinearGradient(
+                                colors: [
+                                  AppColors.primary,
+                                  AppColors.primary.withOpacity(0.8),
+                                ],
+                              ).createShader(bounds),
+                              child: Text(
+                                widget.title,
+                                style: AppStyles.headingLarge.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 28,
+                                  letterSpacing: -0.5,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
               ),
             ),

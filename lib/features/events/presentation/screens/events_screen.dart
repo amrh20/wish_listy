@@ -293,6 +293,7 @@ class _EventsScreenState extends State<EventsScreen>
             },
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.white,
+            heroTag: 'events_fab',
             child: Icon(Icons.add_rounded),
           ),
         );

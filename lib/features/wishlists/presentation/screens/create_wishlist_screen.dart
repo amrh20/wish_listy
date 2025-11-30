@@ -12,7 +12,7 @@ import 'package:wish_listy/features/wishlists/data/repository/wishlist_repositor
 
 class CreateWishlistScreen extends StatefulWidget {
   final String? wishlistId;
-  
+
   const CreateWishlistScreen({super.key, this.wishlistId});
 
   @override
@@ -36,7 +36,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   bool _isCustomCategory = false;
   final WishlistRepository _wishlistRepository = WishlistRepository();
 
-  final List<String> _privacyOptions = ['public', 'private', 'friendsOnly'];
+  final List<String> _privacyOptions = ['public', 'private', 'friends'];
   final List<String> _categoryOptions = [
     'general',
     'birthday',
@@ -55,7 +55,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     debugPrint('🚀 CreateWishlistScreen: initState');
     debugPrint('   WishlistId: ${widget.wishlistId}');
     debugPrint('   Is Editing: ${widget.wishlistId != null}');
-    
+
     _initializeAnimations();
     // Load wishlist data if editing
     if (widget.wishlistId != null) {
@@ -392,7 +392,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
             children: _categoryOptions.map((category) {
               final isSelected = _selectedCategory == category;
               final isCustom = category == 'custom';
-              
+
               return GestureDetector(
                 onTap: () {
                   setState(() {
@@ -413,8 +413,8 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                     color: isSelected
                         ? AppColors.secondary
                         : isCustom
-                            ? AppColors.surfaceVariant.withOpacity(0.5)
-                            : AppColors.surfaceVariant,
+                        ? AppColors.surfaceVariant.withOpacity(0.5)
+                        : AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(20),
                     border: isCustom && !isSelected
                         ? Border.all(
@@ -451,8 +451,8 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                           color: isSelected
                               ? Colors.white
                               : isCustom
-                                  ? AppColors.primary
-                                  : AppColors.textSecondary,
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
                           fontWeight: isSelected || isCustom
                               ? FontWeight.w600
                               : FontWeight.normal,
@@ -476,10 +476,14 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                 if (_isCustomCategory && (value?.isEmpty ?? true)) {
                   return 'Please enter a custom category name';
                 }
-                if (_isCustomCategory && value != null && value.trim().length < 2) {
+                if (_isCustomCategory &&
+                    value != null &&
+                    value.trim().length < 2) {
                   return 'Category name must be at least 2 characters';
                 }
-                if (_isCustomCategory && value != null && value.trim().length > 50) {
+                if (_isCustomCategory &&
+                    value != null &&
+                    value.trim().length > 50) {
                   return 'Category name must be less than 50 characters';
                 }
                 return null;
@@ -521,7 +525,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         return Icons.public;
       case 'private':
         return Icons.lock;
-      case 'friendsOnly':
+      case 'friends':
         return Icons.people;
       default:
         return Icons.public;
@@ -534,7 +538,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         return localization.translate('wishlists.public');
       case 'private':
         return localization.translate('wishlists.private');
-      case 'friendsOnly':
+      case 'friends':
         return localization.translate('wishlists.friendsOnly');
       default:
         return privacy;
@@ -550,7 +554,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         return localization.translate('events.publicDescription');
       case 'private':
         return localization.translate('events.privateDescription');
-      case 'friendsOnly':
+      case 'friends':
         return localization.translate('events.friendsOnlyDescription');
       default:
         return '';
@@ -593,20 +597,24 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
 
     try {
       debugPrint('📥 Loading wishlist data for editing: ${widget.wishlistId}');
-      final wishlistData = await _wishlistRepository.getWishlistById(widget.wishlistId!);
-      
+      final wishlistData = await _wishlistRepository.getWishlistById(
+        widget.wishlistId!,
+      );
+
       debugPrint('✅ Wishlist data loaded: $wishlistData');
 
       // Populate form fields
       if (mounted) {
         final category = wishlistData['category']?.toString() ?? 'general';
-        final isPredefinedCategory = _categoryOptions.contains(category) && category != 'custom';
-        
+        final isPredefinedCategory =
+            _categoryOptions.contains(category) && category != 'custom';
+
         setState(() {
           _nameController.text = wishlistData['name']?.toString() ?? '';
-          _descriptionController.text = wishlistData['description']?.toString() ?? '';
+          _descriptionController.text =
+              wishlistData['description']?.toString() ?? '';
           _selectedPrivacy = wishlistData['privacy']?.toString() ?? 'public';
-          
+
           if (isPredefinedCategory) {
             _selectedCategory = category;
             _isCustomCategory = false;
@@ -642,12 +650,12 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     }
 
     final isEditing = widget.wishlistId != null;
-    
+
     // Determine the final category value
-    final finalCategory = _isCustomCategory 
+    final finalCategory = _isCustomCategory
         ? _customCategoryController.text.trim()
         : _selectedCategory;
-    
+
     // Validate custom category if selected
     if (_isCustomCategory && finalCategory.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -658,7 +666,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       );
       return;
     }
-    
+
     debugPrint('🚀 Starting wishlist ${isEditing ? "update" : "creation"}...');
     debugPrint('   Name: ${_nameController.text.trim()}');
     debugPrint('   Description: ${_descriptionController.text.trim()}');
@@ -684,7 +692,9 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         setState(() => _isLoading = false);
 
         // Check if update was successful
-        if (response['success'] == true || response['data'] != null || response['wishlist'] != null) {
+        if (response['success'] == true ||
+            response['data'] != null ||
+            response['wishlist'] != null) {
           // Show success message and navigate back
           if (mounted) {
             _showSuccessAndNavigate(localization, widget.wishlistId!);
@@ -797,7 +807,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     showDialog(
       context: context,
       barrierDismissible: false,
-        builder: (context) => AlertDialog(
+      builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         contentPadding: const EdgeInsets.all(24),
@@ -856,7 +866,9 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                       text: 'Done',
                       onPressed: () {
                         Navigator.of(context).pop(); // Close dialog
-                        Navigator.of(context).pop(true); // Return to previous screen with result
+                        Navigator.of(
+                          context,
+                        ).pop(true); // Return to previous screen with result
                       },
                       variant: ButtonVariant.gradient,
                       gradientColors: [AppColors.primary, AppColors.secondary],

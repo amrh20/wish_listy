@@ -1271,19 +1271,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text('🎮 Rewards & Achievements', style: AppStyles.headingSmall),
-            const Spacer(),
-            TextButton(
-              onPressed: () =>
-                  Navigator.of(context).pushNamed(AppRoutes.achievements),
-              child: Text(
-                'View All',
-                style: AppStyles.bodyMedium.copyWith(color: AppColors.primary),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '🎮 Rewards & Achievements',
+                  style: AppStyles.headingSmall,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () =>
+                    Navigator.of(context).pushNamed(AppRoutes.achievements),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'View All',
+                  style: AppStyles.bodyMedium.copyWith(color: AppColors.primary),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         const RewardsQuickActions(),

@@ -212,6 +212,7 @@ class _MainNavigationState extends State<MainNavigation>
         },
         backgroundColor: Colors.transparent,
         elevation: 0,
+        heroTag: 'home_fab',
         child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
@@ -237,6 +238,7 @@ class _MainNavigationState extends State<MainNavigation>
         },
         backgroundColor: Colors.transparent,
         elevation: 0,
+        heroTag: 'wishlist_fab_nav',
         child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
@@ -262,6 +264,7 @@ class _MainNavigationState extends State<MainNavigation>
         },
         backgroundColor: Colors.transparent,
         elevation: 0,
+        heroTag: 'event_fab',
         child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
@@ -287,6 +290,7 @@ class _MainNavigationState extends State<MainNavigation>
         },
         backgroundColor: Colors.transparent,
         elevation: 0,
+        heroTag: 'friend_fab',
         child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
     );
@@ -312,6 +316,7 @@ class _MainNavigationState extends State<MainNavigation>
         },
         backgroundColor: Colors.transparent,
         elevation: 0,
+        heroTag: 'profile_fab',
         child: const Icon(Icons.edit, color: Colors.white, size: 28),
       ),
     );

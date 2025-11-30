@@ -7,12 +7,12 @@ class WishlistRepository {
   final ApiService _apiService = ApiService();
 
   /// Create a new wishlist
-  /// 
+  ///
   /// [name] - Wishlist name (required)
   /// [description] - Wishlist description (optional)
-  /// [privacy] - Privacy setting: 'public', 'private', or 'friendsOnly' (required)
+  /// [privacy] - Privacy setting: 'public', 'private', or 'friends' (required)
   /// [category] - Category: 'general', 'birthday', 'wedding', etc. (required)
-  /// 
+  ///
   /// Returns the created wishlist data
   Future<Map<String, dynamic>> createWishlist({
     required String name,
@@ -24,7 +24,8 @@ class WishlistRepository {
       // Prepare request body according to API specification
       final requestData = {
         'name': name,
-        if (description != null && description.isNotEmpty) 'description': description,
+        if (description != null && description.isNotEmpty)
+          'description': description,
         'privacy': privacy,
         'category': category,
       };
@@ -35,10 +36,7 @@ class WishlistRepository {
 
       // Make API call to create wishlist
       // Endpoint: POST /api/wishlists
-      final response = await _apiService.post(
-        '/wishlists',
-        data: requestData,
-      );
+      final response = await _apiService.post('/wishlists', data: requestData);
 
       debugPrint('📥 WishlistRepository: Response received');
       debugPrint('   Response: $response');
@@ -61,21 +59,22 @@ class WishlistRepository {
       debugPrint('📥 WishlistRepository: Getting wishlists');
       final response = await _apiService.get('/wishlists');
       debugPrint('📥 WishlistRepository: Response received: $response');
-      
+
       // API returns: {success: true, count: 2, wishlists: [...]}
       // Try 'wishlists' first, then 'data' as fallback
-      final wishlistsList = response['wishlists'] as List<dynamic>? ??
+      final wishlistsList =
+          response['wishlists'] as List<dynamic>? ??
           response['data'] as List<dynamic>?;
-      
+
       if (wishlistsList == null) {
         debugPrint('⚠️ WishlistRepository: No wishlists found in response');
         return [];
       }
-      
+
       final result = wishlistsList
           .map((item) => item as Map<String, dynamic>)
           .toList();
-      
+
       debugPrint('✅ WishlistRepository: Parsed ${result.length} wishlists');
       return result;
     } on ApiException {
@@ -92,12 +91,13 @@ class WishlistRepository {
       debugPrint('📥 WishlistRepository: Getting wishlist by ID: $wishlistId');
       final response = await _apiService.get('/wishlists/$wishlistId');
       debugPrint('📥 WishlistRepository: Response received: $response');
-      
+
       // API might return: {success: true, wishlist: {...}} or {success: true, data: {...}} or directly the wishlist object
-      final wishlistData = response['wishlist'] as Map<String, dynamic>? ??
+      final wishlistData =
+          response['wishlist'] as Map<String, dynamic>? ??
           response['data'] as Map<String, dynamic>? ??
           response;
-      
+
       debugPrint('✅ WishlistRepository: Parsed wishlist data');
       return wishlistData;
     } on ApiException {
@@ -159,7 +159,7 @@ class WishlistRepository {
   }
 
   /// Add an item to a wishlist
-  /// 
+  ///
   /// [name] - Item name (required)
   /// [description] - Item description (optional)
   /// [url] - Product URL (optional, only for online store)
@@ -168,7 +168,7 @@ class WishlistRepository {
   /// [notes] - Notes (optional, only for anywhere)
   /// [priority] - Priority: 'low', 'medium', 'high', 'urgent' (required)
   /// [wishlistId] - Wishlist ID (required)
-  /// 
+  ///
   /// Returns the created item data
   Future<Map<String, dynamic>> addItemToWishlist({
     required String name,
@@ -227,10 +227,7 @@ class WishlistRepository {
 
       // Make API call to add item
       // Endpoint: POST /api/items
-      final response = await _apiService.post(
-        '/items',
-        data: requestData,
-      );
+      final response = await _apiService.post('/items', data: requestData);
 
       debugPrint('📥 WishlistRepository: Response received');
       debugPrint('   Response: $response');
@@ -248,9 +245,9 @@ class WishlistRepository {
   }
 
   /// Delete an item from a wishlist
-  /// 
+  ///
   /// [itemId] - Item ID (required)
-  /// 
+  ///
   /// Returns nothing on success
   Future<void> deleteItem(String itemId) async {
     try {
@@ -272,4 +269,3 @@ class WishlistRepository {
     }
   }
 }
-

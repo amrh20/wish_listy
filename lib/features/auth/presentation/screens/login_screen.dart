@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -23,12 +24,16 @@ class _LoginScreenState extends State<LoginScreen>
   final _passwordController = TextEditingController();
 
   late AnimationController _animationController;
+  late AnimationController _staggerAnimationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  late Animation<double> _welcomeFade;
+  late Animation<double> _subtitleFade;
+  late Animation<double> _formFade;
+  late Animation<double> _buttonFade;
 
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool _rememberMe = false;
   bool _hasLoadedArguments = false;
 
   @override
@@ -65,6 +70,11 @@ class _LoginScreenState extends State<LoginScreen>
       vsync: this,
     );
 
+    _staggerAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1600),
+      vsync: this,
+    );
+
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
@@ -79,15 +89,46 @@ class _LoginScreenState extends State<LoginScreen>
             curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
           ),
         );
+
+    // Stagger animations
+    _welcomeFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _staggerAnimationController,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+      ),
+    );
+
+    _subtitleFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _staggerAnimationController,
+        curve: const Interval(0.1, 0.5, curve: Curves.easeOut),
+      ),
+    );
+
+    _formFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _staggerAnimationController,
+        curve: const Interval(0.2, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    _buttonFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _staggerAnimationController,
+        curve: const Interval(0.3, 0.7, curve: Curves.easeOut),
+      ),
+    );
   }
 
   void _startAnimations() {
     _animationController.forward();
+    _staggerAnimationController.forward();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _staggerAnimationController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -235,359 +276,746 @@ class _LoginScreenState extends State<LoginScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
-          backgroundColor: Colors.grey.shade50,
-          body: Stack(
-            children: [
-              // Content
-              SafeArea(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24.0),
-                  child: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: SlideTransition(
-                          position: _slideAnimation,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              const SizedBox(height: 40),
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [const Color(0xFFF8F9FF), Colors.white],
+              ),
+            ),
+            child: Stack(
+              children: [
+                // Decorative Circles
+                ..._buildDecorativeCircles(),
+                // Content
+                SafeArea(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: AnimatedBuilder(
+                      animation: _animationController,
+                      builder: (context, child) {
+                        return FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: SlideTransition(
+                            position: _slideAnimation,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const SizedBox(height: 40),
 
-                              // Top Row: Back Button and Language Toggle
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  // Back Button
-                                  IconButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    icon: const Icon(Icons.arrow_back_ios),
-                                    style: IconButton.styleFrom(
-                                      backgroundColor: AppColors.surface,
-                                      padding: const EdgeInsets.all(12),
-                                    ),
-                                  ),
-
-                                  // Language Toggle Button
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: AppColors.surface,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: AppColors.border,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: IconButton(
-                                      onPressed: () async {
-                                        await localization.toggleLanguage();
-                                      },
-                                      icon: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            localization
-                                                    .currentLanguageInfo?['flag'] ??
-                                                '🌐',
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Icon(
-                                            Icons.language,
-                                            size: 20,
-                                            color: AppColors.primary,
-                                          ),
-                                        ],
-                                      ),
-                                      tooltip: localization.translate(
-                                        'app.selectLanguage',
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 40),
-
-                              // Header
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    localization.translate('auth.welcomeBack'),
-                                    style: AppStyles.headingLarge.copyWith(
-                                      fontSize: 32,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    localization.translate(
-                                      'auth.signInSubtitle',
-                                    ),
-                                    style: AppStyles.bodyLarge.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 48),
-
-                              // Login Form
-                              Form(
-                                key: _formKey,
-                                child: Column(
+                                // Top Row: Back Button and Language Toggle
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    // Username Field (Email or Phone)
-                                    CustomTextField(
-                                      controller: _usernameController,
-                                      label: localization.translate(
-                                        'auth.email',
+                                    // Back Button
+                                    IconButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      icon: const Icon(
+                                        Icons.arrow_back_ios,
+                                        color: Colors.black,
                                       ),
-                                      hint: 'Email or Phone',
-                                      keyboardType: TextInputType.text,
-                                      prefixIcon: Icons.person_outline,
-                                      validator: (value) {
-                                        if (value?.isEmpty ?? true) {
-                                          return localization.translate(
-                                            'auth.pleaseEnterEmail',
-                                          );
-                                        }
-                                        // Validate as email or phone
-                                        final authRepository =
-                                            Provider.of<AuthRepository>(
-                                              context,
-                                              listen: false,
+                                      style: IconButton.styleFrom(
+                                        backgroundColor: AppColors.surface,
+                                        padding: const EdgeInsets.all(12),
+                                      ),
+                                    ),
+
+                                    // Language Selection Dropdown
+                                    PopupMenuButton<String>(
+                                      onSelected: (languageCode) async {
+                                        await localization.changeLanguage(
+                                          languageCode,
+                                        );
+                                      },
+                                      color: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      itemBuilder: (context) => localization
+                                          .supportedLanguages
+                                          .map((language) {
+                                            final isSelected =
+                                                localization.currentLanguage ==
+                                                language['code'];
+                                            final languageCode =
+                                                language['code']!;
+                                            final displayCode =
+                                                languageCode == 'en'
+                                                ? 'en'
+                                                : 'ع';
+                                            return PopupMenuItem<String>(
+                                              value: languageCode,
+                                              child: Row(
+                                                children: [
+                                                  Text(
+                                                    displayCode,
+                                                    style: AppStyles.bodyMedium
+                                                        .copyWith(
+                                                          fontWeight: isSelected
+                                                              ? FontWeight.w600
+                                                              : FontWeight
+                                                                    .normal,
+                                                          color: Colors.black,
+                                                          fontSize: 16,
+                                                        ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Text(
+                                                    language['nativeName']!,
+                                                    style: AppStyles.bodyMedium
+                                                        .copyWith(
+                                                          fontWeight: isSelected
+                                                              ? FontWeight.w600
+                                                              : FontWeight
+                                                                    .normal,
+                                                          color: Colors.black,
+                                                        ),
+                                                  ),
+                                                  if (isSelected) ...[
+                                                    const Spacer(),
+                                                    Icon(
+                                                      Icons.check,
+                                                      color: AppColors.primary,
+                                                      size: 18,
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
                                             );
-                                        if (!authRepository.isValidUsername(
-                                          value!,
-                                        )) {
-                                          return localization.translate(
-                                            'auth.invalidEmailOrPhone',
-                                          );
-                                        }
-                                        return null;
-                                      },
-                                    ),
-
-                                    const SizedBox(height: 20),
-
-                                    // Password Field
-                                    CustomTextField(
-                                      controller: _passwordController,
-                                      label: localization.translate(
-                                        'auth.password',
-                                      ),
-                                      hint: localization.translate(
-                                        'auth.enterPassword',
-                                      ),
-                                      obscureText: _obscurePassword,
-                                      prefixIcon: Icons.lock_outlined,
-                                      suffixIcon: IconButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _obscurePassword =
-                                                !_obscurePassword;
-                                          });
-                                        },
-                                        icon: Icon(
-                                          _obscurePassword
-                                              ? Icons.visibility_outlined
-                                              : Icons.visibility_off_outlined,
+                                          })
+                                          .toList(),
+                                      child: AnimatedContainer(
+                                        duration: const Duration(
+                                          milliseconds: 200,
                                         ),
-                                      ),
-                                      validator: (value) {
-                                        if (value?.isEmpty ?? true) {
-                                          return localization.translate(
-                                            'auth.pleaseEnterPassword',
-                                          );
-                                        }
-                                        if (value!.length < 6) {
-                                          return localization.translate(
-                                            'auth.passwordMinLength',
-                                          );
-                                        }
-                                        return null;
-                                      },
-                                    ),
-
-                                    const SizedBox(height: 16),
-
-                                    // Remember Me & Forgot Password
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Checkbox(
-                                              value: _rememberMe,
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  _rememberMe = value ?? false;
-                                                });
-                                              },
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          border: Border.all(
+                                            color: AppColors.border.withOpacity(
+                                              0.2,
                                             ),
-                                            Text(
-                                              localization.translate(
-                                                'auth.rememberMe',
+                                            width: 1,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.05,
                                               ),
-                                              style: AppStyles.bodyMedium,
+                                              blurRadius: 10,
+                                              offset: const Offset(0, 2),
                                             ),
                                           ],
                                         ),
-                                        TextButton(
-                                          onPressed: () {
-                                            AppRoutes.pushNamed(
-                                              context,
-                                              AppRoutes.forgotPassword,
-                                            );
-                                          },
-                                          child: Text(
-                                            localization.translate(
-                                              'auth.forgotPassword',
-                                            ),
-                                            style: AppStyles.bodyMedium
-                                                .copyWith(
-                                                  color: AppColors.primary,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                localization.currentLanguage ==
+                                                        'en'
+                                                    ? 'en'
+                                                    : 'ع',
+                                                style: AppStyles.bodyMedium
+                                                    .copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      color: Colors.black,
+                                                      fontSize: 16,
+                                                    ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.language,
+                                                size: 20,
+                                                color: AppColors.primary,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Icon(
+                                                Icons.keyboard_arrow_down,
+                                                size: 16,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ],
-                                    ),
-
-                                    const SizedBox(height: 32),
-
-                                    // Login Button
-                                    CustomButton(
-                                      text: localization.translate(
-                                        'auth.signIn',
                                       ),
-                                      onPressed: _handleLogin,
-                                      isLoading: _isLoading,
-                                      variant: ButtonVariant.gradient,
-                                    ),
-
-                                    const SizedBox(height: 24),
-
-                                    // Divider
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Divider(
-                                            color: AppColors.textTertiary
-                                                .withOpacity(0.3),
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                          ),
-                                          child: Text(
-                                            localization.translate(
-                                              'auth.continueWith',
-                                            ),
-                                            style: AppStyles.bodySmall.copyWith(
-                                              color: AppColors.textTertiary,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: Divider(
-                                            color: AppColors.textTertiary
-                                                .withOpacity(0.3),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-
-                                    const SizedBox(height: 24),
-
-                                    // Social Login Buttons
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: CustomButton(
-                                            text: localization.translate(
-                                              'social.google',
-                                            ),
-                                            onPressed: () {
-                                              // Handle Google login
-                                            },
-                                            variant: ButtonVariant.outline,
-                                            icon: Icons.g_mobiledata,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: CustomButton(
-                                            text: localization.translate(
-                                              'social.apple',
-                                            ),
-                                            onPressed: () {
-                                              // Handle Apple login
-                                            },
-                                            variant: ButtonVariant.outline,
-                                            icon: Icons.apple,
-                                          ),
-                                        ),
-                                      ],
                                     ),
                                   ],
                                 ),
-                              ),
 
-                              const SizedBox(height: 32),
+                                const SizedBox(height: 40),
 
-                              // Sign Up Link
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    localization.translate(
-                                      'auth.dontHaveAccount',
-                                    ),
-                                    style: AppStyles.bodyMedium.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
+                                // Header
+                                FadeTransition(
+                                  opacity: _welcomeFade,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Padding(
+                                            padding: EdgeInsets.only(top: 4),
+                                            child: Text(
+                                              '👋',
+                                              style: TextStyle(fontSize: 28),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: ShaderMask(
+                                              shaderCallback: (bounds) =>
+                                                  LinearGradient(
+                                                    colors: [
+                                                      const Color(0xFF7C3AED),
+                                                      const Color(0xFF06B6D4),
+                                                    ],
+                                                  ).createShader(bounds),
+                                              child: Text(
+                                                localization.translate(
+                                                  'auth.welcomeBack',
+                                                ),
+                                                style: AppStyles.headingLarge
+                                                    .copyWith(
+                                                      fontSize: 36,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                      letterSpacing: -0.5,
+                                                      color: Colors.white,
+                                                      height: 1.2,
+                                                    ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      FadeTransition(
+                                        opacity: _subtitleFade,
+                                        child: Text(
+                                          localization.translate(
+                                            'auth.signInSubtitle',
+                                          ),
+                                          style: AppStyles.bodyLarge.copyWith(
+                                            color: AppColors.textSecondary
+                                                .withOpacity(0.7),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  TextButton(
-                                    onPressed: () {
-                                      AppRoutes.pushReplacementNamed(
-                                        context,
-                                        AppRoutes.signup,
-                                      );
-                                    },
-                                    child: Text(
-                                      localization.translate('auth.signup'),
-                                      style: AppStyles.bodyMedium.copyWith(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w600,
+                                ),
+
+                                const SizedBox(height: 48),
+
+                                // Login Form
+                                FadeTransition(
+                                  opacity: _formFade,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(24),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 20,
+                                        sigmaY: 20,
+                                      ),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 24,
+                                          vertical: 40,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.7),
+                                          borderRadius: BorderRadius.circular(
+                                            24,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.white.withOpacity(
+                                              0.8,
+                                            ),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Form(
+                                          key: _formKey,
+                                          child: Column(
+                                            children: [
+                                              // Username Field (Email or Phone)
+                                              _buildGlassInputField(
+                                                controller: _usernameController,
+                                                label: 'Email or Phone',
+                                                hint: 'Email or Phone',
+                                                keyboardType:
+                                                    TextInputType.text,
+                                                prefixIcon:
+                                                    Icons.person_outline,
+                                                validator: (value) {
+                                                  if (value?.isEmpty ?? true) {
+                                                    return localization.translate(
+                                                      'auth.pleaseEnterEmail',
+                                                    );
+                                                  }
+                                                  // Validate as email or phone
+                                                  final authRepository =
+                                                      Provider.of<
+                                                        AuthRepository
+                                                      >(context, listen: false);
+                                                  if (!authRepository
+                                                      .isValidUsername(
+                                                        value!,
+                                                      )) {
+                                                    return localization.translate(
+                                                      'auth.invalidEmailOrPhone',
+                                                    );
+                                                  }
+                                                  return null;
+                                                },
+                                              ),
+
+                                              const SizedBox(height: 20),
+
+                                              // Password Field
+                                              _buildGlassInputField(
+                                                controller: _passwordController,
+                                                label: localization.translate(
+                                                  'auth.password',
+                                                ),
+                                                hint: localization.translate(
+                                                  'auth.enterPassword',
+                                                ),
+                                                obscureText: _obscurePassword,
+                                                prefixIcon: Icons.lock_outlined,
+                                                suffixIcon: IconButton(
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _obscurePassword =
+                                                          !_obscurePassword;
+                                                    });
+                                                  },
+                                                  icon: Icon(
+                                                    _obscurePassword
+                                                        ? Icons
+                                                              .visibility_outlined
+                                                        : Icons
+                                                              .visibility_off_outlined,
+                                                    color:
+                                                        AppColors.textTertiary,
+                                                    size: 20,
+                                                  ),
+                                                ),
+                                                validator: (value) {
+                                                  if (value?.isEmpty ?? true) {
+                                                    return localization.translate(
+                                                      'auth.pleaseEnterPassword',
+                                                    );
+                                                  }
+                                                  if (value!.length < 6) {
+                                                    return localization.translate(
+                                                      'auth.passwordMinLength',
+                                                    );
+                                                  }
+                                                  return null;
+                                                },
+                                              ),
+
+                                              const SizedBox(height: 16),
+
+                                              // Forgot Password
+                                              Align(
+                                                alignment:
+                                                    Alignment.centerRight,
+                                                child: AnimatedContainer(
+                                                  duration: const Duration(
+                                                    milliseconds: 200,
+                                                  ),
+                                                  child: TextButton(
+                                                    onPressed: () {
+                                                      AppRoutes.pushNamed(
+                                                        context,
+                                                        AppRoutes
+                                                            .forgotPassword,
+                                                      );
+                                                    },
+                                                    style: TextButton.styleFrom(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 8,
+                                                            vertical: 4,
+                                                          ),
+                                                    ),
+                                                    child: Text(
+                                                      localization.translate(
+                                                        'auth.forgotPassword',
+                                                      ),
+                                                      style: AppStyles
+                                                          .bodyMedium
+                                                          .copyWith(
+                                                            color: AppColors
+                                                                .primary,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            decoration:
+                                                                TextDecoration
+                                                                    .underline,
+                                                            decorationColor:
+                                                                AppColors
+                                                                    .primary
+                                                                    .withOpacity(
+                                                                      0.3,
+                                                                    ),
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+
+                                              const SizedBox(height: 32),
+
+                                              // Login Button
+                                              FadeTransition(
+                                                opacity: _buttonFade,
+                                                child: CustomButton(
+                                                  text: localization.translate(
+                                                    'auth.signIn',
+                                                  ),
+                                                  onPressed: _handleLogin,
+                                                  isLoading: _isLoading,
+                                                  variant:
+                                                      ButtonVariant.gradient,
+                                                  gradientColors: [
+                                                    const Color(0xFF7C3AED),
+                                                    const Color(0xFF3B82F6),
+                                                    const Color(0xFF06B6D4),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
-                            ],
+                                ),
+
+                                const SizedBox(height: 32),
+
+                                // Sign Up Link
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      localization.translate(
+                                        'auth.dontHaveAccount',
+                                      ),
+                                      style: AppStyles.bodyMedium.copyWith(
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    ),
+                                    AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 200,
+                                      ),
+                                      child: TextButton(
+                                        onPressed: () {
+                                          AppRoutes.pushReplacementNamed(
+                                            context,
+                                            AppRoutes.signup,
+                                          );
+                                        },
+                                        style: TextButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          localization.translate('auth.signup'),
+                                          style: AppStyles.bodyMedium.copyWith(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.w600,
+                                            decoration:
+                                                TextDecoration.underline,
+                                            decorationColor: AppColors.primary
+                                                .withOpacity(0.3),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  List<Widget> _buildDecorativeCircles() {
+    final screenSize = MediaQuery.of(context).size;
+
+    return [
+      // Decorative dots pattern
+      ..._buildDotsPattern(screenSize),
+
+      // Top-left quarter circles (layered)
+      // Large quarter circle
+      Positioned(
+        top: 0,
+        left: 0,
+        child: Transform.translate(
+          offset: const Offset(-50, -50),
+          child: Container(
+            width: 250,
+            height: 250,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.only(
+                bottomRight: Radius.circular(250),
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF7C3AED).withOpacity(0.12),
+                  const Color(0xFFEC4899).withOpacity(0.08),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      // Small quarter circle on top
+      Positioned(
+        top: 0,
+        left: 0,
+        child: Transform.translate(
+          offset: const Offset(-30, -30),
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.only(
+                bottomRight: Radius.circular(150),
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF06B6D4).withOpacity(0.08),
+                  const Color(0xFF3B82F6).withOpacity(0.06),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+
+      // Top-right circle
+      Positioned(
+        top: -100,
+        right: -100,
+        child: Container(
+          width: 300,
+          height: 300,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [AppColors.primary.withOpacity(0.05), Colors.transparent],
+            ),
+          ),
+        ),
+      ),
+
+      // Bottom-left circle
+      Positioned(
+        bottom: -150,
+        left: -150,
+        child: Container(
+          width: 400,
+          height: 400,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [
+                AppColors.secondary.withOpacity(0.03),
+                Colors.transparent,
+              ],
+            ),
+          ),
+        ),
+      ),
+
+      // Bottom-right quarter circle
+      Positioned(
+        bottom: 0,
+        right: 0,
+        child: Transform.translate(
+          offset: const Offset(50, 50),
+          child: Container(
+            width: 150,
+            height: 150,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(150),
+              ),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFFEC4899).withOpacity(0.08),
+                  const Color(0xFF7C3AED).withOpacity(0.06),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+
+      // Center circle (smaller)
+      Positioned(
+        top: screenSize.height * 0.3,
+        right: -50,
+        child: Container(
+          width: 200,
+          height: 200,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [AppColors.pink.withOpacity(0.04), Colors.transparent],
+            ),
+          ),
+        ),
+      ),
+    ];
+  }
+
+  List<Widget> _buildDotsPattern(Size screenSize) {
+    final dots = <Widget>[];
+    final colors = [
+      const Color(0xFF7C3AED),
+      const Color(0xFF06B6D4),
+      const Color(0xFF3B82F6),
+      const Color(0xFFEC4899),
+    ];
+
+    // Create scattered dots
+    for (int i = 0; i < 20; i++) {
+      final randomX = (i * 87) % screenSize.width.toInt();
+      final randomY = (i * 123) % screenSize.height.toInt();
+      final size = (i % 3 + 1) * 4.0; // 4, 8, or 12px
+      final color = colors[i % colors.length];
+
+      dots.add(
+        Positioned(
+          left: randomX.toDouble(),
+          top: randomY.toDouble(),
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color.withOpacity(0.03),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return dots;
+  }
+
+  Widget _buildGlassInputField({
+    required TextEditingController controller,
+    required String label,
+    String? hint,
+    IconData? prefixIcon,
+    Widget? suffixIcon,
+    bool obscureText = false,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
+    return _GlassInputWrapper(
+      controller: controller,
+      label: label,
+      hint: hint,
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      validator: validator,
+    );
+  }
+}
+
+/// Glass morphism wrapper for input fields
+class _GlassInputWrapper extends StatefulWidget {
+  final TextEditingController controller;
+  final String label;
+  final String? hint;
+  final IconData? prefixIcon;
+  final Widget? suffixIcon;
+  final bool obscureText;
+  final TextInputType keyboardType;
+  final String? Function(String?)? validator;
+
+  const _GlassInputWrapper({
+    required this.controller,
+    required this.label,
+    this.hint,
+    this.prefixIcon,
+    this.suffixIcon,
+    this.obscureText = false,
+    this.keyboardType = TextInputType.text,
+    this.validator,
+  });
+
+  @override
+  State<_GlassInputWrapper> createState() => _GlassInputWrapperState();
+}
+
+class _GlassInputWrapperState extends State<_GlassInputWrapper> {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: Colors.white.withOpacity(0.5),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: _buildTextField(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField() {
+    return CustomTextField(
+      controller: widget.controller,
+      label: widget.label,
+      hint: widget.hint,
+      prefixIcon: widget.prefixIcon,
+      suffixIcon: widget.suffixIcon,
+      obscureText: widget.obscureText,
+      keyboardType: widget.keyboardType,
+      validator: widget.validator,
     );
   }
 }
