@@ -244,6 +244,135 @@ class WishlistRepository {
     }
   }
 
+  /// Get all items for a specific wishlist
+  ///
+  /// Uses API:
+  /// GET /api/items/wishlist/:wishlistId
+  Future<List<Map<String, dynamic>>> getItemsForWishlist(
+    String wishlistId,
+  ) async {
+    try {
+      debugPrint(
+        '📥 WishlistRepository: Getting items for wishlist: $wishlistId',
+      );
+      debugPrint('   Endpoint: GET /api/items/wishlist/$wishlistId');
+
+      final response =
+          await _apiService.get('/items/wishlist/$wishlistId');
+
+      debugPrint('📥 WishlistRepository: Response received: $response');
+
+      // API might return: {success: true, items: [...]} or {success: true, data: [...]}
+      final itemsList =
+          response['items'] as List<dynamic>? ??
+          response['data'] as List<dynamic>? ??
+          (response is List ? response as List<dynamic> : null);
+
+      if (itemsList == null) {
+        debugPrint(
+          '⚠️ WishlistRepository: No items array found in response for wishlist $wishlistId',
+        );
+        return [];
+      }
+
+      final result = itemsList
+          .map((item) => item as Map<String, dynamic>)
+          .toList();
+
+      debugPrint(
+        '✅ WishlistRepository: Parsed ${result.length} items for wishlist $wishlistId',
+      );
+      return result;
+    } on ApiException {
+      // Re-throw ApiException to preserve error details
+      rethrow;
+    } catch (e) {
+      // Handle any unexpected errors
+      debugPrint('Unexpected get items error: $e');
+      throw Exception('Failed to load items. Please try again.');
+    }
+  }
+
+  /// Update an existing item in a wishlist
+  ///
+  /// Uses API:
+  /// PUT /api/items/:id
+  Future<Map<String, dynamic>> updateItem({
+    required String itemId,
+    required String wishlistId,
+    required String name,
+    String? description,
+    String? url,
+    String? storeName,
+    String? storeLocation,
+    String? notes,
+    required String priority,
+  }) async {
+    try {
+      // Prepare request body according to API specification
+      final requestData = <String, dynamic>{
+        'name': name,
+        'priority': priority,
+        'wishlistId': wishlistId,
+      };
+
+      // Optional fields follow same rules as addItemToWishlist
+      if (description != null && description.isNotEmpty) {
+        requestData['description'] = description;
+      } else {
+        requestData['description'] = null;
+      }
+
+      if (url != null && url.isNotEmpty) {
+        requestData['url'] = url;
+      } else {
+        requestData['url'] = null;
+      }
+
+      if (storeName != null && storeName.isNotEmpty) {
+        requestData['storeName'] = storeName;
+      } else {
+        requestData['storeName'] = null;
+      }
+
+      if (storeLocation != null && storeLocation.isNotEmpty) {
+        requestData['storeLocation'] = storeLocation;
+      } else {
+        requestData['storeLocation'] = null;
+      }
+
+      if (notes != null && notes.isNotEmpty) {
+        requestData['notes'] = notes;
+      } else {
+        requestData['notes'] = null;
+      }
+
+      debugPrint('📤 WishlistRepository: Updating item: $itemId');
+      debugPrint('   Request Data: $requestData');
+      debugPrint('   Endpoint: PUT /api/items/$itemId');
+
+      final response = await _apiService.put(
+        '/items/$itemId',
+        data: requestData,
+      );
+
+      debugPrint('📥 WishlistRepository: Response received: $response');
+      debugPrint('   Response type: ${response.runtimeType}');
+      debugPrint('✅ WishlistRepository: Item updated successfully');
+      
+      return response;
+    } on ApiException catch (e) {
+      // Re-throw ApiException to preserve error details
+      debugPrint('❌ WishlistRepository: ApiException: ${e.message}');
+      rethrow;
+    } catch (e, stackTrace) {
+      // Handle any unexpected errors
+      debugPrint('❌ WishlistRepository: Unexpected update item error: $e');
+      debugPrint('   Stack trace: $stackTrace');
+      throw Exception('Failed to update item. Please try again.');
+    }
+  }
+
   /// Delete an item from a wishlist
   ///
   /// [itemId] - Item ID (required)

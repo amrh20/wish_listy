@@ -4,7 +4,10 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
+import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
 import '../widgets/index.dart';
 
 class CreateEventScreen extends StatefulWidget {
@@ -29,13 +32,17 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   String _selectedEventType = 'birthday';
-  bool _createWishlist = true;
+  String? _wishlistOption = 'create'; // 'create', 'link', 'none'
+  String? _linkedWishlistId;
+  String? _linkedWishlistName;
   String _selectedPrivacy = 'friends_only';
   String _selectedEventMode = 'in_person';
   final _meetingLinkController = TextEditingController();
 
   // New variables for enhanced features
   List<String> _invitedFriends = [];
+  final WishlistRepository _wishlistRepository = WishlistRepository();
+  String? _createdEventId; // Store created event ID for navigation
 
   final List<EventTypeOption> _eventTypes = [
     EventTypeOption(
@@ -306,11 +313,19 @@ class _CreateEventScreenState extends State<CreateEventScreen>
 
                                       // Wishlist Option
                                       WishlistOptionWidget(
-                                        createWishlist: _createWishlist,
-                                        onWishlistChanged: (create) {
+                                        wishlistOption: _wishlistOption,
+                                        linkedWishlistName: _linkedWishlistName,
+                                        onWishlistChanged: (option) {
                                           setState(() {
-                                            _createWishlist = create;
+                                            _wishlistOption = option;
+                                            if (option != 'link') {
+                                              _linkedWishlistId = null;
+                                              _linkedWishlistName = null;
+                                            }
                                           });
+                                        },
+                                        onLinkWishlistPressed: () {
+                                          _showLinkWishlistBottomSheet();
                                         },
                                       ),
 
@@ -375,6 +390,158 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     _showFriendsSelectionModal();
   }
 
+  void _showLinkWishlistBottomSheet() async {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+
+    try {
+      // Fetch user's wishlists
+      final wishlists = await _wishlistRepository.getWishlists();
+
+      if (!mounted) return;
+
+      if (wishlists.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              localization.translate('events.noWishlistsAvailable'),
+            ),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+        return;
+      }
+
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => Container(
+          height: MediaQuery.of(context).size.height * 0.7,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              // Handle
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textTertiary.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Header
+              Text(
+                localization.translate('events.selectWishlistToLink'),
+                style: AppStyles.headingSmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Wishlists List
+              Expanded(
+                child: ListView.builder(
+                  itemCount: wishlists.length,
+                  itemBuilder: (context, index) {
+                    final wishlist = wishlists[index];
+                    final wishlistId = wishlist['id']?.toString() ?? '';
+                    final wishlistName =
+                        wishlist['name']?.toString() ?? 'Unnamed Wishlist';
+                    final isSelected = _linkedWishlistId == wishlistId;
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        onTap: () {
+                          setState(() {
+                            _wishlistOption = 'link';
+                            _linkedWishlistId = wishlistId;
+                            _linkedWishlistName = wishlistName;
+                          });
+                          Navigator.pop(context);
+                        },
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        tileColor: isSelected
+                            ? AppColors.primary.withOpacity(0.1)
+                            : AppColors.surface,
+                        leading: CircleAvatar(
+                          backgroundColor: AppColors.primary.withOpacity(0.1),
+                          child: Icon(
+                            Icons.favorite_rounded,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          wishlistName,
+                          style: AppStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        subtitle: Text(
+                          wishlist['description']?.toString() ?? '',
+                          style: AppStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: isSelected
+                            ? Icon(
+                                Icons.check_circle,
+                                color: AppColors.primary,
+                                size: 24,
+                              )
+                            : Icon(
+                                Icons.radio_button_unchecked,
+                                color: AppColors.textTertiary,
+                                size: 24,
+                              ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Cancel Button
+              SizedBox(
+                width: double.infinity,
+                child: CustomButton(
+                  text: localization.translate('common.cancel'),
+                  onPressed: () => Navigator.pop(context),
+                  variant: ButtonVariant.outline,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load wishlists: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   void _showFriendsSelectionModal() {
     final localization = Provider.of<LocalizationService>(
       context,
@@ -418,6 +585,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -426,6 +594,12 @@ class _CreateEventScreenState extends State<CreateEventScreen>
           return Container(
             height: MediaQuery.of(context).size.height * 0.7,
             padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
             child: Column(
               children: [
                 // Handle
@@ -447,6 +621,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                         localization.translate('events.inviteFriends'),
                         style: AppStyles.headingSmall.copyWith(
                           fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -597,6 +772,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                             friend['name'],
                             style: AppStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           subtitle: Text(
@@ -769,13 +945,59 @@ class _CreateEventScreenState extends State<CreateEventScreen>
 
     setState(() => _isLoading = true);
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      String? wishlistId;
 
-    setState(() => _isLoading = false);
+      // Handle wishlist creation/linking based on selected option
+      if (_wishlistOption == 'create') {
+        // Create empty wishlist linked to event
+        final eventName = _nameController.text.trim();
+        final wishlistName = '$eventName Wishlist';
 
-    // Show success dialog
-    _showSuccessDialog(localization);
+        debugPrint('📝 Creating wishlist for event: $wishlistName');
+        final wishlistResponse = await _wishlistRepository.createWishlist(
+          name: wishlistName,
+          description: 'Wishlist for ${eventName} event',
+          privacy: 'friends',
+          category: _selectedEventType,
+        );
+
+        final wishlistData = wishlistResponse['data'] ?? wishlistResponse;
+        wishlistId =
+            wishlistData['id']?.toString() ??
+            wishlistData['wishlistId']?.toString();
+
+        debugPrint('✅ Wishlist created: $wishlistId');
+      } else if (_wishlistOption == 'link' && _linkedWishlistId != null) {
+        // Use linked wishlist ID
+        wishlistId = _linkedWishlistId;
+        debugPrint('🔗 Using linked wishlist: $wishlistId');
+      }
+
+      // Simulate event creation API call
+      // TODO: Replace with actual API call when available
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Store event ID (in real implementation, get from API response)
+      _createdEventId = 'event_${DateTime.now().millisecondsSinceEpoch}';
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+        // Show success dialog
+        _showSuccessDialog(localization);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create event: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+      debugPrint('❌ Error creating event: $e');
+    }
   }
 
   void _saveDraft() {
@@ -815,219 +1037,58 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   }
 
   void _showSuccessDialog(LocalizationService localization) {
-    // Debug: Print localization info
-    debugPrint(
-      '_showSuccessDialog - Current Language: ${localization.currentLanguage}',
-    );
-    debugPrint('_showSuccessDialog - Is Loading: ${localization.isLoading}');
-    debugPrint(
-      '_showSuccessDialog - Event Created Message: ${localization.translate('events.eventCreatedMessage', args: {'eventName': _nameController.text})}',
-    );
-    debugPrint(
-      '_showSuccessDialog - Event Wishlist Created: ${localization.translate('events.eventWishlistCreated')}',
-    );
-
     final selectedEventType = _eventTypes.firstWhere(
       (type) => type.id == _selectedEventType,
       orElse: () => _eventTypes.first,
     );
 
-    showDialog(
+    // Simplified message
+    final String message = localization.translate(
+      'events.eventCreatedMessage',
+      args: {'eventName': _nameController.text},
+    );
+
+    ConfirmationDialog.show(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: selectedEventType.color.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                selectedEventType.icon,
-                color: selectedEventType.color,
-                size: 40,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              '${localization.translate('events.eventCreatedSuccessfully')} ${selectedEventType.emoji}',
-              style: AppStyles.headingMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              localization.translate(
-                'events.eventCreatedMessage',
-                args: {'eventName': _nameController.text},
-              ),
-              style: AppStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-
-            // Wishlist Status
-            if (_createWishlist) ...[
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.success.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      color: AppColors.success,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            localization.translate(
-                              'events.eventWishlistCreated',
-                            ),
-                            style: AppStyles.bodyMedium.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.success,
-                            ),
-                          ),
-                          Text(
-                            localization.translate(
-                              'events.wishlistCreatedMessage',
-                            ),
-                            style: AppStyles.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ] else ...[
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.info.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.info.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, color: AppColors.info, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            localization.translate(
-                              'events.usingPublicWishlist',
-                            ),
-                            style: AppStyles.bodyMedium.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.info,
-                            ),
-                          ),
-                          Text(
-                            localization.translate('events.noWishlistMessage'),
-                            style: AppStyles.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 24),
-            Text(
-              localization.translate('events.nextSteps'),
-              style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              localization.translate('events.whatWouldYouLikeToDo'),
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-
-            // Action Buttons
-            Column(
-              children: [
-                // Primary Action: Invite Guests Now
-                CustomButton(
-                  text: localization.translate('events.inviteGuestsNow'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pop();
-                    _navigateToInviteGuests();
-                  },
-                  variant: ButtonVariant.gradient,
-                  gradientColors: [
-                    selectedEventType.color,
-                    selectedEventType.color.withOpacity(0.8),
-                  ],
-                  icon: Icons.person_add_outlined,
-                  fullWidth: true,
-                ),
-                const SizedBox(height: 12),
-
-                // Secondary Action: View Event
-                CustomButton(
-                  text: localization.translate('events.viewEvent'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pop();
-                    // Navigate to event details
-                  },
-                  variant: ButtonVariant.outline,
-                  customColor: selectedEventType.color,
-                  fullWidth: true,
-                ),
-                const SizedBox(height: 12),
-
-                // Tertiary Action: Done
-                CustomButton(
-                  text: localization.translate('events.done'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pop();
-                  },
-                  variant: ButtonVariant.text,
-                  fullWidth: true,
-                ),
-              ],
-            ),
-          ],
+      isSuccess: true,
+      title:
+          '${localization.translate('events.eventCreatedSuccessfully')} ${selectedEventType.emoji}',
+      message: message,
+      primaryActionLabel: localization.translate('events.inviteGuestsNow'),
+      onPrimaryAction: () {
+        Navigator.of(context).pop(); // Close dialog
+        _showFriendsSelectionModal(); // Open invite guests bottom sheet
+      },
+      additionalActions: [
+        DialogAction(
+          label: localization.translate('events.viewEvent'),
+          onPressed: () {
+            Navigator.of(context).pop(); // Close dialog
+            // Navigate to event details (redirect only, no API call yet)
+            if (_createdEventId != null) {
+              Navigator.pushReplacementNamed(
+                context,
+                AppRoutes.eventDetails,
+                arguments: {'eventId': _createdEventId},
+              );
+            } else {
+              // Fallback: navigate back to events screen
+              Navigator.of(context).pop();
+            }
+          },
+          variant: ButtonVariant.outline,
+          icon: Icons.visibility_rounded,
         ),
-      ),
+        DialogAction(
+          label: localization.translate('events.done'),
+          onPressed: () {
+            Navigator.of(context).pop(); // Close dialog
+            Navigator.of(context).pop(); // Navigate back to Events screen
+          },
+          variant: ButtonVariant.text,
+          icon: Icons.check_rounded,
+        ),
+      ],
     );
   }
 }

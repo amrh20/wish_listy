@@ -41,6 +41,9 @@ dependencies:
   
   # Calendar widget
   table_calendar: ^3.1.2
+  
+  # Lottie animations
+  lottie: ^3.1.2
 
 dev_dependencies:
   flutter_test:
@@ -70,6 +73,7 @@ flutter:
     - assets/icons/
     - assets/animations/
     - assets/translations/
+    - assets/lottie/
 
 # Removed heavy dependencies for faster builds:
 # - Firebase packages (firebase_core, firebase_auth, etc.) - Can be added later
@@ -96,9 +100,9 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/icons/app_icon.png"
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
+  image_path: "assets/images/app_logo.png"
+  adaptive_icon_background: "#FFFEF9"
+  adaptive_icon_foreground: "assets/images/app_logo.png"
   remove_alpha_ios: true
   # Android specific settings
   android_gravity: center

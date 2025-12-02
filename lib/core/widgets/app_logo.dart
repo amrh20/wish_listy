@@ -18,66 +18,39 @@ class AppLogo extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Logo Icon
-        Container(
+        // Logo Image - New gift box with checkmark icon
+        Image.asset(
+          'assets/images/app_logo.png',
           width: size,
           height: size,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.primary,
-                AppColors.secondary,
-                AppColors.accent,
-              ],
-            ),
-            borderRadius: BorderRadius.circular(size * 0.2),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.3),
-                offset: Offset(0, size * 0.05),
-                blurRadius: size * 0.15,
-                spreadRadius: 0,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            // Show error message in debug mode to help identify the issue
+            debugPrint(
+              '❌ AppLogo: Image not found at assets/images/app_logo.png',
+            );
+            debugPrint('Error: $error');
+            // Return a simple placeholder to make it obvious the image is missing
+            return Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(size * 0.2),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.3),
+                  width: 2,
+                ),
               ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              // Background pattern
-              Positioned.fill(
-                child: CustomPaint(painter: LogoPatternPainter()),
-              ),
-              // Main icon
-              Center(
+              child: Center(
                 child: Icon(
-                  Icons.card_giftcard_rounded,
-                  size: size * 0.5,
-                  color: Colors.white,
+                  Icons.image_not_supported,
+                  size: size * 0.4,
+                  color: AppColors.primary.withOpacity(0.5),
                 ),
               ),
-              // Heart accent
-              Positioned(
-                top: size * 0.15,
-                right: size * 0.15,
-                child: Container(
-                  width: size * 0.2,
-                  height: size * 0.2,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.favorite,
-                      size: size * 0.12,
-                      color: Colors.red.shade400,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
 
         // App Name

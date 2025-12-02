@@ -7,6 +7,7 @@ import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/widgets/animated_background.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
+import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
@@ -36,6 +37,7 @@ class _AddItemScreenState extends State<AddItemScreen>
 
   bool _isLoading = false;
   bool _isLoadingWishlists = false;
+  bool _isNameEmpty = true; // Track if name field is empty
   String _selectedWishlist = '';
   String _selectedPriority = 'medium';
   String _selectedWhereToFind = 'online'; // 'online', 'physical', 'anywhere'
@@ -46,12 +48,28 @@ class _AddItemScreenState extends State<AddItemScreen>
 
   final WishlistRepository _wishlistRepository = WishlistRepository();
 
+  // Editing state
+  bool _isEditing = false;
+  String? _editingItemId;
+  bool _hasLoadedEditingData = false;
+
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _startAnimations();
     _loadWishlists();
+    // Listen to name controller changes to enable/disable button
+    _nameController.addListener(_onNameChanged);
+  }
+
+  void _onNameChanged() {
+    final isEmpty = _nameController.text.trim().isEmpty;
+    if (_isNameEmpty != isEmpty) {
+      setState(() {
+        _isNameEmpty = isEmpty;
+      });
+    }
   }
 
   @override
@@ -69,10 +87,148 @@ class _AddItemScreenState extends State<AddItemScreen>
         } else if (args is Map<String, dynamic>) {
           // If argument is a map with wishlistId
           final wishlistId = args['wishlistId'] as String?;
+          final itemId = args['itemId'] as String?;
+          final isEditingArg = args['isEditing'] as bool?;
           if (wishlistId != null) {
             _selectedWishlist = wishlistId;
           }
+          if (itemId != null) {
+            _editingItemId = itemId;
+          }
+          if (isEditingArg == true) {
+            _isEditing = true;
+          }
         }
+      }
+    }
+
+    // If we are in editing mode and have both wishlist and wish IDs, load wish data once
+    if (_isEditing &&
+        !_hasLoadedEditingData &&
+        _selectedWishlist.isNotEmpty &&
+        _editingItemId != null) {
+      _hasLoadedEditingData = true;
+      _loadItemForEditing();
+    }
+  }
+
+  /// Load existing wish data for editing using:
+  /// GET /api/items/wishlist/:wishlistId
+  Future<void> _loadItemForEditing() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      debugPrint(
+        '📡 AddItemScreen: Loading wish for editing. '
+        'wishlistId=$_selectedWishlist, itemId=$_editingItemId',
+      );
+
+      final itemsData = await _wishlistRepository.getItemsForWishlist(
+        _selectedWishlist,
+      );
+
+      // Find the specific wish by ID
+      final itemData = itemsData.firstWhere((item) {
+        final id = item['id']?.toString() ?? item['_id']?.toString() ?? '';
+        return id == _editingItemId;
+      }, orElse: () => <String, dynamic>{});
+
+      if (itemData.isEmpty) {
+        debugPrint(
+          '⚠️ AddItemScreen: Wish with id $_editingItemId not found in wishlist $_selectedWishlist',
+        );
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Populate form fields from API data
+      _nameController.text = itemData['name']?.toString() ?? '';
+      _descriptionController.text = itemData['description']?.toString() ?? '';
+      // Update button state based on loaded name
+      setState(() {
+        _isNameEmpty = _nameController.text.trim().isEmpty;
+      });
+
+      // Determine where to find section based on available fields
+      final url = itemData['url']?.toString();
+      final storeName = itemData['storeName']?.toString();
+      final storeLocation = itemData['storeLocation']?.toString();
+      final notes = itemData['notes']?.toString();
+
+      if (url != null && url.isNotEmpty) {
+        _selectedWhereToFind = 'online';
+        _linkController.text = url;
+        _productLinks = [];
+      } else if ((storeName != null && storeName.isNotEmpty) ||
+          (storeLocation != null && storeLocation.isNotEmpty)) {
+        _selectedWhereToFind = 'physical';
+        _storeNameController.text = storeName ?? '';
+        _storeLocationController.text = storeLocation ?? '';
+      } else if (notes != null && notes.isNotEmpty) {
+        _selectedWhereToFind = 'anywhere';
+        _brandKeywordsController.text = notes;
+      }
+
+      // Priority
+      final priorityStr =
+          itemData['priority']?.toString().toLowerCase() ?? 'medium';
+      if (_priorities.contains(priorityStr)) {
+        _selectedPriority = priorityStr;
+      } else {
+        _selectedPriority = 'medium';
+      }
+
+      debugPrint('✅ AddItemScreen: Loaded wish data for editing');
+    } on ApiException catch (e) {
+      debugPrint(
+        '❌ AddItemScreen: Error loading wish for editing: ${e.message}',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Failed to load wish: ${e.message}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint(
+        '❌ AddItemScreen: Unexpected error loading wish for editing: $e',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -86,21 +242,25 @@ class _AddItemScreenState extends State<AddItemScreen>
     try {
       debugPrint('📡 AddItemScreen: Loading wishlists...');
       final wishlistsData = await _wishlistRepository.getWishlists();
-      debugPrint('📡 AddItemScreen: Received ${wishlistsData.length} wishlists');
+      debugPrint(
+        '📡 AddItemScreen: Received ${wishlistsData.length} wishlists',
+      );
 
       setState(() {
         _wishlists = wishlistsData;
         _isLoadingWishlists = false;
-        
+
         // If no wishlist is selected yet and we have wishlists, select the first one
         if (_selectedWishlist.isEmpty && wishlistsData.isNotEmpty) {
-          final firstWishlistId = wishlistsData.first['id']?.toString() ?? 
-                                  wishlistsData.first['_id']?.toString() ?? '';
+          final firstWishlistId =
+              wishlistsData.first['id']?.toString() ??
+              wishlistsData.first['_id']?.toString() ??
+              '';
           if (firstWishlistId.isNotEmpty) {
             _selectedWishlist = firstWishlistId;
           }
         }
-        
+
         // Ensure the selected wishlist from route arguments is still valid
         if (_selectedWishlist.isNotEmpty) {
           final exists = wishlistsData.any((w) {
@@ -109,8 +269,10 @@ class _AddItemScreenState extends State<AddItemScreen>
           });
           if (!exists && wishlistsData.isNotEmpty) {
             // If selected wishlist doesn't exist, select the first one
-            final firstWishlistId = wishlistsData.first['id']?.toString() ?? 
-                                    wishlistsData.first['_id']?.toString() ?? '';
+            final firstWishlistId =
+                wishlistsData.first['id']?.toString() ??
+                wishlistsData.first['_id']?.toString() ??
+                '';
             if (firstWishlistId.isNotEmpty) {
               _selectedWishlist = firstWishlistId;
             }
@@ -192,6 +354,7 @@ class _AddItemScreenState extends State<AddItemScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _nameController.removeListener(_onNameChanged);
     _nameController.dispose();
     _descriptionController.dispose();
     _linkController.dispose();
@@ -262,7 +425,7 @@ class _AddItemScreenState extends State<AddItemScreen>
                                           validator: (value) {
                                             if (value?.isEmpty ?? true) {
                                               return localization.translate(
-                                                'wishlists.pleaseEnterItemName',
+                                                'wishlists.pleaseEnterWishName',
                                               );
                                             }
                                             return null;
@@ -353,7 +516,9 @@ class _AddItemScreenState extends State<AddItemScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  localization.translate('wishlists.addNewWish'),
+                  _isEditing
+                      ? localization.translate('wishlists.editWishlistItem')
+                      : localization.translate('wishlists.addNewWish'),
                   style: AppStyles.headingSmall.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -431,11 +596,14 @@ class _AddItemScreenState extends State<AddItemScreen>
               spacing: 8,
               runSpacing: 8,
               children: _wishlists.map((wishlistData) {
-                final wishlistId = wishlistData['id']?.toString() ?? 
-                                   wishlistData['_id']?.toString() ?? '';
-                final wishlistName = wishlistData['name']?.toString() ?? 'Unnamed';
+                final wishlistId =
+                    wishlistData['id']?.toString() ??
+                    wishlistData['_id']?.toString() ??
+                    '';
+                final wishlistName =
+                    wishlistData['name']?.toString() ?? 'Unnamed';
                 final isSelected = _selectedWishlist == wishlistId;
-                
+
                 return GestureDetector(
                   onTap: () {
                     setState(() {
@@ -857,8 +1025,12 @@ class _AddItemScreenState extends State<AddItemScreen>
 
   Widget _buildActionButtons(LocalizationService localization) {
     return CustomButton(
-      text: localization.translate('wishlists.addToWishlist'),
-      onPressed: () => _saveItem(localization),
+      text: _isEditing
+          ? localization.translate('wishlists.saveItem')
+          : localization.translate('wishlists.addToWishlist'),
+      onPressed: _isNameEmpty || _isLoading
+          ? null
+          : () => _saveItem(localization),
       isLoading: _isLoading,
       variant: ButtonVariant.gradient,
       gradientColors: [AppColors.primary, AppColors.secondary],
@@ -871,18 +1043,15 @@ class _AddItemScreenState extends State<AddItemScreen>
     LocalizationService localization,
   ) {
     // Find wishlist in the loaded list
-    final wishlist = _wishlists.firstWhere(
-      (w) {
-        final id = w['id']?.toString() ?? w['_id']?.toString() ?? '';
-        return id == wishlistId;
-      },
-      orElse: () => <String, dynamic>{},
-    );
-    
+    final wishlist = _wishlists.firstWhere((w) {
+      final id = w['id']?.toString() ?? w['_id']?.toString() ?? '';
+      return id == wishlistId;
+    }, orElse: () => <String, dynamic>{});
+
     if (wishlist.isNotEmpty) {
       return wishlist['name']?.toString() ?? 'Unnamed Wishlist';
     }
-    
+
     return wishlistId; // Fallback to ID if not found
   }
 
@@ -1016,7 +1185,9 @@ class _AddItemScreenState extends State<AddItemScreen>
         }
       }
 
-      debugPrint('📤 AddItemScreen: Adding item to wishlist');
+      debugPrint(
+        '📤 AddItemScreen: ${_isEditing ? "Updating" : "Adding"} wish',
+      );
       debugPrint('   Name: ${_nameController.text}');
       debugPrint('   Description: ${_descriptionController.text}');
       debugPrint('   Where to Find: $_selectedWhereToFind');
@@ -1027,26 +1198,48 @@ class _AddItemScreenState extends State<AddItemScreen>
       debugPrint('   Priority: $_selectedPriority');
       debugPrint('   WishlistId: $_selectedWishlist');
 
-      // Call API to add item
-      await _wishlistRepository.addItemToWishlist(
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-        url: url,
-        storeName: storeName,
-        storeLocation: storeLocation,
-        notes: notes,
-        priority: _selectedPriority,
-        wishlistId: _selectedWishlist,
-      );
-
-      debugPrint('✅ AddItemScreen: Item added successfully');
+      if (_isEditing && _editingItemId != null) {
+        // Call API to update existing wish
+        final updateResponse = await _wishlistRepository.updateItem(
+          itemId: _editingItemId!,
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          url: url,
+          storeName: storeName,
+          storeLocation: storeLocation,
+          notes: notes,
+          priority: _selectedPriority,
+          wishlistId: _selectedWishlist,
+        );
+        debugPrint('✅ AddItemScreen: Wish updated successfully');
+        debugPrint('   Response: $updateResponse');
+      } else {
+        // Call API to add wish
+        await _wishlistRepository.addItemToWishlist(
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim().isEmpty
+              ? null
+              : _descriptionController.text.trim(),
+          url: url,
+          storeName: storeName,
+          storeLocation: storeLocation,
+          notes: notes,
+          priority: _selectedPriority,
+          wishlistId: _selectedWishlist,
+        );
+        debugPrint('✅ AddItemScreen: Wish added successfully');
+      }
 
       if (mounted) {
         setState(() => _isLoading = false);
-        // Show success message
-        _showSuccessMessage(localization);
+        // Show success message - different behavior for edit vs add
+        if (_isEditing) {
+          _showEditSuccessMessage(localization);
+        } else {
+          _showSuccessMessage(localization);
+        }
       }
     } on ApiException catch (e) {
       // Handle API-specific errors
@@ -1084,8 +1277,10 @@ class _AddItemScreenState extends State<AddItemScreen>
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       // Handle unexpected errors
+      debugPrint('❌ AddItemScreen: Unexpected error: $e');
+      debugPrint('   Stack trace: $stackTrace');
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1108,19 +1303,14 @@ class _AddItemScreenState extends State<AddItemScreen>
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(
-              top: 60,
-              left: 16,
-              right: 16,
-              bottom: 0,
-            ),
+            width: 320,
+            margin: const EdgeInsets.only(top: 60, right: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
           ),
         );
       }
-      debugPrint('Add item error: $e');
     }
   }
 
@@ -1148,82 +1338,72 @@ class _AddItemScreenState extends State<AddItemScreen>
     );
   }
 
+  /// Show success message for adding wish (with dialog)
   void _showSuccessMessage(LocalizationService localization) {
-    showDialog(
+    ConfirmationDialog.show(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
+      isSuccess: true,
+      title: localization.translate('wishlists.wishAdded'),
+      message: localization.translate(
+        'wishlists.wishAddedToWishlist',
+        args: {
+          'wishName': _nameController.text,
+          'wishlistName': _getWishlistDisplayName(
+            _selectedWishlist,
+            localization,
+          ),
+        },
+      ),
+      primaryActionLabel: 'Done',
+      onPrimaryAction: () {
+        Navigator.of(context).pop();
+      },
+      secondaryActionLabel: localization.translate('wishlists.addAnother'),
+      onSecondaryAction: () {
+        _clearForm();
+      },
+    );
+  }
+
+  /// Show success message for editing wish (with SnackBar and redirect)
+  void _showEditSuccessMessage(LocalizationService localization) {
+    // Show success SnackBar at top right
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.check_circle_outline,
-                color: AppColors.success,
-                size: 40,
-              ),
+            const Icon(
+              Icons.check_circle_outline,
+              color: Colors.white,
+              size: 20,
             ),
-            const SizedBox(height: 24),
-            Text(
-              localization.translate('wishlists.itemAdded'),
-              style: AppStyles.headingMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              localization.translate(
-                'wishlists.itemAddedToWishlist',
-                args: {
-                  'itemName': _nameController.text,
-                  'wishlistName': _getWishlistDisplayName(
-                    _selectedWishlist,
-                    localization,
-                  ),
-                },
-              ),
-              style: AppStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: CustomButton(
-                    text: localization.translate('wishlists.addAnother'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _clearForm();
-                    },
-                    variant: ButtonVariant.outline,
-                  ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                localization.translate('messages.itemUpdated'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: CustomButton(
-                    text: 'Done',
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.of(context).pop();
-                    },
-                    variant: ButtonVariant.primary,
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
+        backgroundColor: AppColors.success,
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        width: 320,
+        margin: const EdgeInsets.only(top: 60, right: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
+
+    // Navigate back to items screen after a short delay
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close add wish screen
+      }
+    });
   }
 
   void _clearForm() {

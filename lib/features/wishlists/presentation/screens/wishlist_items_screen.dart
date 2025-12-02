@@ -959,16 +959,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                               ),
                             ),
                           ),
-
-                          const Spacer(),
-
-                          // Added by
-                          Text(
-                            'by Me',
-                            style: AppStyles.caption.copyWith(
-                              color: AppColors.textTertiary,
-                            ),
-                          ),
                         ],
                       ),
                     ],

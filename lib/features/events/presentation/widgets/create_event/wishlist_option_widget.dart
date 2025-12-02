@@ -6,13 +6,17 @@ import 'package:wish_listy/core/services/localization_service.dart';
 
 /// Widget for wishlist creation option
 class WishlistOptionWidget extends StatelessWidget {
-  final bool createWishlist;
-  final ValueChanged<bool> onWishlistChanged;
+  final String? wishlistOption; // 'create', 'link', 'none'
+  final String? linkedWishlistName; // Name of linked wishlist if 'link' is selected
+  final ValueChanged<String?> onWishlistChanged;
+  final VoidCallback? onLinkWishlistPressed;
 
   const WishlistOptionWidget({
     super.key,
-    required this.createWishlist,
+    required this.wishlistOption,
+    this.linkedWishlistName,
     required this.onWishlistChanged,
+    this.onLinkWishlistPressed,
   });
 
   @override
@@ -56,29 +60,29 @@ class WishlistOptionWidget extends StatelessWidget {
           const SizedBox(height: 16),
           Column(
             children: [
-              // Yes Option
+              // Option 1: Create New Wishlist
               GestureDetector(
-                onTap: () => onWishlistChanged(true),
+                onTap: () => onWishlistChanged('create'),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: createWishlist
+                    color: wishlistOption == 'create'
                         ? AppColors.secondary.withOpacity(0.1)
                         : AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: createWishlist
+                      color: wishlistOption == 'create'
                           ? AppColors.secondary
                           : AppColors.textTertiary.withOpacity(0.3),
-                      width: createWishlist ? 2 : 1,
+                      width: wishlistOption == 'create' ? 2 : 1,
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
-                        Icons.check_circle,
-                        color: createWishlist
+                        Icons.add_circle_outline,
+                        color: wishlistOption == 'create'
                             ? AppColors.secondary
                             : AppColors.textTertiary,
                         size: 20,
@@ -93,10 +97,10 @@ class WishlistOptionWidget extends StatelessWidget {
                                 'events.yesCreateWishlist',
                               ),
                               style: AppStyles.bodyMedium.copyWith(
-                                fontWeight: createWishlist
+                                fontWeight: wishlistOption == 'create'
                                     ? FontWeight.w600
                                     : FontWeight.normal,
-                                color: createWishlist
+                                color: wishlistOption == 'create'
                                     ? AppColors.secondary
                                     : AppColors.textPrimary,
                               ),
@@ -112,7 +116,7 @@ class WishlistOptionWidget extends StatelessWidget {
                           ],
                         ),
                       ),
-                      if (createWishlist)
+                      if (wishlistOption == 'create')
                         Icon(
                           Icons.check_circle,
                           color: AppColors.secondary,
@@ -123,29 +127,113 @@ class WishlistOptionWidget extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              // No Option
+              // Option 2: Link Existing Wishlist
               GestureDetector(
-                onTap: () => onWishlistChanged(false),
+                onTap: () {
+                  if (onLinkWishlistPressed != null) {
+                    onLinkWishlistPressed!();
+                  } else {
+                    onWishlistChanged('link');
+                  }
+                },
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: !createWishlist
+                    color: wishlistOption == 'link'
+                        ? AppColors.primary.withOpacity(0.1)
+                        : AppColors.surfaceVariant,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: wishlistOption == 'link'
+                          ? AppColors.primary
+                          : AppColors.textTertiary.withOpacity(0.3),
+                      width: wishlistOption == 'link' ? 2 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.link,
+                        color: wishlistOption == 'link'
+                            ? AppColors.primary
+                            : AppColors.textTertiary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              localization.translate(
+                                'events.linkExistingWishlist',
+                              ),
+                              style: AppStyles.bodyMedium.copyWith(
+                                fontWeight: wishlistOption == 'link'
+                                    ? FontWeight.w600
+                                    : FontWeight.normal,
+                                color: wishlistOption == 'link'
+                                    ? AppColors.primary
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                            if (linkedWishlistName != null &&
+                                linkedWishlistName!.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                linkedWishlistName!,
+                                style: AppStyles.bodySmall.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ] else
+                              Text(
+                                localization.translate(
+                                  'events.linkExistingWishlistDescription',
+                                ),
+                                style: AppStyles.bodySmall.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (wishlistOption == 'link')
+                        Icon(
+                          Icons.check_circle,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Option 3: No Wishlist
+              GestureDetector(
+                onTap: () => onWishlistChanged('none'),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: wishlistOption == 'none'
                         ? AppColors.info.withOpacity(0.1)
                         : AppColors.surfaceVariant,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: !createWishlist
+                      color: wishlistOption == 'none'
                           ? AppColors.info
                           : AppColors.textTertiary.withOpacity(0.3),
-                      width: !createWishlist ? 2 : 1,
+                      width: wishlistOption == 'none' ? 2 : 1,
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.cancel_outlined,
-                        color: !createWishlist
+                        color: wishlistOption == 'none'
                             ? AppColors.info
                             : AppColors.textTertiary,
                         size: 20,
@@ -158,10 +246,10 @@ class WishlistOptionWidget extends StatelessWidget {
                             Text(
                               localization.translate('events.noCreateWishlist'),
                               style: AppStyles.bodyMedium.copyWith(
-                                fontWeight: !createWishlist
+                                fontWeight: wishlistOption == 'none'
                                     ? FontWeight.w600
                                     : FontWeight.normal,
-                                color: !createWishlist
+                                color: wishlistOption == 'none'
                                     ? AppColors.info
                                     : AppColors.textPrimary,
                               ),
@@ -177,7 +265,7 @@ class WishlistOptionWidget extends StatelessWidget {
                           ],
                         ),
                       ),
-                      if (!createWishlist)
+                      if (wishlistOption == 'none')
                         Icon(
                           Icons.check_circle,
                           color: AppColors.info,

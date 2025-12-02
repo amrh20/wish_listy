@@ -5,6 +5,7 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/widgets/unified_app_bar.dart';
+import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
@@ -440,40 +441,24 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
       await _loadWishlists();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(
-                  Icons.check_circle_outline,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Wishlist "${wishlist.name}" deleted successfully',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(
-              top: 60,
-              left: 16,
-              right: 16,
-              bottom: 0,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+        final localization = Provider.of<LocalizationService>(
+          context,
+          listen: false,
+        );
+
+        // Show success dialog with Lottie animation
+        ConfirmationDialog.show(
+          context: context,
+          isSuccess: true,
+          title: localization.translate(
+            'wishlists.wishlistDeletedSuccessfully',
           ),
+          message: 'Wishlist "${wishlist.name}" has been deleted successfully.',
+          primaryActionLabel: localization.translate('app.done'),
+          onPrimaryAction: () {
+            // Dialog will close automatically
+          },
+          barrierDismissible: true,
         );
       }
     } on ApiException catch (e) {

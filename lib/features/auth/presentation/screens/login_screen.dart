@@ -9,6 +9,7 @@ import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
+import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -180,11 +181,10 @@ class _LoginScreenState extends State<LoginScreen>
               backgroundColor: AppColors.error,
               duration: const Duration(seconds: 4),
               behavior: SnackBarBehavior.floating,
+              width: 320,
               margin: const EdgeInsets.only(
                 top: 60,
-                left: 16,
                 right: 16,
-                bottom: 0,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -196,71 +196,76 @@ class _LoginScreenState extends State<LoginScreen>
     } on ApiException catch (e) {
       // Handle API-specific errors
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    e.message,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 4),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(
-              top: 60,
-              left: 16,
-              right: 16,
-              bottom: 0,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        final localization = Provider.of<LocalizationService>(context, listen: false);
+        
+        // Get the actual error message from API
+        String errorMessage = e.message.isNotEmpty ? e.message : 'An error occurred';
+        final errorMessageLower = errorMessage.toLowerCase();
+        
+        String title = localization.translate('auth.loginFailed');
+        
+        // Handle different error types with user-friendly messages
+        if (e.statusCode == 400) {
+          // For 400 errors, show the actual API message or a user-friendly one
+          if (errorMessageLower.contains('user not found') ||
+              errorMessageLower.contains('user does not exist') ||
+              errorMessageLower.contains('email not found')) {
+            errorMessage = 'Invalid credentials. Please check your email or phone number.';
+          } else if (errorMessageLower.contains('invalid password') ||
+              errorMessageLower.contains('incorrect password') ||
+              errorMessageLower.contains('wrong password')) {
+            errorMessage = localization.translate('auth.wrongPassword');
+          } else if (errorMessageLower.contains('invalid credentials') ||
+              errorMessageLower.contains('authentication failed')) {
+            errorMessage = 'Invalid credentials. Please check your email/phone and password.';
+          } else {
+            // Use the actual API message if it's meaningful
+            errorMessage = errorMessage;
+          }
+        } else if (e.statusCode == 401) {
+          errorMessage = 'Invalid credentials. Please check your email/phone and password.';
+        } else if (e.statusCode == 500) {
+          // For 500 errors, show generic server error message
+          title = localization.translate('auth.error');
+          errorMessage = localization.translate('auth.unexpectedError');
+        } else {
+          // For other errors, show the actual API message
+          errorMessage = errorMessage;
+        }
+        
+        // Show error dialog with Lottie animation
+        ConfirmationDialog.show(
+          context: context,
+          isSuccess: false,
+          title: title,
+          message: errorMessage,
+          primaryActionLabel: localization.translate('auth.tryAgain'),
+          onPrimaryAction: () {
+            // User can try again by submitting the form again
+          },
+          secondaryActionLabel: localization.translate('auth.close'),
+          onSecondaryAction: () {},
+          barrierDismissible: true,
         );
       }
     } catch (e) {
-      // Handle unexpected errors
+      // Handle unexpected errors (network errors, etc.)
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'An unexpected error occurred. Please try again.',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 4),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(
-              top: 60,
-              left: 16,
-              right: 16,
-              bottom: 0,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        final localization = Provider.of<LocalizationService>(context, listen: false);
+        
+        // Show error dialog with Lottie animation
+        ConfirmationDialog.show(
+          context: context,
+          isSuccess: false,
+          title: localization.translate('auth.error'),
+          message: localization.translate('auth.unexpectedError'),
+          primaryActionLabel: localization.translate('auth.tryAgain'),
+          onPrimaryAction: () {
+            // User can try again by submitting the form again
+          },
+          secondaryActionLabel: localization.translate('auth.close'),
+          onSecondaryAction: () {},
+          barrierDismissible: true,
         );
       }
       debugPrint('Login error: $e');
