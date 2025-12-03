@@ -4,8 +4,9 @@ import 'app_colors.dart';
 
 class AppStyles {
   // Beautiful Text Styles with Comfortaa Font (Perfect for Gifts App - Rounded & Playful)
+  // Font sizes optimized for mobile screens
   static TextStyle get heading1 => GoogleFonts.comfortaa(
-    fontSize: 36,
+    fontSize: 28,
     fontWeight: FontWeight.w800,
     color: AppColors.textPrimary,
     height: 1.1,
@@ -13,7 +14,7 @@ class AppStyles {
   );
 
   static TextStyle get heading2 => GoogleFonts.comfortaa(
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     height: 1.2,
@@ -21,7 +22,7 @@ class AppStyles {
   );
 
   static TextStyle get heading3 => GoogleFonts.comfortaa(
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
     height: 1.3,
@@ -29,65 +30,65 @@ class AppStyles {
   );
 
   static TextStyle get heading4 => GoogleFonts.comfortaa(
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
     height: 1.4,
     letterSpacing: -0.1,
   );
 
-  // Additional text styles
+  // Additional text styles - optimized sizes
   static TextStyle get headingLarge => GoogleFonts.comfortaa(
-    fontSize: 32,
+    fontSize: 22,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     height: 1.2,
   );
 
   static TextStyle get headingMedium => GoogleFonts.comfortaa(
-    fontSize: 20,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-    height: 1.3,
-  );
-
-  static TextStyle get headingSmall => GoogleFonts.comfortaa(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
     height: 1.3,
   );
 
-  static TextStyle get bodyLarge => GoogleFonts.comfortaa(
+  static TextStyle get headingSmall => GoogleFonts.comfortaa(
     fontSize: 16,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+    height: 1.3,
+  );
+
+  static TextStyle get bodyLarge => GoogleFonts.comfortaa(
+    fontSize: 15,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
     height: 1.5,
   );
 
   static TextStyle get bodyMedium => GoogleFonts.comfortaa(
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
     height: 1.5,
   );
 
   static TextStyle get bodySmall => GoogleFonts.comfortaa(
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
     height: 1.4,
   );
 
   static TextStyle get caption => GoogleFonts.comfortaa(
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: FontWeight.w400,
     color: AppColors.textTertiary,
     height: 1.3,
   );
 
   static TextStyle get button => GoogleFonts.comfortaa(
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: FontWeight.w600,
     color: AppColors.textWhite,
     height: 1.4,

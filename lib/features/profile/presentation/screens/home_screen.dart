@@ -5,11 +5,11 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
-import 'package:wish_listy/features/rewards/presentation/widgets/rewards_widgets.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
+import 'package:wish_listy/core/widgets/unified_page_header.dart';
+import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
-import 'package:wish_listy/features/rewards/data/repository/rewards_repository.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 
@@ -30,7 +30,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _hasWishlists = false;
   bool _isCheckingWishlists = false;
   int _wishlistCount = 0;
-  final RewardsRepository _rewardsRepository = RewardsRepository();
   final WishlistRepository _wishlistRepository = WishlistRepository();
 
   // Mock data - replace with real data from your backend
@@ -108,7 +107,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _initializeAnimations();
-    _initializeRewards();
     _checkWishlists();
     _startAnimations();
   }
@@ -116,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   /// Check if user has any wishlists
   Future<void> _checkWishlists() async {
     final authService = Provider.of<AuthRepository>(context, listen: false);
-    
+
     // Only check for authenticated users
     if (!authService.isAuthenticated || authService.isGuest) {
       return;
@@ -129,15 +127,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       debugPrint('🏠 HomeScreen: Checking for wishlists...');
       final wishlists = await _wishlistRepository.getWishlists();
-      
+
       setState(() {
         _hasWishlists = wishlists.isNotEmpty;
         _wishlistCount = wishlists.length;
-        _showWelcomeCard = !_hasWishlists; // Hide welcome card if user has wishlists
+        _showWelcomeCard =
+            !_hasWishlists; // Hide welcome card if user has wishlists
         _isCheckingWishlists = false;
       });
 
-      debugPrint('🏠 HomeScreen: Has wishlists: $_hasWishlists, Count: $_wishlistCount');
+      debugPrint(
+        '🏠 HomeScreen: Has wishlists: $_hasWishlists, Count: $_wishlistCount',
+      );
     } on ApiException catch (e) {
       debugPrint('⚠️ HomeScreen: Error checking wishlists: ${e.message}');
       setState(() {
@@ -150,14 +151,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _isCheckingWishlists = false;
       });
     }
-  }
-
-  void _initializeRewards() async {
-    // Initialize rewards system for current user
-    await _rewardsRepository.initializeForUser('current_user');
-    setState(() {
-      // Refresh UI after rewards initialization
-    });
   }
 
   void _initializeAnimations() {
@@ -198,234 +191,99 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Consumer2<LocalizationService, AuthRepository>(
       builder: (context, localization, authService, child) {
         return Scaffold(
-          body: DecorativeBackground(
-            child: Stack(
-              children: [
-                // Content
-                RefreshIndicator(
-                  onRefresh: _refreshData,
-                  color: AppColors.primary,
-                  child: CustomScrollView(
-                    controller: _scrollController,
-                    slivers: [
-                      // App Bar
-                      _buildSliverAppBar(localization, authService),
+          body: UnifiedPageBackground(
+            child: DecorativeBackground(
+              child: Column(
+                children: [
+                  // Unified Page Header
+                  _buildUnifiedHeader(localization, authService),
 
-                      // Content
-                      SliverToBoxAdapter(
-                        child: AnimatedBuilder(
-                          animation: _animationController,
-                          builder: (context, child) {
-                            return FadeTransition(
-                              opacity: _fadeAnimation,
-                              child: SlideTransition(
-                                position: _slideAnimation,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // Guest Mode Welcome Card
-                                      if (authService.isGuest == true) ...[
-                                        _buildGuestWelcomeCard(localization),
-                                        const SizedBox(height: 24),
-                                      ],
+                  // Content in rounded container
+                  Expanded(
+                    child: UnifiedPageContainer(
+                      child: RefreshIndicator(
+                        onRefresh: _refreshData,
+                        color: AppColors.primary,
+                        child: SingleChildScrollView(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: AnimatedBuilder(
+                            animation: _animationController,
+                            builder: (context, child) {
+                              return FadeTransition(
+                                opacity: _fadeAnimation,
+                                child: SlideTransition(
+                                  position: _slideAnimation,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // Guest Mode Welcome Card
+                                        if (authService.isGuest == true) ...[
+                                          _buildGuestWelcomeCard(localization),
+                                          const SizedBox(height: 24),
+                                        ],
 
-                                      // Regular Welcome Card for logged users (only if no wishlists)
-                                      if (authService.isAuthenticated ==
-                                              true &&
-                                          _showWelcomeCard &&
-                                          !_hasWishlists &&
-                                          !_isCheckingWishlists) ...[
-                                        _buildWelcomeCard(localization),
-                                        const SizedBox(height: 24),
-                                      ],
+                                        // Regular Welcome Card for logged users (only if no wishlists)
+                                        if (authService.isAuthenticated ==
+                                                true &&
+                                            _showWelcomeCard &&
+                                            !_hasWishlists &&
+                                            !_isCheckingWishlists) ...[
+                                          _buildWelcomeCard(localization),
+                                          const SizedBox(height: 24),
+                                        ],
 
-                                      // Summary Card when user has wishlists (replaces welcome card)
-                                      if (authService.isAuthenticated &&
-                                          _hasWishlists &&
-                                          !_isCheckingWishlists) ...[
-                                        _buildSummaryCard(localization),
-                                        const SizedBox(height: 24),
-                                      ],
+                                        // Summary Card when user has wishlists (replaces welcome card)
+                                        if (authService.isAuthenticated &&
+                                            _hasWishlists &&
+                                            !_isCheckingWishlists) ...[
+                                          _buildSummaryCard(localization),
+                                          const SizedBox(height: 24),
+                                        ],
 
-                                      // Points & Level Display (only for authenticated users)
-                                      if (authService.isAuthenticated) ...[
-                                        _buildPointsAndLevel(),
-                                        SizedBox(height: _hasWishlists ? 20 : 24),
-                                      ],
-
-                                      // Recent Achievement (only for authenticated users)
-                                      if (authService.isAuthenticated) ...[
-                                        const RecentAchievementWidget(),
-                                        SizedBox(height: _hasWishlists ? 20 : 24),
-                                      ],
-
-                                      // Quick Actions (limited for guests)
-                                      _buildQuickActions(localization),
-                                      SizedBox(height: _hasWishlists ? 20 : 24),
-
-                                      // Rewards Quick Actions (only for authenticated users)
-                                      if (authService.isAuthenticated) ...[
-                                        _buildRewardsSection(localization),
-                                        const SizedBox(height: 32),
-                                      ],
-
-                                      // Upcoming Events (only for authenticated users)
-                                      if (authService.isAuthenticated) ...[
-                                        _buildUpcomingEvents(localization),
-                                        const SizedBox(height: 32),
-                                      ],
-
-                                      // Friend Activity (only for authenticated users)
-                                      if (authService.isAuthenticated) ...[
-                                        _buildFriendActivity(localization),
-                                        const SizedBox(height: 32),
-                                      ],
-
-                                      // Gift Suggestions (limited for guests)
-                                      if (authService.isAuthenticated) ...[
-                                        _buildGiftSuggestions(localization),
-                                        const SizedBox(height: 32),
-                                      ],
-
-                                      // Leaderboard Preview (only for authenticated users)
-                                      if (authService.isAuthenticated) ...[
-                                        const LeaderboardPreviewWidget(),
-                                        const SizedBox(height: 32),
-                                      ],
-
-                                      // Guest encouragement section
-                                      if (authService.isGuest == true) ...[
-                                        _buildGuestEncouragementSection(
-                                          localization,
+                                        // Quick Actions (limited for guests)
+                                        _buildQuickActions(localization),
+                                        SizedBox(
+                                          height: _hasWishlists ? 20 : 24,
                                         ),
-                                      ],
 
-                                      const SizedBox(
-                                        height: 100,
-                                      ), // Bottom padding for FAB
-                                    ],
+                                        // Upcoming Events (only for authenticated users)
+                                        if (authService.isAuthenticated) ...[
+                                          _buildUpcomingEvents(localization),
+                                          const SizedBox(height: 32),
+                                        ],
+
+                                        // Friend Activity (only for authenticated users)
+                                        if (authService.isAuthenticated) ...[
+                                          _buildFriendActivity(localization),
+                                          const SizedBox(height: 32),
+                                        ],
+
+                                        // Gift Suggestions (limited for guests)
+                                        if (authService.isAuthenticated) ...[
+                                          _buildGiftSuggestions(localization),
+                                          const SizedBox(height: 32),
+                                        ],
+
+                                        // Guest encouragement section
+                                        if (authService.isGuest == true) ...[
+                                          _buildGuestEncouragementSection(
+                                            localization,
+                                          ),
+                                        ],
+
+                                        const SizedBox(
+                                          height: 100,
+                                        ), // Bottom padding for FAB
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSliverAppBar(
-    LocalizationService localization,
-    AuthRepository authService,
-  ) {
-    return SliverAppBar(
-      expandedHeight: authService.isGuest ? 80 : 120,
-      floating: true,
-      pinned: true,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      flexibleSpace: FlexibleSpaceBar(
-        title: authService.isGuest
-            ? Text(
-                'وش ليستي',
-                style: AppStyles.headingMedium.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    localization.translate('home.greeting'),
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  Text(
-                    authService.userName ?? 'User',
-                    style: AppStyles.headingSmall.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-      ),
-      actions: authService.isGuest
-          ? [
-              // Login button for guests
-              IconButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, AppRoutes.login);
-                },
-                icon: Icon(Icons.login, color: AppColors.primary),
-                style: IconButton.styleFrom(
-                  backgroundColor: AppColors.surface,
-                  padding: const EdgeInsets.all(12),
-                ),
-              ),
-              const SizedBox(width: 16),
-            ]
-          : [
-              // Search Button for authenticated users
-              IconButton(
-                onPressed: () {
-                  // Navigate to search screen
-                },
-                icon: Icon(Icons.search_rounded, color: AppColors.textPrimary),
-                style: IconButton.styleFrom(
-                  backgroundColor: AppColors.surface,
-                  padding: const EdgeInsets.all(12),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Smart Reminders Button
-              Stack(
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/smart-reminders');
-                    },
-                    icon: Icon(Icons.psychology, color: AppColors.textPrimary),
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.surface,
-                      padding: const EdgeInsets.all(12),
-                    ),
-                  ),
-                  // AI Badge
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.surface, width: 1),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '3',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -433,40 +291,51 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ],
               ),
-              const SizedBox(width: 8),
-              // Notifications Button
-              Stack(
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      AppRoutes.pushNamed(context, AppRoutes.notifications);
-                    },
-                    icon: Icon(
-                      Icons.notifications_outlined,
-                      color: AppColors.textPrimary,
-                    ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.surface,
-                      padding: const EdgeInsets.all(12),
-                    ),
-                  ),
-                  // Notification Badge
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: AppColors.accent,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 16),
-            ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildUnifiedHeader(
+    LocalizationService localization,
+    AuthRepository authService,
+  ) {
+    if (authService.isGuest) {
+      return SimplePageHeader(
+        title: 'WishListy',
+        subtitle: localization.translate('guest.welcome.subtitle'),
+        actions: [
+          HeaderAction(
+            icon: Icons.login,
+            onTap: () {
+              Navigator.pushNamed(context, AppRoutes.login);
+            },
+          ),
+        ],
+      );
+    }
+
+    return UnifiedPageHeader(
+      title: '${localization.translate('home.greeting')} 👋',
+      subtitle: authService.userName ?? 'User',
+      actions: [
+        HeaderAction(
+          icon: Icons.search_rounded,
+          onTap: () {
+            // Navigate to search screen
+          },
+        ),
+        HeaderAction(
+          icon: Icons.notifications_outlined,
+          onTap: () {
+            AppRoutes.pushNamed(context, AppRoutes.notifications);
+          },
+          showBadge: true,
+          badgeColor: AppColors.accent,
+        ),
+      ],
     );
   }
 
@@ -667,10 +536,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          AppColors.primary,
-                          AppColors.primaryLight,
-                        ],
+                        colors: [AppColors.primary, AppColors.primaryLight],
                       ),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
@@ -1257,60 +1123,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildPointsAndLevel() {
-    return Row(
-      children: [
-        Expanded(child: const PointsDisplay()),
-        const SizedBox(width: 16),
-        Expanded(child: const LevelProgressWidget(showDetails: false)),
-      ],
-    );
-  }
-
-  Widget _buildRewardsSection(LocalizationService localization) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '🎮 Rewards & Achievements',
-                  style: AppStyles.headingSmall,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: () =>
-                    Navigator.of(context).pushNamed(AppRoutes.achievements),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  'View All',
-                  style: AppStyles.bodyMedium.copyWith(color: AppColors.primary),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        const RewardsQuickActions(),
-      ],
-    );
-  }
-
   Future<void> _refreshData() async {
     // Refresh wishlists check
     await _checkWishlists();
-
-    // Refresh rewards data
-    _initializeRewards();
 
     // Refresh your data here
     setState(() {

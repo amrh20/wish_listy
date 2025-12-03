@@ -70,10 +70,12 @@ flutter:
   # Assets configuration - Minimal set
   assets:
     - assets/images/
+    - assets/images/categories/
     - assets/icons/
     - assets/animations/
     - assets/translations/
     - assets/lottie/
+    - assets/vectors/bottom_sheets/
 
 # Removed heavy dependencies for faster builds:
 # - Firebase packages (firebase_core, firebase_auth, etc.) - Can be added later

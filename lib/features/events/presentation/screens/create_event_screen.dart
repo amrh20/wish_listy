@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/constants/bottom_sheet_vectors.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
 import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
+import 'package:wish_listy/core/widgets/decorated_bottom_sheet.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
@@ -414,121 +416,97 @@ class _CreateEventScreenState extends State<CreateEventScreen>
         return;
       }
 
-      showModalBottomSheet(
+      DecoratedBottomSheet.show(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.white,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (context) => Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              // Handle
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.textTertiary.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
+        vectorType: BottomSheetVectorType.creation,
+        title: localization.translate('events.selectWishlistToLink'),
+        height: MediaQuery.of(context).size.height * 0.7,
+        children: [
+          // Wishlists List
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.5,
+            child: ListView.builder(
+              itemCount: wishlists.length,
+              itemBuilder: (context, index) {
+                final wishlist = wishlists[index];
+                final wishlistId = wishlist['id']?.toString() ?? '';
+                final wishlistName =
+                    wishlist['name']?.toString() ?? 'Unnamed Wishlist';
+                final isSelected = _linkedWishlistId == wishlistId;
 
-              // Header
-              Text(
-                localization.translate('events.selectWishlistToLink'),
-                style: AppStyles.headingSmall.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Wishlists List
-              Expanded(
-                child: ListView.builder(
-                  itemCount: wishlists.length,
-                  itemBuilder: (context, index) {
-                    final wishlist = wishlists[index];
-                    final wishlistId = wishlist['id']?.toString() ?? '';
-                    final wishlistName =
-                        wishlist['name']?.toString() ?? 'Unnamed Wishlist';
-                    final isSelected = _linkedWishlistId == wishlistId;
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        onTap: () {
-                          setState(() {
-                            _wishlistOption = 'link';
-                            _linkedWishlistId = wishlistId;
-                            _linkedWishlistName = wishlistName;
-                          });
-                          Navigator.pop(context);
-                        },
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        tileColor: isSelected
-                            ? AppColors.primary.withOpacity(0.1)
-                            : AppColors.surface,
-                        leading: CircleAvatar(
-                          backgroundColor: AppColors.primary.withOpacity(0.1),
-                          child: Icon(
-                            Icons.favorite_rounded,
-                            color: AppColors.primary,
-                            size: 20,
-                          ),
-                        ),
-                        title: Text(
-                          wishlistName,
-                          style: AppStyles.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        subtitle: Text(
-                          wishlist['description']?.toString() ?? '',
-                          style: AppStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: isSelected
-                            ? Icon(
-                                Icons.check_circle,
-                                color: AppColors.primary,
-                                size: 24,
-                              )
-                            : Icon(
-                                Icons.radio_button_unchecked,
-                                color: AppColors.textTertiary,
-                                size: 24,
-                              ),
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
+                  child: ListTile(
+                    onTap: () {
+                      setState(() {
+                        _wishlistOption = 'link';
+                        _linkedWishlistId = wishlistId;
+                        _linkedWishlistName = wishlistName;
+                      });
+                      Navigator.pop(context);
+                    },
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    tileColor: isSelected
+                        ? AppColors.primary.withOpacity(0.1)
+                        : AppColors.surface,
+                    leading: CircleAvatar(
+                      backgroundColor: AppColors.primary.withOpacity(0.1),
+                      child: Icon(
+                        Icons.favorite_rounded,
+                        color: AppColors.primary,
+                        size: 20,
                       ),
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Cancel Button
-              SizedBox(
-                width: double.infinity,
-                child: CustomButton(
-                  text: localization.translate('common.cancel'),
-                  onPressed: () => Navigator.pop(context),
-                  variant: ButtonVariant.outline,
-                ),
-              ),
-            ],
+                    ),
+                    title: Text(
+                      wishlistName,
+                      style: AppStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    subtitle: Text(
+                      wishlist['description']?.toString() ?? '',
+                      style: AppStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: isSelected
+                        ? Icon(
+                            Icons.check_circle,
+                            color: AppColors.primary,
+                            size: 24,
+                          )
+                        : Icon(
+                            Icons.radio_button_unchecked,
+                            color: AppColors.textTertiary,
+                            size: 24,
+                          ),
+                  ),
+                );
+              },
+            ),
           ),
-        ),
+
+          const SizedBox(height: 20),
+
+          // Cancel Button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: CustomButton(
+                text: localization.translate('common.cancel'),
+                onPressed: () => Navigator.pop(context),
+                variant: ButtonVariant.outline,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
       );
     } catch (e) {
       if (mounted) {
@@ -585,36 +563,17 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
-          return Container(
+          return DecoratedBottomSheet(
+            vectorType: BottomSheetVectorType.friends,
             height: MediaQuery.of(context).size.height * 0.7,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              children: [
-                // Handle
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.textTertiary.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Header
-                Row(
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
                   children: [
                     Expanded(
                       child: Text(
@@ -645,19 +604,25 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                       ),
                   ],
                 ),
-                const SizedBox(height: 24),
+              ),
+              const SizedBox(height: 24),
 
-                // Search Field
-                CustomTextField(
+              // Search Field
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: CustomTextField(
                   controller: TextEditingController(),
                   label: localization.translate('events.searchFriends'),
                   hint: localization.translate('events.searchFriendsHint'),
                   prefixIcon: Icons.search,
                 ),
-                const SizedBox(height: 16),
+              ),
+              const SizedBox(height: 16),
 
-                // Select All Button
-                Row(
+              // Select All Button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
@@ -728,80 +693,86 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+              ),
+              const SizedBox(height: 20),
 
-                // Friends List
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: mockFriends.length,
-                    itemBuilder: (context, index) {
-                      final friend = mockFriends[index];
-                      final isSelected = _invitedFriends.contains(
-                        friend['name'],
-                      );
+              // Friends List
+              SizedBox(
+                height: MediaQuery.of(context).size.height * 0.35,
+                child: ListView.builder(
+                  itemCount: mockFriends.length,
+                  itemBuilder: (context, index) {
+                    final friend = mockFriends[index];
+                    final isSelected = _invitedFriends.contains(friend['name']);
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          onTap: () {
-                            setModalState(() {
-                              if (isSelected) {
-                                _invitedFriends.remove(friend['name']);
-                              } else {
-                                _invitedFriends.add(friend['name']);
-                              }
-                            });
-                          },
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          tileColor: isSelected
-                              ? AppColors.primary.withOpacity(0.1)
-                              : AppColors.surface,
-                          leading: CircleAvatar(
-                            backgroundColor: AppColors.primary.withOpacity(0.1),
-                            child: Text(
-                              friend['name'][0].toUpperCase(),
-                              style: AppStyles.bodyMedium.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          title: Text(
-                            friend['name'],
-                            style: AppStyles.bodyMedium.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          subtitle: Text(
-                            friend['email'],
-                            style: AppStyles.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          trailing: isSelected
-                              ? Icon(
-                                  Icons.check_circle,
-                                  color: AppColors.primary,
-                                  size: 24,
-                                )
-                              : Icon(
-                                  Icons.radio_button_unchecked,
-                                  color: AppColors.textTertiary,
-                                  size: 24,
-                                ),
+                    return Container(
+                      margin: const EdgeInsets.only(
+                        bottom: 8,
+                        left: 16,
+                        right: 16,
+                      ),
+                      child: ListTile(
+                        onTap: () {
+                          setModalState(() {
+                            if (isSelected) {
+                              _invitedFriends.remove(friend['name']);
+                            } else {
+                              _invitedFriends.add(friend['name']);
+                            }
+                          });
+                        },
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      );
-                    },
-                  ),
+                        tileColor: isSelected
+                            ? AppColors.primary.withOpacity(0.1)
+                            : AppColors.surface,
+                        leading: CircleAvatar(
+                          backgroundColor: AppColors.primary.withOpacity(0.1),
+                          child: Text(
+                            friend['name'][0].toUpperCase(),
+                            style: AppStyles.bodyMedium.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          friend['name'],
+                          style: AppStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        subtitle: Text(
+                          friend['email'],
+                          style: AppStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        trailing: isSelected
+                            ? Icon(
+                                Icons.check_circle,
+                                color: AppColors.primary,
+                                size: 24,
+                              )
+                            : Icon(
+                                Icons.radio_button_unchecked,
+                                color: AppColors.textTertiary,
+                                size: 24,
+                              ),
+                      ),
+                    );
+                  },
                 ),
+              ),
 
-                const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-                // Action Buttons
-                Row(
+              // Action Buttons
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
                   children: [
                     Expanded(
                       child: CustomButton(
@@ -827,8 +798,9 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+            ],
           );
         },
       ),

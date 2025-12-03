@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
-
+import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
@@ -141,76 +142,66 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
-          body: DecorativeBackground(
-            showGifts: false, // Less busy for profile
-            child: Stack(
-              children: [
-                // Content
-                RefreshIndicator(
-                  onRefresh: _refreshProfile,
-                  color: AppColors.primary,
-                  child: CustomScrollView(
-                    slivers: [
-                      // Profile Header
-                      _buildSliverAppBar(),
-
-                      // Profile Content
-                      SliverToBoxAdapter(
-                        child: AnimatedBuilder(
-                          animation: _animationController,
-                          builder: (context, child) {
-                            return FadeTransition(
-                              opacity: _fadeAnimation,
-                              child: SlideTransition(
-                                position: _slideAnimation,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // Stats Cards
-                                      _buildStatsSection(),
-                                      const SizedBox(
-                                        height: 16,
-                                      ), // تقليل المسافة
-                                      // Quick Actions
-                                      _buildQuickActions(),
-                                      const SizedBox(
-                                        height: 16,
-                                      ), // تقليل المسافة
-                                      // Achievements
-                                      _buildAchievements(),
-                                      const SizedBox(
-                                        height: 16,
-                                      ), // تقليل المسافة
-                                      // Account Settings
-                                      _buildAccountSettings(),
-                                      const SizedBox(
-                                        height: 16,
-                                      ), // تقليل المسافة
-                                      // App Settings
-                                      _buildAppSettings(),
-                                      const SizedBox(
-                                        height: 16,
-                                      ), // تقليل المسافة
-                                      // Support & About
-                                      _buildSupportSection(),
-                                      const SizedBox(
-                                        height: 80,
-                                      ), // تقليل المسافة السفلية
-                                    ],
+          body: UnifiedPageBackground(
+            child: DecorativeBackground(
+              showGifts: false, // Less busy for profile
+              child: Column(
+                children: [
+                  // Profile Header (with gradient)
+                  _buildProfileHeader(),
+                  
+                  // Profile Content in rounded container
+                  Expanded(
+                    child: UnifiedPageContainer(
+                      child: RefreshIndicator(
+                        onRefresh: _refreshProfile,
+                        color: AppColors.primary,
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: AnimatedBuilder(
+                            animation: _animationController,
+                            builder: (context, child) {
+                              return FadeTransition(
+                                opacity: _fadeAnimation,
+                                child: SlideTransition(
+                                  position: _slideAnimation,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        // Stats Cards
+                                        _buildStatsSection(),
+                                        const SizedBox(height: 16),
+                                        // Quick Actions
+                                        _buildQuickActions(),
+                                        const SizedBox(height: 16),
+                                        // Achievements
+                                        _buildAchievements(),
+                                        const SizedBox(height: 16),
+                                        // Account Settings
+                                        _buildAccountSettings(),
+                                        const SizedBox(height: 16),
+                                        // App Settings
+                                        _buildAppSettings(),
+                                        const SizedBox(height: 16),
+                                        // Support & About
+                                        _buildSupportSection(),
+                                        const SizedBox(height: 80),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           floatingActionButton: Container(
@@ -242,303 +233,260 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: 280, // تقليل الارتفاع
-      floating: false,
-      pinned: true,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.primary,
-                AppColors.primaryAccent,
-                AppColors.secondary,
-              ],
-              stops: [0.0, 0.5, 1.0],
-            ),
+  Widget _buildProfileHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary,
+            AppColors.primaryAccent,
+            AppColors.secondary,
+          ],
+          stops: [0.0, 0.5, 1.0],
+        ),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            colors: [Colors.white.withOpacity(0.1), Colors.transparent],
+            center: Alignment.topRight,
+            radius: 1.5,
           ),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [Colors.white.withOpacity(0.1), Colors.transparent],
-                center: Alignment.topRight,
-                radius: 1.5,
-              ),
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16), // تقليل الـ padding
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Action buttons row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    const SizedBox(height: 20), // تقليل المسافة
-                    // Profile Picture with enhanced design
-                    Stack(
-                      children: [
-                        Container(
-                          width: 90, // تقليل الحجم
-                          height: 90, // تقليل الحجم
+                    // Edit Button
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+                      ),
+                      child: IconButton(
+                        onPressed: _editProfile,
+                        icon: Icon(Icons.edit_outlined, color: Colors.white, size: 22),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Menu Button
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+                      ),
+                      child: PopupMenuButton<String>(
+                        icon: Icon(Icons.more_vert, color: Colors.white, size: 22),
+                        onSelected: _handleMenuAction,
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'share',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.share_outlined,
+                                  color: AppColors.textPrimary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Share Profile',
+                                  style: AppStyles.bodyMedium.copyWith(
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'logout',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.logout_outlined,
+                                  color: AppColors.error,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Logout',
+                                  style: AppStyles.bodyMedium.copyWith(
+                                    color: AppColors.error,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Profile Picture
+                Stack(
+                  children: [
+                    Container(
+                      width: 90,
+                      height: 90,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white,
+                            Colors.white.withOpacity(0.9),
+                          ],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            offset: const Offset(0, 6),
+                            blurRadius: 15,
+                            spreadRadius: 1,
+                          ),
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.3),
+                            offset: const Offset(0, 3),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          _userProfile.name[0].toUpperCase(),
+                          style: AppStyles.headingLarge.copyWith(
+                            color: AppColors.primary,
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Edit photo button
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: _editProfilePicture,
+                        child: Container(
+                          width: 30,
+                          height: 30,
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                Colors.white,
-                                Colors.white.withOpacity(0.9),
+                                AppColors.accent,
+                                AppColors.accentLight,
                               ],
+                            ),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 2,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
-                                offset: const Offset(0, 6),
-                                blurRadius: 15,
-                                spreadRadius: 1,
-                              ),
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.3),
+                                color: AppColors.accent.withOpacity(0.4),
                                 offset: const Offset(0, 3),
-                                blurRadius: 10,
+                                blurRadius: 8,
                                 spreadRadius: 1,
                               ),
                             ],
                           ),
-                          child: Center(
-                            child: Text(
-                              _userProfile.name[0].toUpperCase(),
-                              style: AppStyles.headingLarge.copyWith(
-                                color: AppColors.primary,
-                                fontSize: 36, // تقليل حجم الخط
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                          child: Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 16,
                           ),
                         ),
-
-                        // Enhanced Edit Button
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: _editProfilePicture,
-                            child: Container(
-                              width: 30, // تقليل الحجم
-                              height: 30, // تقليل الحجم
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    AppColors.accent,
-                                    AppColors.accentLight,
-                                  ],
-                                ),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.accent.withOpacity(0.4),
-                                    offset: const Offset(0, 3),
-                                    blurRadius: 8,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                                size: 16, // تقليل حجم الأيقونة
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12), // تقليل المسافة
-                    // Enhanced Name with shadow
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ), // تقليل الـ padding
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 1,
-                        ),
                       ),
-                      child: Text(
-                        _userProfile.name,
-                        style: AppStyles.headingMedium.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18, // تقليل حجم الخط
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.3),
-                              offset: const Offset(0, 1),
-                              blurRadius: 2,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 6), // تقليل المسافة
-                    // Enhanced Email
-                    Text(
-                      _userProfile.email,
-                      style: AppStyles.bodyMedium.copyWith(
-                        color: Colors.white.withOpacity(0.95),
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14, // تقليل حجم الخط
-                      ),
-                    ),
-
-                    const SizedBox(height: 6), // تقليل المسافة
-                    // Enhanced Member Since with icon
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          color: Colors.white.withOpacity(0.8),
-                          size: 14, // تقليل حجم الأيقونة
-                        ),
-                        const SizedBox(width: 4), // تقليل المسافة
-                        Text(
-                          'Member since ${_formatJoinDate(_userProfile.joinDate)}',
-                          style: AppStyles.bodySmall.copyWith(
-                            color: Colors.white.withOpacity(0.85),
-                            fontWeight: FontWeight.w500,
-                            fontSize: 12, // تقليل حجم الخط
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 12),
+                // Name
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    _userProfile.name,
+                    style: AppStyles.headingMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.3),
+                          offset: const Offset(0, 1),
+                          blurRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // Email
+                Text(
+                  _userProfile.email,
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: Colors.white.withOpacity(0.95),
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // Member Since
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      color: Colors.white.withOpacity(0.8),
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Member since ${_formatJoinDate(_userProfile.joinDate)}',
+                      style: AppStyles.bodySmall.copyWith(
+                        color: Colors.white.withOpacity(0.85),
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
             ),
           ),
         ),
       ),
-      actions: [
-        // Enhanced Edit Button
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-          ),
-          child: IconButton(
-            onPressed: _editProfile,
-            icon: Icon(Icons.edit_outlined, color: Colors.white, size: 22),
-          ),
-        ),
-        // Enhanced Menu Button
-        Container(
-          margin: const EdgeInsets.only(right: 16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-          ),
-          child: PopupMenuButton<String>(
-            onSelected: _handleMenuAction,
-            icon: Icon(Icons.more_vert, color: Colors.white, size: 22),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            color: AppColors.surface,
-            elevation: 8,
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'share_profile',
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.share_outlined,
-                        size: 18,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Share Profile',
-                      style: TextStyle(color: AppColors.textPrimary),
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'export_data',
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.download_outlined,
-                        size: 18,
-                        color: AppColors.secondary,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Export Data',
-                      style: TextStyle(color: AppColors.textPrimary),
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        Icons.logout_outlined,
-                        size: 18,
-                        color: AppColors.error,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text('Logout', style: TextStyle(color: AppColors.error)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -1423,11 +1371,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   // Action Handlers
   void _handleMenuAction(String action) {
     switch (action) {
-      case 'share_profile':
+      case 'share':
         _shareProfile();
-        break;
-      case 'export_data':
-        _exportData();
         break;
       case 'logout':
         _confirmLogout();
@@ -1704,11 +1649,34 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _shareProfile() {
-    // Share profile
-  }
-
-  void _exportData() {
-    // Export data
+    // Copy profile link to clipboard and show message
+    final profileLink = 'https://wishlisty.app/profile/${_userProfile.id}';
+    Clipboard.setData(ClipboardData(text: profileLink));
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Profile link copied to clipboard!',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   void _confirmLogout() {

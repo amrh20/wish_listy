@@ -67,6 +67,21 @@ class AppColors {
   static const Color shadowLight = Color(0x0A000000);
   static const Color shadowDark = Color(0x33000000);
 
+  // Pastel Card Colors - Soft and Modern
+  static const Color cardBlue = Color(0xFFE0F4FF);      // Light sky blue
+  static const Color cardPurple = Color(0xFFF3E8FF);    // Light lavender  
+  static const Color cardGreen = Color(0xFFE8FFF3);     // Light mint
+  static const Color cardPink = Color(0xFFFFE8F0);      // Light rose
+  static const Color cardPeach = Color(0xFFFFF4E8);     // Light peach
+
+  // Pastel Card Colors List (for easy iteration)
+  static const List<Color> pastelCards = [
+    cardBlue,
+    cardPurple,
+    cardGreen,
+    cardPink,
+  ];
+
   // Glassmorphism Colors
   static const Color glass = Color(0x80FFFFFF);
   static const Color glassDark = Color(0x80F8FAFC);

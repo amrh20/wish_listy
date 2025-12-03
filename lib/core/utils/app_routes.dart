@@ -26,10 +26,6 @@ import '../../features/notifications/presentation/screens/notifications_screen.d
 import '../../features/events/presentation/screens/guest_management_screen.dart';
 import '../../features/events/presentation/screens/event_settings_screen.dart';
 import '../../features/wishlists/presentation/screens/wishlist_item_details_screen.dart';
-import '../../features/reminders/presentation/screens/smart_reminders_screen.dart';
-import '../../features/rewards/presentation/screens/achievements_screen.dart';
-import '../../features/rewards/presentation/screens/leaderboard_screen.dart';
-import '../../features/rewards/presentation/screens/rewards_store_screen.dart';
 import '../../features/wishlists/presentation/screens/create_wishlist_screen.dart';
 import '../../features/friends/presentation/screens/add_friend_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
@@ -63,10 +59,6 @@ class AppRoutes {
   static const String personalInformation = '/personal-information';
   static const String privacySecurity = '/privacy-security';
   static const String blockedUsers = '/blocked-users';
-  static const String smartReminders = '/smart-reminders';
-  static const String achievements = '/achievements';
-  static const String leaderboard = '/leaderboard';
-  static const String rewardsStore = '/rewards-store';
   static const String createWishlist = '/create-wishlist';
   static const String addFriend = '/add-friend';
   static const String editProfile = '/edit-profile';
@@ -87,10 +79,6 @@ class AppRoutes {
     friends: (context) => FriendsScreen(),
     profile: (context) => ProfileScreen(),
     notifications: (context) => NotificationsScreen(),
-    smartReminders: (context) => SmartRemindersScreen(),
-    achievements: (context) => AchievementsScreen(),
-    leaderboard: (context) => LeaderboardScreen(),
-    rewardsStore: (context) => RewardsStoreScreen(),
     // createWishlist is handled in onGenerateRoute to support editing with wishlistId
     addFriend: (context) => AddFriendScreen(),
     editProfile: (context) => EditProfileScreen(),

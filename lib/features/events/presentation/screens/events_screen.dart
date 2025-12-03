@@ -4,6 +4,9 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
+import 'package:wish_listy/core/widgets/unified_page_header.dart';
+import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
+import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import '../widgets/event_card.dart';
@@ -23,6 +26,8 @@ class _EventsScreenState extends State<EventsScreen>
   late TabController _tabController;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   // Filter and sort variables
   String _selectedSortOption = 'date_upcoming';
@@ -164,6 +169,14 @@ class _EventsScreenState extends State<EventsScreen>
     _initializeAnimations();
     _startAnimations();
     _applyFilters();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      _searchQuery = _searchController.text.toLowerCase();
+    });
+    _applyFilters();
   }
 
   void _initializeAnimations() {
@@ -183,6 +196,16 @@ class _EventsScreenState extends State<EventsScreen>
 
   void _applyFilters() {
     List<EventSummary> allEvents = [..._myEvents, ..._invitedEvents];
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      allEvents = allEvents.where((event) {
+        return event.name.toLowerCase().contains(_searchQuery) ||
+            (event.location?.toLowerCase().contains(_searchQuery) ?? false) ||
+            (event.hostName?.toLowerCase().contains(_searchQuery) ?? false) ||
+            (event.description?.toLowerCase().contains(_searchQuery) ?? false);
+      }).toList();
+    }
 
     // Apply event type filter
     if (_selectedEventType != null) {
@@ -216,6 +239,7 @@ class _EventsScreenState extends State<EventsScreen>
   void dispose() {
     _tabController.dispose();
     _animationController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -226,29 +250,36 @@ class _EventsScreenState extends State<EventsScreen>
         // For guest users - show different interface
         if (authService.isGuest) {
           return Scaffold(
-            body: DecorativeBackground(
-              showGifts: true,
-              child: Stack(
-                children: [
-                  // Content
-                  NestedScrollView(
-                    headerSliverBuilder: (context, innerBoxIsScrolled) {
-                      return [_buildGuestSliverAppBar(localization)];
-                    },
-                    body: AnimatedBuilder(
-                      animation: _animationController,
-                      builder: (context, child) {
-                        return FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: GuestEventsView(
-                            publicEvents: _publicEvents,
-                            localization: localization,
-                          ),
-                        );
-                      },
+            body: UnifiedPageBackground(
+              child: DecorativeBackground(
+                showGifts: true,
+                child: Column(
+                  children: [
+                    // Guest Page Header
+                    SimplePageHeader(
+                      title: localization.translate('navigation.events'),
+                      subtitle: 'Explore public events',
+                      showBackButton: true,
                     ),
-                  ),
-                ],
+                    // Content
+                    Expanded(
+                      child: UnifiedPageContainer(
+                        child: AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            return FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: GuestEventsView(
+                                publicEvents: _publicEvents,
+                                localization: localization,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -256,35 +287,78 @@ class _EventsScreenState extends State<EventsScreen>
 
         // For authenticated users - show full interface
         return Scaffold(
-          body: DecorativeBackground(
-            showGifts: true,
-            child: Stack(
-              children: [
-                // Content
-                NestedScrollView(
-                  headerSliverBuilder: (context, innerBoxIsScrolled) {
-                    return [
-                      _buildSliverAppBar(localization),
-                      _buildSliverTabBar(localization),
-                    ];
-                  },
-                  body: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: TabBarView(
-                          controller: _tabController,
-                          children: [
-                            _buildMyEventsTab(localization),
-                            _buildInvitedEventsTab(localization),
-                          ],
-                        ),
-                      );
+          body: UnifiedPageBackground(
+            child: DecorativeBackground(
+              showGifts: true,
+              child: Column(
+                children: [
+                  // Unified Page Header
+                  UnifiedPageHeader(
+                    title: localization.translate('events.title'),
+                    subtitle: '${_getUpcomingEventsCount()} ${localization.translate('events.upcomingEvents')}',
+                    titleIcon: Icons.celebration_rounded,
+                    titleIconColor: AppColors.accent,
+                    showSearch: true,
+                    searchHint: localization.translate('events.searchEvents'),
+                    searchController: _searchController,
+                    onSearchChanged: (query) {
+                      // Search is handled by listener
                     },
+                    actions: [
+                      HeaderAction(
+                        icon: Icons.calendar_month_outlined,
+                        onTap: _showCalendarView,
+                      ),
+                      HeaderAction(
+                        icon: Icons.filter_list_outlined,
+                        onTap: _showFilterOptions,
+                      ),
+                    ],
                   ),
-                ),
-              ],
+
+                  // Unified Tab Bar
+                  UnifiedTabBar(
+                    tabs: [
+                      UnifiedTab(
+                        label: localization.translate('events.myEvents'),
+                        icon: Icons.event_rounded,
+                        badgeCount: _myEvents.length,
+                      ),
+                      UnifiedTab(
+                        label: localization.translate('events.invited'),
+                        badgeCount: _invitedEvents.where((e) => e.status == EventStatus.upcoming).length,
+                      ),
+                    ],
+                    selectedIndex: _tabController.index,
+                    onTabChanged: (index) {
+                      _tabController.animateTo(index);
+                      setState(() {});
+                    },
+                    selectedColor: AppColors.accent,
+                  ),
+
+                  // Tab Content in rounded container
+                  Expanded(
+                    child: UnifiedPageContainer(
+                      child: AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          return FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: TabBarView(
+                              controller: _tabController,
+                              children: [
+                                _buildMyEventsTab(localization),
+                                _buildInvitedEventsTab(localization),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           floatingActionButton: FloatingActionButton(
@@ -298,135 +372,6 @@ class _EventsScreenState extends State<EventsScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget _buildSliverAppBar(LocalizationService localization) {
-    return SliverAppBar(
-      expandedHeight: 120,
-      floating: true,
-      pinned: true,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      flexibleSpace: FlexibleSpaceBar(
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              localization.translate('events.title'),
-              style: AppStyles.headingMedium.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              '${_getUpcomingEventsCount()} ${localization.translate('events.upcomingEvents')}',
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-      ),
-      actions: [
-        // Calendar View Button
-        IconButton(
-          onPressed: _showCalendarView,
-          icon: Icon(
-            Icons.calendar_month_outlined,
-            color: AppColors.textPrimary,
-          ),
-          style: IconButton.styleFrom(
-            backgroundColor: AppColors.surface,
-            padding: const EdgeInsets.all(12),
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Filter Button
-        IconButton(
-          onPressed: _showFilterOptions,
-          icon: Icon(Icons.filter_list_outlined, color: AppColors.textPrimary),
-          style: IconButton.styleFrom(
-            backgroundColor: AppColors.surface,
-            padding: const EdgeInsets.all(12),
-          ),
-        ),
-        const SizedBox(width: 16),
-      ],
-    );
-  }
-
-  Widget _buildSliverTabBar(LocalizationService localization) {
-    return SliverPersistentHeader(
-      pinned: true,
-      delegate: _SliverTabBarDelegate(
-        TabBar(
-          controller: _tabController,
-          indicatorColor: AppColors.accent,
-          indicatorWeight: 3,
-          labelColor: AppColors.accent,
-          unselectedLabelColor: AppColors.textTertiary,
-          labelStyle: AppStyles.bodyMedium.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-          tabs: [
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(localization.translate('events.myEvents')),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${_myEvents.length}',
-                      style: AppStyles.caption.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(localization.translate('events.invited')),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '${_invitedEvents.where((e) => e.status == EventStatus.upcoming).length}',
-                      style: AppStyles.caption.copyWith(
-                        color: AppColors.secondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -704,68 +649,4 @@ class _EventsScreenState extends State<EventsScreen>
     _applyFilters();
   }
 
-  // Guest-specific methods
-  Widget _buildGuestSliverAppBar(LocalizationService localization) {
-    return SliverAppBar(
-      expandedHeight: 120,
-      floating: true,
-      pinned: false,
-      flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          localization.translate('navigation.events'),
-          style: AppStyles.headingMedium.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: false,
-        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                AppColors.background,
-                AppColors.background.withOpacity(0.8),
-              ],
-            ),
-          ),
-        ),
-      ),
-      backgroundColor: AppColors.background,
-      surfaceTintColor: Colors.transparent,
-      leading: IconButton(
-        onPressed: () => Navigator.pop(context),
-        icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
-      ),
-    );
-  }
-}
-
-// Custom SliverTabBarDelegate
-class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
-  final TabBar _tabBar;
-
-  _SliverTabBarDelegate(this._tabBar);
-
-  @override
-  double get minExtent => _tabBar.preferredSize.height;
-
-  @override
-  double get maxExtent => _tabBar.preferredSize.height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Container(color: AppColors.background, child: _tabBar);
-  }
-
-  @override
-  bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
-    return false;
-  }
 }

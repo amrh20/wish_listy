@@ -3,10 +3,15 @@ import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/constants/bottom_sheet_vectors.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
+import 'package:wish_listy/core/widgets/decorated_bottom_sheet.dart';
+import 'package:wish_listy/core/widgets/unified_page_header.dart';
+import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
+import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 
 class FriendsScreen extends StatefulWidget {
@@ -135,35 +140,79 @@ class _FriendsScreenState extends State<FriendsScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
-          body: DecorativeBackground(
-            showGifts: false,
-            child: Stack(
-              children: [
-                // Content
-                NestedScrollView(
-                  headerSliverBuilder: (context, innerBoxIsScrolled) {
-                    return [
-                      _buildSliverAppBar(localization),
-                      _buildSearchAndTabs(localization),
-                    ];
-                  },
-                  body: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: TabBarView(
-                          controller: _tabController,
-                          children: [
-                            _buildMyFriendsTab(localization),
-                            _buildFriendRequestsTab(localization),
-                          ],
-                        ),
-                      );
+          body: UnifiedPageBackground(
+            child: DecorativeBackground(
+              showGifts: false,
+              child: Column(
+                children: [
+                  // Unified Page Header
+                  UnifiedPageHeader(
+                    title: localization.translate('ui.friends'),
+                    subtitle: '${_friends.length} ${localization.translate('friends.friends')}',
+                    showSearch: true,
+                    searchHint: localization.translate('ui.searchFriends'),
+                    searchController: _searchController,
+                    onSearchChanged: (query) {
+                      _onSearchChanged();
                     },
+                    actions: [
+                      HeaderAction(
+                        icon: Icons.sync_rounded,
+                        onTap: _syncContacts,
+                      ),
+                      HeaderAction(
+                        icon: Icons.more_vert_rounded,
+                        onTap: () {
+                          _showOptionsMenu(context);
+                        },
+                      ),
+                    ],
                   ),
-                ),
-              ],
+
+                  // Unified Tab Bar
+                  UnifiedTabBar(
+                    tabs: [
+                      UnifiedTab(
+                        label: localization.translate('ui.myFriends'),
+                        icon: Icons.people_rounded,
+                        badgeCount: _getFilteredFriends().length,
+                      ),
+                      UnifiedTab(
+                        label: localization.translate('ui.requests'),
+                        badgeCount: _friendRequests.length,
+                        badgeColor: AppColors.accent,
+                      ),
+                    ],
+                    selectedIndex: _tabController.index,
+                    onTabChanged: (index) {
+                      _tabController.animateTo(index);
+                      setState(() {});
+                    },
+                    selectedColor: AppColors.secondary,
+                  ),
+
+                  // Tab Content in rounded container
+                  Expanded(
+                    child: UnifiedPageContainer(
+                      child: AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          return FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: TabBarView(
+                              controller: _tabController,
+                              children: [
+                                _buildMyFriendsTab(localization),
+                                _buildFriendRequestsTab(localization),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           floatingActionButton: FloatingActionButton(
@@ -177,173 +226,29 @@ class _FriendsScreenState extends State<FriendsScreen>
     );
   }
 
-  Widget _buildSliverAppBar(LocalizationService localization) {
-    return SliverAppBar(
-      expandedHeight: 100,
-      floating: true,
-      pinned: false,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      flexibleSpace: FlexibleSpaceBar(
-        title: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              localization.translate('ui.friends'),
-              style: AppStyles.headingMedium.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              '${_friends.length} ${localization.translate('friends.friends')}',
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
+  void _showOptionsMenu(BuildContext context) {
+    DecoratedBottomSheet.show(
+      context: context,
+      vectorType: BottomSheetVectorType.settings,
+      children: [
+        ListTile(
+          leading: Icon(Icons.contact_page_outlined, color: AppColors.textPrimary),
+          title: Text('Import Contacts', style: TextStyle(color: AppColors.textPrimary)),
+          onTap: () {
+            Navigator.pop(context);
+            _importContacts();
+          },
         ),
-        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-      ),
-      actions: [
-        // Sync Button
-        IconButton(
-          onPressed: _syncContacts,
-          icon: Icon(Icons.sync_rounded, color: AppColors.textPrimary),
-          style: IconButton.styleFrom(
-            backgroundColor: AppColors.surface,
-            padding: const EdgeInsets.all(12),
-          ),
+        ListTile(
+          leading: Icon(Icons.privacy_tip_outlined, color: AppColors.textPrimary),
+          title: Text('Privacy Settings', style: TextStyle(color: AppColors.textPrimary)),
+          onTap: () {
+            Navigator.pop(context);
+            _openPrivacySettings();
+          },
         ),
-        const SizedBox(width: 8),
-        // More Options
-        PopupMenuButton<String>(
-          onSelected: _handleMenuAction,
-          icon: Icon(Icons.more_vert_rounded, color: AppColors.textPrimary),
-          style: IconButton.styleFrom(
-            backgroundColor: AppColors.surface,
-            padding: const EdgeInsets.all(12),
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'import',
-              child: Row(
-                children: [
-                  Icon(Icons.contact_page_outlined, size: 20),
-                  SizedBox(width: 12),
-                  Text('Import Contacts'),
-                ],
-              ),
-            ),
-            PopupMenuItem(
-              value: 'privacy',
-              child: Row(
-                children: [
-                  Icon(Icons.privacy_tip_outlined, size: 20),
-                  SizedBox(width: 12),
-                  Text('Privacy Settings'),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(width: 16),
+        const SizedBox(height: 16),
       ],
-    );
-  }
-
-  Widget _buildSearchAndTabs(LocalizationService localization) {
-    return SliverPersistentHeader(
-      pinned: true,
-      delegate: _SearchAndTabsDelegate(
-        child: Container(
-          color: AppColors.background,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              // Search Bar
-              CustomTextField(
-                controller: _searchController,
-                label: localization.translate('ui.searchFriends'),
-                hint: 'Search by name or email',
-                prefixIcon: Icons.search_outlined,
-              ),
-              const SizedBox(height: 16),
-
-              // Tab Bar
-              TabBar(
-                controller: _tabController,
-                indicatorColor: AppColors.secondary,
-                indicatorWeight: 3,
-                labelColor: AppColors.secondary,
-                unselectedLabelColor: AppColors.textTertiary,
-                labelStyle: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                tabs: [
-                  Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(localization.translate('ui.myFriends')),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.secondary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '${_getFilteredFriends().length}',
-                            style: AppStyles.caption.copyWith(
-                              color: AppColors.secondary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(localization.translate('ui.requests')),
-                        const SizedBox(width: 8),
-                        if (_friendRequests.isNotEmpty)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.accent,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '${_friendRequests.length}',
-                              style: AppStyles.caption.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -813,17 +718,6 @@ class _FriendsScreenState extends State<FriendsScreen>
   }
 
   // Action Handlers
-  void _handleMenuAction(String action) {
-    switch (action) {
-      case 'import':
-        _importContacts();
-        break;
-      case 'privacy':
-        _openPrivacySettings();
-        break;
-    }
-  }
-
   void _handleFriendRequest(FriendRequest request, bool accept) {
     setState(() {
       _friendRequests.remove(request);
@@ -962,33 +856,6 @@ class _FriendsScreenState extends State<FriendsScreen>
     setState(() {
       // Update data
     });
-  }
-}
-
-// Custom delegate for search and tabs
-class _SearchAndTabsDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-
-  _SearchAndTabsDelegate({required this.child});
-
-  @override
-  double get minExtent => 160;
-
-  @override
-  double get maxExtent => 160;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return child;
-  }
-
-  @override
-  bool shouldRebuild(_SearchAndTabsDelegate oldDelegate) {
-    return false;
   }
 }
 

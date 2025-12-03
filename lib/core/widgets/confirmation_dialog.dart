@@ -7,7 +7,7 @@ import 'package:wish_listy/core/widgets/custom_button.dart';
 /// Reusable confirmation dialog with Lottie animations
 /// Supports both success and error states with customizable actions
 class ConfirmationDialog {
-  /// Show a confirmation dialog with Lottie animation
+  /// Show a confirmation dialog with Lottie animation or custom image
   ///
   /// [context] - BuildContext for showing the dialog
   /// [isSuccess] - Whether this is a success (true) or error (false) dialog
@@ -19,6 +19,7 @@ class ConfirmationDialog {
   /// [onSecondaryAction] - Optional callback when secondary action is pressed
   /// [additionalActions] - Optional list of additional action buttons (label, callback, variant)
   /// [barrierDismissible] - Whether the dialog can be dismissed by tapping outside (default: false)
+  /// [customImagePath] - Optional custom image path to replace Lottie animation
   static Future<void> show({
     required BuildContext context,
     required bool isSuccess,
@@ -30,6 +31,7 @@ class ConfirmationDialog {
     VoidCallback? onSecondaryAction,
     List<DialogAction>? additionalActions,
     bool barrierDismissible = false,
+    String? customImagePath,
   }) {
     return showDialog(
       context: context,
@@ -43,6 +45,7 @@ class ConfirmationDialog {
         secondaryActionLabel: secondaryActionLabel,
         onSecondaryAction: onSecondaryAction,
         additionalActions: additionalActions,
+        customImagePath: customImagePath,
       ),
     );
   }
@@ -73,6 +76,7 @@ class _ConfirmationDialogWidget extends StatelessWidget {
   final String? secondaryActionLabel;
   final VoidCallback? onSecondaryAction;
   final List<DialogAction>? additionalActions;
+  final String? customImagePath;
 
   const _ConfirmationDialogWidget({
     required this.isSuccess,
@@ -83,6 +87,7 @@ class _ConfirmationDialogWidget extends StatelessWidget {
     this.secondaryActionLabel,
     this.onSecondaryAction,
     this.additionalActions,
+    this.customImagePath,
   });
 
   @override
@@ -95,41 +100,72 @@ class _ConfirmationDialogWidget extends StatelessWidget {
 
     return AlertDialog(
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       contentPadding: const EdgeInsets.all(24),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Lottie Animation Area
+          // Custom Image or Lottie Animation Area
           SizedBox(
             height: 80,
             width: 80,
-            child: Lottie.asset(
-              animationPath,
-              repeat: false,
-              height: 80,
-              width: 80,
-              errorBuilder: (context, error, stackTrace) {
-                // Fallback to icon if Lottie file is not found
-                return Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
+            child: customImagePath != null
+                ? Image.asset(
+                    customImagePath!,
+                    height: 80,
+                    width: 80,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      // Fallback to Lottie if custom image fails
+                      return Lottie.asset(
+                        animationPath,
+                        repeat: false,
+                        height: 80,
+                        width: 80,
+                        errorBuilder: (_, __, ___) {
+                          return Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: accentColor.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              isSuccess
+                                  ? Icons.check_circle_outline
+                                  : Icons.error_outline,
+                              color: accentColor,
+                              size: 40,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  )
+                : Lottie.asset(
+                    animationPath,
+                    repeat: false,
+                    height: 80,
+                    width: 80,
+                    errorBuilder: (context, error, stackTrace) {
+                      // Fallback to icon if Lottie file is not found
+                      return Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: accentColor.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          isSuccess
+                              ? Icons.check_circle_outline
+                              : Icons.error_outline,
+                          color: accentColor,
+                          size: 40,
+                        ),
+                      );
+                    },
                   ),
-                  child: Icon(
-                    isSuccess
-                        ? Icons.check_circle_outline
-                        : Icons.error_outline,
-                    color: accentColor,
-                    size: 40,
-                  ),
-                );
-              },
-            ),
           ),
           const SizedBox(height: 24),
 
@@ -147,9 +183,7 @@ class _ConfirmationDialogWidget extends StatelessWidget {
           // Message
           Text(
             message,
-            style: AppStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
@@ -179,7 +213,8 @@ class _ConfirmationDialogWidget extends StatelessWidget {
               ),
 
               // Secondary Action Button (if provided)
-              if (secondaryActionLabel != null && onSecondaryAction != null) ...[
+              if (secondaryActionLabel != null &&
+                  onSecondaryAction != null) ...[
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
@@ -197,23 +232,26 @@ class _ConfirmationDialogWidget extends StatelessWidget {
               ],
 
               // Additional Actions (if provided)
-              if (additionalActions != null && additionalActions!.isNotEmpty) ...[
-                ...additionalActions!.map((action) => Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: CustomButton(
-                          text: action.label,
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            action.onPressed();
-                          },
-                          variant: action.variant,
-                          size: ButtonSize.small,
-                          icon: action.icon,
-                        ),
+              if (additionalActions != null &&
+                  additionalActions!.isNotEmpty) ...[
+                ...additionalActions!.map(
+                  (action) => Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: CustomButton(
+                        text: action.label,
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          action.onPressed();
+                        },
+                        variant: action.variant,
+                        size: ButtonSize.small,
+                        icon: action.icon,
                       ),
-                    )),
+                    ),
+                  ),
+                ),
               ],
             ],
           ),
@@ -222,4 +260,3 @@ class _ConfirmationDialogWidget extends StatelessWidget {
     );
   }
 }
-

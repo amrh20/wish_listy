@@ -145,6 +145,7 @@
   "wishlists": {
     "title": "Wishlists",
     "myWishlists": "My Wishlists",
+    "searchWishlists": "Search wishlists...",
     "createWishlist": "Create Wishlist",
     "wishlistName": "Wishlist Name",
     "description": "Description",
@@ -407,6 +408,7 @@
     "createWishlistDescription": "Create a wishlist for this event",
     "createWishlistButton": "Create Wishlist",
     "title": "Events",
+    "searchEvents": "Search events...",
     "myEvents": "My Events",
     "invited": "Invited",
     "eventType": "Event Type",
@@ -1041,6 +1043,7 @@
   "guest": {
     "welcome": {
       "title": "Welcome to WishListy! 👋",
+      "subtitle": "Explore public wishlists and events",
       "description": "Explore the app and discover available features, sign in to access all services",
       "loginButton": "Sign In"
     },

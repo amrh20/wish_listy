@@ -9,6 +9,7 @@ import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/core/utils/category_images.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
 
 class CreateWishlistScreen extends StatefulWidget {
@@ -34,20 +35,18 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   bool _isLoading = false;
   bool _isFormValid = false; // Track if form is valid
   String _selectedPrivacy = 'public';
-  String _selectedCategory = 'general';
+  String _selectedCategory = 'birthday';
   bool _isCustomCategory = false;
   final WishlistRepository _wishlistRepository = WishlistRepository();
 
   final List<String> _privacyOptions = ['public', 'private', 'friends'];
   final List<String> _categoryOptions = [
-    'general',
     'birthday',
     'wedding',
     'graduation',
     'anniversary',
-    'holiday',
     'babyShower',
-    'housewarming',
+    'christmas',
     'custom',
   ];
 
@@ -74,15 +73,17 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   /// Validate form and update _isFormValid state
   void _validateForm() {
     final name = _nameController.text.trim();
-    final isNameValid = name.isNotEmpty && name.length >= 2 && name.length <= 100;
-    
-    final isCustomCategoryValid = !_isCustomCategory || 
+    final isNameValid =
+        name.isNotEmpty && name.length >= 2 && name.length <= 100;
+
+    final isCustomCategoryValid =
+        !_isCustomCategory ||
         (_customCategoryController.text.trim().isNotEmpty &&
-         _customCategoryController.text.trim().length >= 2 &&
-         _customCategoryController.text.trim().length <= 50);
-    
+            _customCategoryController.text.trim().length >= 2 &&
+            _customCategoryController.text.trim().length <= 50);
+
     final isValid = isNameValid && isCustomCategoryValid;
-    
+
     if (_isFormValid != isValid) {
       setState(() {
         _isFormValid = isValid;
@@ -757,12 +758,36 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
 
         // Check if creation was successful
         if (response['success'] == true || response['data'] != null) {
-          // Extract wishlist ID from response
-          final wishlistData = response['data'] ?? response;
-          final wishlistId =
+          // Extract wishlist ID from response - try multiple possible formats
+          final wishlistData =
+              response['data'] ?? response['wishlist'] ?? response;
+
+          // Try to get ID from various possible locations
+          String? wishlistId =
               wishlistData['id']?.toString() ??
               wishlistData['wishlistId']?.toString() ??
-              'new_wishlist_id';
+              wishlistData['_id']?.toString() ??
+              response['id']?.toString() ??
+              response['wishlistId']?.toString();
+
+          debugPrint(
+            '🔍 CreateWishlistScreen: Extracted wishlist ID: $wishlistId',
+          );
+          debugPrint('   Full response: $response');
+          debugPrint('   Wishlist data: $wishlistData');
+
+          // If we couldn't find the ID, show error instead of using fake ID
+          if (wishlistId == null || wishlistId.isEmpty) {
+            debugPrint(
+              '❌ CreateWishlistScreen: Could not extract wishlist ID from response',
+            );
+            if (mounted) {
+              _showErrorSnackBar(
+                'Wishlist created but could not get ID. Please refresh the wishlists page.',
+              );
+            }
+            return;
+          }
 
           // Show success message and navigate
           if (mounted) {
@@ -825,17 +850,30 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         message: 'Your wishlist has been updated successfully.',
         primaryActionLabel: 'Done',
         onPrimaryAction: () {
-          Navigator.of(context).pop(true); // Return to previous screen with result
+          Navigator.of(
+            context,
+          ).pop(true); // Return to previous screen with result
         },
       );
     } else {
       // Creating mode - success dialog with multiple actions
+      // Get category image path
+      final String finalCategory = _isCustomCategory
+          ? _customCategoryController.text.trim()
+          : _selectedCategory;
+      final categoryImagePath = CategoryImages.getCategoryImagePath(
+        finalCategory,
+      );
+
       ConfirmationDialog.show(
         context: context,
         isSuccess: true,
         title: localization.translate('wishlists.wishlistCreatedTitle'),
         message: localization.translate('wishlists.wishlistCreatedMessage'),
-        primaryActionLabel: localization.translate('wishlists.addItemsToWishlist'),
+        customImagePath: categoryImagePath, // Pass category image
+        primaryActionLabel: localization.translate(
+          'wishlists.addItemsToWishlist',
+        ),
         onPrimaryAction: () {
           Navigator.pushReplacementNamed(
             context,
@@ -853,37 +891,56 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
             onPressed: () async {
               // Close dialog first
               Navigator.of(context).pop();
-              
+
               // Show loading indicator
               if (mounted) {
                 showDialog(
                   context: context,
                   barrierDismissible: false,
-                  builder: (context) => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  builder: (context) =>
+                      const Center(child: CircularProgressIndicator()),
                 );
               }
-              
+
               try {
+                debugPrint(
+                  '🔍 CreateWishlistScreen: Viewing wishlist with ID: $wishlistId',
+                );
+
                 // Call API to get wishlist details
-                final wishlistData = await _wishlistRepository.getWishlistById(wishlistId);
-                
+                final wishlistData = await _wishlistRepository.getWishlistById(
+                  wishlistId,
+                );
+
+                debugPrint(
+                  '✅ CreateWishlistScreen: Received wishlist data: $wishlistData',
+                );
+
                 // Close loading dialog
                 if (mounted) {
                   Navigator.of(context).pop();
                 }
-                
+
                 // Extract wishlist information from API response
-                final data = wishlistData['wishlist'] as Map<String, dynamic>? ?? wishlistData;
-                final wishlistName = data['name'] as String? ?? _nameController.text;
+                final data =
+                    wishlistData['wishlist'] as Map<String, dynamic>? ??
+                    wishlistData['data'] as Map<String, dynamic>? ??
+                    wishlistData;
+                final wishlistName =
+                    data['name']?.toString() ?? _nameController.text;
                 final itemsList = data['items'] as List<dynamic>? ?? [];
                 final totalItems = itemsList.length;
                 final purchasedItems = itemsList.where((item) {
                   final itemMap = item as Map<String, dynamic>;
-                  return itemMap['status'] == 'purchased' || itemMap['purchased'] == true;
+                  return itemMap['status']?.toString().toLowerCase() ==
+                          'purchased' ||
+                      itemMap['purchased'] == true;
                 }).length;
-                
+
+                debugPrint(
+                  '📊 CreateWishlistScreen: Navigating with - Name: $wishlistName, Items: $totalItems, Purchased: $purchasedItems',
+                );
+
                 // Navigate to wishlist items screen with actual data from API
                 if (mounted) {
                   Navigator.pushReplacementNamed(
@@ -903,14 +960,21 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                 if (mounted) {
                   Navigator.of(context).pop();
                 }
-                
-                // Show error message
+
+                debugPrint(
+                  '❌ CreateWishlistScreen: Error loading wishlist details',
+                );
+                debugPrint('   Wishlist ID: $wishlistId');
+                debugPrint('   Error: $e');
+
+                // Show error message with more context
                 if (mounted) {
-                  _showErrorSnackBar(
-                    'Failed to load wishlist details. Please try again.',
-                  );
+                  final errorMessage = e is ApiException
+                      ? e.message
+                      : 'Failed to load wishlist details. The wishlist was created successfully. Please go back and refresh the wishlists page.';
+
+                  _showErrorSnackBar(errorMessage);
                 }
-                debugPrint('Error loading wishlist details: $e');
               }
             },
             variant: ButtonVariant.outline,
