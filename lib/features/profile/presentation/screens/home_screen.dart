@@ -303,9 +303,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     AuthRepository authService,
   ) {
     if (authService.isGuest) {
-      return SimplePageHeader(
+      return UnifiedPageHeader(
         title: 'WishListy',
         subtitle: localization.translate('guest.welcome.subtitle'),
+        showSearch: false,
         actions: [
           HeaderAction(
             icon: Icons.login,
@@ -320,13 +321,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return UnifiedPageHeader(
       title: '${localization.translate('home.greeting')} 👋',
       subtitle: authService.userName ?? 'User',
+      showSearch: false,
       actions: [
-        HeaderAction(
-          icon: Icons.search_rounded,
-          onTap: () {
-            // Navigate to search screen
-          },
-        ),
         HeaderAction(
           icon: Icons.notifications_outlined,
           onTap: () {

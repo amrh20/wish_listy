@@ -37,13 +37,53 @@ class _SignupScreenState extends State<SignupScreen>
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _agreeToTerms = false;
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _startAnimations();
+    _setupTextControllers();
+  }
+
+  void _setupTextControllers() {
+    // Add listeners to all controllers to check if form is valid
+    _fullNameController.addListener(_checkFormValidity);
+    _usernameController.addListener(_checkFormValidity);
+    _passwordController.addListener(_checkFormValidity);
+    _confirmPasswordController.addListener(_checkFormValidity);
+  }
+
+  void _checkFormValidity() {
+    if (mounted) {
+      setState(() {
+        // This will trigger rebuild and check _isFormValid
+      });
+    }
+  }
+
+  bool get _isFormValid {
+    final fullName = _fullNameController.text.trim();
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    // Check if all fields are filled
+    if (fullName.isEmpty || username.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      return false;
+    }
+
+    // Check if password matches confirm password
+    if (password != confirmPassword) {
+      return false;
+    }
+
+    // Check minimum length requirements
+    if (fullName.length < 2 || password.length < 6) {
+      return false;
+    }
+
+    return true;
   }
 
   void _initializeAnimations() {
@@ -111,6 +151,10 @@ class _SignupScreenState extends State<SignupScreen>
   void dispose() {
     _animationController.dispose();
     _staggerAnimationController.dispose();
+    _fullNameController.removeListener(_checkFormValidity);
+    _usernameController.removeListener(_checkFormValidity);
+    _passwordController.removeListener(_checkFormValidity);
+    _confirmPasswordController.removeListener(_checkFormValidity);
     _fullNameController.dispose();
     _usernameController.dispose();
     _passwordController.dispose();
@@ -120,15 +164,6 @@ class _SignupScreenState extends State<SignupScreen>
 
   Future<void> _handleSignup() async {
     if (!_formKey.currentState!.validate()) return;
-
-    if (!_agreeToTerms) {
-      final localization = Provider.of<LocalizationService>(
-        context,
-        listen: false,
-      );
-      _showErrorSnackBar(localization.translate('auth.agreeToTermsError'));
-      return;
-    }
 
     setState(() => _isLoading = true);
 
@@ -250,7 +285,7 @@ class _SignupScreenState extends State<SignupScreen>
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [const Color(0xFFF8F9FF), Colors.white],
+                colors: [AppColors.authBackground, AppColors.surface],
               ),
             ),
             child: Stack(
@@ -280,7 +315,12 @@ class _SignupScreenState extends State<SignupScreen>
                                   children: [
                                     // Back Button
                                     IconButton(
-                                      onPressed: () => Navigator.pop(context),
+                                      onPressed: () {
+                                        AppRoutes.pushReplacementNamed(
+                                          context,
+                                          AppRoutes.login,
+                                        );
+                                      },
                                       icon: const Icon(
                                         Icons.arrow_back_ios,
                                         color: Colors.black,
@@ -430,10 +470,10 @@ class _SignupScreenState extends State<SignupScreen>
                                       ShaderMask(
                                         shaderCallback: (bounds) =>
                                             LinearGradient(
-                                              colors: [
-                                                const Color(0xFF7C3AED),
-                                                const Color(0xFF06B6D4),
-                                              ],
+                                                colors: [
+                                                  AppColors.primary,
+                                                  AppColors.cyan,
+                                                ],
                                             ).createShader(bounds),
                                         child: Text(
                                           'Create new account',
@@ -471,25 +511,34 @@ class _SignupScreenState extends State<SignupScreen>
                                     borderRadius: BorderRadius.circular(24),
                                     child: BackdropFilter(
                                       filter: ImageFilter.blur(
-                                        sigmaX: 20,
-                                        sigmaY: 20,
+                                        sigmaX: 15,
+                                        sigmaY: 15,
                                       ),
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 24,
-                                          vertical: 40,
+                                          vertical: 32,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.7),
+                                          color: Colors.white.withOpacity(0.5),
                                           borderRadius: BorderRadius.circular(
                                             24,
                                           ),
                                           border: Border.all(
                                             color: Colors.white.withOpacity(
-                                              0.8,
+                                              0.7,
                                             ),
-                                            width: 1,
+                                            width: 1.5,
                                           ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: AppColors.primary
+                                                  .withOpacity(0.08),
+                                              offset: const Offset(0, 8),
+                                              blurRadius: 24,
+                                              spreadRadius: 0,
+                                            ),
+                                          ],
                                         ),
                                         child: Form(
                                           key: _formKey,
@@ -633,72 +682,6 @@ class _SignupScreenState extends State<SignupScreen>
                                                 },
                                               ),
 
-                                              const SizedBox(height: 20),
-
-                                              // Terms and Conditions Checkbox
-                                              Row(
-                                                children: [
-                                                  GestureDetector(
-                                                    onTap: () {
-                                                      setState(() {
-                                                        _agreeToTerms =
-                                                            !_agreeToTerms;
-                                                      });
-                                                    },
-                                                    child: Container(
-                                                      width: 24,
-                                                      height: 24,
-                                                      decoration: BoxDecoration(
-                                                        color: _agreeToTerms
-                                                            ? AppColors.primary
-                                                            : Colors
-                                                                  .transparent,
-                                                        border: Border.all(
-                                                          color: _agreeToTerms
-                                                              ? AppColors
-                                                                    .primary
-                                                              : AppColors
-                                                                    .border,
-                                                          width: 2,
-                                                        ),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              6,
-                                                            ),
-                                                      ),
-                                                      child: _agreeToTerms
-                                                          ? const Icon(
-                                                              Icons.check,
-                                                              color:
-                                                                  Colors.white,
-                                                              size: 16,
-                                                            )
-                                                          : null,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 12),
-                                                  Expanded(
-                                                    child: GestureDetector(
-                                                      onTap: () {
-                                                        setState(() {
-                                                          _agreeToTerms =
-                                                              !_agreeToTerms;
-                                                        });
-                                                      },
-                                                      child: Text(
-                                                        'I agree to the Terms and Conditions and Privacy Policy',
-                                                        style: AppStyles
-                                                            .bodyMedium
-                                                            .copyWith(
-                                                              color: AppColors
-                                                                  .textSecondary,
-                                                            ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-
                                               const SizedBox(height: 32),
 
                                               // Sign Up Button
@@ -706,14 +689,16 @@ class _SignupScreenState extends State<SignupScreen>
                                                 opacity: _buttonFade,
                                                 child: CustomButton(
                                                   text: 'Sign Up',
-                                                  onPressed: _handleSignup,
+                                                  onPressed: _isFormValid && !_isLoading
+                                                      ? _handleSignup
+                                                      : null,
                                                   isLoading: _isLoading,
                                                   variant:
                                                       ButtonVariant.gradient,
                                                   gradientColors: [
-                                                    const Color(0xFF7C3AED),
-                                                    const Color(0xFF3B82F6),
-                                                    const Color(0xFF06B6D4),
+                                                    AppColors.primary,
+                                                    AppColors.info,
+                                                    AppColors.cyan,
                                                   ],
                                                 ),
                                               ),
@@ -831,8 +816,8 @@ class _SignupScreenState extends State<SignupScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  const Color(0xFF7C3AED).withOpacity(0.12),
-                  const Color(0xFFEC4899).withOpacity(0.08),
+                  AppColors.primary.withOpacity(0.12),
+                  AppColors.pink.withOpacity(0.08),
                 ],
               ),
             ),
@@ -855,8 +840,8 @@ class _SignupScreenState extends State<SignupScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  const Color(0xFF06B6D4).withOpacity(0.08),
-                  const Color(0xFF3B82F6).withOpacity(0.06),
+                  AppColors.cyan.withOpacity(0.08),
+                  AppColors.info.withOpacity(0.06),
                 ],
               ),
             ),
@@ -916,8 +901,8 @@ class _SignupScreenState extends State<SignupScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  const Color(0xFFEC4899).withOpacity(0.08),
-                  const Color(0xFF7C3AED).withOpacity(0.06),
+                  AppColors.pink.withOpacity(0.08),
+                  AppColors.primary.withOpacity(0.06),
                 ],
               ),
             ),
@@ -946,10 +931,10 @@ class _SignupScreenState extends State<SignupScreen>
   List<Widget> _buildDotsPattern(Size screenSize) {
     final dots = <Widget>[];
     final colors = [
-      const Color(0xFF7C3AED),
-      const Color(0xFF06B6D4),
-      const Color(0xFF3B82F6),
-      const Color(0xFFEC4899),
+      AppColors.primary,
+      AppColors.cyan,
+      AppColors.info,
+      AppColors.pink,
     ];
 
     for (int i = 0; i < 20; i++) {
@@ -1005,33 +990,49 @@ class _GlassInputWrapper extends StatefulWidget {
 }
 
 class _GlassInputWrapperState extends State<_GlassInputWrapper> {
+  bool _isFocused = false;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: Colors.white.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(16),
+        color: _isFocused
+            ? Colors.white.withOpacity(0.9)
+            : Colors.white.withOpacity(0.7),
+        boxShadow: [
+          BoxShadow(
+            color: _isFocused
+                ? AppColors.primary.withOpacity(0.15)
+                : Colors.black.withOpacity(0.05),
+            offset: const Offset(0, 4),
+            blurRadius: _isFocused ? 20 : 10,
+            spreadRadius: 0,
+          ),
+        ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: _buildTextField(),
-        ),
-      ),
+      child: _buildTextField(),
     );
   }
 
   Widget _buildTextField() {
-    return CustomTextField(
-      controller: widget.controller,
-      label: widget.label,
-      hint: widget.hint,
-      prefixIcon: widget.prefixIcon,
-      suffixIcon: widget.suffixIcon,
-      obscureText: widget.obscureText,
-      keyboardType: widget.keyboardType,
-      validator: widget.validator,
+    return Focus(
+      onFocusChange: (hasFocus) {
+        setState(() {
+          _isFocused = hasFocus;
+        });
+      },
+      child: CustomTextField(
+        controller: widget.controller,
+        label: widget.label,
+        hint: widget.hint,
+        prefixIcon: widget.prefixIcon,
+        suffixIcon: widget.suffixIcon,
+        obscureText: widget.obscureText,
+        keyboardType: widget.keyboardType,
+        validator: widget.validator,
+      ),
     );
   }
 }

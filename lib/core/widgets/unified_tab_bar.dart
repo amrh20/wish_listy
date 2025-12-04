@@ -34,10 +34,7 @@ class UnifiedTabBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor ?? AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.border,
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: AppColors.shadow.withOpacity(0.04),
@@ -50,7 +47,7 @@ class UnifiedTabBar extends StatelessWidget {
         children: List.generate(tabs.length, (index) {
           final tab = tabs[index];
           final isSelected = index == selectedIndex;
-          
+
           return Expanded(
             child: _buildTab(
               tab: tab,
@@ -97,7 +94,7 @@ class UnifiedTabBar extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
               ],
-              
+
               // Label
               Flexible(
                 child: Text(
@@ -111,16 +108,21 @@ class UnifiedTabBar extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              
+
               // Badge
               if (tab.badgeCount != null && tab.badgeCount! > 0) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? Colors.white.withOpacity(0.25)
-                        : (tab.badgeColor ?? AppColors.primary).withOpacity(0.15),
+                        : (tab.badgeColor ?? AppColors.primary).withOpacity(
+                            0.15,
+                          ),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -183,7 +185,7 @@ class UnifiedUnderlineTabBar extends StatelessWidget {
         children: List.generate(tabs.length, (index) {
           final tab = tabs[index];
           final isSelected = index == selectedIndex;
-          
+
           return Expanded(
             child: _buildTab(
               tab: tab,
@@ -220,15 +222,20 @@ class UnifiedUnderlineTabBar extends StatelessWidget {
                       color: isSelected
                           ? (indicatorColor ?? AppColors.primary)
                           : AppColors.textSecondary,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                     ),
                   ),
-                  
+
                   // Badge
                   if (tab.badgeCount != null && tab.badgeCount! > 0) ...[
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: tab.badgeColor ?? AppColors.accent,
                         borderRadius: BorderRadius.circular(10),
@@ -246,7 +253,7 @@ class UnifiedUnderlineTabBar extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Indicator line
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
@@ -298,7 +305,11 @@ class UnifiedSegmentedTabBar extends StatelessWidget {
           AnimatedPositioned(
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeInOut,
-            left: (MediaQuery.of(context).size.width - 40) / tabs.length * selectedIndex + 2,
+            left:
+                (MediaQuery.of(context).size.width - 40) /
+                    tabs.length *
+                    selectedIndex +
+                2,
             top: 2,
             bottom: 2,
             width: (MediaQuery.of(context).size.width - 40) / tabs.length - 4,
@@ -308,7 +319,9 @@ class UnifiedSegmentedTabBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: (selectedColor ?? AppColors.primary).withOpacity(0.3),
+                    color: (selectedColor ?? AppColors.primary).withOpacity(
+                      0.3,
+                    ),
                     offset: const Offset(0, 2),
                     blurRadius: 8,
                   ),
@@ -316,13 +329,13 @@ class UnifiedSegmentedTabBar extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Tab buttons
           Row(
             children: List.generate(tabs.length, (index) {
               final tab = tabs[index];
               final isSelected = index == selectedIndex;
-              
+
               return Expanded(
                 child: Material(
                   color: Colors.transparent,
@@ -349,8 +362,9 @@ class UnifiedSegmentedTabBar extends StatelessWidget {
                               color: isSelected
                                   ? Colors.white
                                   : AppColors.textSecondary,
-                              fontWeight:
-                                  isSelected ? FontWeight.w600 : FontWeight.w500,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
                             ),
                           ),
                         ],
@@ -366,4 +380,3 @@ class UnifiedSegmentedTabBar extends StatelessWidget {
     );
   }
 }
-

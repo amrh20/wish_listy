@@ -20,6 +20,7 @@ class ConfirmationDialog {
   /// [additionalActions] - Optional list of additional action buttons (label, callback, variant)
   /// [barrierDismissible] - Whether the dialog can be dismissed by tapping outside (default: false)
   /// [customImagePath] - Optional custom image path to replace Lottie animation
+  /// [backgroundVectorPath] - Optional background vector image that appears behind and above dialog
   static Future<void> show({
     required BuildContext context,
     required bool isSuccess,
@@ -32,6 +33,7 @@ class ConfirmationDialog {
     List<DialogAction>? additionalActions,
     bool barrierDismissible = false,
     String? customImagePath,
+    String? backgroundVectorPath,
   }) {
     return showDialog(
       context: context,
@@ -46,6 +48,7 @@ class ConfirmationDialog {
         onSecondaryAction: onSecondaryAction,
         additionalActions: additionalActions,
         customImagePath: customImagePath,
+        backgroundVectorPath: backgroundVectorPath,
       ),
     );
   }
@@ -77,6 +80,7 @@ class _ConfirmationDialogWidget extends StatelessWidget {
   final VoidCallback? onSecondaryAction;
   final List<DialogAction>? additionalActions;
   final String? customImagePath;
+  final String? backgroundVectorPath;
 
   const _ConfirmationDialogWidget({
     required this.isSuccess,
@@ -88,6 +92,7 @@ class _ConfirmationDialogWidget extends StatelessWidget {
     this.onSecondaryAction,
     this.additionalActions,
     this.customImagePath,
+    this.backgroundVectorPath,
   });
 
   @override
@@ -98,165 +103,195 @@ class _ConfirmationDialogWidget extends StatelessWidget {
         ? 'assets/lottie/success_check.json'
         : 'assets/lottie/error_shake.json';
 
-    return AlertDialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      contentPadding: const EdgeInsets.all(24),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Custom Image or Lottie Animation Area
-          SizedBox(
-            height: 80,
-            width: 80,
-            child: customImagePath != null
-                ? Image.asset(
-                    customImagePath!,
-                    height: 80,
-                    width: 80,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Fallback to Lottie if custom image fails
-                      return Lottie.asset(
-                        animationPath,
-                        repeat: false,
-                        height: 80,
-                        width: 80,
-                        errorBuilder: (_, __, ___) {
-                          return Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: accentColor.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isSuccess
-                                  ? Icons.check_circle_outline
-                                  : Icons.error_outline,
-                              color: accentColor,
-                              size: 40,
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  )
-                : Lottie.asset(
-                    animationPath,
-                    repeat: false,
-                    height: 80,
-                    width: 80,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Fallback to icon if Lottie file is not found
-                      return Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: accentColor.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isSuccess
-                              ? Icons.check_circle_outline
-                              : Icons.error_outline,
-                          color: accentColor,
-                          size: 40,
-                        ),
-                      );
-                    },
-                  ),
-          ),
-          const SizedBox(height: 24),
-
-          // Title
-          Text(
-            title,
-            style: AppStyles.headingSmall.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        // Background vector image positioned behind and above dialog
+        if (backgroundVectorPath != null)
+          Positioned(
+            top: -80, // Position above dialog (reduced from -120)
+            child: Image.asset(
+              backgroundVectorPath!,
+              height: 180,
+              width: 180,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return const SizedBox.shrink();
+              },
             ),
-            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 12),
 
-          // Message
-          Text(
-            message,
-            style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
-            textAlign: TextAlign.center,
+        // Main Dialog
+        AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-          const SizedBox(height: 32),
-
-          // Action Buttons
-          Column(
+          contentPadding: const EdgeInsets.all(24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Primary Action Button
-              SizedBox(
-                width: double.infinity,
-                child: CustomButton(
-                  text: primaryActionLabel,
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    onPrimaryAction();
-                  },
-                  variant: isSuccess
-                      ? ButtonVariant.gradient
-                      : ButtonVariant.primary,
-                  size: ButtonSize.small,
-                  gradientColors: isSuccess
-                      ? [AppColors.primary, AppColors.secondary]
-                      : null,
-                  customColor: isSuccess ? null : accentColor,
-                  icon: isSuccess ? Icons.check_rounded : Icons.refresh_rounded,
-                ),
-              ),
-
-              // Secondary Action Button (if provided)
-              if (secondaryActionLabel != null &&
-                  onSecondaryAction != null) ...[
-                const SizedBox(height: 12),
+              // Only show custom image or Lottie if NO background vector
+              if (backgroundVectorPath == null) ...[
                 SizedBox(
-                  width: double.infinity,
-                  child: CustomButton(
-                    text: secondaryActionLabel!,
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      onSecondaryAction!();
-                    },
-                    variant: ButtonVariant.outline,
-                    size: ButtonSize.small,
-                    customColor: accentColor,
-                  ),
+                  height: 80,
+                  width: 80,
+                  child: customImagePath != null
+                      ? Image.asset(
+                          customImagePath!,
+                          height: 80,
+                          width: 80,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback to Lottie if custom image fails
+                            return Lottie.asset(
+                              animationPath,
+                              repeat: false,
+                              height: 80,
+                              width: 80,
+                              errorBuilder: (_, __, ___) {
+                                return Container(
+                                  width: 80,
+                                  height: 80,
+                                  decoration: BoxDecoration(
+                                    color: accentColor.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    isSuccess
+                                        ? Icons.check_circle_outline
+                                        : Icons.error_outline,
+                                    color: accentColor,
+                                    size: 40,
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        )
+                      : Lottie.asset(
+                          animationPath,
+                          repeat: false,
+                          height: 80,
+                          width: 80,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback to icon if Lottie file is not found
+                            return Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                color: accentColor.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                isSuccess
+                                    ? Icons.check_circle_outline
+                                    : Icons.error_outline,
+                                color: accentColor,
+                                size: 40,
+                              ),
+                            );
+                          },
+                        ),
                 ),
+                const SizedBox(height: 24),
               ],
 
-              // Additional Actions (if provided)
-              if (additionalActions != null &&
-                  additionalActions!.isNotEmpty) ...[
-                ...additionalActions!.map(
-                  (action) => Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: CustomButton(
-                        text: action.label,
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          action.onPressed();
-                        },
-                        variant: action.variant,
-                        size: ButtonSize.small,
-                        icon: action.icon,
-                      ),
+              // Title
+              Text(
+                title,
+                style: AppStyles.headingSmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+
+              // Message
+              Text(
+                message,
+                style: AppStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+
+              // Action Buttons
+              Column(
+                children: [
+                  // Primary Action Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: CustomButton(
+                      text: primaryActionLabel,
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        onPrimaryAction();
+                      },
+                      variant: isSuccess
+                          ? ButtonVariant.gradient
+                          : ButtonVariant.primary,
+                      size: ButtonSize.small,
+                      gradientColors: isSuccess
+                          ? [AppColors.primary, AppColors.secondary]
+                          : null,
+                      customColor: isSuccess ? null : accentColor,
+                      icon: isSuccess
+                          ? Icons.check_rounded
+                          : Icons.refresh_rounded,
                     ),
                   ),
-                ),
-              ],
+
+                  // Secondary Action Button (if provided)
+                  if (secondaryActionLabel != null &&
+                      onSecondaryAction != null) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: CustomButton(
+                        text: secondaryActionLabel!,
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          onSecondaryAction!();
+                        },
+                        variant: ButtonVariant.outline,
+                        size: ButtonSize.small,
+                        customColor: accentColor,
+                      ),
+                    ),
+                  ],
+
+                  // Additional Actions (if provided)
+                  if (additionalActions != null &&
+                      additionalActions!.isNotEmpty) ...[
+                    ...additionalActions!.map(
+                      (action) => Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: CustomButton(
+                            text: action.label,
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              action.onPressed();
+                            },
+                            variant: action.variant,
+                            size: ButtonSize.small,
+                            icon: action.icon,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

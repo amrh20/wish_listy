@@ -71,16 +71,23 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
     });
 
     try {
-      debugPrint('📡 WishlistItemsScreen: Loading wishlist: ${widget.wishlistId}');
-      
+      debugPrint(
+        '📡 WishlistItemsScreen: Loading wishlist: ${widget.wishlistId}',
+      );
+
       // Call API to get wishlist details
-      final wishlistData = await _wishlistRepository.getWishlistById(widget.wishlistId);
-      
-      debugPrint('📡 WishlistItemsScreen: Received wishlist data: $wishlistData');
+      final wishlistData = await _wishlistRepository.getWishlistById(
+        widget.wishlistId,
+      );
+
+      debugPrint(
+        '📡 WishlistItemsScreen: Received wishlist data: $wishlistData',
+      );
 
       // Handle both direct fields and nested wishlist object
-      final data = wishlistData['wishlist'] as Map<String, dynamic>? ?? wishlistData;
-      
+      final data =
+          wishlistData['wishlist'] as Map<String, dynamic>? ?? wishlistData;
+
       // Parse items from response
       final itemsList = data['items'] as List<dynamic>? ?? [];
       final items = itemsList
@@ -97,7 +104,9 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
         purchasedItems = stats['purchasedItems'] as int? ?? 0;
       } else {
         totalItems = items.length;
-        purchasedItems = items.where((item) => item.status == ItemStatus.purchased).length;
+        purchasedItems = items
+            .where((item) => item.status == ItemStatus.purchased)
+            .length;
       }
 
       // Parse additional wishlist info
@@ -159,8 +168,15 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(top: 60, left: 16, right: 16, bottom: 0),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -191,8 +207,15 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(top: 60, left: 16, right: 16, bottom: 0),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         );
       }
@@ -288,7 +311,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
       imageUrl: data['imageUrl']?.toString() ?? data['image_url']?.toString(),
       priority: priority,
       status: status,
-      purchasedBy: data['purchasedBy']?.toString() ?? data['purchased_by']?.toString(),
+      purchasedBy:
+          data['purchasedBy']?.toString() ?? data['purchased_by']?.toString(),
       purchasedAt: purchasedAt,
       createdAt: createdAt,
       updatedAt: updatedAt,
@@ -387,66 +411,66 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                             ),
                           )
                         : _errorMessage != null
-                            ? Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24),
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.error_outline,
+                                    size: 64,
+                                    color: AppColors.error,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    _errorMessage!,
+                                    style: AppStyles.bodyLarge.copyWith(
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 24),
+                                  ElevatedButton.icon(
+                                    onPressed: _loadWishlistDetails,
+                                    icon: const Icon(Icons.refresh),
+                                    label: const Text('Retry'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : AnimatedBuilder(
+                            animation: _animationController,
+                            builder: (context, child) {
+                              return FadeTransition(
+                                opacity: _fadeAnimation,
+                                child: SlideTransition(
+                                  position: _slideAnimation,
                                   child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Icon(
-                                        Icons.error_outline,
-                                        size: 64,
-                                        color: AppColors.error,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        _errorMessage!,
-                                        style: AppStyles.bodyLarge.copyWith(
-                                          color: AppColors.textPrimary,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      const SizedBox(height: 24),
-                                      ElevatedButton.icon(
-                                        onPressed: _loadWishlistDetails,
-                                        icon: const Icon(Icons.refresh),
-                                        label: const Text('Retry'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.primary,
-                                          foregroundColor: Colors.white,
-                                        ),
-                                      ),
+                                      // Stats Card
+                                      _buildStatsCard(),
+
+                                      const SizedBox(height: 20),
+
+                                      // Search and Filters
+                                      _buildSearchAndFilters(),
+
+                                      const SizedBox(height: 20),
+
+                                      // Items List
+                                      Expanded(child: _buildItemsList()),
                                     ],
                                   ),
                                 ),
-                              )
-                            : AnimatedBuilder(
-                                animation: _animationController,
-                                builder: (context, child) {
-                                  return FadeTransition(
-                                    opacity: _fadeAnimation,
-                                    child: SlideTransition(
-                                      position: _slideAnimation,
-                                      child: Column(
-                                        children: [
-                                          // Stats Card
-                                          _buildStatsCard(),
-
-                                          const SizedBox(height: 20),
-
-                                          // Search and Filters
-                                          _buildSearchAndFilters(),
-
-                                          const SizedBox(height: 20),
-
-                                          // Items List
-                                          Expanded(child: _buildItemsList()),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
+                              );
+                            },
+                          ),
                   ),
                 ],
               ),
@@ -486,7 +510,9 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _wishlistName.isNotEmpty ? _wishlistName : widget.wishlistName,
+                  _wishlistName.isNotEmpty
+                      ? _wishlistName
+                      : widget.wishlistName,
                   style: AppStyles.headingSmall.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -506,23 +532,26 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                     else
                       _buildInfoChip(
                         icon: Icons.inventory_2_outlined,
-                        label: '${_items.length} ${_items.length == 1 ? "Wish" : "Wishes"}',
+                        label:
+                            '${_items.length} ${_items.length == 1 ? "Wish" : "Wishes"}',
                         color: AppColors.textSecondary,
                       ),
                     if (_category.isNotEmpty)
                       _buildInfoChip(
                         icon: Icons.category_outlined,
-                        label: _category[0].toUpperCase() + _category.substring(1),
+                        label:
+                            _category[0].toUpperCase() + _category.substring(1),
                         color: AppColors.primary,
                       ),
                     if (_privacy.isNotEmpty)
                       _buildInfoChip(
-                        icon: _privacy == 'public' 
-                            ? Icons.public_outlined 
+                        icon: _privacy == 'public'
+                            ? Icons.public_outlined
                             : Icons.lock_outline,
-                        label: _privacy[0].toUpperCase() + _privacy.substring(1),
-                        color: _privacy == 'public' 
-                            ? AppColors.success 
+                        label:
+                            _privacy[0].toUpperCase() + _privacy.substring(1),
+                        color: _privacy == 'public'
+                            ? AppColors.success
                             : AppColors.warning,
                       ),
                     if (_createdAt != null)
@@ -633,10 +662,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -687,10 +713,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.borderLight,
-                width: 1,
-              ),
+              border: Border.all(color: AppColors.borderLight, width: 1),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.shadowLight.withOpacity(0.1),
@@ -728,10 +751,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: AppColors.secondary,
-                    width: 2,
-                  ),
+                  borderSide: BorderSide(color: AppColors.secondary, width: 2),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -1038,9 +1058,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
           ),
           title: Text(
             'Delete Item',
-            style: AppStyles.headingSmall.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
           ),
           content: Text(
             'Are you sure you want to delete "${item.name}"? This action cannot be undone.',

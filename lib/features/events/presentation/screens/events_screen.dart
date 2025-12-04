@@ -256,10 +256,14 @@ class _EventsScreenState extends State<EventsScreen>
                 child: Column(
                   children: [
                     // Guest Page Header
-                    SimplePageHeader(
+                    UnifiedPageHeader(
                       title: localization.translate('navigation.events'),
                       subtitle: 'Explore public events',
-                      showBackButton: true,
+                      showSearch: true,
+                      searchHint: localization.translate('events.searchEvents'),
+                      onSearchTap: () {
+                        // Search functionality for guests
+                      },
                     ),
                     // Content
                     Expanded(

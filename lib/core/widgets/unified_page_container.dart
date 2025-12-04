@@ -149,15 +149,15 @@ class PastelCard extends StatelessWidget {
   Color _getBorderColor(Color bgColor) {
     // Create a slightly darker version of the background color for the border
     if (bgColor == AppColors.cardBlue) {
-      return const Color(0xFFB3E0FF);
+      return AppColors.cardBlueBorder;
     } else if (bgColor == AppColors.cardPurple) {
-      return const Color(0xFFE0C8FF);
+      return AppColors.cardPurpleBorder;
     } else if (bgColor == AppColors.cardGreen) {
-      return const Color(0xFFC8FFE0);
+      return AppColors.cardGreenBorder;
     } else if (bgColor == AppColors.cardPink) {
-      return const Color(0xFFFFCDD8);
+      return AppColors.cardPinkBorder;
     } else if (bgColor == AppColors.cardPeach) {
-      return const Color(0xFFFFE0C8);
+      return AppColors.cardPeachBorder;
     }
     return bgColor.withOpacity(0.5);
   }

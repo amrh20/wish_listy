@@ -9,12 +9,12 @@ class AppTheme {
       brightness: Brightness.light,
       primarySwatch: createMaterialColor(AppColors.primary),
       fontFamily: GoogleFonts.cairo().fontFamily,
-      colorScheme: const ColorScheme.light(
+      colorScheme: ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.secondary,
-        tertiary: AppColors.accent,
+        tertiary: AppColors.error,
         surface: AppColors.surface,
-        error: AppColors.accent,
+        error: AppColors.error,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: AppColors.textPrimary,
@@ -87,7 +87,7 @@ class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.accent, width: 1),
+          borderSide: const BorderSide(color: AppColors.error, width: 1),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -113,12 +113,12 @@ class AppTheme {
       brightness: Brightness.dark,
       primarySwatch: createMaterialColor(AppColors.primary),
       fontFamily: GoogleFonts.cairo().fontFamily,
-      colorScheme: const ColorScheme.dark(
+      colorScheme: ColorScheme.dark(
         primary: AppColors.primary,
         secondary: AppColors.secondary,
-        tertiary: AppColors.accent,
+        tertiary: AppColors.error,
         surface: AppColors.surfaceDark,
-        error: AppColors.accent,
+        error: AppColors.error,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: AppColors.textPrimaryDark,

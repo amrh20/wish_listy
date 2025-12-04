@@ -98,7 +98,7 @@ class AppStyles {
   static TextStyle get overline => const TextStyle(
     fontSize: 10,
     fontWeight: FontWeight.w600,
-    color: AppColors.textMuted,
+    color: AppColors.textTertiary,
     height: 1.2,
     letterSpacing: 1.5,
     fontFamily: 'Inter',
@@ -106,7 +106,7 @@ class AppStyles {
 
   // Enhanced Card Styles with Beautiful Shadows
   static BoxDecoration get cardDecoration => BoxDecoration(
-    color: AppColors.card,
+    color: AppColors.surface,
     borderRadius: BorderRadius.circular(20),
     boxShadow: [
       BoxShadow(
@@ -125,7 +125,7 @@ class AppStyles {
   );
 
   static BoxDecoration get cardDecorationLight => BoxDecoration(
-    color: AppColors.card,
+    color: AppColors.surface,
     borderRadius: BorderRadius.circular(16),
     boxShadow: [
       BoxShadow(
@@ -138,7 +138,7 @@ class AppStyles {
   );
 
   static BoxDecoration get cardDecorationHover => BoxDecoration(
-    color: AppColors.cardHover,
+    color: AppColors.surfaceVariant,
     borderRadius: BorderRadius.circular(20),
     boxShadow: [
       BoxShadow(
@@ -228,7 +228,7 @@ class AppStyles {
       borderSide: BorderSide(color: AppColors.accent, width: 2),
     ),
     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-    hintStyle: bodyMedium.copyWith(color: AppColors.textMuted),
+    hintStyle: bodyMedium.copyWith(color: AppColors.textTertiary),
   );
 
   // Special Effects Styles

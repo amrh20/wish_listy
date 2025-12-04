@@ -6,9 +6,9 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/unified_page_container.dart';
+import 'package:wish_listy/core/widgets/unified_page_header.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
-import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -147,9 +147,23 @@ class _ProfileScreenState extends State<ProfileScreen>
               showGifts: false, // Less busy for profile
               child: Column(
                 children: [
-                  // Profile Header (with gradient)
-                  _buildProfileHeader(),
-                  
+                  // Profile Header with UnifiedPageHeader
+                  UnifiedPageHeader(
+                    title: localization.translate('navigation.profile'),
+                    subtitle: _userProfile.name,
+                    showSearch: true,
+                    searchHint: 'Search settings...',
+                    onSearchTap: () {
+                      // Search functionality
+                    },
+                    actions: [
+                      HeaderAction(
+                        icon: Icons.edit_outlined,
+                        onTap: _editProfile,
+                      ),
+                    ],
+                  ),
+
                   // Profile Content in rounded container
                   Expanded(
                     child: UnifiedPageContainer(
@@ -230,263 +244,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget _buildProfileHeader() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary,
-            AppColors.primaryAccent,
-            AppColors.secondary,
-          ],
-          stops: [0.0, 0.5, 1.0],
-        ),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            colors: [Colors.white.withOpacity(0.1), Colors.transparent],
-            center: Alignment.topRight,
-            radius: 1.5,
-          ),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Action buttons row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    // Edit Button
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-                      ),
-                      child: IconButton(
-                        onPressed: _editProfile,
-                        icon: Icon(Icons.edit_outlined, color: Colors.white, size: 22),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Menu Button
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
-                      ),
-                      child: PopupMenuButton<String>(
-                        icon: Icon(Icons.more_vert, color: Colors.white, size: 22),
-                        onSelected: _handleMenuAction,
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'share',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.share_outlined,
-                                  color: AppColors.textPrimary,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Share Profile',
-                                  style: AppStyles.bodyMedium.copyWith(
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'logout',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.logout_outlined,
-                                  color: AppColors.error,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Logout',
-                                  style: AppStyles.bodyMedium.copyWith(
-                                    color: AppColors.error,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Profile Picture
-                Stack(
-                  children: [
-                    Container(
-                      width: 90,
-                      height: 90,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Colors.white,
-                            Colors.white.withOpacity(0.9),
-                          ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            offset: const Offset(0, 6),
-                            blurRadius: 15,
-                            spreadRadius: 1,
-                          ),
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
-                            offset: const Offset(0, 3),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          _userProfile.name[0].toUpperCase(),
-                          style: AppStyles.headingLarge.copyWith(
-                            color: AppColors.primary,
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Edit photo button
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: _editProfilePicture,
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                AppColors.accent,
-                                AppColors.accentLight,
-                              ],
-                            ),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.accent.withOpacity(0.4),
-                                offset: const Offset(0, 3),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.camera_alt,
-                            color: Colors.white,
-                            size: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Name
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    _userProfile.name,
-                    style: AppStyles.headingMedium.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withOpacity(0.3),
-                          offset: const Offset(0, 1),
-                          blurRadius: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                // Email
-                Text(
-                  _userProfile.email,
-                  style: AppStyles.bodyMedium.copyWith(
-                    color: Colors.white.withOpacity(0.95),
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                // Member Since
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      color: Colors.white.withOpacity(0.8),
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Member since ${_formatJoinDate(_userProfile.joinDate)}',
-                      style: AppStyles.bodySmall.copyWith(
-                        color: Colors.white.withOpacity(0.85),
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -1332,23 +1089,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   // Helper Methods
-  String _formatJoinDate(DateTime date) {
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.year}';
-  }
 
   String _formatAchievementDate(DateTime date) {
     final months = [
@@ -1369,16 +1109,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   // Action Handlers
-  void _handleMenuAction(String action) {
-    switch (action) {
-      case 'share':
-        _shareProfile();
-        break;
-      case 'logout':
-        _confirmLogout();
-        break;
-    }
-  }
 
   void _editProfile() {
     // Navigate to edit profile screen
@@ -1386,53 +1116,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       context,
       AppRoutes.profile,
       arguments: {'userProfile': _userProfile},
-    );
-  }
-
-  void _editProfilePicture() {
-    // Show profile picture options
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Change Profile Picture', style: AppStyles.headingSmall),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: CustomButton(
-                    text: 'Camera',
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // Take photo with camera
-                    },
-                    variant: ButtonVariant.outline,
-                    icon: Icons.camera_alt_outlined,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: CustomButton(
-                    text: 'Gallery',
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // Pick from gallery
-                    },
-                    variant: ButtonVariant.outline,
-                    icon: Icons.photo_library_outlined,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1646,67 +1329,6 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _aboutApp() {
     // About app
-  }
-
-  void _shareProfile() {
-    // Copy profile link to clipboard and show message
-    final profileLink = 'https://wishlisty.app/profile/${_userProfile.id}';
-    Clipboard.setData(ClipboardData(text: profileLink));
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Profile link copied to clipboard!',
-                style: AppStyles.bodyMedium.copyWith(
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _confirmLogout() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Logout'),
-        content: Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _logout();
-            },
-            child: Text('Logout', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _logout() async {
-    // Clear token and local storage
-    await AuthRepository().logout();
-    // Navigate to welcome screen
-    AppRoutes.pushNamedAndRemoveUntil(context, AppRoutes.welcome);
   }
 
   Future<void> _refreshProfile() async {

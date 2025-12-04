@@ -182,10 +182,7 @@ class _LoginScreenState extends State<LoginScreen>
               duration: const Duration(seconds: 4),
               behavior: SnackBarBehavior.floating,
               width: 320,
-              margin: const EdgeInsets.only(
-                top: 60,
-                right: 16,
-              ),
+              margin: const EdgeInsets.only(top: 60, right: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -196,34 +193,42 @@ class _LoginScreenState extends State<LoginScreen>
     } on ApiException catch (e) {
       // Handle API-specific errors
       if (mounted) {
-        final localization = Provider.of<LocalizationService>(context, listen: false);
-        
+        final localization = Provider.of<LocalizationService>(
+          context,
+          listen: false,
+        );
+
         // Get the actual error message from API
-        String errorMessage = e.message.isNotEmpty ? e.message : 'An error occurred';
+        String errorMessage = e.message.isNotEmpty
+            ? e.message
+            : 'An error occurred';
         final errorMessageLower = errorMessage.toLowerCase();
-        
+
         String title = localization.translate('auth.loginFailed');
-        
+
         // Handle different error types with user-friendly messages
         if (e.statusCode == 400) {
           // For 400 errors, show the actual API message or a user-friendly one
           if (errorMessageLower.contains('user not found') ||
               errorMessageLower.contains('user does not exist') ||
               errorMessageLower.contains('email not found')) {
-            errorMessage = 'Invalid credentials. Please check your email or phone number.';
+            errorMessage =
+                'Invalid credentials. Please check your email or phone number.';
           } else if (errorMessageLower.contains('invalid password') ||
               errorMessageLower.contains('incorrect password') ||
               errorMessageLower.contains('wrong password')) {
             errorMessage = localization.translate('auth.wrongPassword');
           } else if (errorMessageLower.contains('invalid credentials') ||
               errorMessageLower.contains('authentication failed')) {
-            errorMessage = 'Invalid credentials. Please check your email/phone and password.';
+            errorMessage =
+                'Invalid credentials. Please check your email/phone and password.';
           } else {
             // Use the actual API message if it's meaningful
             errorMessage = errorMessage;
           }
         } else if (e.statusCode == 401) {
-          errorMessage = 'Invalid credentials. Please check your email/phone and password.';
+          errorMessage =
+              'Invalid credentials. Please check your email/phone and password.';
         } else if (e.statusCode == 500) {
           // For 500 errors, show generic server error message
           title = localization.translate('auth.error');
@@ -232,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen>
           // For other errors, show the actual API message
           errorMessage = errorMessage;
         }
-        
+
         // Show error dialog with Lottie animation
         ConfirmationDialog.show(
           context: context,
@@ -251,8 +256,11 @@ class _LoginScreenState extends State<LoginScreen>
     } catch (e) {
       // Handle unexpected errors (network errors, etc.)
       if (mounted) {
-        final localization = Provider.of<LocalizationService>(context, listen: false);
-        
+        final localization = Provider.of<LocalizationService>(
+          context,
+          listen: false,
+        );
+
         // Show error dialog with Lottie animation
         ConfirmationDialog.show(
           context: context,
@@ -281,12 +289,13 @@ class _LoginScreenState extends State<LoginScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
+          resizeToAvoidBottomInset: true,
           body: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [const Color(0xFFF8F9FF), Colors.white],
+                colors: [AppColors.authBackground, AppColors.surface],
               ),
             ),
             child: Stack(
@@ -456,59 +465,38 @@ class _LoginScreenState extends State<LoginScreen>
 
                                 const SizedBox(height: 40),
 
-                                // Header
+                                // Header - Simple Login Text
                                 FadeTransition(
                                   opacity: _welcomeFade,
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
                                     children: [
-                                      Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Padding(
-                                            padding: EdgeInsets.only(top: 4),
-                                            child: Text(
-                                              '👋',
-                                              style: TextStyle(fontSize: 28),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: ShaderMask(
-                                              shaderCallback: (bounds) =>
-                                                  LinearGradient(
-                                                    colors: [
-                                                      const Color(0xFF7C3AED),
-                                                      const Color(0xFF06B6D4),
-                                                    ],
-                                                  ).createShader(bounds),
-                                              child: Text(
-                                                localization.translate(
-                                                  'auth.welcomeBack',
+                                      Center(
+                                        child: ShaderMask(
+                                          shaderCallback: (bounds) =>
+                                              LinearGradient(
+                                                colors: [
+                                                  AppColors.primary,
+                                                  AppColors.cyan,
+                                                ],
+                                              ).createShader(bounds),
+                                          child: Text(
+                                            'Login',
+                                            style: AppStyles.headingLarge
+                                                .copyWith(
+                                                  fontSize: 32,
+                                                  fontWeight: FontWeight.w800,
+                                                  letterSpacing: -0.5,
+                                                  color: Colors.white,
                                                 ),
-                                                style: AppStyles.headingLarge
-                                                    .copyWith(
-                                                      fontSize: 36,
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                      letterSpacing: -0.5,
-                                                      color: Colors.white,
-                                                      height: 1.2,
-                                                    ),
-                                              ),
-                                            ),
                                           ),
-                                        ],
+                                        ),
                                       ),
                                       const SizedBox(height: 8),
                                       FadeTransition(
                                         opacity: _subtitleFade,
                                         child: Text(
-                                          localization.translate(
-                                            'auth.signInSubtitle',
-                                          ),
+                                          'Welcome back! Continue your wishlist journey',
+                                          textAlign: TextAlign.center,
                                           style: AppStyles.bodyLarge.copyWith(
                                             color: AppColors.textSecondary
                                                 .withOpacity(0.7),
@@ -519,7 +507,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   ),
                                 ),
 
-                                const SizedBox(height: 48),
+                                const SizedBox(height: 32),
 
                                 // Login Form
                                 FadeTransition(
@@ -528,25 +516,34 @@ class _LoginScreenState extends State<LoginScreen>
                                     borderRadius: BorderRadius.circular(24),
                                     child: BackdropFilter(
                                       filter: ImageFilter.blur(
-                                        sigmaX: 20,
-                                        sigmaY: 20,
+                                        sigmaX: 15,
+                                        sigmaY: 15,
                                       ),
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 24,
-                                          vertical: 40,
+                                          vertical: 32,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.7),
+                                          color: Colors.white.withOpacity(0.5),
                                           borderRadius: BorderRadius.circular(
                                             24,
                                           ),
                                           border: Border.all(
                                             color: Colors.white.withOpacity(
-                                              0.8,
+                                              0.7,
                                             ),
-                                            width: 1,
+                                            width: 1.5,
                                           ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: AppColors.primary
+                                                  .withOpacity(0.08),
+                                              offset: const Offset(0, 8),
+                                              blurRadius: 24,
+                                              spreadRadius: 0,
+                                            ),
+                                          ],
                                         ),
                                         child: Form(
                                           key: _formKey,
@@ -695,9 +692,9 @@ class _LoginScreenState extends State<LoginScreen>
                                                   variant:
                                                       ButtonVariant.gradient,
                                                   gradientColors: [
-                                                    const Color(0xFF7C3AED),
-                                                    const Color(0xFF3B82F6),
-                                                    const Color(0xFF06B6D4),
+                                                    AppColors.primary,
+                                                    AppColors.info,
+                                                    AppColors.cyan,
                                                   ],
                                                 ),
                                               ),
@@ -796,8 +793,8 @@ class _LoginScreenState extends State<LoginScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  const Color(0xFF7C3AED).withOpacity(0.12),
-                  const Color(0xFFEC4899).withOpacity(0.08),
+                  AppColors.primary.withOpacity(0.12),
+                  AppColors.pink.withOpacity(0.08),
                 ],
               ),
             ),
@@ -821,8 +818,8 @@ class _LoginScreenState extends State<LoginScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  const Color(0xFF06B6D4).withOpacity(0.08),
-                  const Color(0xFF3B82F6).withOpacity(0.06),
+                  AppColors.cyan.withOpacity(0.08),
+                  AppColors.info.withOpacity(0.06),
                 ],
               ),
             ),
@@ -882,8 +879,8 @@ class _LoginScreenState extends State<LoginScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  const Color(0xFFEC4899).withOpacity(0.08),
-                  const Color(0xFF7C3AED).withOpacity(0.06),
+                  AppColors.pink.withOpacity(0.08),
+                  AppColors.primary.withOpacity(0.06),
                 ],
               ),
             ),
@@ -912,10 +909,10 @@ class _LoginScreenState extends State<LoginScreen>
   List<Widget> _buildDotsPattern(Size screenSize) {
     final dots = <Widget>[];
     final colors = [
-      const Color(0xFF7C3AED),
-      const Color(0xFF06B6D4),
-      const Color(0xFF3B82F6),
-      const Color(0xFFEC4899),
+      AppColors.primary,
+      AppColors.cyan,
+      AppColors.info,
+      AppColors.pink,
     ];
 
     // Create scattered dots
@@ -994,33 +991,49 @@ class _GlassInputWrapper extends StatefulWidget {
 }
 
 class _GlassInputWrapperState extends State<_GlassInputWrapper> {
+  bool _isFocused = false;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: Colors.white.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(16),
+        color: _isFocused
+            ? Colors.white.withOpacity(0.9)
+            : Colors.white.withOpacity(0.7),
+        boxShadow: [
+          BoxShadow(
+            color: _isFocused
+                ? AppColors.primary.withOpacity(0.15)
+                : Colors.black.withOpacity(0.05),
+            offset: const Offset(0, 4),
+            blurRadius: _isFocused ? 20 : 10,
+            spreadRadius: 0,
+          ),
+        ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: _buildTextField(),
-        ),
-      ),
+      child: _buildTextField(),
     );
   }
 
   Widget _buildTextField() {
-    return CustomTextField(
-      controller: widget.controller,
-      label: widget.label,
-      hint: widget.hint,
-      prefixIcon: widget.prefixIcon,
-      suffixIcon: widget.suffixIcon,
-      obscureText: widget.obscureText,
-      keyboardType: widget.keyboardType,
-      validator: widget.validator,
+    return Focus(
+      onFocusChange: (hasFocus) {
+        setState(() {
+          _isFocused = hasFocus;
+        });
+      },
+      child: CustomTextField(
+        controller: widget.controller,
+        label: widget.label,
+        hint: widget.hint,
+        prefixIcon: widget.prefixIcon,
+        suffixIcon: widget.suffixIcon,
+        obscureText: widget.obscureText,
+        keyboardType: widget.keyboardType,
+        validator: widget.validator,
+      ),
     );
   }
 }

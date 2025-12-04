@@ -174,12 +174,18 @@ class _CustomButtonState extends State<CustomButton>
         );
 
       case ButtonVariant.gradient:
+        final gradientColors = widget.gradientColors ??
+            [AppColors.primary, AppColors.secondary];
         return BoxDecoration(
-          gradient: LinearGradient(
-            colors:
-                widget.gradientColors ??
-                [AppColors.primary, AppColors.secondary],
-          ),
+          gradient: isEnabled
+              ? LinearGradient(
+                  colors: gradientColors,
+                )
+              : LinearGradient(
+                  colors: gradientColors
+                      .map((color) => color.withOpacity(0.3))
+                      .toList(),
+                ),
           borderRadius: BorderRadius.circular(12),
           boxShadow: isEnabled && !_isPressed
               ? [

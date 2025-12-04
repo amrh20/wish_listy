@@ -9,7 +9,6 @@ import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
-import 'package:wish_listy/core/utils/category_images.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
 
 class CreateWishlistScreen extends StatefulWidget {
@@ -857,20 +856,13 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       );
     } else {
       // Creating mode - success dialog with multiple actions
-      // Get category image path
-      final String finalCategory = _isCustomCategory
-          ? _customCategoryController.text.trim()
-          : _selectedCategory;
-      final categoryImagePath = CategoryImages.getCategoryImagePath(
-        finalCategory,
-      );
-
       ConfirmationDialog.show(
         context: context,
         isSuccess: true,
         title: localization.translate('wishlists.wishlistCreatedTitle'),
         message: localization.translate('wishlists.wishlistCreatedMessage'),
-        customImagePath: categoryImagePath, // Pass category image
+        backgroundVectorPath:
+            'assets/images/Wishes-amico.png', // Background vector
         primaryActionLabel: localization.translate(
           'wishlists.addItemsToWishlist',
         ),

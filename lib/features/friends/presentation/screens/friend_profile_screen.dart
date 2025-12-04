@@ -62,11 +62,11 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
             // Profile Header
             Container(
               height: 300,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [AppColors.secondary, AppColors.accent],
+                  colors: [AppColors.secondary, AppColors.error],
                 ),
               ),
               child: SafeArea(
@@ -220,7 +220,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                           title: 'Events',
                           value: '2',
                           icon: Icons.event,
-                          color: AppColors.accent,
+                          color: AppColors.error,
                         ),
                       ),
                     ],
@@ -341,7 +341,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                               child: const Text(
                                 'View All',
                                 style: TextStyle(
-                                  color: AppColors.accent,
+                                  color: AppColors.error,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -589,7 +589,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.accent.withOpacity(0.2), width: 1),
+        border: Border.all(color: AppColors.error.withOpacity(0.2), width: 1),
       ),
       child: Row(
         children: [
@@ -597,10 +597,10 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.1),
+              color: AppColors.error.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.event, color: AppColors.accent, size: 24),
+            child: const Icon(Icons.event, color: AppColors.error, size: 24),
           ),
           const SizedBox(width: 12),
           Expanded(

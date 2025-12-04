@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wish_listy/core/constants/app_colors.dart';
 
 class AppTheme {
-  // Colors
-  static const Color primary = Color(0xFF7C3AED);
-  static const Color primaryLight = Color(0xFFA78BFA);
-  static const Color primaryDark = Color(0xFF5B21B6);
+  // Colors - Reference AppColors for consistency
+  static Color get primary => AppColors.primary;
+  static Color get primaryLight => AppColors.primaryLight;
+  static Color get primaryDark => AppColors.primaryDark;
 
-  static const Color secondary = Color(0xFF14B8A6);
-  static const Color secondaryLight = Color(0xFF2DD4BF);
-  static const Color secondaryDark = Color(0xFF0F766E);
+  static Color get secondary => AppColors.secondary;
+  static Color get secondaryLight => AppColors.secondaryLight;
+  static Color get secondaryDark => AppColors.secondaryDark;
 
-  static const Color accent = Color(0xFFEF4444);
-  static const Color success = Color(0xFF10B981);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color error = Color(0xFFEF4444);
+  static Color get accent => AppColors.accent;
+  static Color get success => AppColors.success;
+  static Color get warning => AppColors.warning;
+  static Color get error => AppColors.error;
 
-  static const Color background = Color(0xFFFAFAFA);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color onSurface = Color(0xFF1F2937);
+  static Color get background => AppColors.background;
+  static Color get surface => AppColors.surface;
+  static Color get onSurface => AppColors.textPrimary;
 
   // Text Styles
   static TextStyle get heading1 => GoogleFonts.comfortaa(
@@ -108,7 +109,7 @@ class AppTheme {
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: const ColorScheme.light(
+      colorScheme: ColorScheme.light(
         primary: primary,
         secondary: secondary,
         surface: surface,
@@ -160,11 +161,11 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
-          borderSide: const BorderSide(color: primary, width: 2),
+          borderSide: BorderSide(color: primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
-          borderSide: const BorderSide(color: error, width: 2),
+          borderSide: BorderSide(color: error, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: spacing16,
@@ -177,26 +178,26 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
-      colorScheme: const ColorScheme.dark(
+      colorScheme: ColorScheme.dark(
         primary: primary,
         secondary: secondary,
-        surface: Color(0xFF1F2937),
-        onSurface: Color(0xFFF9FAFB),
+        surface: AppColors.surfaceDark,
+        onSurface: AppColors.textPrimaryDark,
         error: error,
       ),
       textTheme: TextTheme(
-        headlineLarge: heading1.copyWith(color: const Color(0xFFF9FAFB)),
-        headlineMedium: heading2.copyWith(color: const Color(0xFFF9FAFB)),
-        headlineSmall: heading3.copyWith(color: const Color(0xFFF9FAFB)),
-        bodyLarge: bodyLarge.copyWith(color: const Color(0xFFF9FAFB)),
-        bodyMedium: bodyMedium.copyWith(color: const Color(0xFFF9FAFB)),
-        bodySmall: bodySmall.copyWith(color: const Color(0xFFF9FAFB)),
-        labelLarge: button.copyWith(color: const Color(0xFF1F2937)),
+        headlineLarge: heading1.copyWith(color: AppColors.textPrimaryDark),
+        headlineMedium: heading2.copyWith(color: AppColors.textPrimaryDark),
+        headlineSmall: heading3.copyWith(color: AppColors.textPrimaryDark),
+        bodyLarge: bodyLarge.copyWith(color: AppColors.textPrimaryDark),
+        bodyMedium: bodyMedium.copyWith(color: AppColors.textPrimaryDark),
+        bodySmall: bodySmall.copyWith(color: AppColors.textPrimaryDark),
+        labelLarge: button.copyWith(color: AppColors.surfaceDark),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
-          foregroundColor: const Color(0xFF1F2937),
+          foregroundColor: AppColors.surfaceDark,
           textStyle: button,
           padding: const EdgeInsets.symmetric(
             horizontal: spacing24,
@@ -209,7 +210,7 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: const Color(0xFF1F2937),
+        color: AppColors.surfaceDark,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
@@ -218,7 +219,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF1F2937),
+        fillColor: AppColors.surfaceDark,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
           borderSide: BorderSide.none,
@@ -229,11 +230,11 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
-          borderSide: const BorderSide(color: primary, width: 2),
+          borderSide: BorderSide(color: primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
-          borderSide: const BorderSide(color: error, width: 2),
+          borderSide: BorderSide(color: error, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: spacing16,

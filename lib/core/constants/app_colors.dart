@@ -13,7 +13,9 @@ class AppColors {
   static const Color secondaryDark = Color(0xFF0F766E); // Darker teal
 
   // Accent Colors - Vibrant and Eye-catching
-  static const Color accent = Color(0xFFEF4444);
+  // Note: accent and error are the same color (0xFFEF4444)
+  // accent is kept for backward compatibility, but error is the canonical name
+  static Color get accent => error;
   static const Color accentLight = Color(0xFFF87171);
   static const Color accentDark = Color(0xFFDC2626);
 
@@ -37,8 +39,11 @@ class AppColors {
   static const Color pinkLight = Color(0xFFF472B6);
   static const Color indigo = Color(0xFF6366F1);
   static const Color indigoLight = Color(0xFF818CF8);
-  static const Color teal = Color(0xFF14B8A6);
-  static const Color tealLight = Color(0xFF2DD4BF);
+  // Deprecated: Use secondary and secondaryLight instead
+  @Deprecated('Use AppColors.secondary instead')
+  static Color get teal => secondary;
+  @Deprecated('Use AppColors.secondaryLight instead')
+  static Color get tealLight => secondaryLight;
   static const Color orange = Color(0xFFFF6B35);
   static const Color orangeLight = Color(0xFFFF8A65);
 
@@ -47,19 +52,26 @@ class AppColors {
   static const Color textSecondary = Color(0xFF475569);
   static const Color textLight = Color(0xFF64748B);
   static const Color textWhite = Color(0xFFFFFFFF);
-  static const Color textMuted = Color(0xFF94A3B8);
+  // Deprecated: Use textTertiary instead
+  @Deprecated('Use AppColors.textTertiary instead')
+  static Color get textMuted => textTertiary;
   static const Color textTertiary = Color(0xFF94A3B8);
 
   // Background Colors - Soft and Comfortable
   static const Color background = Color(0xFFF8FAFC);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color card = Color(0xFFFFFFFF);
-  static const Color cardHover = Color(0xFFF1F5F9);
+  // Deprecated: Use surface instead
+  @Deprecated('Use AppColors.surface instead')
+  static Color get card => surface;
+  // Deprecated: Use surfaceVariant instead
+  @Deprecated('Use AppColors.surfaceVariant instead')
+  static Color get cardHover => surfaceVariant;
   static const Color surfaceVariant = Color(0xFFF1F5F9);
 
   // Border Colors - Subtle and Elegant
   static const Color border = Color(0xFFE2E8F0);
-  static const Color borderLight = Color(0xFFF1F5F9);
+  // References surfaceVariant to avoid duplication
+  static Color get borderLight => surfaceVariant;
   static const Color borderDark = Color(0xFFCBD5E1);
 
   // Shadow Colors - Soft and Natural
@@ -101,7 +113,7 @@ class AppColors {
   );
 
   static const LinearGradient accentGradient = LinearGradient(
-    colors: [accent, accentLight],
+    colors: [error, accentLight],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -143,7 +155,7 @@ class AppColors {
   );
 
   static const LinearGradient tealGradient = LinearGradient(
-    colors: [teal, tealLight],
+    colors: [secondary, secondaryLight],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -162,7 +174,7 @@ class AppColors {
   );
 
   static const RadialGradient accentRadial = RadialGradient(
-    colors: [accentLight, accent],
+    colors: [accentLight, error],
     center: Alignment.center,
     radius: 0.8,
   );
@@ -174,6 +186,20 @@ class AppColors {
     end: Alignment.bottomRight,
   );
 
-  // Error and warning colors
+  // Error color - Canonical name for accent/error color
   static const Color error = Color(0xFFEF4444);
+  
+  // Additional colors for hardcoded hex values found in codebase
+  // Auth screen background
+  static const Color authBackground = Color(0xFFF8F9FF);
+  
+  // Cyan color used in auth screens
+  static const Color cyan = Color(0xFF06B6D4);
+  
+  // Border colors for pastel cards (matching hardcoded values from unified_page_container)
+  static const Color cardBlueBorder = Color(0xFFB3E0FF);
+  static const Color cardPurpleBorder = Color(0xFFE0C8FF);
+  static const Color cardGreenBorder = Color(0xFFC8FFE0);
+  static const Color cardPinkBorder = Color(0xFFFFCDD8);
+  static const Color cardPeachBorder = Color(0xFFFFE0C8);
 }

@@ -84,10 +84,7 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.borderLight,
-                      width: 1,
-                    ),
+                    border: Border.all(color: AppColors.borderLight, width: 1),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.shadowLight.withOpacity(0.1),
@@ -98,7 +95,9 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
                   ),
                   child: TextField(
                     decoration: InputDecoration(
-                      hintText: localization.translate('wishlists.searchWishlists'),
+                      hintText: localization.translate(
+                        'wishlists.searchWishlists',
+                      ),
                       hintStyle: AppStyles.bodyMedium.copyWith(
                         color: AppColors.textTertiary,
                       ),
