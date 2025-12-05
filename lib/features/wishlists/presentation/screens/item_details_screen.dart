@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
-import 'package:wish_listy/core/widgets/animated_background.dart';
+import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
+import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
 
 class ItemDetailsScreen extends StatefulWidget {
   final WishlistItem item;
@@ -20,14 +21,62 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  bool _isPurchased = false;
+  final WishlistRepository _wishlistRepository = WishlistRepository();
+
+  WishlistItem? _currentItem;
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _isPurchased = widget.item.status == ItemStatus.purchased;
+    _currentItem = widget.item;
     _initializeAnimations();
-    _startAnimations();
+    _fetchItemDetails();
+  }
+
+  Future<void> _fetchItemDetails() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      debugPrint(
+        '📡 ItemDetailsScreen: Fetching item details for ID: ${widget.item.id}',
+      );
+
+      final itemData = await _wishlistRepository.getItemById(widget.item.id);
+
+      debugPrint('📡 ItemDetailsScreen: Received item data: $itemData');
+
+      // Parse the item data to WishlistItem model
+      final updatedItem = WishlistItem.fromJson(itemData);
+
+      if (mounted) {
+        setState(() {
+          _currentItem = updatedItem;
+          _isLoading = false;
+        });
+        _startAnimations();
+      }
+    } on ApiException catch (e) {
+      debugPrint('❌ ItemDetailsScreen: ApiException: ${e.message}');
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ ItemDetailsScreen: Unexpected error: $e');
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load item details. Please try again.';
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _initializeAnimations() {
@@ -67,75 +116,25 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      body: Stack(
-        children: [
-          // Content
-          SafeArea(
-            child: Column(
-              children: [
-                // Header
-                _buildHeader(),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Minimal Header
+            _buildHeader(),
 
-                // Content
-                Expanded(
-                  child: AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      if (!mounted) return const SizedBox.shrink();
-
-                      return FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: SlideTransition(
-                          position: _slideAnimation,
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.all(24.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Item Image/Icon Section
-                                _buildItemImageSection(),
-
-                                const SizedBox(height: 24),
-
-                                // Item Info Section
-                                _buildItemInfoSection(),
-
-                                const SizedBox(height: 24),
-
-                                // Priority and Category Section
-                                _buildPriorityCategorySection(),
-
-                                const SizedBox(height: 24),
-
-                                // Purchase Status Section
-                                _buildPurchaseStatusSection(),
-
-                                const SizedBox(height: 24),
-
-                                // Notes Section
-                                if (widget.item.description != null &&
-                                    widget.item.description!.isNotEmpty) ...[
-                                  _buildNotesSection(),
-                                  const SizedBox(height: 24),
-                                ],
-
-                                // Action Buttons
-                                _buildActionButtons(),
-
-                                const SizedBox(height: 100), // Bottom padding
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+            // Content
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _errorMessage != null
+                  ? _buildErrorState()
+                  : _currentItem == null
+                  ? const Center(child: Text('Item not found'))
+                  : _buildContent(),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -143,156 +142,234 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withOpacity(0.9),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textTertiary.withOpacity(0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
       child: Row(
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.surfaceVariant,
-              padding: const EdgeInsets.all(12),
-            ),
+            icon: const Icon(Icons.arrow_back_ios, size: 20),
+            style: IconButton.styleFrom(padding: const EdgeInsets.all(8)),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              'Item Details',
-              style: AppStyles.headingSmall.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          // Edit Button
+          const Spacer(),
           IconButton(
             onPressed: _editItem,
-            icon: const Icon(Icons.edit_outlined),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.surfaceVariant,
-              padding: const EdgeInsets.all(12),
-            ),
+            icon: const Icon(Icons.edit_outlined, size: 20),
+            style: IconButton.styleFrom(padding: const EdgeInsets.all(8)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildItemImageSection() {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            _getPriorityColor(widget.item.priority).withOpacity(0.1),
-            _getPriorityColor(widget.item.priority).withOpacity(0.05),
-          ],
-        ),
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: _getPriorityColor(widget.item.priority).withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          // Item Icon
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: _getPriorityColor(widget.item.priority).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _getPriorityColor(widget.item.priority).withOpacity(0.4),
-                width: 2,
-              ),
-            ),
-            child: Icon(
-              _getCategoryIcon('General'),
-              color: _getPriorityColor(widget.item.priority),
-              size: 60,
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Item Name
-          Text(
-            widget.item.name,
-            style: AppStyles.headingMedium.copyWith(
-              fontWeight: FontWeight.bold,
-              decoration: _isPurchased ? TextDecoration.lineThrough : null,
-            ),
-            textAlign: TextAlign.center,
-          ),
-
-          const SizedBox(height: 8),
-
-          // Item Description
-          if (widget.item.description != null &&
-              widget.item.description!.isNotEmpty)
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: AppColors.error),
+            const SizedBox(height: 16),
             Text(
-              widget.item.description!,
-              style: AppStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
+              'Error',
+              style: AppStyles.headingMedium.copyWith(color: AppColors.error),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage!,
+              style: AppStyles.bodyMedium,
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 24),
+            CustomButton(
+              text: 'Retry',
+              onPressed: _fetchItemDetails,
+              variant: ButtonVariant.primary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        if (!mounted) return const SizedBox.shrink();
+
+        return FadeTransition(
+          opacity: _fadeAnimation,
+          child: SlideTransition(
+            position: _slideAnimation,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+
+                  // Item Icon - Simplified
+                  Center(
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: _getPriorityColor(
+                          _currentItem?.priority ?? widget.item.priority,
+                        ).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Icon(
+                        _getCategoryIcon('General'),
+                        color: _getPriorityColor(
+                          _currentItem?.priority ?? widget.item.priority,
+                        ),
+                        size: 40,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Item Name - H1 Style
+                  Text(
+                    _currentItem?.name ?? widget.item.name,
+                    style: AppStyles.headingLarge.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 28,
+                      decoration:
+                          (_currentItem?.status ?? widget.item.status) ==
+                              ItemStatus.purchased
+                          ? TextDecoration.lineThrough
+                          : null,
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Status Badges - Pill-shaped Chips
+                  Row(
+                    children: [
+                      // Priority Badge
+                      _buildPillBadge(
+                        text: _getPriorityText(
+                          _currentItem?.priority ?? widget.item.priority,
+                        ),
+                        color: _getPriorityColor(
+                          _currentItem?.priority ?? widget.item.priority,
+                        ),
+                        icon: Icons.priority_high,
+                      ),
+                      const SizedBox(width: 8),
+                      // Category Badge
+                      _buildPillBadge(
+                        text: 'General',
+                        color: AppColors.info,
+                        icon: _getCategoryIcon('General'),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Item Information Section - Unified
+                  _buildUnifiedInfoSection(),
+
+                  const SizedBox(height: 32),
+
+                  // Notes Section (if exists)
+                  if (_currentItem?.description != null &&
+                      _currentItem!.description!.isNotEmpty) ...[
+                    _buildNotesSection(),
+                    const SizedBox(height: 32),
+                  ],
+
+                  // Action Buttons
+                  _buildActionButtons(),
+
+                  const SizedBox(height: 100), // Bottom padding
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPillBadge({
+    required String text,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: AppStyles.bodySmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildItemInfoSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Item Information',
-            style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+  Widget _buildUnifiedInfoSection() {
+    final isPurchased =
+        (_currentItem?.status ?? widget.item.status) == ItemStatus.purchased;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Item Information',
+          style: AppStyles.bodyLarge.copyWith(
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
           ),
+        ),
+        const SizedBox(height: 20),
 
-          const SizedBox(height: 16),
+        // Status Label - Integrated
+        _buildInfoRow(
+          icon: isPurchased ? Icons.check_circle : Icons.shopping_bag_outlined,
+          label: 'Status',
+          value: isPurchased ? 'Gifted' : 'Available',
+          iconColor: isPurchased ? AppColors.success : AppColors.warning,
+          valueColor: isPurchased ? AppColors.success : AppColors.warning,
+        ),
 
-          // Category
-          _buildInfoRow(
-            icon: Icons.category_outlined,
-            label: 'Category',
-            value: 'General',
-            iconColor: AppColors.info,
-          ),
+        const SizedBox(height: 16),
 
-          const SizedBox(height: 12),
+        // Category
+        _buildInfoRow(
+          icon: Icons.category_outlined,
+          label: 'Category',
+          value: 'General',
+          iconColor: AppColors.info,
+        ),
 
-          // Added Date
-          _buildInfoRow(
-            icon: Icons.calendar_today_outlined,
-            label: 'Added on',
-            value: _formatDate(widget.item.createdAt),
-            iconColor: AppColors.primary,
-          ),
-        ],
-      ),
+        const SizedBox(height: 16),
+
+        // Added Date
+        _buildInfoRow(
+          icon: Icons.calendar_today_outlined,
+          label: 'Added on',
+          value: _formatDate(_currentItem?.createdAt ?? widget.item.createdAt),
+          iconColor: AppColors.primary,
+        ),
+      ],
     );
   }
 
@@ -301,21 +378,20 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     required String label,
     required String value,
     required Color iconColor,
+    Color? valueColor,
   }) {
     return Row(
       children: [
         Container(
-          width: 40,
-          height: 40,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             color: iconColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: iconColor, size: 20),
+          child: Icon(icon, color: iconColor, size: 18),
         ),
-
-        const SizedBox(width: 16),
-
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,6 +400,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 label,
                 style: AppStyles.caption.copyWith(
                   color: AppColors.textTertiary,
+                  fontSize: 12,
                 ),
               ),
               const SizedBox(height: 2),
@@ -331,6 +408,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 value,
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w500,
+                  color: valueColor ?? AppColors.textPrimary,
                 ),
               ),
             ],
@@ -340,294 +418,133 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     );
   }
 
-  Widget _buildPriorityCategorySection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Priority & Category',
-            style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
-          ),
-
-          const SizedBox(height: 16),
-
-          Row(
-            children: [
-              // Priority
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _getPriorityColor(
-                      widget.item.priority,
-                    ).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _getPriorityColor(
-                        widget.item.priority,
-                      ).withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.priority_high,
-                        color: _getPriorityColor(widget.item.priority),
-                        size: 24,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Priority',
-                        style: AppStyles.caption.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _getPriorityText(widget.item.priority),
-                        style: AppStyles.bodyMedium.copyWith(
-                          color: _getPriorityColor(widget.item.priority),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // Category
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.info.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.info.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        _getCategoryIcon('General'),
-                        color: AppColors.info,
-                        size: 24,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Category',
-                        style: AppStyles.caption.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'General',
-                        style: AppStyles.bodyMedium.copyWith(
-                          color: AppColors.info,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPurchaseStatusSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _isPurchased
-              ? AppColors.success.withOpacity(0.3)
-              : AppColors.borderLight,
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                _isPurchased ? Icons.check_circle : Icons.shopping_bag_outlined,
-                color: _isPurchased ? AppColors.success : AppColors.warning,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Purchase Status',
-                style: AppStyles.bodyLarge.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Status Card
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: _isPurchased
-                  ? AppColors.success.withOpacity(0.15)
-                  : AppColors.warning.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _isPurchased
-                    ? AppColors.success.withOpacity(0.4)
-                    : AppColors.warning.withOpacity(0.4),
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: _isPurchased
-                      ? AppColors.success.withOpacity(0.1)
-                      : AppColors.warning.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  _isPurchased ? Icons.check_circle : Icons.schedule,
-                  color: _isPurchased ? AppColors.success : AppColors.warning,
-                  size: 28,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  _isPurchased ? 'Gifted' : 'Available',
-                  style: AppStyles.bodyLarge.copyWith(
-                    color: _isPurchased ? AppColors.success : AppColors.warning,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Action Button
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: _isPurchased
-                      ? AppColors.warning.withOpacity(0.3)
-                      : AppColors.success.withOpacity(0.4),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: CustomButton(
-              text: _isPurchased ? 'Mark as Available' : 'Mark as Gifted',
-              onPressed: _togglePurchaseStatus,
-              variant: ButtonVariant.primary,
-              customColor: _isPurchased ? AppColors.warning : AppColors.success,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildNotesSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight, width: 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.note_outlined, color: AppColors.info, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Notes',
-                style: AppStyles.bodyLarge.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.info.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.info.withOpacity(0.2),
-                width: 1,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.note_outlined, color: AppColors.info, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              'Notes',
+              style: AppStyles.bodyLarge.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
               ),
             ),
-            child: Text(
-              widget.item.description ?? 'No additional notes',
-              style: AppStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.info.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            _currentItem!.description!,
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
   Widget _buildActionButtons() {
+    final isPurchased =
+        (_currentItem?.status ?? widget.item.status) == ItemStatus.purchased;
+
     return Column(
       children: [
-        // Share Button
-        CustomButton(
-          text: 'Share Item',
-          onPressed: _shareItem,
-          variant: ButtonVariant.outline,
-          customColor: AppColors.secondary,
-          icon: Icons.share_outlined,
+        // Primary Button - Mark as Gifted/Available
+        SizedBox(
+          width: double.infinity,
+          child: CustomButton(
+            text: isPurchased ? 'Mark as Available' : 'Mark as Gifted',
+            onPressed: _togglePurchaseStatus,
+            variant: ButtonVariant.primary,
+            customColor: isPurchased ? AppColors.warning : AppColors.success,
+          ),
         ),
 
         const SizedBox(height: 12),
 
-        // Delete Button
-        CustomButton(
-          text: 'Delete Item',
-          onPressed: _deleteItem,
-          variant: ButtonVariant.outline,
-          customColor: AppColors.error,
-          icon: Icons.delete_outline,
+        // Outlined Buttons
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _shareItem,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(
+                    color: AppColors.secondary.withOpacity(0.3),
+                    width: 1,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.share_outlined,
+                      size: 18,
+                      color: AppColors.secondary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Share',
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.secondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _deleteItem,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: BorderSide(
+                    color: AppColors.error.withOpacity(0.3),
+                    width: 1,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.delete_outline,
+                      size: 18,
+                      color: AppColors.error,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Delete',
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -695,18 +612,28 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
   // Action Handlers
   void _togglePurchaseStatus() {
+    // TODO: Implement API call to update item status
+    final newStatus =
+        (_currentItem?.status ?? widget.item.status) == ItemStatus.purchased
+        ? ItemStatus.desired
+        : ItemStatus.purchased;
+
     setState(() {
-      _isPurchased = !_isPurchased;
+      _currentItem =
+          _currentItem?.copyWith(status: newStatus) ??
+          widget.item.copyWith(status: newStatus);
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          _isPurchased
+          newStatus == ItemStatus.purchased
               ? 'Wish marked as gifted! 🎉'
               : 'Wish marked as available! 📝',
         ),
-        backgroundColor: _isPurchased ? AppColors.success : AppColors.info,
+        backgroundColor: newStatus == ItemStatus.purchased
+            ? AppColors.success
+            : AppColors.info,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -739,7 +666,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       builder: (context) => AlertDialog(
         title: Text('Delete Item'),
         content: Text(
-          'Are you sure you want to delete "${widget.item.name}"? This action cannot be undone.',
+          'Are you sure you want to delete "${_currentItem?.name ?? widget.item.name}"? This action cannot be undone.',
         ),
         actions: [
           TextButton(

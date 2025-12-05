@@ -136,7 +136,11 @@ class AuthRepository extends ChangeNotifier {
       final loginData = {'username': username, 'password': password};
       final response = await _apiService.post('/auth/login', data: loginData);
       return response;
+    } on ApiException {
+      // Re-throw ApiException to preserve error details
+      rethrow;
     } catch (e) {
+      debugPrint('Unexpected login error: $e');
       throw Exception('Login failed. Please try again.');
     }
   }
@@ -177,12 +181,18 @@ class AuthRepository extends ChangeNotifier {
         notifyListeners();
         return true;
       } else {
-        // Login failed
+        // Login failed - check for error message in response
+        debugPrint('Login failed - response: $response');
         return false;
       }
+    } on ApiException catch (e) {
+      // Re-throw ApiException so login screen can show proper error message
+      debugPrint('Login ApiException: ${e.message}');
+      rethrow;
     } catch (e) {
-      // Handle any errors
-      return false;
+      // Handle any unexpected errors
+      debugPrint('Login unexpected error: $e');
+      throw Exception('Login failed. Please try again.');
     }
   }
 

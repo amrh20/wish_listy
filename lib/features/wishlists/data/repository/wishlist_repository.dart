@@ -265,6 +265,53 @@ class WishlistRepository {
     }
   }
 
+  /// Get a specific item by ID
+  ///
+  /// Uses API:
+  /// GET /api/items/:id
+  Future<Map<String, dynamic>> getItemById(String itemId) async {
+    try {
+      if (itemId.isEmpty) {
+        throw Exception('Item ID cannot be empty');
+      }
+
+      debugPrint('📥 WishlistRepository: Getting item by ID: $itemId');
+      debugPrint('   Endpoint: GET /items/$itemId');
+
+      final response = await _apiService.get('/items/$itemId');
+      debugPrint('📥 WishlistRepository: Response received: $response');
+      debugPrint('   Response type: ${response.runtimeType}');
+
+      // Validate response
+      if (response is! Map<String, dynamic>) {
+        throw Exception('Invalid response format from API');
+      }
+
+      debugPrint('   Response keys: ${response.keys.toList()}');
+
+      // API might return: {success: true, item: {...}} or {success: true, data: {...}} or directly the item object
+      final itemData =
+          response['item'] as Map<String, dynamic>? ??
+          response['data'] as Map<String, dynamic>? ??
+          response;
+
+      if (itemData.isEmpty) {
+        throw Exception('Item data not found in response');
+      }
+
+      debugPrint('✅ WishlistRepository: Parsed item data');
+      debugPrint('   Item keys: ${itemData.keys.toList()}');
+      return itemData;
+    } on ApiException catch (e) {
+      debugPrint('❌ WishlistRepository: ApiException: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('❌ WishlistRepository: Unexpected get item error: $e');
+      debugPrint('   Error type: ${e.runtimeType}');
+      throw Exception('Failed to load item. Please try again.');
+    }
+  }
+
   /// Get all items for a specific wishlist
   ///
   /// Uses API:

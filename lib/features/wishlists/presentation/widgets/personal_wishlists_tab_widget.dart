@@ -6,7 +6,7 @@ import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'wishlist_card_widget.dart';
 
-/// Personal wishlists tab widget
+/// Personal wishlists tab widget with trendy stacked cards scroll effect
 class PersonalWishlistsTabWidget extends StatelessWidget {
   final List<WishlistSummary> personalWishlists;
   final Function(WishlistSummary) onWishlistTap;
@@ -29,35 +29,27 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context);
 
+    if (personalWishlists.isEmpty) {
+      return _buildEmptyState(localization);
+    }
+
     return RefreshIndicator(
       onRefresh: onRefresh,
       color: AppColors.secondary,
-      child: SingleChildScrollView(
+      child: ListView.separated(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-
-            const SizedBox(height: 12),
-            if (personalWishlists.isEmpty)
-              _buildEmptyState(localization)
-            else
-              ...personalWishlists
-                  .map(
-                    (wishlist) => WishlistCardWidget(
-                      wishlist: wishlist,
-                      isEvent: false,
-                      onTap: () => onWishlistTap(wishlist),
-                      onAddItem: () => onAddItem(wishlist),
-                      onMenuAction: (action) => onMenuAction(action, wishlist),
-                    ),
-                  )
-                  .toList(),
-
-            const SizedBox(height: 100), // Bottom padding for FAB
-          ],
-        ),
+        itemCount: personalWishlists.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 16),
+        itemBuilder: (context, index) {
+          final wishlist = personalWishlists[index];
+          return WishlistCardWidget(
+            wishlist: wishlist,
+            isEvent: false,
+            onTap: () => onWishlistTap(wishlist),
+            onAddItem: () => onAddItem(wishlist),
+            onMenuAction: (action) => onMenuAction(action, wishlist),
+          );
+        },
       ),
     );
   }
