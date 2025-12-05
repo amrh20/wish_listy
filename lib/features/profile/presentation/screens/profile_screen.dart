@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
-import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/widgets/unified_page_header.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
@@ -47,33 +45,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   );
 
   String _currentLanguage = 'en';
-
-  final List<Achievement> _achievements = [
-    Achievement(
-      id: '1',
-      title: 'First Wishlist',
-      description: 'Created your first wishlist',
-      icon: Icons.favorite,
-      color: AppColors.primary,
-      unlockedAt: DateTime.now().subtract(Duration(days: 30)),
-    ),
-    Achievement(
-      id: '2',
-      title: 'Social Butterfly',
-      description: 'Connected with 10 friends',
-      icon: Icons.people,
-      color: AppColors.secondary,
-      unlockedAt: DateTime.now().subtract(Duration(days: 15)),
-    ),
-    Achievement(
-      id: '3',
-      title: 'Gift Giver',
-      description: 'Gave 5 gifts to friends',
-      icon: Icons.card_giftcard,
-      color: AppColors.accent,
-      unlockedAt: DateTime.now().subtract(Duration(days: 7)),
-    ),
-  ];
 
   @override
   void initState() {
@@ -180,20 +151,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                                         // Stats Cards
                                         _buildStatsSection(),
                                         const SizedBox(height: 16),
-                                        // Quick Actions
-                                        _buildQuickActions(),
-                                        const SizedBox(height: 16),
-                                        // Achievements
-                                        _buildAchievements(),
-                                        const SizedBox(height: 16),
+
                                         // Account Settings
                                         _buildAccountSettings(),
                                         const SizedBox(height: 16),
                                         // App Settings
                                         _buildAppSettings(),
-                                        const SizedBox(height: 16),
-                                        // Support & About
-                                        _buildSupportSection(),
                                         const SizedBox(height: 80),
                                       ],
                                     ),
@@ -398,356 +361,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildQuickActions() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.surface,
-            AppColors.surfaceVariant.withOpacity(0.5),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow.withOpacity(0.06),
-            offset: const Offset(0, 4),
-            blurRadius: 20,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.secondary, AppColors.secondaryLight],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.flash_on, color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Quick Actions',
-                style: AppStyles.headingSmall.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          Row(
-            children: [
-              Expanded(
-                child: _buildActionButton(
-                  icon: Icons.edit_outlined,
-                  label: 'Edit Profile',
-                  onTap: _editProfile,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildActionButton(
-                  icon: Icons.qr_code_rounded,
-                  label: 'QR Code',
-                  onTap: _showQRCode,
-                  color: AppColors.secondary,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          Row(
-            children: [
-              Expanded(
-                child: _buildActionButton(
-                  icon: Icons.backup_outlined,
-                  label: 'Backup Data',
-                  onTap: _backupData,
-                  color: AppColors.info,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildActionButton(
-                  icon: Icons.analytics_outlined,
-                  label: 'View Stats',
-                  onTap: _viewDetailedStats,
-                  color: AppColors.accent,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    required Color color,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [color.withOpacity(0.05), color.withOpacity(0.1)],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.2), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.08),
-              offset: const Offset(0, 4),
-              blurRadius: 12,
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [color.withOpacity(0.15), color.withOpacity(0.25)],
-                ),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: color.withOpacity(0.3), width: 1),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: AppStyles.bodySmall.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAchievements() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.surface,
-            AppColors.surfaceVariant.withOpacity(0.3),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow.withOpacity(0.06),
-            offset: const Offset(0, 4),
-            blurRadius: 20,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.accent, AppColors.accentLight],
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      Icons.emoji_events,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Achievements',
-                    style: AppStyles.headingSmall.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.primary, AppColors.primaryAccent],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: TextButton(
-                  onPressed: _viewAllAchievements,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                  ),
-                  child: Text(
-                    'View All',
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          Column(
-            children: _achievements.take(3).map((achievement) {
-              return _buildAchievementItem(achievement);
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAchievementItem(Achievement achievement) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            achievement.color.withOpacity(0.08),
-            achievement.color.withOpacity(0.15),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: achievement.color.withOpacity(0.25),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: achievement.color.withOpacity(0.1),
-            offset: const Offset(0, 4),
-            blurRadius: 12,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [achievement.color, achievement.color.withOpacity(0.8)],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: achievement.color.withOpacity(0.3),
-                  offset: const Offset(0, 4),
-                  blurRadius: 12,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: Icon(achievement.icon, color: Colors.white, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  achievement.title,
-                  style: AppStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  achievement.description,
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.schedule,
-                      size: 14,
-                      color: AppColors.textTertiary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _formatAchievementDate(achievement.unlockedAt),
-                      style: AppStyles.bodySmall.copyWith(
-                        color: AppColors.textTertiary,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: achievement.color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(Icons.check_circle, color: achievement.color, size: 20),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildAccountSettings() {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -820,14 +433,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             color: AppColors.accent,
           ),
 
-          _buildSettingItem(
-            icon: Icons.block_outlined,
-            title: 'Blocked Users',
-            subtitle: 'Manage blocked friends',
-            onTap: _blockedUsers,
-            showDivider: false,
-            color: AppColors.error,
-          ),
+          // Logout button
+          _buildLogoutItem(),
         ],
       ),
     );
@@ -894,106 +501,9 @@ class _ProfileScreenState extends State<ProfileScreen>
             title: 'Language',
             subtitle: _currentLanguage == 'en' ? 'English' : 'العربية',
             onTap: _languageSettings,
+            showDivider: false,
             color: AppColors.teal,
           ),
-
-          _buildSettingItem(
-            icon: Icons.storage_outlined,
-            title: 'Storage',
-            subtitle: 'Cache, offline data',
-            onTap: _storageSettings,
-            showDivider: false,
-            color: AppColors.orange,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSupportSection() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.surface,
-            AppColors.surfaceVariant.withOpacity(0.2),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow.withOpacity(0.06),
-            offset: const Offset(0, 4),
-            blurRadius: 20,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.pink, AppColors.pinkLight],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.support_agent, color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Support & About',
-                style: AppStyles.headingSmall.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          _buildSettingItem(
-            icon: Icons.help_outline,
-            title: 'Help & FAQ',
-            subtitle: 'Get answers to common questions',
-            onTap: _helpAndFAQ,
-            color: AppColors.info,
-          ),
-
-          _buildSettingItem(
-            icon: Icons.feedback_outlined,
-            title: 'Send Feedback',
-            subtitle: 'Report bugs or suggest features',
-            onTap: _sendFeedback,
-            color: AppColors.success,
-          ),
-
-          _buildSettingItem(
-            icon: Icons.star_outline,
-            title: 'Rate WishListy',
-            subtitle: 'Rate us on the app store',
-            onTap: _rateApp,
-            color: AppColors.warning,
-          ),
-
-          _buildSettingItem(
-            icon: Icons.info_outline,
-            title: 'About',
-            subtitle: 'Version 1.0.0',
-            onTap: _aboutApp,
-            color: AppColors.secondary,
-          ),
-
-          const SizedBox(height: 8),
-
-          // Logout button
-          _buildLogoutItem(),
         ],
       ),
     );
@@ -1005,55 +515,77 @@ class _ProfileScreenState extends State<ProfileScreen>
       listen: false,
     );
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.transparent,
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        leading: Container(
-          width: 44,
-          height: 44,
+    return Column(
+      children: [
+        Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.error.withOpacity(0.1),
-                AppColors.error.withOpacity(0.2),
-              ],
-            ),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.error.withOpacity(0.3),
-              width: 1,
+            color: Colors.transparent,
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 4,
+              vertical: 8,
+            ),
+            leading: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.error.withOpacity(0.1),
+                    AppColors.error.withOpacity(0.2),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.error.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                Icons.logout_outlined,
+                color: AppColors.error,
+                size: 22,
+              ),
+            ),
+            title: Text(
+              localization.translate('auth.logout'),
+              style: AppStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.error,
+              ),
+            ),
+            subtitle: Text(
+              'Sign out of your account',
+              style: AppStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            trailing: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.textTertiary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: AppColors.textTertiary,
+              ),
+            ),
+            onTap: () {
+              _confirmLogout(localization);
+            },
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: Icon(Icons.logout_outlined, color: AppColors.error, size: 22),
         ),
-        title: Text(
-          localization.translate('auth.logout') ?? 'Logout',
-          style: AppStyles.bodyMedium.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.error,
-          ),
-        ),
-        subtitle: Text(
-          'Sign out of your account',
-          style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
-        ),
-        trailing: Icon(
-          Icons.arrow_forward_ios_rounded,
-          size: 16,
-          color: AppColors.error.withOpacity(0.5),
-        ),
-        onTap: () {
-          _confirmLogout(localization);
-        },
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
+      ],
     );
   }
 
@@ -1142,114 +674,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  // Helper Methods
-
-  String _formatAchievementDate(DateTime date) {
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.year}';
-  }
-
   // Action Handlers
-
-  void _showProfileMenu() {
-    final localization = Provider.of<LocalizationService>(
-      context,
-      listen: false,
-    );
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.textTertiary.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            // Menu items
-            _buildMenuOption(
-              icon: Icons.share_outlined,
-              title:
-                  localization.translate('profile.shareProfile') ??
-                  'Share Profile',
-              onTap: () {
-                Navigator.pop(context);
-                _shareProfile();
-              },
-            ),
-            _buildMenuOption(
-              icon: Icons.logout_outlined,
-              title: localization.translate('auth.logout') ?? 'Logout',
-              onTap: () {
-                Navigator.pop(context);
-                _confirmLogout(localization);
-              },
-              isDestructive: true,
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuOption({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    bool isDestructive = false,
-  }) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isDestructive ? AppColors.error : AppColors.textPrimary,
-      ),
-      title: Text(
-        title,
-        style: AppStyles.bodyMedium.copyWith(
-          color: isDestructive ? AppColors.error : AppColors.textPrimary,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-    );
-  }
-
-  void _shareProfile() {
-    // Share profile functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Share profile functionality coming soon'),
-        backgroundColor: AppColors.info,
-      ),
-    );
-  }
 
   void _confirmLogout(LocalizationService localization) {
     showDialog(
@@ -1258,19 +683,18 @@ class _ProfileScreenState extends State<ProfileScreen>
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          localization.translate('auth.logout') ?? 'Logout',
+          localization.translate('auth.logout'),
           style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          localization.translate('auth.logoutConfirmation') ??
-              'Are you sure you want to logout?',
+          localization.translate('auth.logoutConfirmation'),
           style: AppStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              localization.translate('app.cancel') ?? 'Cancel',
+              localization.translate('app.cancel'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -1282,7 +706,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               _logout();
             },
             child: Text(
-              localization.translate('auth.logout') ?? 'Logout',
+              localization.translate('auth.logout'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.error,
                 fontWeight: FontWeight.w600,
@@ -1330,76 +754,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  void _showQRCode() {
-    // Show QR code for profile
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('My QR Code'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.qr_code,
-                size: 100,
-                color: AppColors.textTertiary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Share this QR code with friends to connect instantly!',
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
-          ),
-          CustomButton(
-            text: 'Share',
-            onPressed: () {
-              Navigator.pop(context);
-              // Share QR code
-            },
-            variant: ButtonVariant.primary,
-            size: ButtonSize.small,
-            fullWidth: false,
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _backupData() {
-    // Backup data functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Data backup initiated...'),
-        backgroundColor: AppColors.info,
-      ),
-    );
-  }
-
-  void _viewDetailedStats() {
-    // View detailed statistics
-  }
-
-  void _viewAllAchievements() {
-    // View all achievements
-  }
-
   void _editPersonalInfo() {
     Navigator.pushNamed(
       context,
@@ -1439,26 +793,6 @@ class _ProfileScreenState extends State<ProfileScreen>
         'eventInvitations': true,
         'giftNotifications': true,
       },
-    );
-  }
-
-  void _blockedUsers() {
-    Navigator.pushNamed(
-      context,
-      AppRoutes.blockedUsers,
-      arguments: [
-        // Mock blocked users data
-        {
-          'name': 'John Doe',
-          'email': 'john@example.com',
-          'blockedDate': DateTime.now().subtract(Duration(days: 7)),
-        },
-        {
-          'name': 'Jane Smith',
-          'email': 'jane@example.com',
-          'blockedDate': DateTime.now().subtract(Duration(days: 3)),
-        },
-      ],
     );
   }
 
@@ -1522,26 +856,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     });
   }
 
-  void _storageSettings() {
-    // Storage settings
-  }
-
-  void _helpAndFAQ() {
-    // Help and FAQ
-  }
-
-  void _sendFeedback() {
-    // Send feedback
-  }
-
-  void _rateApp() {
-    // Rate app
-  }
-
-  void _aboutApp() {
-    // About app
-  }
-
   Future<void> _refreshProfile() async {
     // Refresh profile data
     await Future.delayed(const Duration(seconds: 1));
@@ -1593,24 +907,6 @@ class PrivacySettings {
     required this.showOnlineStatus,
     required this.allowFriendRequests,
     required this.showWishlistActivity,
-  });
-}
-
-class Achievement {
-  final String id;
-  final String title;
-  final String description;
-  final IconData icon;
-  final Color color;
-  final DateTime unlockedAt;
-
-  Achievement({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.icon,
-    required this.color,
-    required this.unlockedAt,
   });
 }
 
