@@ -88,9 +88,23 @@ class WishlistRepository {
   /// Get a specific wishlist by ID
   Future<Map<String, dynamic>> getWishlistById(String wishlistId) async {
     try {
+      if (wishlistId.isEmpty) {
+        throw Exception('Wishlist ID cannot be empty');
+      }
+
       debugPrint('📥 WishlistRepository: Getting wishlist by ID: $wishlistId');
+      debugPrint('   Endpoint: GET /wishlists/$wishlistId');
+
       final response = await _apiService.get('/wishlists/$wishlistId');
       debugPrint('📥 WishlistRepository: Response received: $response');
+      debugPrint('   Response type: ${response.runtimeType}');
+
+      // Validate response
+      if (response is! Map<String, dynamic>) {
+        throw Exception('Invalid response format from API');
+      }
+
+      debugPrint('   Response keys: ${response.keys.toList()}');
 
       // API might return: {success: true, wishlist: {...}} or {success: true, data: {...}} or directly the wishlist object
       final wishlistData =
@@ -98,12 +112,19 @@ class WishlistRepository {
           response['data'] as Map<String, dynamic>? ??
           response;
 
+      if (wishlistData.isEmpty) {
+        throw Exception('Wishlist data not found in response');
+      }
+
       debugPrint('✅ WishlistRepository: Parsed wishlist data');
+      debugPrint('   Wishlist keys: ${wishlistData.keys.toList()}');
       return wishlistData;
-    } on ApiException {
+    } on ApiException catch (e) {
+      debugPrint('❌ WishlistRepository: ApiException: ${e.message}');
       rethrow;
     } catch (e) {
-      debugPrint('Unexpected get wishlist error: $e');
+      debugPrint('❌ WishlistRepository: Unexpected get wishlist error: $e');
+      debugPrint('   Error type: ${e.runtimeType}');
       throw Exception('Failed to load wishlist. Please try again.');
     }
   }
@@ -257,8 +278,7 @@ class WishlistRepository {
       );
       debugPrint('   Endpoint: GET /api/items/wishlist/$wishlistId');
 
-      final response =
-          await _apiService.get('/items/wishlist/$wishlistId');
+      final response = await _apiService.get('/items/wishlist/$wishlistId');
 
       debugPrint('📥 WishlistRepository: Response received: $response');
 
@@ -359,7 +379,7 @@ class WishlistRepository {
       debugPrint('📥 WishlistRepository: Response received: $response');
       debugPrint('   Response type: ${response.runtimeType}');
       debugPrint('✅ WishlistRepository: Item updated successfully');
-      
+
       return response;
     } on ApiException catch (e) {
       // Re-throw ApiException to preserve error details

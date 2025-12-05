@@ -148,7 +148,8 @@ class _FriendsScreenState extends State<FriendsScreen>
                   // Unified Page Header
                   UnifiedPageHeader(
                     title: localization.translate('ui.friends'),
-                    subtitle: '${_friends.length} ${localization.translate('friends.friends')}',
+                    subtitle:
+                        '${_friends.length} ${localization.translate('friends.friends')}',
                     showSearch: true,
                     searchHint: localization.translate('ui.searchFriends'),
                     searchController: _searchController,
@@ -232,16 +233,28 @@ class _FriendsScreenState extends State<FriendsScreen>
       vectorType: BottomSheetVectorType.settings,
       children: [
         ListTile(
-          leading: Icon(Icons.contact_page_outlined, color: AppColors.textPrimary),
-          title: Text('Import Contacts', style: TextStyle(color: AppColors.textPrimary)),
+          leading: Icon(
+            Icons.contact_page_outlined,
+            color: AppColors.textPrimary,
+          ),
+          title: Text(
+            'Import Contacts',
+            style: TextStyle(color: AppColors.textPrimary),
+          ),
           onTap: () {
             Navigator.pop(context);
             _importContacts();
           },
         ),
         ListTile(
-          leading: Icon(Icons.privacy_tip_outlined, color: AppColors.textPrimary),
-          title: Text('Privacy Settings', style: TextStyle(color: AppColors.textPrimary)),
+          leading: Icon(
+            Icons.privacy_tip_outlined,
+            color: AppColors.textPrimary,
+          ),
+          title: Text(
+            'Privacy Settings',
+            style: TextStyle(color: AppColors.textPrimary),
+          ),
           onTap: () {
             Navigator.pop(context);
             _openPrivacySettings();

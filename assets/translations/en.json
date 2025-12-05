@@ -39,6 +39,8 @@
     "profile": "Profile"
   },
   "auth": {
+    "logoutConfirmation": "Are you sure you want to logout?",
+    "logout": "Logout",
     "login": "Login",
     "signup": "Sign Up",
     "forgotPassword": "Forgot Password?",

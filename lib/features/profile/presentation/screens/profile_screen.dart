@@ -9,6 +9,7 @@ import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/widgets/unified_page_header.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -151,17 +152,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                   UnifiedPageHeader(
                     title: localization.translate('navigation.profile'),
                     subtitle: _userProfile.name,
-                    showSearch: true,
-                    searchHint: 'Search settings...',
-                    onSearchTap: () {
-                      // Search functionality
-                    },
-                    actions: [
-                      HeaderAction(
-                        icon: Icons.edit_outlined,
-                        onTap: _editProfile,
-                      ),
-                    ],
+                    showSearch: false,
+                    actions: [],
                   ),
 
                   // Profile Content in rounded container
@@ -995,10 +987,72 @@ class _ProfileScreenState extends State<ProfileScreen>
             title: 'About',
             subtitle: 'Version 1.0.0',
             onTap: _aboutApp,
-            showDivider: false,
             color: AppColors.secondary,
           ),
+
+          const SizedBox(height: 8),
+
+          // Logout button
+          _buildLogoutItem(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutItem() {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.transparent,
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        leading: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.error.withOpacity(0.1),
+                AppColors.error.withOpacity(0.2),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.error.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Icon(Icons.logout_outlined, color: AppColors.error, size: 22),
+        ),
+        title: Text(
+          localization.translate('auth.logout') ?? 'Logout',
+          style: AppStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.error,
+          ),
+        ),
+        subtitle: Text(
+          'Sign out of your account',
+          style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios_rounded,
+          size: 16,
+          color: AppColors.error.withOpacity(0.5),
+        ),
+        onTap: () {
+          _confirmLogout(localization);
+        },
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -1109,6 +1163,163 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   // Action Handlers
+
+  void _showProfileMenu() {
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.textTertiary.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Menu items
+            _buildMenuOption(
+              icon: Icons.share_outlined,
+              title:
+                  localization.translate('profile.shareProfile') ??
+                  'Share Profile',
+              onTap: () {
+                Navigator.pop(context);
+                _shareProfile();
+              },
+            ),
+            _buildMenuOption(
+              icon: Icons.logout_outlined,
+              title: localization.translate('auth.logout') ?? 'Logout',
+              onTap: () {
+                Navigator.pop(context);
+                _confirmLogout(localization);
+              },
+              isDestructive: true,
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuOption({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isDestructive ? AppColors.error : AppColors.textPrimary,
+      ),
+      title: Text(
+        title,
+        style: AppStyles.bodyMedium.copyWith(
+          color: isDestructive ? AppColors.error : AppColors.textPrimary,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+    );
+  }
+
+  void _shareProfile() {
+    // Share profile functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Share profile functionality coming soon'),
+        backgroundColor: AppColors.info,
+      ),
+    );
+  }
+
+  void _confirmLogout(LocalizationService localization) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          localization.translate('auth.logout') ?? 'Logout',
+          style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          localization.translate('auth.logoutConfirmation') ??
+              'Are you sure you want to logout?',
+          style: AppStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              localization.translate('app.cancel') ?? 'Cancel',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _logout();
+            },
+            child: Text(
+              localization.translate('auth.logout') ?? 'Logout',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _logout() async {
+    try {
+      final authRepository = Provider.of<AuthRepository>(
+        context,
+        listen: false,
+      );
+      await authRepository.logout();
+
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.login,
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error logging out: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
 
   void _editProfile() {
     // Navigate to edit profile screen

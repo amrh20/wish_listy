@@ -135,114 +135,141 @@ class _CustomTextFieldState extends State<CustomTextField>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Field Container
+        // Field Container with white background and shadow
         AnimatedBuilder(
           animation: _animationController,
           builder: (context, child) {
-            return Focus(
-              onFocusChange: _onFocusChanged,
-              child: TextFormField(
-                controller: widget.controller,
-                obscureText: widget.obscureText,
-                keyboardType: widget.keyboardType,
-                onChanged: widget.onChanged,
-                onTap: widget.onTap,
-                readOnly: widget.readOnly,
-                enabled: widget.enabled,
-                maxLines: widget.maxLines,
-                maxLength: widget.maxLength,
-                inputFormatters: widget.inputFormatters,
-                onFieldSubmitted: (_) => _validateField(),
-                style: AppStyles.bodyLarge.copyWith(
-                  color: widget.enabled
-                      ? AppColors.textPrimary
-                      : AppColors.textTertiary,
-                ),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: Colors.transparent,
-
-                  // Border styles - No borders
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide.none,
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: displayError != null
-                        ? const BorderSide(color: AppColors.error, width: 1)
-                        : BorderSide.none,
-                  ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: displayError != null
-                        ? const BorderSide(color: AppColors.error, width: 1.5)
-                        : BorderSide.none,
-                  ),
-
-                  // Content padding
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: widget.maxLines == 1 ? 16 : 12,
-                  ),
-
-                  // Label
-                  labelText: widget.label + (widget.isRequired ? ' *' : ''),
-                  labelStyle: AppStyles.bodyMedium.copyWith(
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
                     color: _isFocused
-                        ? (displayError != null
-                              ? AppColors.error
-                              : AppColors.primary)
-                        : AppColors.textSecondary,
-                    fontWeight: _isFocused
-                        ? FontWeight.w500
-                        : FontWeight.normal,
+                        ? AppColors.primary.withOpacity(0.1)
+                        : Colors.black.withOpacity(0.05),
+                    offset: const Offset(0, 2),
+                    blurRadius: _isFocused ? 8 : 4,
+                    spreadRadius: 0,
                   ),
-                  floatingLabelStyle: AppStyles.bodySmall.copyWith(
-                    color: _isFocused
-                        ? (displayError != null
-                              ? AppColors.error
-                              : AppColors.primary)
-                        : AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
+                ],
+              ),
+              child: Focus(
+                onFocusChange: _onFocusChanged,
+                child: TextFormField(
+                  controller: widget.controller,
+                  obscureText: widget.obscureText,
+                  keyboardType: widget.keyboardType,
+                  onChanged: widget.onChanged,
+                  onTap: widget.onTap,
+                  readOnly: widget.readOnly,
+                  enabled: widget.enabled,
+                  maxLines: widget.maxLines,
+                  maxLength: widget.maxLength,
+                  inputFormatters: widget.inputFormatters,
+                  onFieldSubmitted: (_) => _validateField(),
+                  style: AppStyles.bodyLarge.copyWith(
+                    color: widget.enabled
+                        ? AppColors.textPrimary
+                        : AppColors.textTertiary,
                   ),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
 
-                  // Hint
-                  hintText: widget.hint,
-                  hintStyle: AppStyles.bodyMedium.copyWith(
-                    color: AppColors.textTertiary,
+                    // Border styles - White background with subtle border
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: AppColors.border.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: AppColors.border.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: AppColors.primary,
+                        width: 2,
+                      ),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(
+                        color: AppColors.error,
+                        width: 1,
+                      ),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(
+                        color: AppColors.error,
+                        width: 2,
+                      ),
+                    ),
+
+                    // Content padding
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: widget.maxLines == 1 ? 16 : 12,
+                    ),
+
+                    // Label
+                    labelText: widget.label + (widget.isRequired ? ' *' : ''),
+                    labelStyle: AppStyles.bodyMedium.copyWith(
+                      color: _isFocused
+                          ? (displayError != null
+                                ? AppColors.error
+                                : AppColors.primary)
+                          : AppColors.textSecondary,
+                      fontWeight: _isFocused
+                          ? FontWeight.w500
+                          : FontWeight.normal,
+                    ),
+                    floatingLabelStyle: AppStyles.bodySmall.copyWith(
+                      color: _isFocused
+                          ? (displayError != null
+                                ? AppColors.error
+                                : AppColors.primary)
+                          : AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+
+                    // Hint
+                    hintText: widget.hint,
+                    hintStyle: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+
+                    // Icons
+                    prefixIcon: widget.prefixIcon != null
+                        ? Icon(
+                            widget.prefixIcon,
+                            color: _isFocused
+                                ? (displayError != null
+                                      ? AppColors.error
+                                      : AppColors.primary)
+                                : AppColors.textTertiary,
+                            size: 20,
+                          )
+                        : null,
+                    suffixIcon: widget.suffixIcon,
+
+                    // Counter
+                    counterStyle: AppStyles.caption.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+
+                    // Error text
+                    errorText: null, // We handle error display separately
+                    errorStyle: const TextStyle(height: 0),
                   ),
-
-                  // Icons
-                  prefixIcon: widget.prefixIcon != null
-                      ? Icon(
-                          widget.prefixIcon,
-                          color: _isFocused
-                              ? (displayError != null
-                                    ? AppColors.error
-                                    : AppColors.primary)
-                              : AppColors.textTertiary,
-                          size: 20,
-                        )
-                      : null,
-                  suffixIcon: widget.suffixIcon,
-
-                  // Counter
-                  counterStyle: AppStyles.caption.copyWith(
-                    color: AppColors.textTertiary,
-                  ),
-
-                  // Error text
-                  errorText: null, // We handle error display separately
-                  errorStyle: const TextStyle(height: 0),
                 ),
               ),
             );

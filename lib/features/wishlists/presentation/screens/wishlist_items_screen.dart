@@ -55,13 +55,39 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
   @override
   void initState() {
     super.initState();
+    debugPrint('🚀 WishlistItemsScreen: initState called');
+    debugPrint('   wishlistId: ${widget.wishlistId}');
+    debugPrint('   wishlistName: ${widget.wishlistName}');
+    debugPrint('   totalItems: ${widget.totalItems}');
+    debugPrint('   purchasedItems: ${widget.purchasedItems}');
+    debugPrint('   isFriendWishlist: ${widget.isFriendWishlist}');
+
     _initializeAnimations();
     _startAnimations();
+
+    debugPrint('🔄 WishlistItemsScreen: About to call _loadWishlistDetails');
     _loadWishlistDetails();
   }
 
   /// Load wishlist details and items from API
   Future<void> _loadWishlistDetails() async {
+    debugPrint('⭐ WishlistItemsScreen: _loadWishlistDetails STARTED');
+    debugPrint('   Current thread: ${DateTime.now()}');
+
+    // Validate wishlistId before making API call
+    if (widget.wishlistId.isEmpty) {
+      debugPrint('❌ WishlistItemsScreen: Empty wishlistId provided');
+      setState(() {
+        _errorMessage = 'Invalid wishlist ID. Please try again.';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    debugPrint('✅ WishlistItemsScreen: wishlistId validation passed');
+    debugPrint('   wishlistId: ${widget.wishlistId}');
+    debugPrint('   wishlistId length: ${widget.wishlistId.length}');
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -70,10 +96,14 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
       _purchasedItems = widget.purchasedItems;
     });
 
+    debugPrint('✅ WishlistItemsScreen: setState completed, _isLoading = true');
+
     try {
-      debugPrint(
-        '📡 WishlistItemsScreen: Loading wishlist: ${widget.wishlistId}',
-      );
+      debugPrint('📡 WishlistItemsScreen: About to call getWishlistById API');
+      debugPrint('   Wishlist ID: ${widget.wishlistId}');
+      debugPrint('   Wishlist Name: ${widget.wishlistName}');
+      debugPrint('   Total Items: ${widget.totalItems}');
+      debugPrint('   Purchased Items: ${widget.purchasedItems}');
 
       // Call API to get wishlist details
       final wishlistData = await _wishlistRepository.getWishlistById(
@@ -83,16 +113,61 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
       debugPrint(
         '📡 WishlistItemsScreen: Received wishlist data: $wishlistData',
       );
+      debugPrint('   WishlistData type: ${wishlistData.runtimeType}');
+      debugPrint('   WishlistData keys: ${wishlistData.keys.toList()}');
+
+      // Validate response
+      if (wishlistData.isEmpty) {
+        debugPrint('❌ WishlistItemsScreen: Empty wishlistData');
+        throw Exception('Empty response from API');
+      }
 
       // Handle both direct fields and nested wishlist object
-      final data =
-          wishlistData['wishlist'] as Map<String, dynamic>? ?? wishlistData;
+      // The repository already extracts the wishlist object, so we use it directly
+      // But also check if it's wrapped in 'wishlist' or 'data' keys
+      Map<String, dynamic> data;
+      if (wishlistData.containsKey('wishlist')) {
+        // Response is wrapped: {success: true, wishlist: {...}}
+        data = wishlistData['wishlist'] as Map<String, dynamic>;
+        debugPrint(
+          '📦 WishlistItemsScreen: Found wrapped wishlist in response',
+        );
+      } else if (wishlistData.containsKey('data')) {
+        // Response is wrapped: {success: true, data: {...}}
+        data = wishlistData['data'] as Map<String, dynamic>;
+        debugPrint('📦 WishlistItemsScreen: Found wrapped data in response');
+      } else {
+        // Response is the wishlist object directly
+        data = wishlistData;
+        debugPrint('📦 WishlistItemsScreen: Using wishlistData directly');
+      }
+
+      if (data.isEmpty) {
+        debugPrint('❌ WishlistItemsScreen: Empty data after parsing');
+        throw Exception('Invalid response format from API');
+      }
+
+      debugPrint('📊 WishlistItemsScreen: Parsed data structure');
+      debugPrint('   Data keys: ${data.keys.toList()}');
 
       // Parse items from response
       final itemsList = data['items'] as List<dynamic>? ?? [];
-      final items = itemsList
-          .map((item) => _convertToWishlistItem(item as Map<String, dynamic>))
-          .toList();
+      debugPrint(
+        '📦 WishlistItemsScreen: Found ${itemsList.length} items in response',
+      );
+
+      final items = <WishlistItem>[];
+      for (var i = 0; i < itemsList.length; i++) {
+        try {
+          final itemData = itemsList[i];
+          if (itemData is Map<String, dynamic>) {
+            final item = _convertToWishlistItem(itemData);
+            items.add(item);
+          }
+        } catch (e) {
+          debugPrint('⚠️ WishlistItemsScreen: Failed to parse item $i: $e');
+        }
+      }
 
       // Get stats if available
       int totalItems = widget.totalItems;
@@ -126,21 +201,37 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
       debugPrint('   Privacy: $privacy');
       debugPrint('   CreatedAt: $createdAt');
 
-      setState(() {
-        _items = items;
-        _totalItems = totalItems;
-        _purchasedItems = purchasedItems;
-        _wishlistName = data['name']?.toString() ?? widget.wishlistName;
-        _category = category;
-        _privacy = privacy;
-        _createdAt = createdAt;
-        _isLoading = false;
-      });
+      debugPrint('✅ WishlistItemsScreen: About to update state');
+      debugPrint('   Items count: ${items.length}');
+      debugPrint('   Total items: $totalItems');
+      debugPrint('   Purchased items: $purchasedItems');
+      debugPrint(
+        '   Wishlist name: ${data['name']?.toString() ?? widget.wishlistName}',
+      );
 
-      debugPrint('✅ WishlistItemsScreen: Loaded ${items.length} items');
-      debugPrint('   Category: $_category');
-      debugPrint('   Privacy: $_privacy');
-      debugPrint('   CreatedAt: $_createdAt');
+      if (mounted) {
+        setState(() {
+          _items = items;
+          _totalItems = totalItems;
+          _purchasedItems = purchasedItems;
+          _wishlistName = data['name']?.toString() ?? widget.wishlistName;
+          _category = category;
+          _privacy = privacy;
+          _createdAt = createdAt;
+          _isLoading = false; // CRITICAL: Set loading to false
+          _errorMessage = null; // Clear any previous errors
+        });
+
+        debugPrint('✅ WishlistItemsScreen: State updated successfully');
+        debugPrint('   Category: $_category');
+        debugPrint('   Privacy: $_privacy');
+        debugPrint('   CreatedAt: $_createdAt');
+        debugPrint('   _isLoading: $_isLoading');
+      } else {
+        debugPrint(
+          '⚠️ WishlistItemsScreen: Widget not mounted, skipping setState',
+        );
+      }
     } on ApiException catch (e) {
       setState(() {
         _errorMessage = e.message;
@@ -181,8 +272,15 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
         );
       }
     } catch (e) {
+      debugPrint('❌ WishlistItemsScreen: Error loading wishlist details');
+      debugPrint('   Error: $e');
+      debugPrint('   Error type: ${e.runtimeType}');
+      debugPrint('   WishlistId: ${widget.wishlistId}');
+
       setState(() {
-        _errorMessage = 'Failed to load wishlist. Please try again.';
+        _errorMessage = e.toString().contains('Exception')
+            ? e.toString().replaceFirst('Exception: ', '')
+            : 'Failed to load wishlist. Please try again.';
         _isLoading = false;
       });
 
@@ -195,7 +293,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'An unexpected error occurred. Please try again.',
+                    _errorMessage ??
+                        'An unexpected error occurred. Please try again.',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
@@ -216,10 +315,16 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: () {
+                _loadWishlistDetails();
+              },
+            ),
           ),
         );
       }
-      debugPrint('Load wishlist error: $e');
     }
   }
 

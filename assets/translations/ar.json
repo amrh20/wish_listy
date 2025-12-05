@@ -37,6 +37,8 @@
     "profile": "الملف الشخصي"
   },
   "auth": {
+    "logoutConfirmation": "هل أنت متأكد من تسجيل الخروج؟",
+    "logout": "تسجيل خروج",
     "login": "تسجيل دخول",
     "signup": "إنشاء حساب",
     "forgotPassword": "نسيت كلمة المرور؟",

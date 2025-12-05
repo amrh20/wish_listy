@@ -16,6 +16,7 @@ class ModernWishlistCard extends StatefulWidget {
   final VoidCallback onView;
   final VoidCallback onAddItem;
   final VoidCallback? onMenu;
+  final VoidCallback? onEdit;
   final Color? accentColor;
   final String? imageUrl;
   final String? category; // Added for category images
@@ -32,6 +33,7 @@ class ModernWishlistCard extends StatefulWidget {
     required this.onView,
     required this.onAddItem,
     this.onMenu,
+    this.onEdit,
     this.accentColor,
     this.imageUrl,
     this.category, // Added for category images
@@ -277,12 +279,31 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
           ),
         ),
 
-        // Menu button
-        IconButton(
-          onPressed: widget.onMenu,
-          icon: Icon(Icons.more_vert, color: AppColors.textLight, size: 20),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
+        // Action buttons (Edit and Menu)
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Edit button
+            if (widget.onEdit != null)
+              IconButton(
+                onPressed: widget.onEdit,
+                icon: Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'Edit Wishlist',
+              ),
+            if (widget.onEdit != null && widget.onMenu != null)
+              const SizedBox(width: 8),
+            // Menu button
+            if (widget.onMenu != null)
+              IconButton(
+                onPressed: widget.onMenu,
+                icon: Icon(Icons.more_vert, color: AppColors.textLight, size: 20),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'More options',
+              ),
+          ],
         ),
       ],
     );

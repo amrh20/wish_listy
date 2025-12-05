@@ -7,13 +7,7 @@ import 'package:wish_listy/core/services/localization_service.dart';
 /// FAB widget for creating wishlists
 class WishlistFabWidget extends StatelessWidget {
   final VoidCallback onCreatePersonalWishlist;
-  final VoidCallback onCreateEventWishlist;
-
-  const WishlistFabWidget({
-    super.key,
-    required this.onCreatePersonalWishlist,
-    required this.onCreateEventWishlist,
-  });
+  const WishlistFabWidget({super.key, required this.onCreatePersonalWishlist});
 
   void _showCreateOptions(BuildContext context) {
     final localization = Provider.of<LocalizationService>(
@@ -67,21 +61,6 @@ class WishlistFabWidget extends StatelessWidget {
               onTap: () {
                 Navigator.pop(context);
                 onCreatePersonalWishlist();
-              },
-            ),
-
-            const SizedBox(height: 16),
-
-            _buildFABOption(
-              icon: Icons.celebration_rounded,
-              title: localization.translate('wishlists.eventWishlist'),
-              subtitle: localization.translate(
-                'wishlists.createEventWishlistDescription',
-              ),
-              color: AppColors.accent,
-              onTap: () {
-                Navigator.pop(context);
-                onCreateEventWishlist();
               },
             ),
 

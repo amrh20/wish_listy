@@ -9,21 +9,19 @@ import 'wishlist_card_widget.dart';
 /// Personal wishlists tab widget
 class PersonalWishlistsTabWidget extends StatelessWidget {
   final List<WishlistSummary> personalWishlists;
-  final List<WishlistSummary> eventWishlists;
   final Function(WishlistSummary) onWishlistTap;
   final Function(WishlistSummary) onAddItem;
   final Function(String, WishlistSummary) onMenuAction;
-  final VoidCallback onCreateEventWishlist;
+  final VoidCallback? onCreateWishlist;
   final Future<void> Function() onRefresh;
 
   const PersonalWishlistsTabWidget({
     super.key,
     required this.personalWishlists,
-    required this.eventWishlists,
     required this.onWishlistTap,
     required this.onAddItem,
     required this.onMenuAction,
-    required this.onCreateEventWishlist,
+    this.onCreateWishlist,
     required this.onRefresh,
   });
 
@@ -41,15 +39,8 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
           children: [
             const SizedBox(height: 16),
 
-            // Personal Wishlists Section
-            if (personalWishlists.isNotEmpty || eventWishlists.isNotEmpty)
-              _buildSectionHeader(
-                localization.translate('wishlists.personalWishlists'),
-                Icons.favorite_border_rounded,
-                AppColors.primary,
-              ),
             const SizedBox(height: 12),
-            if (personalWishlists.isEmpty && eventWishlists.isEmpty)
+            if (personalWishlists.isEmpty)
               _buildEmptyState(localization)
             else
               ...personalWishlists
@@ -64,115 +55,10 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
                   )
                   .toList(),
 
-            const SizedBox(height: 24),
-
-            // Event Wishlists Section (only show if there are any wishlists)
-            if (personalWishlists.isNotEmpty || eventWishlists.isNotEmpty) ...[
-              _buildSectionHeader(
-                localization.translate('wishlists.eventWishlists'),
-                Icons.celebration_rounded,
-                AppColors.accent,
-              ),
-              const SizedBox(height: 12),
-
-              if (eventWishlists.isEmpty)
-                _buildEmptyEventWishlists(localization)
-              else ...[
-                // Search field for event wishlists
-                Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.borderLight, width: 1),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.shadowLight.withOpacity(0.1),
-                        offset: const Offset(0, 2),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: localization.translate(
-                        'wishlists.searchWishlists',
-                      ),
-                      hintStyle: AppStyles.bodyMedium.copyWith(
-                        color: AppColors.textTertiary,
-                      ),
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: AppColors.textTertiary,
-                        size: 20,
-                      ),
-                      filled: true,
-                      fillColor: AppColors.surface,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: AppColors.secondary,
-                          width: 2,
-                        ),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                    ),
-                    style: AppStyles.bodyMedium,
-                  ),
-                ),
-                ...eventWishlists
-                    .map(
-                      (wishlist) => WishlistCardWidget(
-                        wishlist: wishlist,
-                        isEvent: true,
-                        onTap: () => onWishlistTap(wishlist),
-                        onAddItem: () => onAddItem(wishlist),
-                        onMenuAction: (action) =>
-                            onMenuAction(action, wishlist),
-                      ),
-                    )
-                    .toList(),
-              ],
-            ],
-
             const SizedBox(height: 100), // Bottom padding for FAB
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, IconData icon, Color color) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: AppStyles.headingSmall.copyWith(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ],
     );
   }
 
@@ -223,69 +109,15 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
-            CustomButton(
-              text: localization.translate('wishlists.createWishlist'),
-              onPressed: onCreateEventWishlist,
-              customColor: AppColors.primary,
-              icon: Icons.add_rounded,
-            ),
+            if (onCreateWishlist != null)
+              CustomButton(
+                text: localization.translate('wishlists.createWishlist'),
+                onPressed: onCreateWishlist,
+                customColor: AppColors.primary,
+                icon: Icons.add_rounded,
+              ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyEventWishlists(LocalizationService localization) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.textTertiary.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.celebration_outlined,
-              size: 40,
-              color: AppColors.accent,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            localization.translate('wishlists.noEventWishlists'),
-            style: AppStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            localization.translate('wishlists.createEventWishlistDescription'),
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          CustomButton(
-            text: localization.translate('wishlists.createEventWishlist'),
-            onPressed: onCreateEventWishlist,
-            customColor: AppColors.accent,
-            icon: Icons.add_rounded,
-          ),
-        ],
       ),
     );
   }

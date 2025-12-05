@@ -861,8 +861,6 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         isSuccess: true,
         title: localization.translate('wishlists.wishlistCreatedTitle'),
         message: localization.translate('wishlists.wishlistCreatedMessage'),
-        backgroundVectorPath:
-            'assets/images/Wishes-amico.png', // Background vector
         primaryActionLabel: localization.translate(
           'wishlists.addItemsToWishlist',
         ),
@@ -879,98 +877,22 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         },
         additionalActions: [
           DialogAction(
-            label: localization.translate('wishlists.viewWishlist'),
-            onPressed: () async {
-              // Close dialog first
+            label: localization.translate('wishlists.viewWishlists'),
+            onPressed: () {
+              // Close dialog
               Navigator.of(context).pop();
 
-              // Show loading indicator
+              // Navigate back to My Wishlists screen
               if (mounted) {
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) =>
-                      const Center(child: CircularProgressIndicator()),
+                Navigator.of(context).popUntil(
+                  (route) =>
+                      route.settings.name == AppRoutes.myWishlists ||
+                      route.isFirst,
                 );
-              }
-
-              try {
-                debugPrint(
-                  '🔍 CreateWishlistScreen: Viewing wishlist with ID: $wishlistId',
-                );
-
-                // Call API to get wishlist details
-                final wishlistData = await _wishlistRepository.getWishlistById(
-                  wishlistId,
-                );
-
-                debugPrint(
-                  '✅ CreateWishlistScreen: Received wishlist data: $wishlistData',
-                );
-
-                // Close loading dialog
-                if (mounted) {
-                  Navigator.of(context).pop();
-                }
-
-                // Extract wishlist information from API response
-                final data =
-                    wishlistData['wishlist'] as Map<String, dynamic>? ??
-                    wishlistData['data'] as Map<String, dynamic>? ??
-                    wishlistData;
-                final wishlistName =
-                    data['name']?.toString() ?? _nameController.text;
-                final itemsList = data['items'] as List<dynamic>? ?? [];
-                final totalItems = itemsList.length;
-                final purchasedItems = itemsList.where((item) {
-                  final itemMap = item as Map<String, dynamic>;
-                  return itemMap['status']?.toString().toLowerCase() ==
-                          'purchased' ||
-                      itemMap['purchased'] == true;
-                }).length;
-
-                debugPrint(
-                  '📊 CreateWishlistScreen: Navigating with - Name: $wishlistName, Items: $totalItems, Purchased: $purchasedItems',
-                );
-
-                // Navigate to wishlist items screen with actual data from API
-                if (mounted) {
-                  Navigator.pushReplacementNamed(
-                    context,
-                    AppRoutes.wishlistItems,
-                    arguments: {
-                      'wishlistId': wishlistId,
-                      'wishlistName': wishlistName,
-                      'totalItems': totalItems,
-                      'purchasedItems': purchasedItems,
-                      'isFriendWishlist': false,
-                    },
-                  );
-                }
-              } catch (e) {
-                // Close loading dialog
-                if (mounted) {
-                  Navigator.of(context).pop();
-                }
-
-                debugPrint(
-                  '❌ CreateWishlistScreen: Error loading wishlist details',
-                );
-                debugPrint('   Wishlist ID: $wishlistId');
-                debugPrint('   Error: $e');
-
-                // Show error message with more context
-                if (mounted) {
-                  final errorMessage = e is ApiException
-                      ? e.message
-                      : 'Failed to load wishlist details. The wishlist was created successfully. Please go back and refresh the wishlists page.';
-
-                  _showErrorSnackBar(errorMessage);
-                }
               }
             },
             variant: ButtonVariant.outline,
-            icon: Icons.visibility_rounded,
+            icon: Icons.list_rounded,
           ),
           DialogAction(
             label: localization.translate('wishlists.createAnotherWishlist'),

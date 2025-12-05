@@ -3,10 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
-import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/top_navigation.dart';
 import 'package:wish_listy/core/widgets/bottom_navigation.dart';
-import 'package:wish_listy/core/widgets/language_switcher.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/auth/presentation/widgets/guest_restriction_dialog.dart';
@@ -165,7 +163,7 @@ class _MainNavigationState extends State<MainNavigation>
 
     switch (_currentIndex) {
       case 0: // Home
-        return _buildHomeFAB();
+        return null; // No FAB for Home screen
       case 1: // Wishlists
         return authService.isGuest ? null : _buildWishlistFAB();
       case 2: // Events
@@ -177,45 +175,6 @@ class _MainNavigationState extends State<MainNavigation>
       default:
         return null;
     }
-  }
-
-  Widget _buildHomeFAB() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: FloatingActionButton(
-        onPressed: () {
-          final authService = Provider.of<AuthRepository>(
-            context,
-            listen: false,
-          );
-          if (authService.isGuest) {
-            GuestRestrictionDialog.show(
-              context,
-              'الإجراءات السريعة',
-              customMessage:
-                  'يجب تسجيل الدخول لإنشاء القوائم والفعاليات وإضافة الأصدقاء.',
-            );
-          } else {
-            // Show quick actions menu
-            _showQuickActionsMenu(context);
-          }
-        },
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        heroTag: 'home_fab',
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
-      ),
-    );
   }
 
   Widget _buildWishlistFAB() {
@@ -319,165 +278,6 @@ class _MainNavigationState extends State<MainNavigation>
         heroTag: 'profile_fab',
         child: const Icon(Icons.edit, color: Colors.white, size: 28),
       ),
-    );
-  }
-
-  void _showQuickActionsMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Consumer<LocalizationService>(
-        builder: (context, localization, child) {
-          if (!context.mounted) return const SizedBox.shrink();
-
-          return Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(24),
-                topRight: Radius.circular(24),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.borderLight,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        localization.translate('home.quickActions'),
-                        style: AppStyles.heading4.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildQuickActionCard(
-                              icon: Icons.card_giftcard,
-                              title: localization.translate(
-                                'home.createWishlist',
-                              ),
-                              gradient: AppColors.pinkGradient,
-                              onTap: () {
-                                Navigator.pop(context);
-                                Navigator.pushNamed(
-                                  context,
-                                  '/create-wishlist',
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildQuickActionCard(
-                              icon: Icons.event,
-                              title: localization.translate('home.createEvent'),
-                              gradient: AppColors.tealGradient,
-                              onTap: () {
-                                Navigator.pop(context);
-                                Navigator.pushNamed(context, '/create-event');
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildQuickActionCard(
-                              icon: Icons.person_add,
-                              title: localization.translate('home.addFriend'),
-                              gradient: AppColors.indigoGradient,
-                              onTap: () {
-                                Navigator.pop(context);
-                                Navigator.pushNamed(context, '/add-friend');
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _buildQuickActionCard(
-                              icon: Icons.language,
-                              title: localization.translate('app.language'),
-                              gradient: AppColors.orangeGradient,
-                              onTap: () {
-                                Navigator.pop(context);
-                                _showLanguageDialog(context);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildQuickActionCard({
-    required IconData icon,
-    required String title,
-    required LinearGradient gradient,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: Colors.white, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: AppStyles.caption.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showLanguageDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const LanguageSelectionDialog(),
     );
   }
 }

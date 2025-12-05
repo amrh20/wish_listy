@@ -30,7 +30,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
   // Wishlist data from API
   List<WishlistSummary> _personalWishlists = [];
-  List<WishlistSummary> _eventWishlists = [];
   List<WishlistSummary> _allPersonalWishlists =
       []; // Store all personal wishlists for filtering
   bool _isLoading = false;
@@ -75,10 +74,17 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Reload data when screen becomes visible (useful for IndexedStack)
-    // This ensures data is fresh when navigating back to this screen
-    // Only reload if we've already loaded once (to avoid double loading in initState)
-    if (_hasLoadedOnce) {
+    debugPrint('🔄 MyWishlistsScreen: didChangeDependencies called');
+    debugPrint('   isCurrent: ${ModalRoute.of(context)?.isCurrent}');
+    debugPrint('   _hasLoadedOnce: $_hasLoadedOnce');
+
+    // Reload data when screen becomes visible
+    // Check if this is the current route (screen is visible)
+    final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+
+    if (isCurrent && _hasLoadedOnce) {
+      // Screen is now visible and we've loaded before, reload data
+      debugPrint('   ✅ Reloading wishlists (screen is current)');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _loadWishlists();
@@ -168,8 +174,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
           floatingActionButton: WishlistFabWidget(
             onCreatePersonalWishlist: () =>
                 _navigateToCreateWishlist(isEvent: false),
-            onCreateEventWishlist: () =>
-                _navigateToCreateWishlist(isEvent: true),
           ),
           body: UnifiedPageBackground(
             child: DecorativeBackground(
@@ -198,8 +202,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                       UnifiedTab(
                         label: localization.translate('wishlists.myWishlists'),
                         icon: Icons.favorite_rounded,
-                        badgeCount:
-                            _personalWishlists.length + _eventWishlists.length,
+                        badgeCount: _personalWishlists.length,
                       ),
                       UnifiedTab(
                         label: localization.translate(
@@ -289,12 +292,11 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                               children: [
                                 PersonalWishlistsTabWidget(
                                   personalWishlists: _personalWishlists,
-                                  eventWishlists: _eventWishlists,
                                   onWishlistTap: _navigateToWishlistItems,
                                   onAddItem: _navigateToAddItem,
                                   onMenuAction: _handleWishlistAction,
-                                  onCreateEventWishlist: () =>
-                                      _navigateToCreateWishlist(isEvent: true),
+                                  onCreateWishlist: () =>
+                                      _navigateToCreateWishlist(isEvent: false),
                                   onRefresh: _refreshWishlists,
                                 ),
                                 FriendsWishlistsTabWidget(),
@@ -382,6 +384,11 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   void _showDeleteConfirmation(WishlistSummary wishlist) {
+    final itemCount = wishlist.itemCount;
+    final itemCountText = itemCount > 0
+        ? 'All $itemCount ${itemCount == 1 ? 'item' : 'items'} inside this wishlist will also be deleted permanently.'
+        : 'All items inside this wishlist will also be deleted permanently.';
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -391,9 +398,32 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
           'Delete Wishlist?',
           style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
         ),
-        content: Text(
-          'Are you sure you want to delete "${wishlist.name}"? This action cannot be undone.',
-          style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete "${wishlist.name}"?',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              itemCountText,
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'This action cannot be undone.',
+              style: AppStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -572,7 +602,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
       // Convert API response to WishlistSummary objects
       final personalWishlists = <WishlistSummary>[];
-      final eventWishlists = <WishlistSummary>[];
 
       for (final wishlistData in wishlistsData) {
         debugPrint(
@@ -580,20 +609,14 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         );
         final wishlist = _convertToWishlistSummary(wishlistData);
 
-        // Separate personal and event wishlists
-        // If wishlist has eventId or eventName, it's an event wishlist
-        if (wishlist.eventName != null || wishlistData['eventId'] != null) {
-          eventWishlists.add(wishlist);
-          debugPrint('   → Added to event wishlists');
-        } else {
+        // Only add personal wishlists (exclude event wishlists)
+        if (wishlist.eventName == null && wishlistData['eventId'] == null) {
           personalWishlists.add(wishlist);
           debugPrint('   → Added to personal wishlists');
         }
       }
 
-      debugPrint(
-        '✅ MyWishlistsScreen: Personal: ${personalWishlists.length}, Event: ${eventWishlists.length}',
-      );
+      debugPrint('✅ MyWishlistsScreen: Personal: ${personalWishlists.length}');
 
       // Store original wishlist data for category extraction and count items
       final Map<String, String> wishlistIdToCategory = {};
@@ -627,7 +650,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
       setState(() {
         _allPersonalWishlists = personalWishlists;
-        _eventWishlists = eventWishlists;
         _availableCategories = categories;
         _wishlistIdToCategory = wishlistIdToCategory;
         _categoryCounts = categoryCounts;

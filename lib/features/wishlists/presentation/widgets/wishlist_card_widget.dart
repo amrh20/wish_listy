@@ -81,6 +81,7 @@ class WishlistCardWidget extends StatelessWidget {
       category: wishlist.category, // Pass category for image display
       onView: onTap,
       onAddItem: onAddItem,
+      onEdit: () => onMenuAction('edit'),
       onMenu: () => _showMenu(context),
     );
   }
