@@ -145,7 +145,7 @@ class _FriendsScreenState extends State<FriendsScreen>
               showGifts: false,
               child: Column(
                 children: [
-                  // Unified Page Header
+                  // Unified Page Header with Integrated Tabs
                   UnifiedPageHeader(
                     title: localization.translate('ui.friends'),
                     subtitle:
@@ -168,10 +168,6 @@ class _FriendsScreenState extends State<FriendsScreen>
                         },
                       ),
                     ],
-                  ),
-
-                  // Unified Tab Bar
-                  UnifiedTabBar(
                     tabs: [
                       UnifiedTab(
                         label: localization.translate('ui.myFriends'),
@@ -184,12 +180,12 @@ class _FriendsScreenState extends State<FriendsScreen>
                         badgeColor: AppColors.accent,
                       ),
                     ],
-                    selectedIndex: _tabController.index,
+                    selectedTabIndex: _tabController.index,
                     onTabChanged: (index) {
                       _tabController.animateTo(index);
                       setState(() {});
                     },
-                    selectedColor: AppColors.secondary,
+                    selectedTabColor: AppColors.secondary,
                   ),
 
                   // Tab Content in rounded container

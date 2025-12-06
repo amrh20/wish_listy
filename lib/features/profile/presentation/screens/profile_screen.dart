@@ -114,79 +114,76 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
-          body: UnifiedPageBackground(
-            child: DecorativeBackground(
-              showGifts: false, // Less busy for profile
-              child: Column(
-                children: [
-                  // Profile Header with UnifiedPageHeader
-                  UnifiedPageHeader(
-                    title: localization.translate('navigation.profile'),
-                    subtitle: _userProfile.name,
-                    showSearch: false,
-                    actions: [],
-                  ),
+          backgroundColor: Colors.white,
+          body: DecorativeBackground(
+            showGifts: false, // Less busy for profile
+            child: Column(
+              children: [
+                // Profile Header with UnifiedPageHeader
+                UnifiedPageHeader(
+                  title: localization.translate('navigation.profile'),
+                  subtitle: _userProfile.name,
+                  showSearch: false,
+                  actions: [],
+                  bottomMargin: 0.0, // Remove gap between header and container
+                ),
 
-                  // Profile Content in rounded container
-                  Expanded(
-                    child: UnifiedPageContainer(
-                      child: RefreshIndicator(
-                        onRefresh: _refreshProfile,
-                        color: AppColors.primary,
-                        child: SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          child: AnimatedBuilder(
-                            animation: _animationController,
-                            builder: (context, child) {
-                              return FadeTransition(
-                                opacity: _fadeAnimation,
-                                child: SlideTransition(
-                                  position: _slideAnimation,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Stats Cards
-                                        _buildStatsSection(),
-                                        const SizedBox(height: 16),
+                // Profile Content in rounded container
+                Expanded(
+                  child: UnifiedPageContainer(
+                    showTopRadius: false,
+                    child: RefreshIndicator(
+                      onRefresh: _refreshProfile,
+                      color: AppColors.primary,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            return FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: SlideTransition(
+                                position: _slideAnimation,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Stats Cards
+                                      _buildStatsSection(),
+                                      const SizedBox(height: 16),
 
-                                        // Account Settings
-                                        _buildAccountSettings(),
-                                        const SizedBox(height: 16),
-                                        // App Settings
-                                        _buildAppSettings(),
-                                        const SizedBox(height: 80),
-                                      ],
-                                    ),
+                                      // Account Settings
+                                      _buildAccountSettings(),
+                                      const SizedBox(height: 16),
+                                      // App Settings
+                                      _buildAppSettings(),
+                                      const SizedBox(height: 80),
+                                    ],
                                   ),
                                 ),
-                              );
-                            },
-                          ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           floatingActionButton: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppColors.accent, AppColors.accentLight],
-              ),
+              color: AppColors.profileAccent,
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.accent.withOpacity(0.3), // Reduced from 0.4
-                  offset: const Offset(0, 6), // Reduced from 8
-                  blurRadius: 15, // Reduced from 20
-                  spreadRadius: 1, // Reduced from 2
+                  color: AppColors.profileAccent.withOpacity(0.3),
+                  offset: const Offset(0, 6),
+                  blurRadius: 15,
+                  spreadRadius: 1,
                 ),
               ],
             ),
@@ -204,160 +201,107 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   Widget _buildStatsSection() {
     return Container(
-      padding: const EdgeInsets.all(16), // تقليل الـ padding
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.surface,
-            AppColors.surfaceVariant.withOpacity(0.5),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16), // تقليل الـ radius
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: AppColors.shadow.withOpacity(0.08),
-            offset: const Offset(0, 4),
-            blurRadius: 20,
+            offset: const Offset(0, 2),
+            blurRadius: 8,
             spreadRadius: 0,
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6), // تقليل الـ padding
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.primary, AppColors.primaryAccent],
-                  ),
-                  borderRadius: BorderRadius.circular(8), // تقليل الـ radius
-                ),
-                child: Icon(
-                  Icons.analytics_outlined,
-                  color: Colors.white,
-                  size: 18, // تقليل الحجم
-                ),
+          // Friends Stat
+          Expanded(
+            child: GestureDetector(
+              onTap: () => AppRoutes.pushNamed(context, AppRoutes.friends),
+              child: _buildStatItem(
+                icon: Icons.people_outline,
+                value: '${_userProfile.friendsCount}',
+                label: 'Friends',
+                iconColor: AppColors.secondary,
+                iconBackgroundColor: AppColors.secondary.withOpacity(0.1),
               ),
-              const SizedBox(width: 10), // تقليل المسافة
-              Text(
-                'Your Stats',
-                style: AppStyles.headingSmall.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16, // تقليل حجم الخط
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 16), // تقليل المسافة
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  title: 'Friends',
-                  value: '${_userProfile.friendsCount}',
-                  icon: Icons.people_outline,
-                  color: AppColors.secondary,
-                  onTap: () => AppRoutes.pushNamed(context, AppRoutes.friends),
-                ),
+          // Divider
+          Container(height: 40, width: 1, color: Colors.grey.withOpacity(0.2)),
+          // Wishlists Stat
+          Expanded(
+            child: GestureDetector(
+              onTap: () => AppRoutes.pushNamed(context, AppRoutes.myWishlists),
+              child: _buildStatItem(
+                icon: Icons.favorite_outline,
+                value: '${_userProfile.wishlistsCount}',
+                label: 'Wishlists',
+                iconColor: AppColors.primary,
+                iconBackgroundColor: AppColors.primary.withOpacity(0.1),
               ),
-              const SizedBox(width: 8), // تقليل المسافة
-              Expanded(
-                child: _buildStatCard(
-                  title: 'Wishlists',
-                  value: '${_userProfile.wishlistsCount}',
-                  icon: Icons.favorite_outline,
-                  color: AppColors.primary,
-                  onTap: () =>
-                      AppRoutes.pushNamed(context, AppRoutes.myWishlists),
-                ),
+            ),
+          ),
+          // Divider
+          Container(height: 40, width: 1, color: Colors.grey.withOpacity(0.2)),
+          // Events Stat
+          Expanded(
+            child: GestureDetector(
+              onTap: () => AppRoutes.pushNamed(context, AppRoutes.events),
+              child: _buildStatItem(
+                icon: Icons.event_outlined,
+                value: '${_userProfile.eventsCreated}',
+                label: 'Events',
+                iconColor: AppColors.accent,
+                iconBackgroundColor: AppColors.accent.withOpacity(0.1),
               ),
-              const SizedBox(width: 8), // تقليل المسافة
-              Expanded(
-                child: _buildStatCard(
-                  title: 'Events',
-                  value: '${_userProfile.eventsCreated}',
-                  icon: Icons.event_outlined,
-                  color: AppColors.accent,
-                  onTap: () => AppRoutes.pushNamed(context, AppRoutes.events),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard({
-    required String title,
-    required String value,
+  Widget _buildStatItem({
     required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
+    required String value,
+    required String label,
+    required Color iconColor,
+    required Color iconBackgroundColor,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [color.withOpacity(0.05), color.withOpacity(0.1)],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Icon with CircleAvatar
+        CircleAvatar(
+          radius: 20,
+          backgroundColor: iconBackgroundColor,
+          child: Icon(icon, color: iconColor, size: 20),
+        ),
+        const SizedBox(height: 12),
+        // Number (Large, Bold)
+        Text(
+          value,
+          style: AppStyles.headingLarge.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 28,
+            color: AppColors.textPrimary,
           ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.2), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.1),
-              offset: const Offset(0, 4),
-              blurRadius: 12,
-              spreadRadius: 0,
-            ),
-          ],
         ),
-        child: Column(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [color.withOpacity(0.15), color.withOpacity(0.25)],
-                ),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: color.withOpacity(0.3), width: 1),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              value,
-              style: AppStyles.headingSmall.copyWith(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 24,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+        const SizedBox(height: 4),
+        // Label (Small, Grey)
+        Text(
+          label,
+          style: AppStyles.bodySmall.copyWith(
+            color: Colors.grey[600],
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -365,14 +309,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.surface,
-            AppColors.surfaceVariant.withOpacity(0.4),
-          ],
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -444,14 +381,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.surface,
-            AppColors.surfaceVariant.withOpacity(0.3),
-          ],
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(

@@ -296,7 +296,7 @@ class _EventsScreenState extends State<EventsScreen>
               showGifts: true,
               child: Column(
                 children: [
-                  // Unified Page Header
+                  // Unified Page Header with Integrated Tabs
                   UnifiedPageHeader(
                     title: localization.translate('events.title'),
                     subtitle: '${_getUpcomingEventsCount()} ${localization.translate('events.upcomingEvents')}',
@@ -318,10 +318,6 @@ class _EventsScreenState extends State<EventsScreen>
                         onTap: _showFilterOptions,
                       ),
                     ],
-                  ),
-
-                  // Unified Tab Bar
-                  UnifiedTabBar(
                     tabs: [
                       UnifiedTab(
                         label: localization.translate('events.myEvents'),
@@ -333,12 +329,12 @@ class _EventsScreenState extends State<EventsScreen>
                         badgeCount: _invitedEvents.where((e) => e.status == EventStatus.upcoming).length,
                       ),
                     ],
-                    selectedIndex: _tabController.index,
+                    selectedTabIndex: _tabController.index,
                     onTabChanged: (index) {
                       _tabController.animateTo(index);
                       setState(() {});
                     },
-                    selectedColor: AppColors.accent,
+                    selectedTabColor: AppColors.accent,
                   ),
 
                   // Tab Content in rounded container

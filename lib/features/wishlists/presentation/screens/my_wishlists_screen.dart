@@ -180,7 +180,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
               showGifts: true,
               child: Column(
                 children: [
-                  // Unified Page Header
+                  // Unified Page Header with Integrated Tabs
                   UnifiedPageHeader(
                     title: localization.translate('wishlists.myWishlists'),
                     titleIcon: Icons.favorite_rounded,
@@ -194,10 +194,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                       // Handle search query change
                       // You can add search filtering logic here
                     },
-                  ),
-
-                  // Unified Tab Bar
-                  UnifiedTabBar(
                     tabs: [
                       UnifiedTab(
                         label: localization.translate('wishlists.myWishlists'),
@@ -211,7 +207,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                         icon: Icons.people_rounded,
                       ),
                     ],
-                    selectedIndex: _mainTabController.index,
+                    selectedTabIndex: _mainTabController.index,
                     onTabChanged: (index) {
                       _mainTabController.animateTo(index);
                       setState(() {
@@ -223,85 +219,102 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                     },
                   ),
 
-                  // Category Filter Tabs (only show if there are categories and on Personal tab)
-                  if (_mainTabController.index == 0 &&
-                      _availableCategories.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    _buildCategoryFilterTabs(),
-                  ],
-
                   // Tab Content in rounded container
                   Expanded(
                     child: UnifiedPageContainer(
-                      child: _isLoading
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppColors.primary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'Loading...',
-                                    style: AppStyles.bodyMedium.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
+                      child: Column(
+                        children: [
+                          // Category Filter Tabs (only show if there are categories and on Personal tab)
+                          if (_mainTabController.index == 0 &&
+                              _availableCategories.isNotEmpty) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: 16,
+                                bottom: 8,
                               ),
-                            )
-                          : _errorMessage != null
-                          ? Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.error_outline,
-                                      size: 64,
-                                      color: AppColors.error,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      _errorMessage!,
-                                      style: AppStyles.bodyLarge.copyWith(
-                                        color: AppColors.textPrimary,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 24),
-                                    ElevatedButton.icon(
-                                      onPressed: _loadWishlists,
-                                      icon: const Icon(Icons.refresh),
-                                      label: const Text('Retry'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.primary,
-                                        foregroundColor: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : TabBarView(
-                              controller: _mainTabController,
-                              children: [
-                                PersonalWishlistsTabWidget(
-                                  personalWishlists: _personalWishlists,
-                                  onWishlistTap: _navigateToWishlistItems,
-                                  onAddItem: _navigateToAddItem,
-                                  onMenuAction: _handleWishlistAction,
-                                  onCreateWishlist: () =>
-                                      _navigateToCreateWishlist(isEvent: false),
-                                  onRefresh: _refreshWishlists,
-                                ),
-                                FriendsWishlistsTabWidget(),
-                              ],
+                              child: _buildCategoryFilterTabs(),
                             ),
+                          ],
+                          // Main Content
+                          Expanded(
+                            child: _isLoading
+                                ? Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        CircularProgressIndicator(
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                AppColors.primary,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'Loading...',
+                                          style: AppStyles.bodyMedium.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : _errorMessage != null
+                                ? Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.error_outline,
+                                            size: 64,
+                                            color: AppColors.error,
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            _errorMessage!,
+                                            style: AppStyles.bodyLarge.copyWith(
+                                              color: AppColors.textPrimary,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                          const SizedBox(height: 24),
+                                          ElevatedButton.icon(
+                                            onPressed: _loadWishlists,
+                                            icon: const Icon(Icons.refresh),
+                                            label: const Text('Retry'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  AppColors.primary,
+                                              foregroundColor: Colors.white,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                : TabBarView(
+                                    controller: _mainTabController,
+                                    children: [
+                                      PersonalWishlistsTabWidget(
+                                        personalWishlists: _personalWishlists,
+                                        onWishlistTap: _navigateToWishlistItems,
+                                        onAddItem: _navigateToAddItem,
+                                        onMenuAction: _handleWishlistAction,
+                                        onCreateWishlist: () =>
+                                            _navigateToCreateWishlist(
+                                              isEvent: false,
+                                            ),
+                                        onRefresh: _refreshWishlists,
+                                      ),
+                                      FriendsWishlistsTabWidget(),
+                                    ],
+                                  ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -847,38 +860,52 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
   /// Build category filter tabs
   Widget _buildCategoryFilterTabs() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            // "All" tab
-            _buildCategoryChip(
-              label: 'All',
-              category: null,
-              isSelected: _selectedCategory == null,
-              icon: Icons.list_rounded,
-              count: _categoryCounts['all'] ?? 0,
-            ),
-            const SizedBox(width: 8),
-            // Category tabs
-            ..._availableCategories.map((category) {
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: _buildCategoryChip(
-                  label: _getCategoryDisplayName(category),
-                  category: category,
-                  isSelected: _selectedCategory == category,
-                  icon: _getCategoryIcon(category),
-                  count: _categoryCounts[category] ?? 0,
+    return Consumer<LocalizationService>(
+      builder: (context, localization, _) {
+        final isRTL = localization.isRTL;
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Directionality(
+            textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                // Filter Icon
+                Icon(
+                  Icons.filter_list_rounded,
+                  size: 20,
+                  color: AppColors.textSecondary,
                 ),
-              );
-            }),
-          ],
-        ),
-      ),
+                const SizedBox(width: 12),
+                // "All" tab
+                _buildCategoryChip(
+                  label: 'All',
+                  category: null,
+                  isSelected: _selectedCategory == null,
+                  icon: Icons.list_rounded,
+                  count: _categoryCounts['all'] ?? 0,
+                ),
+                const SizedBox(width: 8),
+                // Category tabs
+                ..._availableCategories.map((category) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _buildCategoryChip(
+                      label: _getCategoryDisplayName(category),
+                      category: category,
+                      isSelected: _selectedCategory == category,
+                      icon: _getCategoryIcon(category),
+                      count: _categoryCounts[category] ?? 0,
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

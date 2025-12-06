@@ -44,6 +44,9 @@ dependencies:
   
   # Lottie animations
   lottie: ^3.1.2
+  
+  # Swipeable actions for list items
+  flutter_slidable: ^3.1.1
 
 dev_dependencies:
   flutter_test:

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
-import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 
 class WishlistItemsScreen extends StatefulWidget {
@@ -29,12 +29,7 @@ class WishlistItemsScreen extends StatefulWidget {
   _WishlistItemsScreenState createState() => _WishlistItemsScreenState();
 }
 
-class _WishlistItemsScreenState extends State<WishlistItemsScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-
+class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
   String _selectedFilter = 'all';
   String _searchQuery = '';
   final _searchController = TextEditingController();
@@ -55,17 +50,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
   @override
   void initState() {
     super.initState();
-    debugPrint('🚀 WishlistItemsScreen: initState called');
-    debugPrint('   wishlistId: ${widget.wishlistId}');
-    debugPrint('   wishlistName: ${widget.wishlistName}');
-    debugPrint('   totalItems: ${widget.totalItems}');
-    debugPrint('   purchasedItems: ${widget.purchasedItems}');
-    debugPrint('   isFriendWishlist: ${widget.isFriendWishlist}');
-
-    _initializeAnimations();
-    _startAnimations();
-
-    debugPrint('🔄 WishlistItemsScreen: About to call _loadWishlistDetails');
     _loadWishlistDetails();
   }
 
@@ -424,35 +408,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
     );
   }
 
-  void _initializeAnimations() {
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-      ),
-    );
-
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-          ),
-        );
-  }
-
-  void _startAnimations() {
-    _animationController.forward();
-  }
-
   @override
   void dispose() {
-    _animationController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -481,29 +438,15 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
     return Scaffold(
-      body: DecorativeBackground(
-        showGifts: true,
-        child: Stack(
-          children: [
-            // Content
-            SafeArea(
-              child: Column(
-                children: [
-                  // Header
-                  _buildHeader(),
-
-                  // Content
-                  Expanded(
-                    child: _isLoading
-                        ? Center(
+        backgroundColor: AppColors.surface,
+        body: Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    AppColors.primary,
-                                  ),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
@@ -514,19 +457,20 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                                 ),
                               ],
                             ),
-                          )
-                        : _errorMessage != null
-                        ? Center(
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Scaffold(
+        backgroundColor: AppColors.surface,
+        body: Center(
                             child: Padding(
                               padding: const EdgeInsets.all(24),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
-                                    Icons.error_outline,
-                                    size: 64,
-                                    color: AppColors.error,
-                                  ),
+                Icon(Icons.error_outline, size: 64, color: AppColors.error),
                                   const SizedBox(height: 16),
                                   Text(
                                     _errorMessage!,
@@ -548,269 +492,164 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                                 ],
                               ),
                             ),
-                          )
-                        : AnimatedBuilder(
-                            animation: _animationController,
-                            builder: (context, child) {
-                              return FadeTransition(
-                                opacity: _fadeAnimation,
-                                child: SlideTransition(
-                                  position: _slideAnimation,
-                                  child: Column(
-                                    children: [
-                                      // Stats Card
-                                      _buildStatsCard(),
-
-                                      const SizedBox(height: 20),
-
-                                      // Search and Filters
-                                      _buildSearchAndFilters(),
-
-                                      const SizedBox(height: 20),
-
-                                      // Items List
-                                      Expanded(child: _buildItemsList()),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
-      ),
-    );
-  }
+      );
+    }
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withOpacity(0.9),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textTertiary.withOpacity(0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.surfaceVariant,
-              padding: const EdgeInsets.all(12),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
+    return Scaffold(
+      backgroundColor: AppColors.surface,
+      body: Container(
+        color: AppColors.surface,
+        child: CustomScrollView(
+          slivers: [
+            // SliverAppBar with Minimalist header
+            SliverAppBar(
+              expandedHeight: 140,
+              floating: false,
+              pinned: true,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+              ),
+              actions: [
+                if (!widget.isFriendWishlist)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: IconButton(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.addItem,
+                          arguments: {
+                            'wishlistId': widget.wishlistId,
+                            'wishlistName': _wishlistName.isNotEmpty
+                                ? _wishlistName
+                                : widget.wishlistName,
+                          },
+                        ).then((_) {
+                          _loadWishlistDetails();
+                        });
+                      },
+                      icon: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  padding: EdgeInsets.only(
+                    top: kToolbarHeight + 20,
+                    bottom: 20,
+                    left: 56, // Padding to avoid back button
+                    right: 80, // Padding to avoid action buttons
+                  ),
             child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                      // Row 1: Title Only (Edit button is in actions)
                 Text(
                   _wishlistName.isNotEmpty
                       ? _wishlistName
                       : widget.wishlistName,
-                  style: AppStyles.headingSmall.copyWith(
+                        style: AppStyles.headingLarge.copyWith(
                     fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                // Additional info row
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 6,
+                          color: AppColors.textPrimary,
+                          fontSize: 24,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 12),
+                      // Row 2: Info Chips
+                      Row(
                   children: [
-                    if (widget.isFriendWishlist && widget.friendName != null)
-                      _buildInfoChip(
-                        icon: Icons.person_outline,
-                        label: '${widget.friendName}\'s wishlist',
-                        color: AppColors.secondary,
-                      )
-                    else
-                      _buildInfoChip(
-                        icon: Icons.inventory_2_outlined,
-                        label:
-                            '${_items.length} ${_items.length == 1 ? "Wish" : "Wishes"}',
-                        color: AppColors.textSecondary,
-                      ),
-                    if (_category.isNotEmpty)
-                      _buildInfoChip(
-                        icon: Icons.category_outlined,
-                        label:
-                            _category[0].toUpperCase() + _category.substring(1),
-                        color: AppColors.primary,
-                      ),
-                    if (_privacy.isNotEmpty)
-                      _buildInfoChip(
-                        icon: _privacy == 'public'
-                            ? Icons.public_outlined
-                            : Icons.lock_outline,
-                        label:
-                            _privacy[0].toUpperCase() + _privacy.substring(1),
-                        color: _privacy == 'public'
-                            ? AppColors.success
-                            : AppColors.warning,
-                      ),
-                    if (_createdAt != null)
-                      _buildInfoChip(
-                        icon: Icons.calendar_today_outlined,
-                        label: _formatDate(_createdAt!),
-                        color: AppColors.textTertiary,
-                      ),
-                  ],
+                          // Chip 1: Total Items
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.inventory_2,
+                                  size: 16,
+                                  color: AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '$_totalItems Items',
+                                  style: AppStyles.bodySmall.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                 ),
               ],
             ),
           ),
-          // Add Item Button - Only show for own wishlists
-          if (!widget.isFriendWishlist)
-            IconButton(
-              onPressed: () {
-                // Navigate to add item screen
-                Navigator.pushNamed(context, '/add-item');
-              },
-              icon: const Icon(Icons.add_rounded),
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.secondary,
-                padding: const EdgeInsets.all(12),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(20),
+                          const SizedBox(width: 12),
+                          // Chip 2: Gifted
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.secondary.withOpacity(0.1),
-            AppColors.primary.withOpacity(0.05),
-          ],
-        ),
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.secondary.withOpacity(0.3),
-          width: 1,
-        ),
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
+                              mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: _buildStatItem(
-              icon: Icons.inventory_2_outlined,
-              value: '$_totalItems',
-              label: 'Total Wishes',
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 16,
               color: AppColors.primary,
             ),
-          ),
-          Container(width: 1, height: 40, color: AppColors.borderLight),
-          Expanded(
-            child: _buildStatItem(
-              icon: Icons.check_circle_outline,
-              value: '$_purchasedItems',
-              label: 'Gifted',
-              color: AppColors.success,
+                                const SizedBox(width: 6),
+                                Text(
+                                  '$_purchasedItems Gifted',
+                                  style: AppStyles.bodySmall.copyWith(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildStatItem({
-    required IconData icon,
-    required String value,
-    required String label,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 24),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: AppStyles.headingSmall.copyWith(
-            color: color,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: AppStyles.caption.copyWith(color: AppColors.textSecondary),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoChip({
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: AppStyles.caption.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      return 'Today';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
-    } else if (difference.inDays < 30) {
-      final weeks = (difference.inDays / 7).floor();
-      return weeks == 1 ? '1 week ago' : '$weeks weeks ago';
-    } else if (difference.inDays < 365) {
-      final months = (difference.inDays / 30).floor();
-      return months == 1 ? '1 month ago' : '$months months ago';
-    } else {
-      final years = (difference.inDays / 365).floor();
-      return years == 1 ? '1 year ago' : '$years years ago';
-    }
-  }
-
-  Widget _buildSearchAndFilters() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+            // Search & Filters Section
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Column(
         children: [
           // Search Bar
@@ -818,7 +657,10 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
             decoration: BoxDecoration(
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.borderLight, width: 1),
+                        border: Border.all(
+                          color: AppColors.borderLight,
+                          width: 1,
+                        ),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.shadowLight.withOpacity(0.1),
@@ -856,7 +698,10 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.secondary, width: 2),
+                            borderSide: BorderSide(
+                              color: AppColors.secondary,
+                              width: 2,
+                            ),
                 ),
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -867,12 +712,10 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
             ),
           ),
 
-          const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
           // Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
+                    Row(
               children: [
                 _buildFilterChip('all', 'All', Icons.all_inclusive),
                 const SizedBox(width: 8),
@@ -888,9 +731,32 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
                   Icons.check_circle_outline,
                 ),
               ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Items List
+            if (_items.isEmpty)
+              SliverFillRemaining(child: _buildNoItemsState())
+            else if (_filteredItems.isEmpty)
+              SliverFillRemaining(child: _buildEmptyState())
+            else
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final item = _filteredItems[index];
+                    return _buildModernListItem(item);
+                  }, childCount: _filteredItems.length),
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -906,12 +772,14 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.secondary : AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? AppColors.secondary : AppColors.borderLight,
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.borderLight.withOpacity(0.5),
             width: 1,
           ),
         ),
@@ -920,7 +788,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
           children: [
             Icon(
               icon,
-              size: 16,
+              size: 14,
               color: isSelected ? Colors.white : AppColors.textTertiary,
             ),
             const SizedBox(width: 6),
@@ -929,6 +797,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
               style: AppStyles.caption.copyWith(
                 color: isSelected ? Colors.white : AppColors.textTertiary,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 12,
               ),
             ),
           ],
@@ -937,201 +806,329 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
     );
   }
 
-  Widget _buildItemsList() {
-    // Check if there are no items at all (not just filtered)
-    if (_items.isEmpty) {
-      return _buildNoItemsState();
-    }
+  Widget _buildModernListItem(WishlistItem item) {
+    final isPurchased = item.status == ItemStatus.purchased;
+    final priorityColor = _getPriorityColor(item.priority);
 
-    // Check if filtered items are empty (due to search/filter)
-    if (_filteredItems.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: _filteredItems.length,
-      itemBuilder: (context, index) {
-        final item = _filteredItems[index];
-        return _buildItemCard(item);
-      },
+    // Build the clean card content
+    Widget cardContent = _ModernSwipeableWishlistItem(
+      item: item,
+      isPurchased: isPurchased,
+      priorityColor: priorityColor,
+      onTap: () => _openItemDetails(item),
+      onToggleGifted: widget.isFriendWishlist
+          ? null
+          : () => _togglePurchaseStatus(item),
+      onEdit: widget.isFriendWishlist ? null : () => _editItem(item),
+      onDelete: widget.isFriendWishlist ? null : () => _deleteItem(item),
     );
-  }
 
-  Widget _buildItemCard(WishlistItem item) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: item.status == ItemStatus.purchased
-              ? AppColors.success.withOpacity(0.3)
-              : AppColors.borderLight,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadowLight,
-            offset: const Offset(0, 2),
-            blurRadius: 8,
+    // Wrap with Slidable only for own wishlists
+    if (!widget.isFriendWishlist) {
+      return Slidable(
+        key: Key(item.id),
+        startActionPane: ActionPane(
+          motion: const DrawerMotion(),
+          extentRatio: 0.25,
+          children: [
+            CustomSlidableAction(
+              onPressed: (_) => _togglePurchaseStatus(item),
+              backgroundColor: const Color(0xFF2ECC71),
+              foregroundColor: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.check, size: 28, color: Colors.white),
+                  SizedBox(height: 4),
+                  Text(
+                    'Gift',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => _openItemDetails(item),
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+            ),
+          ],
+        ),
+        endActionPane: ActionPane(
+          motion: const DrawerMotion(),
+          extentRatio: 0.5,
               children: [
-                // Item Image/Icon
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: _getPriorityColor(item.priority).withOpacity(0.1),
+            CustomSlidableAction(
+              onPressed: (_) => _editItem(item),
+              backgroundColor: const Color(0xFF6366F1), // Indigo
+              foregroundColor: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _getPriorityColor(item.priority).withOpacity(0.3),
-                      width: 1,
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.edit_rounded, size: 28, color: Colors.white),
+                  SizedBox(height: 4),
+                  Text(
+                    'Edit',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  child: Icon(
-                    _getCategoryIcon('General'),
-                    color: _getPriorityColor(item.priority),
-                    size: 24,
+                ],
+              ),
+            ),
+            CustomSlidableAction(
+              onPressed: (_) => _deleteItem(item),
+              backgroundColor: const Color(0xFFEF4444), // Red/Salmon
+              foregroundColor: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.delete_rounded, size: 28, color: Colors.white),
+                  SizedBox(height: 4),
+                  Text(
+                    'Delete',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        child: cardContent,
+      );
+    }
+
+    // For friend wishlists, return card without swipe actions
+    return cardContent;
+  }
+
+  void _togglePurchaseStatus(WishlistItem item) async {
+    final currentStatus = item.status == ItemStatus.purchased;
+    final newStatus = currentStatus ? ItemStatus.desired : ItemStatus.purchased;
+
+    // Show confirmation dialog before marking as gifted
+    if (newStatus == ItemStatus.purchased) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+                    children: [
+              Icon(
+                Icons.check_circle_outline,
+                color: AppColors.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Mark as Gifted?',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-
-                const SizedBox(width: 16),
-
-                // Item Details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              item.name,
-                              style: AppStyles.bodyMedium.copyWith(
-                                fontWeight: FontWeight.w600,
-                                decoration: item.status == ItemStatus.purchased
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                              ),
-                            ),
-                          ),
-                          if (item.status == ItemStatus.purchased)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.success,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to mark "${item.name}" as gifted?',
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textPrimary,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
                               child: Text(
-                                'Gifted',
-                                style: AppStyles.caption.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                'Cancel',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Confirm'),
                             ),
                         ],
                       ),
+      );
 
-                      const SizedBox(height: 4),
+      if (confirmed != true) {
+        return; // User cancelled
+      }
+    }
 
-                      if (item.description != null &&
-                          item.description!.isNotEmpty)
+    // Proceed with status update
+    try {
+      final newStatus = item.status == ItemStatus.purchased
+          ? ItemStatus.desired
+          : ItemStatus.purchased;
+
+      debugPrint(
+        '🔄 WishlistItemsScreen: Toggling purchase status for item: ${item.id}',
+      );
+      debugPrint('   Current status: ${item.status}');
+      debugPrint('   New status: $newStatus');
+
+      // TODO: Implement API call to update item status
+      // await _wishlistRepository.updateItemStatus(item.id, newStatus);
+
+      // Update local state immediately for better UX
+      setState(() {
+        final index = _items.indexWhere((i) => i.id == item.id);
+        if (index != -1) {
+          _items[index] = item.copyWith(status: newStatus);
+          if (newStatus == ItemStatus.purchased) {
+            _purchasedItems++;
+          } else {
+            _purchasedItems = _purchasedItems > 0 ? _purchasedItems - 1 : 0;
+          }
+        }
+      });
+
+      if (mounted) {
+        // Show success dialog instead of SnackBar
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (context) => Dialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Success Icon
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: newStatus == ItemStatus.purchased
+                          ? AppColors.success.withOpacity(0.15)
+                          : AppColors.info.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      newStatus == ItemStatus.purchased
+                          ? Icons.check_circle
+                          : Icons.shopping_bag_outlined,
+                      color: newStatus == ItemStatus.purchased
+                          ? AppColors.success
+                          : AppColors.info,
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Success Message
                         Text(
-                          item.description!,
-                          style: AppStyles.bodySmall.copyWith(
+                    newStatus == ItemStatus.purchased
+                        ? 'Marked as Gifted! 🎉'
+                        : 'Marked as Available',
+                    style: AppStyles.headingMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${item.name}',
+                    style: AppStyles.bodyMedium.copyWith(
                             color: AppColors.textSecondary,
                           ),
+                    textAlign: TextAlign.center,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-
-                      const SizedBox(height: 8),
-
-                      Row(
-                        children: [
-                          // Priority Badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getPriorityColor(
-                                item.priority,
-                              ).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              _getPriorityText(item.priority),
-                              style: AppStyles.caption.copyWith(
-                                color: _getPriorityColor(item.priority),
+                  const SizedBox(height: 24),
+                  // OK Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: newStatus == ItemStatus.purchased
+                            ? AppColors.success
+                            : AppColors.info,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(
+                          fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
-                        ],
                       ),
                     ],
                   ),
                 ),
-
-                // Action Buttons
-                if (!widget.isFriendWishlist) ...[
-                  const SizedBox(width: 8),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ WishlistItemsScreen: Error toggling status: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
                     children: [
-                      // Edit Button
-                      IconButton(
-                        onPressed: () => _editItem(item),
-                        icon: const Icon(
-                          Icons.edit_outlined,
-                          color: Colors.black,
-                        ),
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.surfaceVariant,
-                          padding: const EdgeInsets.all(8),
-                          minimumSize: const Size(36, 36),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      // Delete Button
-                      IconButton(
-                        onPressed: () => _deleteItem(item),
-                        icon: const Icon(
-                          Icons.delete_outline,
-                          color: Colors.red,
-                        ),
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.red.withOpacity(0.1),
-                          padding: const EdgeInsets.all(8),
-                          minimumSize: const Size(36, 36),
-                        ),
-                      ),
-                    ],
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Failed to update status. Please try again.',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ],
+                ),
               ],
             ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-        ),
-      ),
-    );
+        );
+      }
+    }
   }
 
   void _editItem(WishlistItem item) {
@@ -1148,7 +1145,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
       },
     ).then((_) {
       // Refresh the list when returning from edit screen
-      setState(() {});
+      _loadWishlistDetails();
     });
   }
 
@@ -1468,6 +1465,52 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
     }
   }
 
+  void _openItemDetails(WishlistItem item) {
+    // Navigate to item details screen
+    Navigator.pushNamed(
+      context,
+      AppRoutes.itemDetails,
+      arguments: {
+        'id': item.id,
+        'wishlistId': item.wishlistId,
+        'title': item.name,
+        'name': item.name,
+        'description': item.description,
+        'imageUrl': item.imageUrl,
+        'priority': item.priority.toString().split('.').last,
+        'status': item.status.toString().split('.').last,
+      },
+    );
+  }
+}
+
+// Modern Swipeable Wishlist Item Widget
+class _ModernSwipeableWishlistItem extends StatefulWidget {
+  final WishlistItem item;
+  final bool isPurchased;
+  final Color priorityColor;
+  final VoidCallback onTap;
+  final VoidCallback? onToggleGifted;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+
+  const _ModernSwipeableWishlistItem({
+    required this.item,
+    required this.isPurchased,
+    required this.priorityColor,
+    required this.onTap,
+    this.onToggleGifted,
+    this.onEdit,
+    this.onDelete,
+  });
+
+  @override
+  State<_ModernSwipeableWishlistItem> createState() =>
+      _ModernSwipeableWishlistItemState();
+}
+
+class _ModernSwipeableWishlistItemState
+    extends State<_ModernSwipeableWishlistItem> {
   String _getPriorityText(ItemPriority priority) {
     switch (priority) {
       case ItemPriority.high:
@@ -1496,21 +1539,217 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen>
     }
   }
 
-  void _openItemDetails(WishlistItem item) {
-    // Navigate to item details screen
-    Navigator.pushNamed(
-      context,
-      AppRoutes.itemDetails,
-      arguments: {
-        'id': item.id,
-        'wishlistId': item.wishlistId,
-        'title': item.name,
-        'name': item.name,
-        'description': item.description,
-        'imageUrl': item.imageUrl,
-        'priority': item.priority.toString().split('.').last,
-        'status': item.status.toString().split('.').last,
-      },
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: widget.isPurchased
+                ? const Color(0xFF2ECC71).withOpacity(0.15)
+                : widget.priorityColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            _getCategoryIcon('General'),
+            color: widget.isPurchased
+                ? const Color(0xFF2ECC71)
+                : widget.priorityColor,
+            size: 24,
+          ),
+        ),
+        title: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 300),
+          style: AppStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.bold,
+            decoration: widget.isPurchased
+                ? TextDecoration.lineThrough
+                : TextDecoration.none,
+            color: widget.isPurchased ? Colors.grey : AppColors.textPrimary,
+          ),
+          child: Text(widget.item.name),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                // Priority dot + text
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: widget.priorityColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _getPriorityText(widget.item.priority),
+                  style: AppStyles.caption.copyWith(
+                    color: widget.priorityColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Category
+                Text(
+                  'General',
+                  style: AppStyles.caption.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        trailing: widget.onToggleGifted != null
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Purchase Toggle IconButton
+                  IconButton(
+                    onPressed: () {
+                      // This callback is handled separately and won't trigger ListTile.onTap
+                      widget.onToggleGifted?.call();
+                    },
+                    iconSize: 20.0,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
+                    ),
+                    icon: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: widget.isPurchased
+                            ? const Color(0xFF2ECC71)
+                            : Colors.transparent,
+                        shape: BoxShape.circle,
+                        border: widget.isPurchased
+                            ? null
+                            : Border.all(
+                                color: Colors.grey.withOpacity(0.3),
+                                width: 2,
+                              ),
+                      ),
+                      child: widget.isPurchased
+                          ? const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 16,
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Context Menu PopupMenuButton
+                  PopupMenuButton<String>(
+                    color: Colors.white,
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: AppColors.textTertiary,
+                      size: 20,
+                    ),
+                    iconSize: 20,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        widget.onEdit?.call();
+                      } else if (value == 'delete') {
+                        widget.onDelete?.call();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.edit,
+                              color: AppColors.textPrimary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Edit',
+                              style: AppStyles.bodyMedium.copyWith(
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, color: Colors.red, size: 20),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Delete',
+                              style: AppStyles.bodyMedium.copyWith(
+                                color: Colors.red,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+            : // For friend wishlists, only show purchase status indicator
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: widget.isPurchased
+                      ? const Color(0xFF2ECC71)
+                      : Colors.transparent,
+                  shape: BoxShape.circle,
+                  border: widget.isPurchased
+                      ? null
+                      : Border.all(
+                          color: Colors.grey.withOpacity(0.3),
+                          width: 2,
+                        ),
+                ),
+                child: widget.isPurchased
+                    ? const Icon(Icons.check, color: Colors.white, size: 16)
+                    : null,
+              ),
+        onTap: widget.onTap,
+      ),
     );
   }
 }

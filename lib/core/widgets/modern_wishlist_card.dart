@@ -150,15 +150,16 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
                   _buildCleanStats(),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
+                  // Progress Bar below stats
+                  _buildProgressIndicator(),
+                  const SizedBox(height: 16),
                   _buildActionRow(),
                 ],
               ),
             ),
-            // Progress Bar at Bottom
-            _buildBottomProgressBar(),
           ],
         ),
       ),
@@ -253,10 +254,29 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
           ),
         ),
 
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
 
-        // Status Pill (Right)
-        _buildStatusPill(),
+        // Status Pill & Menu (Right)
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildStatusPill(),
+            if (widget.onMenu != null) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: widget.onMenu,
+                icon: Icon(
+                  Icons.more_vert_rounded,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                tooltip: 'More options',
+              ),
+            ],
+          ],
+        ),
       ],
     );
   }
@@ -322,11 +342,7 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
     return Column(
       children: [
         // Icon on top
-        Icon(
-          icon,
-          color: color,
-          size: 28,
-        ),
+        Icon(icon, color: color, size: 28),
         const SizedBox(height: 8),
         // Bold number in middle
         Text(
@@ -354,92 +370,56 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
   }
 
   Widget _buildActionRow() {
-    return Row(
-      children: [
-        // Menu icon button on the left
-        if (widget.onMenu != null)
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.textLight.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              onPressed: widget.onMenu,
-              icon: Icon(
-                Icons.more_horiz_rounded,
-                color: AppColors.textSecondary,
-                size: 24,
-              ),
-              padding: const EdgeInsets.all(8),
-              constraints: const BoxConstraints(
-                minWidth: 40,
-                minHeight: 40,
-              ),
-              tooltip: 'More options',
-            ),
+    return _AnimatedButton(
+      onPressed: widget.onAddItem,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_accentColor, _accentColor.withOpacity(0.8)],
           ),
-
-        const Spacer(),
-
-        // Pill-shaped "Add Wish" button on the right
-        _AnimatedButton(
-          onPressed: widget.onAddItem,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [_accentColor, _accentColor.withOpacity(0.8)],
-              ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: _accentColor.withOpacity(0.4),
-                  offset: const Offset(0, 4),
-                  blurRadius: 12,
-                ),
-              ],
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: _accentColor.withOpacity(0.4),
+              offset: const Offset(0, 4),
+              blurRadius: 12,
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.add_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Add Wish',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    height: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          ],
         ),
-      ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Add Wish',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                height: 1.2,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildBottomProgressBar() {
+  Widget _buildProgressIndicator() {
     return AnimatedBuilder(
       animation: _progressAnimation,
       builder: (context, child) {
         return ClipRRect(
-          borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(24),
-            bottomRight: Radius.circular(24),
-          ),
+          borderRadius: BorderRadius.circular(8),
           child: LinearProgressIndicator(
             value: _progressAnimation.value,
-            backgroundColor: AppColors.borderLight,
-            minHeight: 6,
+            backgroundColor: _accentColor.withOpacity(0.15),
+            minHeight: 4,
             valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
           ),
         );

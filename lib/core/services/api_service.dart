@@ -39,9 +39,9 @@ class ApiService {
       // For Physical Device: use your computer's IP address
       // For Emulator: use 10.0.2.2
       //
-      // Detected IP: 192.168.86.3
+      // Detected IP: 192.168.1.3
       // If this doesn't work, find your IP with: ifconfig (Mac) or ipconfig (Windows)
-      return 'http://192.168.86.3:4000/api'; // Physical device - UPDATE IF NEEDED
+      return 'http://192.168.1.3:4000/api'; // Physical device - UPDATE IF NEEDED
       // return 'http://10.0.2.2:4000/api'; // Uncomment for Android Emulator
     }
 
@@ -84,9 +84,11 @@ class ApiService {
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 30), // 30 seconds timeout
-        receiveTimeout: const Duration(seconds: 30),
-        sendTimeout: const Duration(seconds: 30),
+        connectTimeout: const Duration(
+          seconds: 60,
+        ), // 60 seconds timeout for physical devices
+        receiveTimeout: const Duration(seconds: 60),
+        sendTimeout: const Duration(seconds: 60),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

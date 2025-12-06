@@ -80,11 +80,14 @@ class AppColors {
   static const Color shadowDark = Color(0x33000000);
 
   // Pastel Card Colors - Soft and Modern
-  static const Color cardBlue = Color(0xFFE0F4FF);      // Light sky blue
-  static const Color cardPurple = Color(0xFFF3E8FF);    // Light lavender  
-  static const Color cardGreen = Color(0xFFE8FFF3);     // Light mint
-  static const Color cardPink = Color(0xFFFFE8F0);      // Light rose
-  static const Color cardPeach = Color(0xFFFFF4E8);     // Light peach
+  static const Color cardBlue = Color(0xFFE0F4FF); // Light sky blue
+  static const Color cardPurple = Color(0xFFF3E8FF); // Light lavender
+  static const Color cardGreen = Color(0xFFE8FFF3); // Light mint
+  static const Color cardPink = Color(0xFFFFE8F0); // Light rose
+  static const Color cardPeach = Color(0xFFFFF4E8); // Light peach
+
+  // Profile Accent Color
+  static const Color profileAccent = Color(0xFFFFE8F0); // Light green-yellow
 
   // Pastel Card Colors List (for easy iteration)
   static const List<Color> pastelCards = [
@@ -188,14 +191,14 @@ class AppColors {
 
   // Error color - Canonical name for accent/error color
   static const Color error = Color(0xFFEF4444);
-  
+
   // Additional colors for hardcoded hex values found in codebase
   // Auth screen background
   static const Color authBackground = Color(0xFFF8F9FF);
-  
+
   // Cyan color used in auth screens
   static const Color cyan = Color(0xFF06B6D4);
-  
+
   // Border colors for pastel cards (matching hardcoded values from unified_page_container)
   static const Color cardBlueBorder = Color(0xFFB3E0FF);
   static const Color cardPurpleBorder = Color(0xFFE0C8FF);

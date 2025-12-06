@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
 
 /// A unified header widget that provides consistent styling across all main pages.
 /// Features title, search bar with filter icon in rounded lavender container.
+/// Can optionally include integrated tabs within the same pink background.
 class UnifiedPageHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -18,6 +20,15 @@ class UnifiedPageHeader extends StatelessWidget {
   final Widget? trailing;
   final Color? backgroundColor;
   final EdgeInsets? padding;
+  
+  // Integrated tabs parameters
+  final List<UnifiedTab>? tabs;
+  final int? selectedTabIndex;
+  final ValueChanged<int>? onTabChanged;
+  final Color? selectedTabColor;
+  
+  // Margin control
+  final double? bottomMargin;
 
   const UnifiedPageHeader({
     super.key,
@@ -34,15 +45,44 @@ class UnifiedPageHeader extends StatelessWidget {
     this.trailing,
     this.backgroundColor,
     this.padding,
+    this.tabs,
+    this.selectedTabIndex,
+    this.onTabChanged,
+    this.selectedTabColor,
+    this.bottomMargin,
   });
+
+  // Dynamic border radius based on tabs presence
+  BorderRadius get _borderRadius {
+    if (tabs != null && tabs!.isNotEmpty) {
+      // مع tabs: مستدير من الأعلى فقط
+      return const BorderRadius.only(
+        topLeft: Radius.circular(36),
+        topRight: Radius.circular(36),
+      );
+    } else {
+      // بدون tabs: مستدير من كل الجهات
+      return BorderRadius.circular(36);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Adjust bottom margin when tabs are present to connect with container
+    // Or use custom bottomMargin if provided
+    final calculatedBottomMargin = bottomMargin ?? 
+        ((tabs != null && tabs!.isNotEmpty) ? 0.0 : 16.0);
+    
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+      margin: EdgeInsets.only(
+        left: 8,
+        right: 8,
+        top: 16,
+        bottom: calculatedBottomMargin,
+      ),
       decoration: BoxDecoration(
         color: backgroundColor ?? AppColors.cardPurple,
-        borderRadius: BorderRadius.circular(36),
+        borderRadius: _borderRadius,
         boxShadow: [
           BoxShadow(
             color: AppColors.shadow.withOpacity(0.08),
@@ -53,7 +93,7 @@ class UnifiedPageHeader extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(36),
+        borderRadius: _borderRadius,
         child: Stack(
           children: [
             // Decorative background elements
@@ -127,6 +167,12 @@ class UnifiedPageHeader extends StatelessWidget {
                     if (showSearch) ...[
                       const SizedBox(height: 20),
                       _buildSearchBar(),
+                    ],
+
+                    // Integrated Tabs
+                    if (tabs != null && tabs!.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      _buildIntegratedTabs(),
                     ],
                   ],
                 ),
@@ -332,6 +378,110 @@ class UnifiedPageHeader extends StatelessWidget {
           ),
           const SizedBox(width: 16),
         ],
+      ),
+    );
+  }
+
+  // Build integrated tabs within the header
+  Widget _buildIntegratedTabs() {
+    if (tabs == null || tabs!.isEmpty || selectedTabIndex == null || onTabChanged == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: List.generate(tabs!.length, (index) {
+          final tab = tabs![index];
+          final isSelected = index == selectedTabIndex;
+
+          return Expanded(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onTabChanged!(index),
+                borderRadius: BorderRadius.circular(12),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? (selectedTabColor ?? AppColors.primary)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Icon
+                      if (tab.icon != null) ...[
+                        Icon(
+                          tab.icon,
+                          size: 18,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+
+                      // Label
+                      Flexible(
+                        child: Text(
+                          tab.label,
+                          style: AppStyles.bodyMedium.copyWith(
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.textSecondary,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+
+                      // Badge
+                      if (tab.badgeCount != null && tab.badgeCount! > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Colors.white.withOpacity(0.3)
+                                : (tab.badgeColor ?? AppColors.accent),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            tab.badgeCount.toString(),
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
