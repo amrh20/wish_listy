@@ -484,10 +484,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                                     onPressed: _loadWishlistDetails,
                                     icon: const Icon(Icons.refresh),
                                     label: const Text('Retry'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.primary,
-                                      foregroundColor: Colors.white,
-                                    ),
+                                    style: AppStyles.primaryButton,
                                   ),
                                 ],
                               ),
@@ -658,12 +655,12 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
               color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: AppColors.borderLight,
+                          color: AppColors.surfaceVariant,
                           width: 1,
                         ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.shadowLight.withOpacity(0.1),
+                  color: AppColors.textTertiary.withOpacity(0.05),
                   offset: const Offset(0, 2),
                   blurRadius: 4,
                 ),
@@ -779,7 +776,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
           border: Border.all(
             color: isSelected
                 ? AppColors.primary
-                : AppColors.borderLight.withOpacity(0.5),
+                : AppColors.surfaceVariant.withOpacity(0.5),
             width: 1,
           ),
         ),
@@ -959,13 +956,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
+              style: AppStyles.primaryButton,
               child: const Text('Confirm'),
                             ),
                         ],
@@ -1075,7 +1066,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                       child: const Text(
@@ -1400,17 +1391,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                 },
                 icon: const Icon(Icons.add_rounded),
                 label: const Text('Add First Wish'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
+                style: AppStyles.primaryButton,
               ),
           ],
         ),

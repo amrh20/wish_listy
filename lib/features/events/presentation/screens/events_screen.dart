@@ -299,7 +299,6 @@ class _EventsScreenState extends State<EventsScreen>
                   // Unified Page Header with Integrated Tabs
                   UnifiedPageHeader(
                     title: localization.translate('events.title'),
-                    subtitle: '${_getUpcomingEventsCount()} ${localization.translate('events.upcomingEvents')}',
                     titleIcon: Icons.celebration_rounded,
                     titleIconColor: AppColors.accent,
                     showSearch: true,
@@ -326,7 +325,9 @@ class _EventsScreenState extends State<EventsScreen>
                       ),
                       UnifiedTab(
                         label: localization.translate('events.invited'),
-                        badgeCount: _invitedEvents.where((e) => e.status == EventStatus.upcoming).length,
+                        badgeCount: _invitedEvents
+                            .where((e) => e.status == EventStatus.upcoming)
+                            .length,
                       ),
                     ],
                     selectedTabIndex: _tabController.index,
@@ -334,7 +335,7 @@ class _EventsScreenState extends State<EventsScreen>
                       _tabController.animateTo(index);
                       setState(() {});
                     },
-                    selectedTabColor: AppColors.accent,
+                    selectedTabColor: AppColors.primary,
                   ),
 
                   // Tab Content in rounded container
@@ -365,7 +366,7 @@ class _EventsScreenState extends State<EventsScreen>
             onPressed: () {
               Navigator.pushNamed(context, AppRoutes.createEvent);
             },
-            backgroundColor: AppColors.primary,
+            backgroundColor: AppColors.accent,
             foregroundColor: Colors.white,
             heroTag: 'events_fab',
             child: Icon(Icons.add_rounded),
@@ -482,17 +483,6 @@ class _EventsScreenState extends State<EventsScreen>
         ),
       ),
     );
-  }
-
-  // Helper Methods
-  int _getUpcomingEventsCount() {
-    final myUpcoming = _myEvents
-        .where((e) => e.status == EventStatus.upcoming)
-        .length;
-    final invitedUpcoming = _invitedEvents
-        .where((e) => e.status == EventStatus.upcoming)
-        .length;
-    return myUpcoming + invitedUpcoming;
   }
 
   // Action Handlers
@@ -648,5 +638,4 @@ class _EventsScreenState extends State<EventsScreen>
     });
     _applyFilters();
   }
-
 }

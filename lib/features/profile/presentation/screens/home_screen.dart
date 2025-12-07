@@ -198,92 +198,95 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   // Unified Page Header
                   _buildUnifiedHeader(localization, authService),
 
-                  // Content in rounded container
+                  // Content in rounded container (with negative margin to overlap header)
                   Expanded(
-                    child: UnifiedPageContainer(
-                      child: RefreshIndicator(
-                        onRefresh: _refreshData,
-                        color: AppColors.primary,
-                        child: SingleChildScrollView(
-                          controller: _scrollController,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          child: AnimatedBuilder(
-                            animation: _animationController,
-                            builder: (context, child) {
-                              return FadeTransition(
-                                opacity: _fadeAnimation,
-                                child: SlideTransition(
-                                  position: _slideAnimation,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Guest Mode Welcome Card
-                                        if (authService.isGuest == true) ...[
-                                          _buildGuestWelcomeCard(localization),
-                                          const SizedBox(height: 24),
-                                        ],
+                    child: Transform.translate(
+                      offset: const Offset(
+                        0,
+                        -8,
+                      ), // Move up to overlap header and hide gray gap
+                      child: UnifiedPageContainer(
+                        showTopRadius: true,
+                        child: RefreshIndicator(
+                          onRefresh: _refreshData,
+                          color: AppColors.primary,
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            child: AnimatedBuilder(
+                              animation: _animationController,
+                              builder: (context, child) {
+                                return FadeTransition(
+                                  opacity: _fadeAnimation,
+                                  child: SlideTransition(
+                                    position: _slideAnimation,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          // Guest Mode Welcome Card
+                                          if (authService.isGuest == true) ...[
+                                            _buildGuestWelcomeCard(
+                                              localization,
+                                            ),
+                                            const SizedBox(height: 24),
+                                          ],
 
-                                        // Regular Welcome Card for logged users (only if no wishlists)
-                                        if (authService.isAuthenticated ==
-                                                true &&
-                                            _showWelcomeCard &&
-                                            !_hasWishlists &&
-                                            !_isCheckingWishlists) ...[
-                                          _buildWelcomeCard(localization),
-                                          const SizedBox(height: 24),
-                                        ],
+                                          // Regular Welcome Card for logged users (only if no wishlists)
+                                          if (authService.isAuthenticated ==
+                                                  true &&
+                                              _showWelcomeCard &&
+                                              !_hasWishlists &&
+                                              !_isCheckingWishlists) ...[
+                                            _buildWelcomeCard(localization),
+                                            const SizedBox(height: 24),
+                                          ],
 
-                                        // Summary Card when user has wishlists (replaces welcome card)
-                                        if (authService.isAuthenticated &&
-                                            _hasWishlists &&
-                                            !_isCheckingWishlists) ...[
-                                          _buildSummaryCard(localization),
-                                          const SizedBox(height: 24),
-                                        ],
+                                          // Summary Card is now in the header (removed from body)
 
-                                        // Quick Actions (limited for guests)
-                                        _buildQuickActions(localization),
-                                        SizedBox(
-                                          height: _hasWishlists ? 20 : 24,
-                                        ),
-
-                                        // Upcoming Events (only for authenticated users)
-                                        if (authService.isAuthenticated) ...[
-                                          _buildUpcomingEvents(localization),
-                                          const SizedBox(height: 32),
-                                        ],
-
-                                        // Friend Activity (only for authenticated users)
-                                        if (authService.isAuthenticated) ...[
-                                          _buildFriendActivity(localization),
-                                          const SizedBox(height: 32),
-                                        ],
-
-                                        // Gift Suggestions (limited for guests)
-                                        if (authService.isAuthenticated) ...[
-                                          _buildGiftSuggestions(localization),
-                                          const SizedBox(height: 32),
-                                        ],
-
-                                        // Guest encouragement section
-                                        if (authService.isGuest == true) ...[
-                                          _buildGuestEncouragementSection(
-                                            localization,
+                                          // Quick Actions (limited for guests)
+                                          _buildQuickActions(localization),
+                                          SizedBox(
+                                            height: _hasWishlists ? 20 : 24,
                                           ),
-                                        ],
 
-                                        const SizedBox(
-                                          height: 100,
-                                        ), // Bottom padding for FAB
-                                      ],
+                                          // Upcoming Events (only for authenticated users)
+                                          if (authService.isAuthenticated) ...[
+                                            _buildUpcomingEvents(localization),
+                                            const SizedBox(height: 32),
+                                          ],
+
+                                          // Friend Activity (only for authenticated users)
+                                          if (authService.isAuthenticated) ...[
+                                            _buildFriendActivity(localization),
+                                            const SizedBox(height: 32),
+                                          ],
+
+                                          // Gift Suggestions (limited for guests)
+                                          if (authService.isAuthenticated) ...[
+                                            _buildGiftSuggestions(localization),
+                                            const SizedBox(height: 32),
+                                          ],
+
+                                          // Guest encouragement section
+                                          if (authService.isGuest == true) ...[
+                                            _buildGuestEncouragementSection(
+                                              localization,
+                                            ),
+                                          ],
+
+                                          const SizedBox(
+                                            height: 100,
+                                          ), // Bottom padding for FAB
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                              );
-                            },
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ),
@@ -332,6 +335,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           badgeColor: AppColors.accent,
         ),
       ],
+      // Add wishlist card as bottom content when user has wishlists
+      // Show skeleton loading while checking, or card if has wishlists
+      bottomContent: _isCheckingWishlists
+          ? _buildWishlistCardSkeleton()
+          : (_hasWishlists ? _buildSummaryCard(localization) : null),
+      // Remove bottom margin to allow container to overlap
+      bottomMargin: 0.0,
     );
   }
 
@@ -345,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           colors: [
             AppColors.primary,
             AppColors.primaryLight,
-            AppColors.primaryAccent,
+            const Color(0xFF8B5CF6), // primaryAccent
           ],
           stops: const [0.0, 0.6, 1.0],
         ),
@@ -420,32 +430,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  /// Summary card shown when user has wishlists (replaces welcome card)
+  /// Summary card shown when user has wishlists (now inside header)
   Widget _buildSummaryCard(LocalizationService localization) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.surface,
-            AppColors.surface,
-            AppColors.primary.withOpacity(0.03),
-          ],
-          stops: const [0.0, 0.7, 1.0],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.1),
-          width: 1.5,
-        ),
+        color: Colors.white, // Solid white for better contrast
+        borderRadius: BorderRadius.circular(16), // Border radius from all sides
+        border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.08),
-            offset: const Offset(0, 4),
-            blurRadius: 16,
-            spreadRadius: 0,
+            color: Colors.black.withOpacity(0.1),
+            offset: const Offset(0, 2),
+            blurRadius: 8,
           ),
         ],
       ),
@@ -460,8 +457,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
+                  AppColors.primary.withOpacity(0.1),
                   AppColors.primary.withOpacity(0.15),
-                  AppColors.secondary.withOpacity(0.15),
                 ],
               ),
               borderRadius: BorderRadius.circular(16),
@@ -488,7 +485,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       'Your Wishlists',
                       style: AppStyles.headingSmall.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: AppColors
+                            .textPrimary, // Dark text on white background
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -515,7 +513,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Text(
                   'Manage and organize your wishlists',
                   style: AppStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
+                    color: AppColors.textSecondary, // Secondary text color
                     height: 1.3,
                   ),
                 ),
@@ -531,13 +529,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppColors.primary, AppColors.primaryLight],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.white, // Solid white button for contrast
+                      borderRadius: BorderRadius.circular(
+                        16,
+                      ), // Unified button radius
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: Colors.black.withOpacity(0.1),
                           offset: const Offset(0, 2),
                           blurRadius: 8,
                         ),
@@ -549,14 +547,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         Text(
                           'View All',
                           style: AppStyles.bodyMedium.copyWith(
-                            color: Colors.white,
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(width: 6),
                         Icon(
                           Icons.arrow_forward_rounded,
-                          color: Colors.white,
+                          color: AppColors.primary,
                           size: 16,
                         ),
                       ],
@@ -568,6 +566,116 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ],
       ),
+    );
+  }
+
+  /// Skeleton loading widget for wishlist card
+  Widget _buildWishlistCardSkeleton() {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        // Create pulsing effect using sine wave - lighter and smoother
+        final pulseValue =
+            (0.15 +
+            (0.2 *
+                (0.5 +
+                    0.5 * (1 + (2 * _animationController.value - 1).abs()))));
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                offset: const Offset(0, 2),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Icon Skeleton - Light purple gradient
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary.withOpacity(0.08 + pulseValue * 0.05),
+                      AppColors.primary.withOpacity(0.12 + pulseValue * 0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Content Skeleton
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title Skeleton
+                    Row(
+                      children: [
+                        Container(
+                          width: 120,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(
+                              0.1 + pulseValue * 0.05,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 30,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(
+                              0.1 + pulseValue * 0.05,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // Subtitle Skeleton
+                    Container(
+                      width: 200,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(
+                          0.08 + pulseValue * 0.03,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Button Skeleton
+                    Container(
+                      width: 90,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(
+                          0.06 + pulseValue * 0.03,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

@@ -459,92 +459,93 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     final isPurchased =
         (_currentItem?.status ?? widget.item.status) == ItemStatus.purchased;
 
+    // Standardized button height and border radius
+    const double buttonHeight = 56.0;
+    const double buttonBorderRadius = 16.0;
+    const double buttonSpacing = 12.0;
+
     return Column(
       children: [
-        // Primary Button - Mark as Gifted/Available
+        // Button 1: Mark as Gifted (Primary State Action)
         SizedBox(
           width: double.infinity,
-          child: CustomButton(
-            text: isPurchased ? 'Mark as Available' : 'Mark as Gifted',
+          height: buttonHeight,
+          child: ElevatedButton(
             onPressed: _togglePurchaseStatus,
-            variant: ButtonVariant.primary,
-            customColor: isPurchased ? AppColors.warning : AppColors.success,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.success,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(buttonBorderRadius),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+            ),
+            child: Text(
+              isPurchased ? 'Mark as Available' : 'Mark as Gifted',
+              style: AppStyles.button,
+            ),
           ),
         ),
 
-        const SizedBox(height: 12),
+        SizedBox(height: buttonSpacing),
 
-        // Outlined Buttons
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _shareItem,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: BorderSide(
-                    color: AppColors.secondary.withOpacity(0.3),
-                    width: 1,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.share_outlined,
-                      size: 18,
-                      color: AppColors.secondary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Share',
-                      style: AppStyles.bodyMedium.copyWith(
-                        color: AppColors.secondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+        // Button 2: Share Item (Secondary Action)
+        SizedBox(
+          width: double.infinity,
+          height: buttonHeight,
+          child: OutlinedButton(
+            onPressed: _shareItem,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary, width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(buttonBorderRadius),
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _deleteItem,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  side: BorderSide(
-                    color: AppColors.error.withOpacity(0.3),
-                    width: 1,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.share_outlined, size: 20, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Text(
+                  'Share Item',
+                  style: AppStyles.button.copyWith(color: AppColors.primary),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.delete_outline,
-                      size: 18,
-                      color: AppColors.error,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Delete',
-                      style: AppStyles.bodyMedium.copyWith(
-                        color: AppColors.error,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+              ],
+            ),
+          ),
+        ),
+
+        SizedBox(height: buttonSpacing),
+
+        // Button 3: Delete Item (Destructive Action)
+        SizedBox(
+          width: double.infinity,
+          height: buttonHeight,
+          child: OutlinedButton(
+            onPressed: _deleteItem,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error,
+              side: const BorderSide(color: AppColors.error, width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(buttonBorderRadius),
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
             ),
-          ],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.delete_outline, size: 20, color: AppColors.error),
+                const SizedBox(width: 8),
+                Text(
+                  'Delete Item',
+                  style: AppStyles.button.copyWith(color: AppColors.error),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );

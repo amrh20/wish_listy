@@ -125,7 +125,7 @@ class _CustomButtonState extends State<CustomButton>
           color: isEnabled
               ? (widget.customColor ?? AppColors.primary)
               : (widget.customColor ?? AppColors.primary).withOpacity(0.3),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: isEnabled && !_isPressed
               ? [
                   BoxShadow(
@@ -144,7 +144,7 @@ class _CustomButtonState extends State<CustomButton>
           color: isEnabled
               ? AppColors.surfaceVariant
               : AppColors.surfaceVariant.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isEnabled
                 ? (widget.customColor ?? AppColors.primary)
@@ -156,7 +156,7 @@ class _CustomButtonState extends State<CustomButton>
       case ButtonVariant.outline:
         return BoxDecoration(
           color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isEnabled
                 ? (widget.customColor ?? AppColors.primary)
@@ -170,7 +170,7 @@ class _CustomButtonState extends State<CustomButton>
           color: _isPressed
               ? (widget.customColor ?? AppColors.primary).withOpacity(0.1)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
         );
 
       case ButtonVariant.gradient:
@@ -186,7 +186,7 @@ class _CustomButtonState extends State<CustomButton>
                       .map((color) => color.withOpacity(0.3))
                       .toList(),
                 ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: isEnabled && !_isPressed
               ? [
                   BoxShadow(

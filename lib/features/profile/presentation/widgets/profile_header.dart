@@ -84,7 +84,11 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      gradient: AppColors.successGradient,
+                      gradient: LinearGradient(
+                        colors: [AppColors.success, AppColors.successLight],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -105,7 +109,11 @@ class _ProfileHeaderState extends State<ProfileHeader> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: AppColors.tealGradient,
+                gradient: LinearGradient(
+                  colors: [AppColors.secondary, AppColors.secondaryLight],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(

@@ -23,29 +23,41 @@ class _StatsCardsState extends State<StatsCards> {
         'count': 12,
         'label': 'Wishes',
         'icon': Icons.card_giftcard,
-        'color': AppColors.pink,
-        'gradient': AppColors.pinkGradient,
+        'color': AppColors.accent,
+        'gradient': AppColors.accentGradient,
       },
       {
         'count': 3,
         'label': 'Reserved',
         'icon': Icons.check_circle,
         'color': AppColors.success,
-        'gradient': AppColors.successGradient,
+        'gradient': LinearGradient(
+          colors: [AppColors.success, AppColors.successLight],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       },
       {
         'count': 25,
         'label': 'Friends',
         'icon': Icons.people,
-        'color': AppColors.indigo,
-        'gradient': AppColors.indigoGradient,
+        'color': AppColors.info,
+        'gradient': LinearGradient(
+          colors: [AppColors.info, AppColors.info.withOpacity(0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       },
       {
         'count': 8,
         'label': 'Events',
         'icon': Icons.event,
         'color': AppColors.secondary,
-        'gradient': AppColors.tealGradient,
+        'gradient': LinearGradient(
+          colors: [AppColors.secondary, AppColors.secondaryLight],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
       },
     ];
 

@@ -22,43 +22,43 @@ class AppTheme {
   static Color get onSurface => AppColors.textPrimary;
 
   // Text Styles
-  static TextStyle get heading1 => GoogleFonts.comfortaa(
+  static TextStyle get heading1 => GoogleFonts.readexPro(
     fontSize: 32,
     fontWeight: FontWeight.bold,
     color: onSurface,
   );
 
-  static TextStyle get heading2 => GoogleFonts.comfortaa(
+  static TextStyle get heading2 => GoogleFonts.readexPro(
     fontSize: 24,
     fontWeight: FontWeight.bold,
     color: onSurface,
   );
 
-  static TextStyle get heading3 => GoogleFonts.comfortaa(
+  static TextStyle get heading3 => GoogleFonts.readexPro(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: onSurface,
   );
 
-  static TextStyle get bodyLarge => GoogleFonts.comfortaa(
+  static TextStyle get bodyLarge => GoogleFonts.readexPro(
     fontSize: 16,
     fontWeight: FontWeight.normal,
     color: onSurface,
   );
 
-  static TextStyle get bodyMedium => GoogleFonts.comfortaa(
+  static TextStyle get bodyMedium => GoogleFonts.readexPro(
     fontSize: 14,
     fontWeight: FontWeight.normal,
     color: onSurface,
   );
 
-  static TextStyle get bodySmall => GoogleFonts.comfortaa(
+  static TextStyle get bodySmall => GoogleFonts.readexPro(
     fontSize: 12,
     fontWeight: FontWeight.normal,
     color: onSurface,
   );
 
-  static TextStyle get button => GoogleFonts.comfortaa(
+  static TextStyle get button => GoogleFonts.readexPro(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     color: surface,
@@ -76,8 +76,8 @@ class AppTheme {
 
   // Border Radius
   static const double radiusSmall = 8.0;
-  static const double radiusMedium = 12.0;
-  static const double radiusLarge = 16.0;
+  static const double radiusMedium = 16.0; // Updated to match AppStyles.primaryButton
+  static const double radiusLarge = 20.0;
   static const double radiusXLarge = 24.0;
 
   // Shadows
@@ -107,7 +107,7 @@ class AppTheme {
 
   // Theme Data
   static ThemeData get lightTheme {
-    return ThemeData(
+    final baseTheme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.light(
         primary: primary,
@@ -116,7 +116,10 @@ class AppTheme {
         onSurface: onSurface,
         error: error,
       ),
-      textTheme: TextTheme(
+    );
+    
+    return baseTheme.copyWith(
+      textTheme: GoogleFonts.readexProTextTheme(baseTheme.textTheme).copyWith(
         headlineLarge: heading1,
         headlineMedium: heading2,
         headlineSmall: heading3,
@@ -176,28 +179,31 @@ class AppTheme {
   }
 
   static ThemeData get darkTheme {
-    return ThemeData(
+    final baseTheme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.dark(
         primary: primary,
         secondary: secondary,
-        surface: AppColors.surfaceDark,
-        onSurface: AppColors.textPrimaryDark,
+        surface: AppColors.surface,
+        onSurface: AppColors.textPrimary,
         error: error,
       ),
-      textTheme: TextTheme(
-        headlineLarge: heading1.copyWith(color: AppColors.textPrimaryDark),
-        headlineMedium: heading2.copyWith(color: AppColors.textPrimaryDark),
-        headlineSmall: heading3.copyWith(color: AppColors.textPrimaryDark),
-        bodyLarge: bodyLarge.copyWith(color: AppColors.textPrimaryDark),
-        bodyMedium: bodyMedium.copyWith(color: AppColors.textPrimaryDark),
-        bodySmall: bodySmall.copyWith(color: AppColors.textPrimaryDark),
-        labelLarge: button.copyWith(color: AppColors.surfaceDark),
+    );
+    
+    return baseTheme.copyWith(
+      textTheme: GoogleFonts.readexProTextTheme(baseTheme.textTheme).copyWith(
+        headlineLarge: heading1.copyWith(color: AppColors.textPrimary),
+        headlineMedium: heading2.copyWith(color: AppColors.textPrimary),
+        headlineSmall: heading3.copyWith(color: AppColors.textPrimary),
+        bodyLarge: bodyLarge.copyWith(color: AppColors.textPrimary),
+        bodyMedium: bodyMedium.copyWith(color: AppColors.textPrimary),
+        bodySmall: bodySmall.copyWith(color: AppColors.textPrimary),
+        labelLarge: button.copyWith(color: AppColors.surface),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
-          foregroundColor: AppColors.surfaceDark,
+          foregroundColor: AppColors.surface,
           textStyle: button,
           padding: const EdgeInsets.symmetric(
             horizontal: spacing24,
@@ -210,7 +216,7 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.surfaceDark,
+        color: AppColors.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
@@ -219,7 +225,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceDark,
+        fillColor: AppColors.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
           borderSide: BorderSide.none,

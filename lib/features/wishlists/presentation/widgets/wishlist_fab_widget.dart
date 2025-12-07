@@ -135,7 +135,7 @@ class WishlistFabWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return FloatingActionButton(
       onPressed: () => _showCreateOptions(context),
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.accent,
       elevation: 4,
       heroTag: 'wishlist_fab', // Unique hero tag to avoid conflicts
       child: const Icon(Icons.add_rounded, size: 28, color: Colors.white),

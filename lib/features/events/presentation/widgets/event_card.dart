@@ -31,33 +31,38 @@ class EventCard extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: isPast
-            ? Border.all(color: AppColors.textTertiary.withOpacity(0.3))
-            : Border.all(
-                color: _getEventTypeColor(event.type).withOpacity(0.3),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.08),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.textTertiary.withOpacity(0.05),
+                offset: const Offset(0, 5),
+                blurRadius: 15,
+                spreadRadius: 0,
               ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textTertiary.withOpacity(0.1),
-            offset: const Offset(0, 4),
-            blurRadius: 12,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Column(
-            children: [
-              _buildHeader(event, isPast, daysUntil),
-              _buildContent(event, isPast),
             ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(24),
+              child: Column(
+                children: [
+                  _buildHeader(event, isPast, daysUntil),
+                  _buildContent(event, isPast),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -65,43 +70,37 @@ class EventCard extends StatelessWidget {
   }
 
   Widget _buildHeader(EventSummary event, bool isPast, int daysUntil) {
+    final eventColor = _getEventTypeColor(event.type);
+    
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isPast
-              ? [
-                  AppColors.textTertiary.withOpacity(0.1),
-                  AppColors.textTertiary.withOpacity(0.05),
-                ]
-              : [
-                  _getEventTypeColor(event.type).withOpacity(0.1),
-                  _getEventTypeColor(event.type).withOpacity(0.05),
-                ],
-        ),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
+        color: AppColors.secondary.withOpacity(0.06), // Soft Teal Tint
       ),
       child: Row(
         children: [
-          // Event Icon
+          // Event Icon - Squircle Style
           Container(
-            width: 60,
-            height: 60,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
-              color: isPast
-                  ? AppColors.textTertiary
-                  : _getEventTypeColor(event.type),
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.surface, // Surface background for contrast
+              borderRadius: BorderRadius.circular(20), // Squircle
+              boxShadow: [
+                BoxShadow(
+                  color: (isPast ? AppColors.textTertiary : eventColor)
+                      .withOpacity(0.15),
+                  offset: const Offset(0, 2),
+                  blurRadius: 8,
+                ),
+              ],
             ),
             child: Icon(
               _getEventTypeIcon(event.type),
-              color: Colors.white,
-              size: 28,
+              color: isPast
+                  ? AppColors.textTertiary
+                  : eventColor,
+              size: 32,
             ),
           ),
 
@@ -152,18 +151,19 @@ class EventCard extends StatelessWidget {
             ),
           ),
 
-          // Date Badge
+          // Date Badge - Pill-shaped
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: isPast
-                  ? AppColors.textTertiary.withOpacity(0.1)
+                  ? AppColors.textTertiary.withOpacity(0.15)
                   : daysUntil <= 7
-                  ? AppColors.warning.withOpacity(0.1)
-                  : AppColors.info.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+                  ? AppColors.warning.withOpacity(0.15)
+                  : AppColors.info.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(30), // Pill-shaped
             ),
-            child: Column(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   '${event.date.day}',
@@ -176,6 +176,7 @@ class EventCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(width: 4),
                 Text(
                   _getMonthName(event.date.month),
                   style: AppStyles.caption.copyWith(
@@ -196,8 +197,11 @@ class EventCard extends StatelessWidget {
   }
 
   Widget _buildContent(EventSummary event, bool isPast) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Colors.white, // White background for body
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -215,40 +219,36 @@ class EventCard extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Stats Row
+          // Stats Row - Unified 3-column structure like Wishlist
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Expanded(
-                child: _buildEventStat(
-                  icon: Icons.people_outline,
-                  label: 'Invited',
-                  value: '${event.invitedCount}',
-                  color: AppColors.primary,
-                ),
+              _buildEventStatColumn(
+                icon: Icons.people_outline,
+                label: 'Invited',
+                value: '${event.invitedCount}',
+                color: AppColors.secondary, // Match header theme (Teal)
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildEventStat(
-                  icon: Icons.check_circle_outline,
-                  label: 'Accepted',
-                  value: '${event.acceptedCount}',
-                  color: AppColors.success,
-                ),
+              _buildEventStatColumn(
+                icon: Icons.check_circle_outline,
+                label: 'Accepted',
+                value: '${event.acceptedCount}',
+                color: AppColors.secondary, // Match header theme (Teal)
               ),
-              const SizedBox(width: 12),
-              // Dynamic wishlist stat based on whether wishlist exists
-              if (event.wishlistId != null) ...[
-                Expanded(
-                  child: _buildEventStat(
-                    icon: Icons.card_giftcard_outlined,
-                    label: 'Wishlist',
-                    value: '${event.wishlistItemCount}',
-                    color: AppColors.secondary,
-                  ),
+              if (event.wishlistId != null)
+                _buildEventStatColumn(
+                  icon: Icons.card_giftcard_outlined,
+                  label: 'Wishlist',
+                  value: '${event.wishlistItemCount}',
+                  color: AppColors.secondary, // Match header theme (Teal)
+                )
+              else
+                _buildEventStatColumn(
+                  icon: Icons.warning_outlined,
+                  label: 'No Wishlist',
+                  value: '—',
+                  color: AppColors.secondary, // Match header theme (Teal)
                 ),
-              ] else ...[
-                Expanded(child: _buildNoWishlistStat()),
-              ],
             ],
           ),
 
@@ -265,7 +265,7 @@ class EventCard extends StatelessWidget {
                       text: localization.translate('ui.manageEvent'),
                       onPressed: onManageEvent,
                       variant: ButtonVariant.outline,
-                      customColor: _getEventTypeColor(event.type),
+                      customColor: AppColors.primary, // Use primary color for all buttons
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -278,7 +278,7 @@ class EventCard extends StatelessWidget {
                           ? onViewWishlist
                           : onAddWishlist,
                       variant: ButtonVariant.primary,
-                      customColor: _getEventTypeColor(event.type),
+                      customColor: AppColors.primary, // Use primary color for all buttons
                     ),
                   ),
                 ] else ...[
@@ -288,7 +288,7 @@ class EventCard extends StatelessWidget {
                       text: 'View Details',
                       onPressed: onViewDetails,
                       variant: ButtonVariant.outline,
-                      customColor: _getEventTypeColor(event.type),
+                      customColor: AppColors.primary, // Use primary color for all buttons
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -298,7 +298,7 @@ class EventCard extends StatelessWidget {
                         text: localization.translate('ui.viewWishlist'),
                         onPressed: onViewWishlist,
                         variant: ButtonVariant.primary,
-                        customColor: _getEventTypeColor(event.type),
+                        customColor: AppColors.primary, // Use primary color for all buttons
                       ),
                     ),
                   ] else ...[
@@ -328,51 +328,43 @@ class EventCard extends StatelessWidget {
     );
   }
 
-  Widget _buildEventStat({
+  Widget _buildEventStatColumn({
     required IconData icon,
     required String label,
     required String value,
     required Color color,
   }) {
-    return Row(
+    return Column(
       children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: 4),
+        // Icon Container with pastel background
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(height: 8),
+        // Bold number in middle
         Text(
           value,
-          style: AppStyles.bodySmall.copyWith(
-            color: color,
-            fontWeight: FontWeight.w600,
+          style: AppStyles.headingSmall.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+            height: 1.1,
           ),
         ),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            label,
-            style: AppStyles.caption.copyWith(color: AppColors.textTertiary),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
+        const SizedBox(height: 4),
+        // Small label at bottom
+        Text(
+          label,
+          style: AppStyles.caption.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNoWishlistStat() {
-    return Row(
-      children: [
-        Icon(Icons.warning_outlined, size: 16, color: AppColors.warning),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            localization.translate('ui.noWishlistLinked'),
-            style: AppStyles.caption.copyWith(
-              color: AppColors.warning,
-              fontWeight: FontWeight.w600,
-            ),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-          ),
+          textAlign: TextAlign.center,
         ),
       ],
     );

@@ -143,7 +143,7 @@ class _WishesSectionState extends State<WishesSection>
                             : Icons.favorite_border,
                         color: wish.isFavorite
                             ? AppColors.textWhite
-                            : AppColors.textLight,
+                            : AppColors.textTertiary,
                         size: 18,
                       ),
                     ),
@@ -183,7 +183,7 @@ class _WishesSectionState extends State<WishesSection>
                     Text(
                       wish.description,
                       style: AppStyles.bodySmall.copyWith(
-                        color: AppColors.textLight,
+                        color: AppColors.textTertiary,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -236,12 +236,12 @@ class _WishesSectionState extends State<WishesSection>
           Icon(
             Icons.sentiment_very_dissatisfied,
             size: 50,
-            color: AppColors.textLight,
+            color: AppColors.textTertiary,
           ),
           const SizedBox(height: 10),
           Text(
             'No wishes yet!',
-            style: AppStyles.bodyMedium.copyWith(color: AppColors.textLight),
+            style: AppStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
           ),
         ],
       ),

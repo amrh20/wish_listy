@@ -176,11 +176,11 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           floatingActionButton: Container(
             decoration: BoxDecoration(
-              color: AppColors.profileAccent,
+              color: AppColors.accent, // Hot Pink for FAB
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.profileAccent.withOpacity(0.3),
+                  color: AppColors.accent.withOpacity(0.3),
                   offset: const Offset(0, 6),
                   blurRadius: 15,
                   spreadRadius: 1,
@@ -207,7 +207,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow.withOpacity(0.08),
+            color: AppColors.textTertiary.withOpacity(0.1),
             offset: const Offset(0, 2),
             blurRadius: 8,
             spreadRadius: 0,
@@ -313,7 +313,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow.withOpacity(0.06),
+            color: AppColors.textTertiary.withOpacity(0.1),
             offset: const Offset(0, 4),
             blurRadius: 20,
             spreadRadius: 0,
@@ -329,7 +329,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.info, AppColors.infoLight],
+                    colors: [AppColors.info, AppColors.info.withOpacity(0.8)],
                   ),
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -385,7 +385,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow.withOpacity(0.06),
+            color: AppColors.textTertiary.withOpacity(0.1),
             offset: const Offset(0, 4),
             blurRadius: 20,
             spreadRadius: 0,
@@ -401,7 +401,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.warning, AppColors.warningLight],
+                    colors: [
+                      AppColors.warning,
+                      AppColors.warning.withOpacity(0.8),
+                    ],
                   ),
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -423,7 +426,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             title: 'Theme',
             subtitle: 'Light, dark, system',
             onTap: _themeSettings,
-            color: AppColors.indigo,
+            color: AppColors.info,
           ),
 
           _buildSettingItem(
@@ -432,7 +435,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             subtitle: _currentLanguage == 'en' ? 'English' : 'العربية',
             onTap: _languageSettings,
             showDivider: false,
-            color: AppColors.teal,
+            color: AppColors.secondary,
           ),
         ],
       ),

@@ -238,27 +238,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                           // Main Content
                           Expanded(
                             child: _isLoading
-                                ? Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        CircularProgressIndicator(
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                AppColors.primary,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'Loading...',
-                                          style: AppStyles.bodyMedium.copyWith(
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
+                                ? _buildWishlistSkeletonList()
                                 : _errorMessage != null
                                 ? Center(
                                     child: Padding(
@@ -285,11 +265,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                                             onPressed: _loadWishlists,
                                             icon: const Icon(Icons.refresh),
                                             label: const Text('Retry'),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor:
-                                                  AppColors.primary,
-                                              foregroundColor: Colors.white,
-                                            ),
+                                            style: AppStyles.primaryButton,
                                           ),
                                         ],
                                       ),
@@ -932,7 +908,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
           color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.borderLight,
+            color: isSelected ? AppColors.primary : AppColors.surfaceVariant,
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -1029,5 +1005,231 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
       default:
         return Icons.label_outline;
     }
+  }
+
+  /// Build skeleton loading list for wishlist cards
+  Widget _buildWishlistSkeletonList() {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        // Create pulsing effect using sine wave - lighter and smoother
+        final pulseValue = (0.15 +
+            (0.2 *
+                (0.5 +
+                    0.5 * (1 + (2 * _animationController.value - 1).abs()))));
+
+        return RefreshIndicator(
+          onRefresh: _refreshWishlists,
+          color: AppColors.primary,
+          child: ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: 3, // Show 3 skeleton cards
+            separatorBuilder: (context, index) => const SizedBox(height: 16),
+            itemBuilder: (context, index) {
+              return _buildWishlistCardSkeleton(pulseValue);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  /// Build a single wishlist card skeleton
+  Widget _buildWishlistCardSkeleton(double pulseValue) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: AppColors.primary.withOpacity(0.08),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.textTertiary.withOpacity(0.05),
+              offset: const Offset(0, 5),
+              blurRadius: 15,
+              spreadRadius: 0,
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Header Section (Pastel Purple Background)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.04),
+              ),
+              child: Row(
+                children: [
+                  // Icon Skeleton - Light purple gradient
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppColors.primary.withOpacity(0.08 + pulseValue * 0.05),
+                          AppColors.primary.withOpacity(0.12 + pulseValue * 0.05),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Title and Subtitle Skeleton
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 180,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(
+                              0.1 + pulseValue * 0.05,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: 120,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(
+                              0.08 + pulseValue * 0.03,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Badge Skeleton
+                  Container(
+                    width: 50,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(
+                        0.1 + pulseValue * 0.05,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Body Section (White Background)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Stats Row Skeleton
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStatSkeleton(pulseValue),
+                      _buildStatSkeleton(pulseValue),
+                      _buildStatSkeleton(pulseValue),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Progress Bar Skeleton
+                  Container(
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(
+                        0.06 + pulseValue * 0.03,
+                      ),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Action Buttons Skeleton
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(
+                              0.06 + pulseValue * 0.03,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(
+                              0.06 + pulseValue * 0.03,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build a stat column skeleton
+  Widget _buildStatSkeleton(double pulseValue) {
+    return Column(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(
+              0.06 + pulseValue * 0.03,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: 30,
+          height: 16,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(
+              0.1 + pulseValue * 0.05,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          width: 50,
+          height: 12,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(
+              0.08 + pulseValue * 0.03,
+            ),
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+      ],
+    );
   }
 }

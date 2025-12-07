@@ -88,7 +88,11 @@ class EmptyInvitedEvents extends StatelessWidget {
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                gradient: AppColors.secondaryGradient,
+                gradient: LinearGradient(
+                  colors: [AppColors.secondary, AppColors.secondaryLight],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(

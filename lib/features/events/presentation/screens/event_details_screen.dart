@@ -1670,13 +1670,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 Navigator.of(context).pop();
                 _confirmReservation(item);
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textWhite,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
+              style: AppStyles.primaryButton,
               child: Text(
                 'Reserve',
                 style: AppStyles.bodyMedium.copyWith(

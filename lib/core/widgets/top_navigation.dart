@@ -49,7 +49,7 @@ class CustomTopNavigation extends StatelessWidget {
             'icon': Icons.person_outline,
             'activeIcon': Icons.person_rounded,
             'label': localization.translate('navigation.profile'),
-            'color': AppColors.profileAccent,
+            'color': AppColors.accent, // Hot Pink for Profile tab
           },
         ];
 

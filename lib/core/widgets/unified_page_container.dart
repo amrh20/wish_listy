@@ -35,7 +35,7 @@ class UnifiedPageContainer extends StatelessWidget {
         boxShadow: showShadow
             ? [
                 BoxShadow(
-                  color: AppColors.shadow.withOpacity(0.08),
+                  color: AppColors.textTertiary.withOpacity(0.1),
                   offset: const Offset(0, -4),
                   blurRadius: 16,
                   spreadRadius: 0,
@@ -76,7 +76,8 @@ class UnifiedPageBackground extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: gradientColors ??
+          colors:
+              gradientColors ??
               [
                 AppColors.primary.withOpacity(0.08),
                 AppColors.background,
@@ -133,10 +134,7 @@ class PastelCard extends StatelessWidget {
               color: cardColor,
               borderRadius: BorderRadius.circular(borderRadius),
               border: showBorder
-                  ? Border.all(
-                      color: _getBorderColor(cardColor),
-                      width: 1,
-                    )
+                  ? Border.all(color: _getBorderColor(cardColor), width: 1)
                   : null,
             ),
             child: child,
@@ -162,4 +160,3 @@ class PastelCard extends StatelessWidget {
     return bgColor.withOpacity(0.5);
   }
 }
-

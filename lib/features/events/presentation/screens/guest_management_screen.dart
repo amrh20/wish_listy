@@ -451,7 +451,7 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadowLight,
+            color: AppColors.textTertiary.withOpacity(0.05),
             offset: const Offset(0, 2),
             blurRadius: 8,
           ),

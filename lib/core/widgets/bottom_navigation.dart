@@ -31,25 +31,25 @@ class CustomBottomNavigation extends StatelessWidget {
             'icon': Icons.favorite_outline,
             'activeIcon': Icons.favorite_rounded,
             'label': localization.translate('navigation.wishlist'),
-            'color': AppColors.secondary,
+            'color': AppColors.primary,
           },
           {
             'icon': Icons.celebration_outlined,
             'activeIcon': Icons.celebration_rounded,
             'label': localization.translate('navigation.events'),
-            'color': AppColors.accent,
+            'color': AppColors.primary,
           },
           {
             'icon': Icons.people_outline,
             'activeIcon': Icons.people_rounded,
             'label': localization.translate('navigation.friends'),
-            'color': AppColors.info,
+            'color': AppColors.primary,
           },
           {
             'icon': Icons.person_outline,
             'activeIcon': Icons.person_rounded,
             'label': localization.translate('navigation.profile'),
-            'color': AppColors.profileAccent,
+            'color': AppColors.primary,
           },
         ];
 
@@ -142,10 +142,6 @@ class HomeIconPainter extends CustomPainter {
       ..strokeWidth = isActive ? 2.5 : 2.0
       ..style = PaintingStyle.stroke;
 
-    final fillPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
     // House outline
     final path = Path();
     path.moveTo(size.width * 0.5, size.height * 0.2);
@@ -209,10 +205,6 @@ class WishlistIconPainter extends CustomPainter {
       ..color = color
       ..strokeWidth = isActive ? 2.5 : 2.0
       ..style = PaintingStyle.stroke;
-
-    final fillPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
 
     // Gift box
     final boxPath = Path();
@@ -402,10 +394,6 @@ class FriendsIconPainter extends CustomPainter {
       ..strokeWidth = isActive ? 2.5 : 2.0
       ..style = PaintingStyle.stroke;
 
-    final fillPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
     // Left person
     final leftHeadPath = Path();
     leftHeadPath.addOval(
@@ -482,10 +470,6 @@ class ProfileIconPainter extends CustomPainter {
       ..color = color
       ..strokeWidth = isActive ? 2.5 : 2.0
       ..style = PaintingStyle.stroke;
-
-    final fillPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
 
     // Head
     final headPath = Path();

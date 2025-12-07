@@ -51,7 +51,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
       id: 'birthday',
       name: 'Birthday',
       icon: Icons.cake_outlined,
-      color: AppColors.pink,
+      color: AppColors.accent,
       emoji: '🎂',
     ),
     EventTypeOption(

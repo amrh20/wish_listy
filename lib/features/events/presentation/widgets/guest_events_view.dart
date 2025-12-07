@@ -138,7 +138,7 @@ class _GuestEventsViewState extends State<GuestEventsView> {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight, width: 1),
+        border: Border.all(color: AppColors.surfaceVariant, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -316,7 +316,7 @@ class _GuestEventsViewState extends State<GuestEventsView> {
               height: 4,
               margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.borderLight,
+                color: AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

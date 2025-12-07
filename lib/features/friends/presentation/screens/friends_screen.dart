@@ -148,8 +148,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                   // Unified Page Header with Integrated Tabs
                   UnifiedPageHeader(
                     title: localization.translate('ui.friends'),
-                    subtitle:
-                        '${_friends.length} ${localization.translate('friends.friends')}',
+
                     showSearch: true,
                     searchHint: localization.translate('ui.searchFriends'),
                     searchController: _searchController,
@@ -185,7 +184,7 @@ class _FriendsScreenState extends State<FriendsScreen>
                       _tabController.animateTo(index);
                       setState(() {});
                     },
-                    selectedTabColor: AppColors.secondary,
+                    selectedTabColor: AppColors.primary,
                   ),
 
                   // Tab Content in rounded container
@@ -214,7 +213,7 @@ class _FriendsScreenState extends State<FriendsScreen>
           ),
           floatingActionButton: FloatingActionButton(
             onPressed: _showAddFriendDialog,
-            backgroundColor: AppColors.secondary,
+            backgroundColor: AppColors.accent,
             heroTag: 'friends_fab',
             child: Icon(Icons.person_add_rounded, color: Colors.white),
           ),

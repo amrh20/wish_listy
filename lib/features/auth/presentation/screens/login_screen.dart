@@ -476,7 +476,7 @@ class _LoginScreenState extends State<LoginScreen>
                                               LinearGradient(
                                                 colors: [
                                                   AppColors.primary,
-                                                  AppColors.cyan,
+                                                  AppColors.secondary,
                                                 ],
                                               ).createShader(bounds),
                                           child: Text(
@@ -694,7 +694,7 @@ class _LoginScreenState extends State<LoginScreen>
                                                   gradientColors: [
                                                     AppColors.primary,
                                                     AppColors.info,
-                                                    AppColors.cyan,
+                                                    AppColors.secondary,
                                                   ],
                                                 ),
                                               ),
@@ -794,7 +794,7 @@ class _LoginScreenState extends State<LoginScreen>
                 end: Alignment.bottomRight,
                 colors: [
                   AppColors.primary.withOpacity(0.12),
-                  AppColors.pink.withOpacity(0.08),
+                  AppColors.accent.withOpacity(0.08),
                 ],
               ),
             ),
@@ -818,7 +818,7 @@ class _LoginScreenState extends State<LoginScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.cyan.withOpacity(0.08),
+                  AppColors.secondary.withOpacity(0.08),
                   AppColors.info.withOpacity(0.06),
                 ],
               ),
@@ -879,7 +879,7 @@ class _LoginScreenState extends State<LoginScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.pink.withOpacity(0.08),
+                  AppColors.accent.withOpacity(0.08),
                   AppColors.primary.withOpacity(0.06),
                 ],
               ),
@@ -898,7 +898,7 @@ class _LoginScreenState extends State<LoginScreen>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(
-              colors: [AppColors.pink.withOpacity(0.04), Colors.transparent],
+              colors: [AppColors.accent.withOpacity(0.04), Colors.transparent],
             ),
           ),
         ),
@@ -910,9 +910,9 @@ class _LoginScreenState extends State<LoginScreen>
     final dots = <Widget>[];
     final colors = [
       AppColors.primary,
-      AppColors.cyan,
+      AppColors.secondary,
       AppColors.info,
-      AppColors.pink,
+      AppColors.accent,
     ];
 
     // Create scattered dots

@@ -54,7 +54,7 @@ class LanguageSwitcher extends StatelessWidget {
               color: AppColors.surfaceVariant,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: AppColors.borderLight,
+                color: AppColors.surfaceVariant,
                 width: 1,
               ),
             ),
@@ -113,15 +113,15 @@ class CompactLanguageSwitcher extends StatelessWidget {
             width: size,
             height: size,
             decoration: BoxDecoration(
-              color: backgroundColor ?? AppColors.glass,
+              color: backgroundColor ?? const Color(0x80FFFFFF),
               borderRadius: BorderRadius.circular(size / 2),
               border: Border.all(
-                color: AppColors.borderLight,
+                color: AppColors.surfaceVariant,
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.shadow,
+                  color: AppColors.textTertiary.withOpacity(0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),

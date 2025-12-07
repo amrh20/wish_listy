@@ -29,6 +29,9 @@ void main() async {
 class MyApp extends StatelessWidget {
   final LocalizationService localizationService;
   final AuthRepository authRepository;
+  
+  // Create navigatorKey once and reuse it across rebuilds
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   const MyApp({
     super.key,
@@ -76,7 +79,7 @@ class MyApp extends StatelessWidget {
               );
             },
             restorationScopeId: 'wish_listy_app',
-            navigatorKey: GlobalKey<NavigatorState>(),
+            navigatorKey: navigatorKey,
             builder: (context, child) {
               // Apply RTL/LTR direction based on language
               return Directionality(

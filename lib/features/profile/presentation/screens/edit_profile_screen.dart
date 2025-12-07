@@ -621,7 +621,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               height: 4,
               margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.borderLight,
+                color: AppColors.surfaceVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),

@@ -20,15 +20,18 @@ class UnifiedPageHeader extends StatelessWidget {
   final Widget? trailing;
   final Color? backgroundColor;
   final EdgeInsets? padding;
-  
+
   // Integrated tabs parameters
   final List<UnifiedTab>? tabs;
   final int? selectedTabIndex;
   final ValueChanged<int>? onTabChanged;
   final Color? selectedTabColor;
-  
+
   // Margin control
   final double? bottomMargin;
+
+  // Custom bottom content (e.g., wishlist card for home screen)
+  final Widget? bottomContent;
 
   const UnifiedPageHeader({
     super.key,
@@ -50,18 +53,19 @@ class UnifiedPageHeader extends StatelessWidget {
     this.onTabChanged,
     this.selectedTabColor,
     this.bottomMargin,
+    this.bottomContent,
   });
 
-  // Dynamic border radius based on tabs presence
+  // Dynamic border radius based on tabs presence and bottomContent
   BorderRadius get _borderRadius {
-    if (tabs != null && tabs!.isNotEmpty) {
-      // مع tabs: مستدير من الأعلى فقط
+    if (tabs != null && tabs!.isNotEmpty || bottomContent != null) {
+      // مع tabs أو bottomContent: مستدير من الأعلى فقط (لإخفاء التضارب مع container)
       return const BorderRadius.only(
         topLeft: Radius.circular(36),
         topRight: Radius.circular(36),
       );
     } else {
-      // بدون tabs: مستدير من كل الجهات
+      // بدون tabs أو bottomContent: مستدير من كل الجهات
       return BorderRadius.circular(36);
     }
   }
@@ -70,9 +74,9 @@ class UnifiedPageHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     // Adjust bottom margin when tabs are present to connect with container
     // Or use custom bottomMargin if provided
-    final calculatedBottomMargin = bottomMargin ?? 
-        ((tabs != null && tabs!.isNotEmpty) ? 0.0 : 16.0);
-    
+    final calculatedBottomMargin =
+        bottomMargin ?? ((tabs != null && tabs!.isNotEmpty) ? 0.0 : 16.0);
+
     return Container(
       margin: EdgeInsets.only(
         left: 8,
@@ -85,7 +89,7 @@ class UnifiedPageHeader extends StatelessWidget {
         borderRadius: _borderRadius,
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow.withOpacity(0.08),
+            color: AppColors.textTertiary.withOpacity(0.1),
             offset: const Offset(0, 4),
             blurRadius: 16,
             spreadRadius: 0,
@@ -174,6 +178,12 @@ class UnifiedPageHeader extends StatelessWidget {
                       const SizedBox(height: 16),
                       _buildIntegratedTabs(),
                     ],
+
+                    // Bottom Content (e.g., wishlist card for home screen)
+                    if (bottomContent != null) ...[
+                      const SizedBox(height: 16),
+                      bottomContent!,
+                    ],
                   ],
                 ),
               ),
@@ -207,7 +217,7 @@ class UnifiedPageHeader extends StatelessWidget {
             child: Icon(
               Icons.favorite_rounded,
               size: 60,
-              color: AppColors.pink.withOpacity(0.12),
+              color: AppColors.accent.withOpacity(0.12),
             ),
           ),
 
@@ -281,7 +291,7 @@ class UnifiedPageHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.shadow.withOpacity(0.08),
+                  color: AppColors.textTertiary.withOpacity(0.1),
                   offset: const Offset(0, 2),
                   blurRadius: 8,
                 ),
@@ -339,7 +349,7 @@ class UnifiedPageHeader extends StatelessWidget {
         border: Border.all(color: Colors.white.withOpacity(0.5), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow.withOpacity(0.06),
+            color: AppColors.textTertiary.withOpacity(0.05),
             offset: const Offset(0, 2),
             blurRadius: 12,
           ),
@@ -348,7 +358,7 @@ class UnifiedPageHeader extends StatelessWidget {
       child: Row(
         children: [
           const SizedBox(width: 16),
-          Icon(Icons.search_rounded, color: AppColors.textLight, size: 24),
+          Icon(Icons.search_rounded, color: AppColors.textTertiary, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: TextField(
@@ -361,7 +371,7 @@ class UnifiedPageHeader extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: searchHint ?? 'Search...',
                 hintStyle: AppStyles.bodyMedium.copyWith(
-                  color: AppColors.textMuted,
+                  color: AppColors.textTertiary,
                 ),
                 filled: false,
                 fillColor: Colors.transparent,
@@ -384,7 +394,10 @@ class UnifiedPageHeader extends StatelessWidget {
 
   // Build integrated tabs within the header
   Widget _buildIntegratedTabs() {
-    if (tabs == null || tabs!.isEmpty || selectedTabIndex == null || onTabChanged == null) {
+    if (tabs == null ||
+        tabs!.isEmpty ||
+        selectedTabIndex == null ||
+        onTabChanged == null) {
       return const SizedBox.shrink();
     }
 
@@ -409,7 +422,10 @@ class UnifiedPageHeader extends StatelessWidget {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   curve: Curves.easeInOut,
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? (selectedTabColor ?? AppColors.primary)
@@ -466,9 +482,7 @@ class UnifiedPageHeader extends StatelessWidget {
                           child: Text(
                             tab.badgeCount.toString(),
                             style: TextStyle(
-                              color: isSelected
-                                  ? Colors.white
-                                  : Colors.white,
+                              color: isSelected ? Colors.white : Colors.white,
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
@@ -603,7 +617,7 @@ class SimplePageHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.shadow.withOpacity(0.08),
+                  color: AppColors.textTertiary.withOpacity(0.1),
                   offset: const Offset(0, 2),
                   blurRadius: 8,
                 ),

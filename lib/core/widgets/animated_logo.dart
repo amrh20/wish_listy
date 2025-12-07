@@ -211,14 +211,7 @@ class CustomErrorWidget extends StatelessWidget {
                 onPressed: onRetry,
                 icon: Icon(Icons.refresh),
                 label: Text('Try Again'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                ),
+                style: AppStyles.primaryButton,
               ),
             ],
           ],

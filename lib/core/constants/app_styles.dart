@@ -3,9 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppStyles {
-  // Beautiful Text Styles with Comfortaa Font (Perfect for Gifts App - Rounded & Playful)
+  // Beautiful Text Styles with Readex Pro Font (Trendy & Catchy)
   // Font sizes optimized for mobile screens
-  static TextStyle get heading1 => GoogleFonts.comfortaa(
+  static TextStyle get heading1 => GoogleFonts.readexPro(
     fontSize: 28,
     fontWeight: FontWeight.w800,
     color: AppColors.textPrimary,
@@ -13,7 +13,7 @@ class AppStyles {
     letterSpacing: -0.5,
   );
 
-  static TextStyle get heading2 => GoogleFonts.comfortaa(
+  static TextStyle get heading2 => GoogleFonts.readexPro(
     fontSize: 24,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
@@ -21,7 +21,7 @@ class AppStyles {
     letterSpacing: -0.3,
   );
 
-  static TextStyle get heading3 => GoogleFonts.comfortaa(
+  static TextStyle get heading3 => GoogleFonts.readexPro(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
@@ -29,7 +29,7 @@ class AppStyles {
     letterSpacing: -0.2,
   );
 
-  static TextStyle get heading4 => GoogleFonts.comfortaa(
+  static TextStyle get heading4 => GoogleFonts.readexPro(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
@@ -38,56 +38,56 @@ class AppStyles {
   );
 
   // Additional text styles - optimized sizes
-  static TextStyle get headingLarge => GoogleFonts.comfortaa(
+  static TextStyle get headingLarge => GoogleFonts.readexPro(
     fontSize: 22,
     fontWeight: FontWeight.w700,
     color: AppColors.textPrimary,
     height: 1.2,
   );
 
-  static TextStyle get headingMedium => GoogleFonts.comfortaa(
+  static TextStyle get headingMedium => GoogleFonts.readexPro(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
     height: 1.3,
   );
 
-  static TextStyle get headingSmall => GoogleFonts.comfortaa(
+  static TextStyle get headingSmall => GoogleFonts.readexPro(
     fontSize: 16,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
     height: 1.3,
   );
 
-  static TextStyle get bodyLarge => GoogleFonts.comfortaa(
+  static TextStyle get bodyLarge => GoogleFonts.readexPro(
     fontSize: 15,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
     height: 1.5,
   );
 
-  static TextStyle get bodyMedium => GoogleFonts.comfortaa(
+  static TextStyle get bodyMedium => GoogleFonts.readexPro(
     fontSize: 13,
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
     height: 1.5,
   );
 
-  static TextStyle get bodySmall => GoogleFonts.comfortaa(
+  static TextStyle get bodySmall => GoogleFonts.readexPro(
     fontSize: 11,
     fontWeight: FontWeight.w400,
     color: AppColors.textSecondary,
     height: 1.4,
   );
 
-  static TextStyle get caption => GoogleFonts.comfortaa(
+  static TextStyle get caption => GoogleFonts.readexPro(
     fontSize: 10,
     fontWeight: FontWeight.w400,
     color: AppColors.textTertiary,
     height: 1.3,
   );
 
-  static TextStyle get button => GoogleFonts.comfortaa(
+  static TextStyle get button => GoogleFonts.readexPro(
     fontSize: 14,
     fontWeight: FontWeight.w600,
     color: AppColors.textWhite,
@@ -110,13 +110,13 @@ class AppStyles {
     borderRadius: BorderRadius.circular(20),
     boxShadow: [
       BoxShadow(
-        color: AppColors.shadow,
+        color: AppColors.textTertiary.withOpacity(0.1),
         blurRadius: 25,
         offset: const Offset(0, 8),
         spreadRadius: 0,
       ),
       BoxShadow(
-        color: AppColors.shadowLight,
+        color: AppColors.textTertiary.withOpacity(0.05),
         blurRadius: 10,
         offset: const Offset(0, 2),
         spreadRadius: 0,
@@ -129,7 +129,7 @@ class AppStyles {
     borderRadius: BorderRadius.circular(16),
     boxShadow: [
       BoxShadow(
-        color: AppColors.shadowLight,
+        color: AppColors.textTertiary.withOpacity(0.05),
         blurRadius: 15,
         offset: const Offset(0, 4),
         spreadRadius: 0,
@@ -142,7 +142,7 @@ class AppStyles {
     borderRadius: BorderRadius.circular(20),
     boxShadow: [
       BoxShadow(
-        color: AppColors.shadowDark,
+        color: AppColors.textTertiary.withOpacity(0.2),
         blurRadius: 30,
         offset: const Offset(0, 12),
         spreadRadius: 0,
@@ -152,12 +152,12 @@ class AppStyles {
 
   // Glassmorphism Card Style
   static BoxDecoration get glassCardDecoration => BoxDecoration(
-    color: AppColors.glass,
+    color: const Color(0x80FFFFFF),
     borderRadius: BorderRadius.circular(20),
-    border: Border.all(color: AppColors.borderLight, width: 1),
+    border: Border.all(color: AppColors.surfaceVariant, width: 1),
     boxShadow: [
       BoxShadow(
-        color: AppColors.shadowLight,
+        color: AppColors.textTertiary.withOpacity(0.05),
         blurRadius: 20,
         offset: const Offset(0, 8),
         spreadRadius: 0,

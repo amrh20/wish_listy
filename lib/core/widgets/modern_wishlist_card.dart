@@ -127,40 +127,57 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
   Widget _buildCard() {
     return GestureDetector(
       onTap: widget.onView,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(_isHovered ? 0.12 : 0.08),
-              offset: Offset(0, _isHovered ? 8 : 4),
-              blurRadius: _isHovered ? 24 : 16,
-              spreadRadius: 0,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.08),
+              width: 1,
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Card Content
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(),
-                  const SizedBox(height: 16),
-                  _buildCleanStats(),
-                  const SizedBox(height: 12),
-                  // Progress Bar below stats
-                  _buildProgressIndicator(),
-                  const SizedBox(height: 16),
-                  _buildActionRow(),
-                ],
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.textTertiary.withOpacity(0.05),
+                offset: const Offset(0, 5),
+                blurRadius: 15,
+                spreadRadius: 0,
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top Section (Header) - Pastel Purple Background
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.04),
+                ),
+                child: _buildHeader(),
+              ),
+              // Bottom Section (Body) - White Background
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildCleanStats(),
+                    const SizedBox(height: 12),
+                    // Progress Bar below stats
+                    _buildProgressIndicator(),
+                    const SizedBox(height: 16),
+                    _buildActionRow(),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -173,49 +190,42 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
 
     return Row(
       children: [
-        // Category Avatar (Left)
+        // Category Avatar (Left) - Squircle Style
         Container(
-          width: 56,
-          height: 56,
+          width: 64,
+          height: 64,
           decoration: BoxDecoration(
-            gradient: categoryImagePath == null
-                ? LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [_accentColor, _accentColor.withOpacity(0.7)],
-                  )
-                : null,
-            color: categoryImagePath != null ? Colors.white : null,
-            borderRadius: BorderRadius.circular(16),
+            color: AppColors.surface, // Surface background for contrast
+            borderRadius: BorderRadius.circular(20), // Squircle
             boxShadow: [
               BoxShadow(
-                color: _accentColor.withOpacity(0.2),
-                offset: const Offset(0, 4),
-                blurRadius: 12,
+                color: _accentColor.withOpacity(0.15),
+                offset: const Offset(0, 2),
+                blurRadius: 8,
               ),
             ],
           ),
           child: categoryImagePath != null
               ? ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(20), // Squircle
                   child: Image.asset(
                     categoryImagePath,
-                    width: 56,
-                    height: 56,
+                    width: 64,
+                    height: 64,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Icon(
                         CategoryImages.getCategoryIcon(widget.category),
-                        color: Colors.white,
-                        size: 28,
+                        color: _accentColor,
+                        size: 32,
                       );
                     },
                   ),
                 )
               : Icon(
                   CategoryImages.getCategoryIcon(widget.category),
-                  color: Colors.white,
-                  size: 28,
+                  color: _accentColor,
+                  size: 32,
                 ),
         ),
 
@@ -228,7 +238,7 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
             children: [
               Text(
                 widget.title,
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.readexPro(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -241,7 +251,7 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
               Text(
                 widget.description ??
                     '${widget.totalItems} ${widget.totalItems == 1 ? 'item' : 'items'}',
-                style: GoogleFonts.poppins(
+                style: GoogleFonts.readexPro(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
                   color: AppColors.textSecondary,
@@ -293,11 +303,11 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(30), // Pill-shaped
       ),
       child: Text(
         label,
-        style: GoogleFonts.poppins(
+        style: GoogleFonts.readexPro(
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: textColor,
@@ -315,19 +325,19 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
           icon: Icons.card_giftcard_rounded,
           value: widget.totalItems.toString(),
           label: 'Gifts',
-          color: _accentColor,
+          color: AppColors.primary, // Match header theme (Purple)
         ),
         _buildStatItem(
           icon: Icons.check_circle_rounded,
           value: widget.giftedItems.toString(),
           label: 'Gifted',
-          color: AppColors.success,
+          color: AppColors.primary, // Match header theme (Purple)
         ),
         _buildStatItem(
           icon: Icons.access_time_rounded,
           value: widget.todayItems.toString(),
           label: 'Today',
-          color: AppColors.info,
+          color: AppColors.primary, // Match header theme (Purple)
         ),
       ],
     );
@@ -341,16 +351,24 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
   }) {
     return Column(
       children: [
-        // Icon on top
-        Icon(icon, color: color, size: 28),
+        // Icon Container with pastel background
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
         const SizedBox(height: 8),
         // Bold number in middle
         Text(
           value,
-          style: GoogleFonts.poppins(
-            fontSize: 20,
+          style: GoogleFonts.readexPro(
+            fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: color,
+            color: AppColors.textPrimary,
             height: 1.1,
           ),
         ),
@@ -358,7 +376,7 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
         // Small label at bottom
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: GoogleFonts.readexPro(
             fontSize: 11,
             fontWeight: FontWeight.w500,
             color: AppColors.textSecondary,
@@ -381,7 +399,7 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
             end: Alignment.bottomRight,
             colors: [_accentColor, _accentColor.withOpacity(0.8)],
           ),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(16), // Unified button radius
           boxShadow: [
             BoxShadow(
               color: _accentColor.withOpacity(0.4),
@@ -397,7 +415,7 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
             const SizedBox(width: 8),
             Text(
               'Add Wish',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.readexPro(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
@@ -518,7 +536,7 @@ class CompactWishlistCard extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [color, AppColors.pink]),
+                      gradient: LinearGradient(colors: [color, AppColors.accent]),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -567,7 +585,7 @@ class CompactWishlistCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
                   value: completionPercentage / 100,
-                  backgroundColor: AppColors.borderLight,
+                  backgroundColor: AppColors.surfaceVariant,
                   valueColor: AlwaysStoppedAnimation(color),
                   minHeight: 6,
                 ),

@@ -180,11 +180,11 @@ class _MainNavigationState extends State<MainNavigation>
   Widget _buildWishlistFAB() {
     return Container(
       decoration: BoxDecoration(
-        gradient: AppColors.pinkGradient,
+        gradient: AppColors.accentGradient,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.pink.withOpacity(0.3),
+            color: AppColors.accent.withOpacity(0.3),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -206,11 +206,11 @@ class _MainNavigationState extends State<MainNavigation>
   Widget _buildEventFAB() {
     return Container(
       decoration: BoxDecoration(
-        gradient: AppColors.tealGradient,
+        gradient: AppColors.accentGradient,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.secondary.withOpacity(0.3),
+            color: AppColors.accent.withOpacity(0.3),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -232,11 +232,11 @@ class _MainNavigationState extends State<MainNavigation>
   Widget _buildFriendFAB() {
     return Container(
       decoration: BoxDecoration(
-        gradient: AppColors.indigoGradient,
+        gradient: AppColors.accentGradient,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.indigo.withOpacity(0.3),
+            color: AppColors.accent.withOpacity(0.3),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -258,11 +258,11 @@ class _MainNavigationState extends State<MainNavigation>
   Widget _buildProfileFAB() {
     return Container(
       decoration: BoxDecoration(
-        gradient: AppColors.orangeGradient,
+        gradient: AppColors.accentGradient,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.orange.withOpacity(0.3),
+            color: AppColors.accent.withOpacity(0.3),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),

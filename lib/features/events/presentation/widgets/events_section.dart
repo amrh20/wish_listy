@@ -82,13 +82,13 @@ class _EventsSectionState extends State<EventsSection>
           Icon(
             Icons.event_busy,
             size: 50,
-            color: AppColors.textLight,
+            color: AppColors.textTertiary,
           ),
           const SizedBox(height: 10),
           Text(
             'No upcoming events yet!',
             style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textLight,
+              color: AppColors.textTertiary,
             ),
           ),
         ],
@@ -193,7 +193,11 @@ class _EventsSectionState extends State<EventsSection>
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            gradient: AppColors.infoGradient,
+                            gradient: LinearGradient(
+                              colors: [AppColors.info, AppColors.info.withOpacity(0.8)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -227,7 +231,7 @@ class _EventsSectionState extends State<EventsSection>
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.shadow,
+                                    color: AppColors.textTertiary.withOpacity(0.1),
                                     blurRadius: isHovered ? 12 : 8,
                                     offset: Offset(0, isHovered ? 4 : 2),
                                   ),

@@ -37,7 +37,7 @@ class UnifiedTabBar extends StatelessWidget {
         border: Border.all(color: AppColors.border, width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow.withOpacity(0.04),
+            color: AppColors.textTertiary.withOpacity(0.05),
             offset: const Offset(0, 2),
             blurRadius: 8,
           ),

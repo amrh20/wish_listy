@@ -252,7 +252,7 @@ class _DecoratedBottomSheetState extends State<DecoratedBottomSheet>
                 gradient: LinearGradient(
                   colors: [
                     AppColors.primary.withOpacity(0.8),
-                    AppColors.pink.withOpacity(0.8),
+                    AppColors.accent.withOpacity(0.8),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,

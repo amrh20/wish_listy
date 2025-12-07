@@ -492,7 +492,7 @@ class _EventWishlistScreenState extends State<EventWishlistScreen>
           color: isSelected ? AppColors.secondary : AppColors.surfaceVariant,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.secondary : AppColors.borderLight,
+            color: isSelected ? AppColors.secondary : AppColors.surfaceVariant,
             width: 1,
           ),
         ),
@@ -544,12 +544,12 @@ class _EventWishlistScreenState extends State<EventWishlistScreen>
               ? AppColors.success.withOpacity(0.3)
               : item.isReserved
               ? AppColors.info.withOpacity(0.3)
-              : AppColors.borderLight,
+              : AppColors.surfaceVariant,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadowLight,
+            color: AppColors.textTertiary.withOpacity(0.05),
             offset: const Offset(0, 2),
             blurRadius: 8,
           ),
@@ -817,7 +817,7 @@ class _EventWishlistScreenState extends State<EventWishlistScreen>
   Color _getEventTypeColor(EventType type) {
     switch (type) {
       case EventType.birthday:
-        return AppColors.pink;
+        return AppColors.accent;
       case EventType.wedding:
         return AppColors.primary;
       case EventType.graduation:

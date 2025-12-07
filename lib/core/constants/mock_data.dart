@@ -9,7 +9,8 @@ class MockData {
     id: '1',
     name: 'Ahmed Hassan',
     email: 'ahmed@example.com',
-    profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    profilePicture:
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
     privacySettings: PrivacySettings(
       publicWishlistVisibility: WishlistVisibility.friends,
       allowFriendRequests: true,
@@ -25,7 +26,8 @@ class MockData {
       id: '1',
       title: 'Noise Cancelling Headphones',
       description: 'Sony WH-1000XM4',
-      imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=200&fit=crop',
+      imageUrl:
+          'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&h=200&fit=crop',
       price: 299.99,
       priority: WishPriority.high,
       isFavorite: true,
@@ -36,7 +38,8 @@ class MockData {
       id: '2',
       title: 'Leather Wallet',
       description: 'Minimalist design with RFID protection',
-      imageUrl: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=300&h=200&fit=crop',
+      imageUrl:
+          'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=300&h=200&fit=crop',
       price: 45.00,
       priority: WishPriority.medium,
       isFavorite: false,
@@ -47,7 +50,8 @@ class MockData {
       id: '3',
       title: 'Smart Watch',
       description: 'Apple Watch Series 9',
-      imageUrl: 'https://images.unsplash.com/photo-1544117519-31a4b719223d?w=300&h=200&fit=crop',
+      imageUrl:
+          'https://images.unsplash.com/photo-1544117519-31a4b719223d?w=300&h=200&fit=crop',
       price: 399.99,
       priority: WishPriority.high,
       isFavorite: true,
@@ -58,7 +62,8 @@ class MockData {
       id: '4',
       title: 'Running Shoes',
       description: 'Nike Air Zoom Pegasus 40',
-      imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=200&fit=crop',
+      imageUrl:
+          'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=300&h=200&fit=crop',
       price: 129.99,
       priority: WishPriority.low,
       isFavorite: false,
@@ -128,8 +133,8 @@ class MockData {
     AppColors.accent,
     AppColors.primaryLight,
     AppColors.successLight,
-    AppColors.warningLight,
-    AppColors.infoLight,
+    AppColors.warning,
+    AppColors.info,
     AppColors.accentLight,
   ];
 }

@@ -302,7 +302,7 @@ class _EventManagementScreenState extends State<EventManagementScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight, width: 1),
+        border: Border.all(color: AppColors.surfaceVariant, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,10 +375,10 @@ class _EventManagementScreenState extends State<EventManagementScreen>
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.borderLight, width: 1),
+          border: Border.all(color: AppColors.surfaceVariant, width: 1),
           boxShadow: [
             BoxShadow(
-              color: AppColors.shadowLight,
+              color: AppColors.textTertiary.withOpacity(0.05),
               offset: const Offset(0, 2),
               blurRadius: 8,
             ),
@@ -433,7 +433,7 @@ class _EventManagementScreenState extends State<EventManagementScreen>
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight, width: 1),
+        border: Border.all(color: AppColors.surfaceVariant, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -479,7 +479,7 @@ class _EventManagementScreenState extends State<EventManagementScreen>
   Color _getEventTypeColor(EventType type) {
     switch (type) {
       case EventType.birthday:
-        return AppColors.pink;
+        return AppColors.accent;
       case EventType.wedding:
         return AppColors.primary;
       case EventType.graduation:

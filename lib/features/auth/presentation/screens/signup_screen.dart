@@ -69,7 +69,10 @@ class _SignupScreenState extends State<SignupScreen>
     final confirmPassword = _confirmPasswordController.text;
 
     // Check if all fields are filled
-    if (fullName.isEmpty || username.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (fullName.isEmpty ||
+        username.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       return false;
     }
 
@@ -470,10 +473,10 @@ class _SignupScreenState extends State<SignupScreen>
                                       ShaderMask(
                                         shaderCallback: (bounds) =>
                                             LinearGradient(
-                                                colors: [
-                                                  AppColors.primary,
-                                                  AppColors.cyan,
-                                                ],
+                                              colors: [
+                                                AppColors.primary,
+                                                AppColors.secondary,
+                                              ],
                                             ).createShader(bounds),
                                         child: Text(
                                           'Create new account',
@@ -689,7 +692,9 @@ class _SignupScreenState extends State<SignupScreen>
                                                 opacity: _buttonFade,
                                                 child: CustomButton(
                                                   text: 'Sign Up',
-                                                  onPressed: _isFormValid && !_isLoading
+                                                  onPressed:
+                                                      _isFormValid &&
+                                                          !_isLoading
                                                       ? _handleSignup
                                                       : null,
                                                   isLoading: _isLoading,
@@ -698,7 +703,7 @@ class _SignupScreenState extends State<SignupScreen>
                                                   gradientColors: [
                                                     AppColors.primary,
                                                     AppColors.info,
-                                                    AppColors.cyan,
+                                                    AppColors.secondary,
                                                   ],
                                                 ),
                                               ),
@@ -817,7 +822,7 @@ class _SignupScreenState extends State<SignupScreen>
                 end: Alignment.bottomRight,
                 colors: [
                   AppColors.primary.withOpacity(0.12),
-                  AppColors.pink.withOpacity(0.08),
+                  AppColors.accent.withOpacity(0.08),
                 ],
               ),
             ),
@@ -840,7 +845,7 @@ class _SignupScreenState extends State<SignupScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.cyan.withOpacity(0.08),
+                  AppColors.secondary.withOpacity(0.08),
                   AppColors.info.withOpacity(0.06),
                 ],
               ),
@@ -901,7 +906,7 @@ class _SignupScreenState extends State<SignupScreen>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.pink.withOpacity(0.08),
+                  AppColors.accent.withOpacity(0.08),
                   AppColors.primary.withOpacity(0.06),
                 ],
               ),
@@ -920,7 +925,7 @@ class _SignupScreenState extends State<SignupScreen>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(
-              colors: [AppColors.pink.withOpacity(0.04), Colors.transparent],
+              colors: [AppColors.accent.withOpacity(0.04), Colors.transparent],
             ),
           ),
         ),
@@ -932,9 +937,9 @@ class _SignupScreenState extends State<SignupScreen>
     final dots = <Widget>[];
     final colors = [
       AppColors.primary,
-      AppColors.cyan,
+      AppColors.secondary,
       AppColors.info,
-      AppColors.pink,
+      AppColors.accent,
     ];
 
     for (int i = 0; i < 20; i++) {
