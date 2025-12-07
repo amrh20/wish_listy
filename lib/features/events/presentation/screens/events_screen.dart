@@ -9,6 +9,9 @@ import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
 import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
+import 'package:wish_listy/features/events/data/repository/event_repository.dart';
+import 'package:wish_listy/features/events/data/models/event_model.dart';
+import 'package:wish_listy/core/services/api_service.dart';
 import '../widgets/event_card.dart';
 import '../widgets/guest_events_view.dart';
 import '../widgets/empty_states.dart';
@@ -18,10 +21,10 @@ class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
 
   @override
-  _EventsScreenState createState() => _EventsScreenState();
+  EventsScreenState createState() => EventsScreenState();
 }
 
-class _EventsScreenState extends State<EventsScreen>
+class EventsScreenState extends State<EventsScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   late AnimationController _animationController;
@@ -34,8 +37,20 @@ class _EventsScreenState extends State<EventsScreen>
   String? _selectedEventType;
   List<EventSummary> _filteredEvents = [];
 
-  // Mock events data for authenticated users
-  final List<EventSummary> _myEvents = [
+  // Events data (loaded from API)
+  List<EventSummary> _myEvents = [];
+  List<EventSummary> _invitedEvents = [];
+  List<EventSummary> _publicEvents = [];
+
+  // Loading and error states
+  bool _isLoading = false; // Start as false, will be set to true when loading
+  String? _errorMessage;
+
+  // Repository
+  final EventRepository _eventRepository = EventRepository();
+
+  // Mock events data for authenticated users (fallback)
+  final List<EventSummary> _mockMyEvents = [
     EventSummary(
       id: '1',
       name: 'My Birthday Party 🎂',
@@ -80,8 +95,8 @@ class _EventsScreenState extends State<EventsScreen>
     ),
   ];
 
-  // Mock public events for guest users
-  final List<EventSummary> _publicEvents = [
+  // Mock public events for guest users (fallback)
+  final List<EventSummary> _mockPublicEvents = [
     EventSummary(
       id: 'pub1',
       name: 'Community Birthday Celebration',
@@ -114,7 +129,8 @@ class _EventsScreenState extends State<EventsScreen>
     ),
   ];
 
-  final List<EventSummary> _invitedEvents = [
+  // Mock invited events (fallback)
+  final List<EventSummary> _mockInvitedEvents = [
     EventSummary(
       id: '3',
       name: 'Sarah\'s Wedding',
@@ -168,8 +184,89 @@ class _EventsScreenState extends State<EventsScreen>
     _tabController = TabController(length: 2, vsync: this);
     _initializeAnimations();
     _startAnimations();
-    _applyFilters();
     _searchController.addListener(_onSearchChanged);
+    // Don't load events automatically - wait for tab tap
+  }
+
+  /// Public method to refresh events (called from MainNavigation)
+  void refreshEvents() {
+    if (mounted) {
+      _loadEvents();
+    }
+  }
+
+  /// Load events from API
+  Future<void> _loadEvents() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      debugPrint('📥 Loading events from API...');
+      final events = await _eventRepository.getEvents();
+
+      if (!mounted) return;
+
+      // Get current user ID from AuthRepository
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      final currentUserId = authService.userId;
+
+      // Convert Event objects to EventSummary
+      final myEventsList = <EventSummary>[];
+      final invitedEventsList = <EventSummary>[];
+
+      for (final event in events) {
+        // Use fromEvent factory with currentUserId to determine isCreatedByMe
+        final summary = EventSummary.fromEvent(
+          event,
+          currentUserId: currentUserId,
+        );
+
+        if (summary.isCreatedByMe) {
+          myEventsList.add(summary);
+        } else {
+          invitedEventsList.add(summary);
+        }
+      }
+
+      setState(() {
+        _myEvents = myEventsList;
+        _invitedEvents = invitedEventsList;
+        _publicEvents =
+            []; // Public events would come from a different endpoint
+        _isLoading = false;
+      });
+
+      _applyFilters();
+      debugPrint(
+        '✅ Loaded ${events.length} events (${myEventsList.length} my events, ${invitedEventsList.length} invited)',
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.message;
+        _isLoading = false;
+        // Use mock data as fallback
+        _myEvents = _mockMyEvents;
+        _invitedEvents = _mockInvitedEvents;
+        _publicEvents = _mockPublicEvents;
+      });
+      _applyFilters();
+      debugPrint('❌ API Error loading events: ${e.message}');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Failed to load events. Please try again.';
+        _isLoading = false;
+        // Use mock data as fallback
+        _myEvents = _mockMyEvents;
+        _invitedEvents = _mockInvitedEvents;
+        _publicEvents = _mockPublicEvents;
+      });
+      _applyFilters();
+      debugPrint('❌ Error loading events: $e');
+    }
   }
 
   void _onSearchChanged() {
@@ -631,11 +728,7 @@ class _EventsScreenState extends State<EventsScreen>
   }
 
   Future<void> _refreshEvents() async {
-    // Refresh events data
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() {
-      // Update events data
-    });
-    _applyFilters();
+    // Refresh events data from API
+    await _loadEvents();
   }
 }

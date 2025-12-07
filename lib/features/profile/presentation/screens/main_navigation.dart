@@ -26,6 +26,7 @@ class _MainNavigationState extends State<MainNavigation>
   int _currentIndex = 0;
   late AnimationController _fabAnimationController;
   final GlobalKey<MyWishlistsScreenState> _wishlistsKey = GlobalKey();
+  final GlobalKey<EventsScreenState> _eventsKey = GlobalKey();
 
   @override
   void initState() {
@@ -85,6 +86,11 @@ class _MainNavigationState extends State<MainNavigation>
       _wishlistsKey.currentState!.refreshWishlists();
     }
 
+    // Refresh data when switching to events tab
+    if (index == 2 && _eventsKey.currentState != null) {
+      _eventsKey.currentState!.refreshEvents();
+    }
+
     // Haptic feedback
     HapticFeedback.lightImpact();
 
@@ -96,7 +102,7 @@ class _MainNavigationState extends State<MainNavigation>
   List<Widget> get _screens => [
     const HomeScreen(),
     MyWishlistsScreen(key: _wishlistsKey),
-    const EventsScreen(),
+    EventsScreen(key: _eventsKey),
     const FriendsScreen(),
     const ProfileScreen(),
   ];

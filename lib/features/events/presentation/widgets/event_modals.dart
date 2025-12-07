@@ -4,7 +4,7 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
-import 'event_card.dart';
+import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'calendar_view.dart';
 import 'filter_options.dart';
 

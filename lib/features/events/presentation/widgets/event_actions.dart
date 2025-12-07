@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
-import 'event_card.dart';
+import 'package:wish_listy/features/events/data/models/event_model.dart';
 
 class EventActions extends StatelessWidget {
   final EventSummary event;

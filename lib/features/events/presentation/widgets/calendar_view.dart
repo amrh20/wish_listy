@@ -3,7 +3,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
-import 'event_card.dart';
+import 'package:wish_listy/features/events/data/models/event_model.dart';
 
 class CalendarView extends StatefulWidget {
   final List<EventSummary> events;

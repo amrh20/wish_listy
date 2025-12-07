@@ -3,6 +3,7 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/features/events/data/models/event_model.dart';
 
 class EventCard extends StatelessWidget {
   final EventSummary event;
@@ -430,52 +431,3 @@ class EventCard extends StatelessWidget {
     return months[month - 1];
   }
 }
-
-// Event models
-class EventSummary {
-  final String id;
-  final String name;
-  final DateTime date;
-  final EventType type;
-  final String? location;
-  final String? description;
-  final String? hostName;
-  final int invitedCount;
-  final int acceptedCount;
-  final int wishlistItemCount;
-  final String? wishlistId;
-  final bool isCreatedByMe;
-  final EventStatus status;
-
-  EventSummary({
-    required this.id,
-    required this.name,
-    required this.date,
-    required this.type,
-    this.location,
-    this.description,
-    this.hostName,
-    required this.invitedCount,
-    required this.acceptedCount,
-    required this.wishlistItemCount,
-    this.wishlistId,
-    required this.isCreatedByMe,
-    required this.status,
-  });
-}
-
-enum EventType {
-  birthday,
-  wedding,
-  anniversary,
-  graduation,
-  holiday,
-  vacation,
-  babyShower,
-  houseWarming,
-  retirement,
-  promotion,
-  other,
-}
-
-enum EventStatus { upcoming, ongoing, completed, cancelled }

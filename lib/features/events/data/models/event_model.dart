@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class Event {
   final String id;
   final String creatorId;
@@ -11,6 +13,9 @@ class Event {
   final List<EventInvitation> invitations;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? privacy; // 'public', 'private', 'friends_only'
+  final String? mode; // 'in_person', 'online', 'hybrid'
+  final String? meetingLink; // For online/hybrid events
 
   Event({
     required this.id,
@@ -25,32 +30,127 @@ class Event {
     this.invitations = const [],
     required this.createdAt,
     required this.updatedAt,
+    this.privacy,
+    this.mode,
+    this.meetingLink,
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
+    // Handle both API response formats:
+    // 1. {_id: "...", creator: {_id: "..."}, ...} (MongoDB format)
+    // 2. {id: "...", creator_id: "...", ...} (standard format)
+
+    // Get ID - support both _id (MongoDB) and id
+    final id = json['_id']?.toString() ?? json['id']?.toString() ?? '';
+
+    // Get creator ID - support both creator object and creator_id
+    String? creatorId;
+    if (json['creator'] != null && json['creator'] is Map) {
+      creatorId =
+          json['creator']['_id']?.toString() ??
+          json['creator']['id']?.toString();
+    }
+    creatorId ??=
+        json['creator_id']?.toString() ?? json['creatorId']?.toString() ?? '';
+
+    // Get wishlist ID - support both wishlist object and wishlist_id
+    String? wishlistId;
+    if (json['wishlist'] != null) {
+      if (json['wishlist'] is Map) {
+        wishlistId =
+            json['wishlist']['_id']?.toString() ??
+            json['wishlist']['id']?.toString();
+      } else if (json['wishlist'] is String) {
+        wishlistId = json['wishlist'];
+      }
+    }
+    wishlistId ??=
+        json['wishlist_id']?.toString() ?? json['wishlistId']?.toString();
+
+    // Parse date field
+    DateTime? eventDate;
+    if (json['date'] != null) {
+      try {
+        eventDate = DateTime.parse(json['date'].toString());
+      } catch (e) {
+        debugPrint('⚠️ Failed to parse date: ${json['date']}');
+      }
+    }
+    eventDate ??= DateTime.now();
+
+    // Parse createdAt
+    DateTime? createdAt;
+    if (json['createdAt'] != null) {
+      try {
+        createdAt = DateTime.parse(json['createdAt'].toString());
+      } catch (e) {
+        debugPrint('⚠️ Failed to parse createdAt: ${json['createdAt']}');
+      }
+    }
+    createdAt ??= json['created_at'] != null
+        ? DateTime.tryParse(json['created_at'].toString())
+        : null;
+    createdAt ??= DateTime.now();
+
+    // Parse updatedAt
+    DateTime? updatedAt;
+    if (json['updatedAt'] != null) {
+      try {
+        updatedAt = DateTime.parse(json['updatedAt'].toString());
+      } catch (e) {
+        debugPrint('⚠️ Failed to parse updatedAt: ${json['updatedAt']}');
+      }
+    }
+    updatedAt ??= json['updated_at'] != null
+        ? DateTime.tryParse(json['updated_at'].toString())
+        : null;
+    updatedAt ??= DateTime.now();
+
+    // Parse invitations - support both 'invitations' and 'invited'
+    List<dynamic>? invitationsList;
+    if (json['invitations'] != null && json['invitations'] is List) {
+      invitationsList = json['invitations'] as List<dynamic>;
+    } else if (json['invited'] != null && json['invited'] is List) {
+      invitationsList = json['invited'] as List<dynamic>;
+    }
+
     return Event(
-      id: json['id'] ?? '',
-      creatorId: json['creator_id'] ?? '',
-      name: json['name'] ?? '',
-      date: DateTime.parse(json['date']),
-      description: json['description'],
-      location: json['location'],
+      id: id,
+      creatorId: creatorId,
+      name: json['name']?.toString() ?? '',
+      date: eventDate,
+      description: json['description']?.toString(),
+      location: json['location']?.toString(),
       type: EventType.values.firstWhere(
-        (e) => e.toString().split('.').last == json['type'],
+        (e) => e.toString().split('.').last == json['type']?.toString(),
         orElse: () => EventType.birthday,
       ),
       status: EventStatus.values.firstWhere(
-        (e) => e.toString().split('.').last == json['status'],
+        (e) => e.toString().split('.').last == json['status']?.toString(),
         orElse: () => EventStatus.upcoming,
       ),
-      wishlistId: json['wishlist_id'],
+      wishlistId: wishlistId,
       invitations:
-          (json['invitations'] as List<dynamic>?)
-              ?.map((invitation) => EventInvitation.fromJson(invitation))
+          invitationsList
+              ?.map((invitation) {
+                try {
+                  return EventInvitation.fromJson(
+                    invitation as Map<String, dynamic>,
+                  );
+                } catch (e) {
+                  debugPrint('⚠️ Failed to parse invitation: $e');
+                  return null;
+                }
+              })
+              .whereType<EventInvitation>()
               .toList() ??
           [],
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      privacy: json['privacy']?.toString(),
+      mode: json['mode']?.toString(),
+      meetingLink:
+          json['meeting_link']?.toString() ?? json['meetingLink']?.toString(),
     );
   }
 
@@ -70,6 +170,9 @@ class Event {
           .toList(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      if (privacy != null) 'privacy': privacy,
+      if (mode != null) 'mode': mode,
+      if (meetingLink != null) 'meeting_link': meetingLink,
     };
   }
 
@@ -86,6 +189,9 @@ class Event {
     List<EventInvitation>? invitations,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? privacy,
+    String? mode,
+    String? meetingLink,
   }) {
     return Event(
       id: id ?? this.id,
@@ -100,6 +206,9 @@ class Event {
       invitations: invitations ?? this.invitations,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      privacy: privacy ?? this.privacy,
+      mode: mode ?? this.mode,
+      meetingLink: meetingLink ?? this.meetingLink,
     );
   }
 
@@ -311,9 +420,12 @@ class EventSummary {
   final DateTime date;
   final EventType type;
   final String? location;
+  final String? description;
+  final String? hostName;
   final int invitedCount;
   final int acceptedCount;
   final int wishlistItemCount;
+  final String? wishlistId;
   final bool isCreatedByMe;
   final EventStatus status;
 
@@ -323,25 +435,34 @@ class EventSummary {
     required this.date,
     required this.type,
     this.location,
+    this.description,
+    this.hostName,
     required this.invitedCount,
     required this.acceptedCount,
     required this.wishlistItemCount,
+    this.wishlistId,
     required this.isCreatedByMe,
     required this.status,
   });
 
-  factory EventSummary.fromEvent(Event event) {
+  factory EventSummary.fromEvent(Event event, {String? currentUserId}) {
+    // Determine if event is created by current user
+    final isCreatedByMe =
+        currentUserId != null && event.creatorId == currentUserId;
+
     return EventSummary(
       id: event.id,
       name: event.name,
       date: event.date,
       type: event.type,
       location: event.location,
+      description: event.description,
+      hostName: null, // Would be fetched from creator/user info
       invitedCount: event.invitations.length,
       acceptedCount: event.acceptedInvitations,
       wishlistItemCount: 0, // Would be calculated from backend
-      isCreatedByMe:
-          false, // Would be determined by comparing with current user
+      wishlistId: event.wishlistId,
+      isCreatedByMe: isCreatedByMe,
       status: event.status,
     );
   }

@@ -5,7 +5,10 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
-import '../widgets/event_card.dart';
+import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/features/events/data/models/event_model.dart';
+import 'package:wish_listy/features/events/data/repository/event_repository.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final String eventId;
@@ -22,8 +25,15 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // Mock event data
-  late EventDetails _eventDetails;
+  // Event data
+  EventDetails? _eventDetails;
+
+  // Loading and error states
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  // Repository
+  final EventRepository _eventRepository = EventRepository();
 
   @override
   void initState() {
@@ -55,7 +65,200 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         );
   }
 
-  void _loadEventDetails() {
+  Future<void> _loadEventDetails() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      debugPrint('📥 Loading event details for ID: ${widget.eventId}');
+
+      // Get current user ID from AuthRepository
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      final currentUserId = authService.userId;
+
+      // Fetch event from API
+      final event = await _eventRepository.getEventById(widget.eventId);
+
+      if (!mounted) return;
+
+      // Convert Event to EventDetails
+      final eventDetails = _convertEventToEventDetails(event, currentUserId);
+
+      setState(() {
+        _eventDetails = eventDetails;
+        _isLoading = false;
+      });
+
+      debugPrint('✅ Event details loaded successfully');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.message;
+        _isLoading = false;
+        // Use default/empty event details as fallback
+        _eventDetails = _getDefaultEventDetails();
+      });
+      debugPrint('❌ API Error loading event details: ${e.message}');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Failed to load event details. Please try again.';
+        _isLoading = false;
+        // Use default/empty event details as fallback
+        _eventDetails = _getDefaultEventDetails();
+      });
+      debugPrint('❌ Error loading event details: $e');
+    }
+  }
+
+  EventDetails _getDefaultEventDetails() {
+    return EventDetails(
+      id: widget.eventId,
+      name: 'Event Details',
+      description: 'Event details will be loaded here.',
+      hostName: 'Host Name',
+      hostProfilePicture: null,
+      date: DateTime.now().add(Duration(days: 7)),
+      time: 'TBD',
+      location: 'Location TBD',
+      eventType: EventDetailsType.other,
+      totalInvited: 0,
+      totalAccepted: 0,
+      totalDeclined: 0,
+      totalPending: 0,
+      wishlistItems: 0,
+      isHost: false,
+      attendanceStatus: AttendanceStatus.pending,
+      invitedFriends: [],
+      wishlistPreview: [],
+    );
+  }
+
+  EventDetails _convertEventToEventDetails(Event event, String? currentUserId) {
+    // Determine if current user is the host
+    final isHost = currentUserId != null && event.creatorId == currentUserId;
+
+    // Convert EventType to EventDetailsType
+    EventDetailsType eventDetailsType;
+    switch (event.type) {
+      case EventType.birthday:
+        eventDetailsType = EventDetailsType.birthday;
+        break;
+      case EventType.wedding:
+        eventDetailsType = EventDetailsType.wedding;
+        break;
+      case EventType.anniversary:
+        eventDetailsType = EventDetailsType.anniversary;
+        break;
+      case EventType.graduation:
+        eventDetailsType = EventDetailsType.graduation;
+        break;
+      case EventType.vacation:
+        eventDetailsType = EventDetailsType.vacation;
+        break;
+      default:
+        eventDetailsType = EventDetailsType.other;
+    }
+
+    // Extract time from date
+    final timeString = _formatTime(event.date);
+
+    // Calculate invitation counts
+    final totalInvited = event.invitations.length;
+    final totalAccepted = event.invitations
+        .where((inv) => inv.status == InvitationStatus.accepted)
+        .length;
+    final totalDeclined = event.invitations
+        .where((inv) => inv.status == InvitationStatus.declined)
+        .length;
+    final totalPending = event.invitations
+        .where((inv) => inv.status == InvitationStatus.pending)
+        .length;
+
+    // Convert invitations to EventGuest list
+    final invitedFriends = event.invitations.map((invitation) {
+      GuestStatus guestStatus;
+      switch (invitation.status) {
+        case InvitationStatus.accepted:
+          guestStatus = GuestStatus.accepted;
+          break;
+        case InvitationStatus.declined:
+          guestStatus = GuestStatus.declined;
+          break;
+        case InvitationStatus.pending:
+          guestStatus = GuestStatus.pending;
+          break;
+      }
+
+      return EventGuest(
+        id: invitation.inviteeId,
+        name: 'Guest ${invitation.inviteeId}', // TODO: Fetch actual user name
+        profilePicture: null, // TODO: Fetch actual profile picture
+        status: guestStatus,
+      );
+    }).toList();
+
+    // Determine attendance status for current user
+    AttendanceStatus attendanceStatus = AttendanceStatus.pending;
+    if (currentUserId != null) {
+      final userInvitation = event.invitations
+          .where((inv) => inv.inviteeId == currentUserId)
+          .firstOrNull;
+      if (userInvitation != null) {
+        switch (userInvitation.status) {
+          case InvitationStatus.accepted:
+            attendanceStatus = AttendanceStatus.accepted;
+            break;
+          case InvitationStatus.declined:
+            attendanceStatus = AttendanceStatus.declined;
+            break;
+          case InvitationStatus.pending:
+            attendanceStatus = AttendanceStatus.pending;
+            break;
+        }
+      } else if (isHost) {
+        attendanceStatus = AttendanceStatus.accepted;
+      }
+    }
+
+    return EventDetails(
+      id: event.id,
+      name: event.name,
+      description: event.description,
+      hostName: 'Host', // TODO: Fetch actual host name from creator ID
+      hostProfilePicture: null, // TODO: Fetch actual host profile picture
+      date: event.date,
+      time: timeString,
+      location: event.location ?? 'Location TBD',
+      eventType: eventDetailsType,
+      totalInvited: totalInvited,
+      totalAccepted: totalAccepted,
+      totalDeclined: totalDeclined,
+      totalPending: totalPending,
+      wishlistItems: 0, // TODO: Fetch actual wishlist item count
+      isHost: isHost,
+      attendanceStatus: attendanceStatus,
+      invitedFriends: invitedFriends,
+      wishlistPreview: [], // TODO: Fetch actual wishlist preview
+    );
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final hour = dateTime.hour;
+    final minute = dateTime.minute;
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+    return '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period';
+  }
+
+  Future<void> _refreshEventDetails() async {
+    await _loadEventDetails();
+  }
+
+  // Legacy mock data method - kept for reference but not used
+  void _loadEventDetailsMock() {
     // Load event details based on event ID - replace with actual API call
     // For now, we'll create mock data based on the event ID
     final eventId = widget.eventId;
@@ -280,6 +483,65 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
   Widget build(BuildContext context) {
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
+        // Show loading indicator
+        if (_isLoading) {
+          return Scaffold(
+            backgroundColor: Colors.grey.shade50,
+            body: Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          );
+        }
+
+        // Show error message
+        if (_errorMessage != null && _eventDetails == null) {
+          return Scaffold(
+            backgroundColor: Colors.grey.shade50,
+            appBar: AppBar(
+              title: Text('Event Details'),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+            ),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 64, color: AppColors.error),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Error Loading Event',
+                      style: AppStyles.headingMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _errorMessage!,
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    CustomButton(text: 'Retry', onPressed: _loadEventDetails),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        // Show event details
+        if (_eventDetails == null) {
+          return Scaffold(
+            backgroundColor: Colors.grey.shade50,
+            body: Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
+          );
+        }
+
         return Scaffold(
           backgroundColor: Colors.grey.shade50,
           body: Stack(
@@ -287,7 +549,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               // Content
               RefreshIndicator(
                 onRefresh: _refreshEventDetails,
-                color: _getEventTypeColor(_eventDetails.eventType),
+                color: _getEventTypeColor(_eventDetails!.eventType),
                 child: CustomScrollView(
                   slivers: [
                     // App Bar with Event Header
@@ -347,8 +609,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
   }
 
   Widget _buildSliverAppBar() {
-    final eventColor = _getEventTypeColor(_eventDetails.eventType);
-    final daysUntil = _eventDetails.date.difference(DateTime.now()).inDays;
+    final eventColor = _getEventTypeColor(_eventDetails!.eventType);
+    final daysUntil = _eventDetails!.date.difference(DateTime.now()).inDays;
 
     return SliverAppBar(
       expandedHeight: 300,
@@ -389,7 +651,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                       ],
                     ),
                     child: Icon(
-                      _getEventTypeIcon(_eventDetails.eventType),
+                      _getEventTypeIcon(_eventDetails!.eventType),
                       color: eventColor,
                       size: 40,
                     ),
@@ -399,7 +661,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
 
                   // Event Name
                   Text(
-                    _eventDetails.name,
+                    _eventDetails!.name,
                     style: AppStyles.headingMedium.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -411,7 +673,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
 
                   // Host Info
                   Text(
-                    'Hosted by ${_eventDetails.hostName}',
+                    'Hosted by ${_eventDetails!.hostName}',
                     style: AppStyles.bodyMedium.copyWith(
                       color: Colors.white.withOpacity(0.9),
                     ),
@@ -461,7 +723,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
             borderRadius: BorderRadius.circular(12),
           ),
           itemBuilder: (context) => [
-            if (_eventDetails.isHost) ...[
+            if (_eventDetails!.isHost) ...[
               PopupMenuItem(
                 value: 'edit',
                 child: Row(
@@ -493,7 +755,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 ],
               ),
             ),
-            if (!_eventDetails.isHost)
+            if (!_eventDetails!.isHost)
               PopupMenuItem(
                 value: 'report',
                 child: Row(
@@ -542,7 +804,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
             icon: Icons.calendar_today_outlined,
             title: 'Date & Time',
             value:
-                '${_formatDate(_eventDetails.date)} at ${_eventDetails.time}',
+                '${_formatDate(_eventDetails!.date)} at ${_eventDetails!.time}',
             color: AppColors.info,
           ),
 
@@ -552,12 +814,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
           _buildInfoRow(
             icon: Icons.location_on_outlined,
             title: 'Location',
-            value: _eventDetails.location,
+            value: _eventDetails!.location,
             color: AppColors.accent,
             onTap: _openMap,
           ),
 
-          if (_eventDetails.description != null) ...[
+          if (_eventDetails!.description != null) ...[
             const SizedBox(height: 20),
 
             // Description
@@ -582,7 +844,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _eventDetails.description!,
+                  _eventDetails!.description!,
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                     height: 1.5,
@@ -641,7 +903,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
   }
 
   Widget _buildAttendanceCard(LocalizationService localization) {
-    if (_eventDetails.isHost) {
+    if (_eventDetails!.isHost) {
       return _buildHostAttendanceView();
     } else {
       return _buildGuestAttendanceView(localization);
@@ -667,8 +929,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 child: _buildAttendanceStatItem(
                   icon: Icons.check_circle_outline,
                   label: 'Accepted',
-                  count: _eventDetails.totalAccepted,
-                  total: _eventDetails.totalInvited,
+                  count: _eventDetails!.totalAccepted,
+                  total: _eventDetails!.totalInvited,
                   color: AppColors.success,
                 ),
               ),
@@ -676,8 +938,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 child: _buildAttendanceStatItem(
                   icon: Icons.cancel_outlined,
                   label: 'Declined',
-                  count: _eventDetails.totalDeclined,
-                  total: _eventDetails.totalInvited,
+                  count: _eventDetails!.totalDeclined,
+                  total: _eventDetails!.totalInvited,
                   color: AppColors.error,
                 ),
               ),
@@ -685,8 +947,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 child: _buildAttendanceStatItem(
                   icon: Icons.schedule_outlined,
                   label: 'Pending',
-                  count: _eventDetails.totalPending,
-                  total: _eventDetails.totalInvited,
+                  count: _eventDetails!.totalPending,
+                  total: _eventDetails!.totalInvited,
                   color: AppColors.warning,
                 ),
               ),
@@ -705,7 +967,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: _getAttendanceStatusColor(
-            _eventDetails.attendanceStatus,
+            _eventDetails!.attendanceStatus,
           ).withOpacity(0.3),
           width: 1,
         ),
@@ -723,14 +985,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 height: 40,
                 decoration: BoxDecoration(
                   color: _getAttendanceStatusColor(
-                    _eventDetails.attendanceStatus,
+                    _eventDetails!.attendanceStatus,
                   ).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
-                  _getAttendanceStatusIcon(_eventDetails.attendanceStatus),
+                  _getAttendanceStatusIcon(_eventDetails!.attendanceStatus),
                   color: _getAttendanceStatusColor(
-                    _eventDetails.attendanceStatus,
+                    _eventDetails!.attendanceStatus,
                   ),
                   size: 20,
                 ),
@@ -742,18 +1004,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                   children: [
                     Text(
                       _getAttendanceStatusText(
-                        _eventDetails.attendanceStatus,
+                        _eventDetails!.attendanceStatus,
                         localization,
                       ),
                       style: AppStyles.bodyLarge.copyWith(
                         fontWeight: FontWeight.w600,
                         color: _getAttendanceStatusColor(
-                          _eventDetails.attendanceStatus,
+                          _eventDetails!.attendanceStatus,
                         ),
                       ),
                     ),
                     Text(
-                      'You ${_getAttendanceStatusDescription(_eventDetails.attendanceStatus)} this event',
+                      'You ${_getAttendanceStatusDescription(_eventDetails!.attendanceStatus)} this event',
                       style: AppStyles.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -761,7 +1023,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                   ],
                 ),
               ),
-              if (_eventDetails.attendanceStatus != AttendanceStatus.accepted)
+              if (_eventDetails!.attendanceStatus != AttendanceStatus.accepted)
                 TextButton(onPressed: _changeAttendance, child: Text('Change')),
             ],
           ),
@@ -820,7 +1082,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Guests (${_eventDetails.totalInvited})',
+                'Guests (${_eventDetails!.totalInvited})',
                 style: AppStyles.headingSmall,
               ),
               TextButton(
@@ -828,7 +1090,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 child: Text(
                   'View All',
                   style: AppStyles.bodyMedium.copyWith(
-                    color: _getEventTypeColor(_eventDetails.eventType),
+                    color: _getEventTypeColor(_eventDetails!.eventType),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -838,7 +1100,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
           const SizedBox(height: 16),
 
           Column(
-            children: _eventDetails.invitedFriends.take(4).map((guest) {
+            children: _eventDetails!.invitedFriends.take(4).map((guest) {
               return _buildGuestItem(guest);
             }).toList(),
           ),
@@ -915,7 +1177,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Event Wishlist (${_eventDetails.wishlistItems} items)',
+                  'Event Wishlist (${_eventDetails!.wishlistItems} items)',
                   style: AppStyles.headingSmall,
                 ),
               ),
@@ -934,7 +1196,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
           const SizedBox(height: 16),
 
           Column(
-            children: _eventDetails.wishlistPreview.map((item) {
+            children: _eventDetails!.wishlistPreview.map((item) {
               return _buildWishlistItemPreview(item);
             }).toList(),
           ),
@@ -1048,7 +1310,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
   }
 
   Widget _buildActionButtons(LocalizationService localization) {
-    if (_eventDetails.isHost) {
+    if (_eventDetails!.isHost) {
       // My Event - Full Control
       return Column(
         children: [
@@ -1057,7 +1319,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
             text: localization.translate('events.manageEvent'),
             onPressed: _manageEvent,
             variant: ButtonVariant.primary,
-            customColor: _getEventTypeColor(_eventDetails.eventType),
+            customColor: _getEventTypeColor(_eventDetails!.eventType),
           ),
           const SizedBox(height: 16),
 
@@ -1069,7 +1331,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: _getEventTypeColor(
-                  _eventDetails.eventType,
+                  _eventDetails!.eventType,
                 ).withOpacity(0.2),
                 width: 1,
               ),
@@ -1092,7 +1354,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                         onPressed: _editEventDetails,
                         variant: ButtonVariant.outline,
                         customColor: _getEventTypeColor(
-                          _eventDetails.eventType,
+                          _eventDetails!.eventType,
                         ),
                         icon: Icons.edit_outlined,
                       ),
@@ -1230,7 +1492,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: _getEventTypeColor(
-                  _eventDetails.eventType,
+                  _eventDetails!.eventType,
                 ).withOpacity(0.2),
                 width: 1,
               ),
@@ -1257,20 +1519,20 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                     Expanded(
                       child: CustomButton(
                         text: _getAttendanceStatusText(
-                          _eventDetails.attendanceStatus,
+                          _eventDetails!.attendanceStatus,
                           localization,
                         ),
                         onPressed: _changeAttendance,
                         variant:
-                            _eventDetails.attendanceStatus ==
+                            _eventDetails!.attendanceStatus ==
                                 AttendanceStatus.accepted
                             ? ButtonVariant.primary
                             : ButtonVariant.outline,
                         customColor: _getEventTypeColor(
-                          _eventDetails.eventType,
+                          _eventDetails!.eventType,
                         ),
                         icon: _getAttendanceStatusIcon(
-                          _eventDetails.attendanceStatus,
+                          _eventDetails!.attendanceStatus,
                         ),
                       ),
                     ),
@@ -1573,18 +1835,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
       context,
       AppRoutes.eventWishlist,
       arguments: EventSummary(
-        id: _eventDetails.id,
-        name: _eventDetails.name,
-        date: _eventDetails.date,
-        type: _convertEventType(_eventDetails.eventType),
-        location: _eventDetails.location,
-        description: _eventDetails.description,
-        hostName: _eventDetails.hostName,
-        status: _convertAttendanceStatus(_eventDetails.attendanceStatus),
-        invitedCount: _eventDetails.totalInvited,
-        acceptedCount: _eventDetails.totalAccepted,
-        wishlistItemCount: _eventDetails.wishlistItems,
-        isCreatedByMe: _eventDetails.isHost,
+        id: _eventDetails!.id,
+        name: _eventDetails!.name,
+        date: _eventDetails!.date,
+        type: _convertEventType(_eventDetails!.eventType),
+        location: _eventDetails!.location,
+        description: _eventDetails!.description,
+        hostName: _eventDetails!.hostName,
+        status: _convertAttendanceStatus(_eventDetails!.attendanceStatus),
+        invitedCount: _eventDetails!.totalInvited,
+        acceptedCount: _eventDetails!.totalAccepted,
+        wishlistItemCount: _eventDetails!.wishlistItems,
+        isCreatedByMe: _eventDetails!.isHost,
       ),
     );
   }
@@ -1699,7 +1961,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Successfully reserved "${item.name}" for ${_eventDetails.hostName}\'s event!',
+                'Successfully reserved "${item.name}" for ${_eventDetails!.hostName}\'s event!',
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.textWhite,
                 ),
@@ -1768,9 +2030,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
       context,
       AppRoutes.eventWishlist,
       arguments: {
-        'eventId': _eventDetails.id,
-        'eventName': _eventDetails.name,
-        'isHost': _eventDetails.isHost,
+        'eventId': _eventDetails!.id,
+        'eventName': _eventDetails!.name,
+        'isHost': _eventDetails!.isHost,
       },
     );
   }
@@ -1780,7 +2042,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     Navigator.pushNamed(
       context,
       AppRoutes.eventSettings,
-      arguments: {'eventId': _eventDetails.id, 'eventDetails': _eventDetails},
+      arguments: {'eventId': _eventDetails!.id, 'eventDetails': _eventDetails},
     );
   }
 
@@ -1822,7 +2084,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     Navigator.pushNamed(
       context,
       AppRoutes.guestManagement,
-      arguments: {'eventId': _eventDetails.id, 'eventName': _eventDetails.name},
+      arguments: {
+        'eventId': _eventDetails!.id,
+        'eventName': _eventDetails!.name,
+      },
     );
   }
 
@@ -1832,8 +2097,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
       context,
       AppRoutes.addItem,
       arguments: {
-        'eventId': _eventDetails.id,
-        'eventName': _eventDetails.name,
+        'eventId': _eventDetails!.id,
+        'eventName': _eventDetails!.name,
         'isEventWishlist': true,
       },
     );
@@ -1857,7 +2122,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               onTap: () {
                 Navigator.pop(context);
                 setState(() {
-                  _eventDetails.attendanceStatus = AttendanceStatus.accepted;
+                  _eventDetails!.attendanceStatus = AttendanceStatus.accepted;
                 });
                 // TODO: Update RSVP status
               },
@@ -1868,7 +2133,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               onTap: () {
                 Navigator.pop(context);
                 setState(() {
-                  _eventDetails.attendanceStatus = AttendanceStatus.accepted;
+                  _eventDetails!.attendanceStatus = AttendanceStatus.accepted;
                 });
                 // TODO: Update RSVP status
               },
@@ -1879,7 +2144,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
               onTap: () {
                 Navigator.pop(context);
                 setState(() {
-                  _eventDetails.attendanceStatus = AttendanceStatus.maybe;
+                  _eventDetails!.attendanceStatus = AttendanceStatus.maybe;
                 });
                 // TODO: Update RSVP status
               },
@@ -1908,14 +2173,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
 
   void _reportEvent() {
     // Report event
-  }
-
-  Future<void> _refreshEventDetails() async {
-    // Refresh event details
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() {
-      // Update event data
-    });
   }
 }
 

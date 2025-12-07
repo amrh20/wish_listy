@@ -15,7 +15,6 @@ import '../../features/events/presentation/screens/create_event_screen.dart';
 import '../../features/events/presentation/screens/event_details_screen.dart';
 import '../../features/events/presentation/screens/event_management_screen.dart';
 import '../../features/events/presentation/screens/event_wishlist_screen.dart';
-import '../../features/events/presentation/widgets/event_card.dart';
 import '../../features/friends/presentation/screens/friends_screen.dart';
 import '../../features/friends/presentation/screens/friend_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
@@ -30,6 +29,7 @@ import '../../features/wishlists/presentation/screens/create_wishlist_screen.dar
 import '../../features/friends/presentation/screens/add_friend_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/wishlists/data/models/wishlist_model.dart';
+import '../../features/events/data/models/event_model.dart';
 
 class AppRoutes {
   // Route Names

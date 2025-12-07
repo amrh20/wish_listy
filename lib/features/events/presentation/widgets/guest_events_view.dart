@@ -5,7 +5,7 @@ import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/features/auth/presentation/widgets/guest_restriction_dialog.dart';
-import 'event_card.dart';
+import 'package:wish_listy/features/events/data/models/event_model.dart';
 
 class GuestEventsView extends StatefulWidget {
   final List<EventSummary> publicEvents;

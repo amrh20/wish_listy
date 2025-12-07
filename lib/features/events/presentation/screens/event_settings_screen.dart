@@ -3,7 +3,7 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/animated_background.dart';
-import '../widgets/event_card.dart';
+import 'package:wish_listy/features/events/data/models/event_model.dart';
 
 class EventSettingsScreen extends StatefulWidget {
   final EventSummary event;

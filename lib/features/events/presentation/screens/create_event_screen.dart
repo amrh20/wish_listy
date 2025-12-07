@@ -10,6 +10,8 @@ import 'package:wish_listy/core/widgets/decorated_bottom_sheet.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
+import 'package:wish_listy/features/events/data/repository/event_repository.dart';
+import 'package:wish_listy/core/services/api_service.dart';
 import '../widgets/index.dart';
 
 class CreateEventScreen extends StatefulWidget {
@@ -44,6 +46,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   // New variables for enhanced features
   List<String> _invitedFriends = [];
   final WishlistRepository _wishlistRepository = WishlistRepository();
+  final EventRepository _eventRepository = EventRepository();
   String? _createdEventId; // Store created event ID for navigation
 
   final List<EventTypeOption> _eventTypes = [
@@ -639,9 +642,9 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                             // If all are selected, deselect all
                             _invitedFriends.clear();
                           } else {
-                            // Select all friends
+                            // Select all friends (by ID)
                             _invitedFriends = mockFriends
-                                .map((friend) => friend['name'] as String)
+                                .map((friend) => friend['id'] as String)
                                 .toList();
                           }
                         });
@@ -703,7 +706,8 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                   itemCount: mockFriends.length,
                   itemBuilder: (context, index) {
                     final friend = mockFriends[index];
-                    final isSelected = _invitedFriends.contains(friend['name']);
+                    final friendId = friend['id'] as String;
+                    final isSelected = _invitedFriends.contains(friendId);
 
                     return Container(
                       margin: const EdgeInsets.only(
@@ -715,9 +719,9 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                         onTap: () {
                           setModalState(() {
                             if (isSelected) {
-                              _invitedFriends.remove(friend['name']);
+                              _invitedFriends.remove(friendId);
                             } else {
-                              _invitedFriends.add(friend['name']);
+                              _invitedFriends.add(friendId);
                             }
                           });
                         },
@@ -816,6 +820,19 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     return selectedEventType.color;
   }
 
+  /// Combine selected date and time into ISO 8601 format string
+  String _combineDateAndTime() {
+    if (_selectedDate == null || _selectedTime == null) return '';
+    final combined = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _selectedTime!.hour,
+      _selectedTime!.minute,
+    );
+    return combined.toUtc().toIso8601String();
+  }
+
   String _formatDate(DateTime date) {
     final months = [
       'Jan',
@@ -903,12 +920,36 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   Future<void> _createEvent(LocalizationService localization) async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Validate date
     if (_selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             localization.translate('dialogs.pleaseSelectEventDate'),
           ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    // Validate time
+    if (_selectedTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please select event time'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    // Validate meeting link for online/hybrid events
+    if ((_selectedEventMode == 'online' || _selectedEventMode == 'hybrid') &&
+        (_meetingLinkController.text.trim().isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter meeting link for online events'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -946,18 +987,55 @@ class _CreateEventScreenState extends State<CreateEventScreen>
         debugPrint('🔗 Using linked wishlist: $wishlistId');
       }
 
-      // Simulate event creation API call
-      // TODO: Replace with actual API call when available
-      await Future.delayed(const Duration(seconds: 2));
+      // Prepare event data
+      final eventDate = _combineDateAndTime();
+      if (eventDate.isEmpty) {
+        throw Exception('Invalid date/time combination');
+      }
 
-      // Store event ID (in real implementation, get from API response)
-      _createdEventId = 'event_${DateTime.now().millisecondsSinceEpoch}';
+      // Determine meeting link
+      String? meetingLink;
+      if (_selectedEventMode == 'online' || _selectedEventMode == 'hybrid') {
+        meetingLink = _meetingLinkController.text.trim();
+        if (meetingLink.isEmpty) {
+          throw Exception('Meeting link is required for online/hybrid events');
+        }
+      }
+
+      // Create event via API
+      debugPrint('📤 Creating event via API...');
+      final createdEvent = await _eventRepository.createEvent(
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
+        date: eventDate,
+        type: _selectedEventType,
+        privacy: _selectedPrivacy,
+        mode: _selectedEventMode,
+        location: _locationController.text.trim().isNotEmpty
+            ? _locationController.text.trim()
+            : null,
+        meetingLink: meetingLink,
+        wishlistId: wishlistId,
+        invitedFriends: _invitedFriends,
+      );
+
+      // Store event ID from response
+      _createdEventId = createdEvent.id;
+      debugPrint('✅ Event created successfully: $_createdEventId');
 
       if (mounted) {
         setState(() => _isLoading = false);
         // Show success dialog
         _showSuccessDialog(localization);
       }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: AppColors.error),
+        );
+      }
+      debugPrint('❌ API Error creating event: ${e.message}');
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);

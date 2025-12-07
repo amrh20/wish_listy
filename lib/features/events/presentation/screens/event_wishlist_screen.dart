@@ -4,7 +4,7 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
-import '../widgets/event_card.dart';
+import 'package:wish_listy/features/events/data/models/event_model.dart';
 
 class EventWishlistScreen extends StatefulWidget {
   final EventSummary event;

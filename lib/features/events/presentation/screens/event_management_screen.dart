@@ -6,7 +6,7 @@ import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
-import '../widgets/event_card.dart';
+import 'package:wish_listy/features/events/data/models/event_model.dart';
 
 class EventManagementScreen extends StatefulWidget {
   final EventSummary event;
