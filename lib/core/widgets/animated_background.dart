@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
-import 'package:wish_listy/core/constants/app_colors.dart';
 
 class AnimatedBackground extends StatefulWidget {
   final Widget? child;
