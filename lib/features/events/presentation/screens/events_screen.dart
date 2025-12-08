@@ -347,6 +347,7 @@ class EventsScreenState extends State<EventsScreen>
         // For guest users - show different interface
         if (authService.isGuest) {
           return Scaffold(
+            backgroundColor: AppColors.background,
             body: UnifiedPageBackground(
               child: DecorativeBackground(
                 showGifts: true,

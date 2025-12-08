@@ -191,6 +191,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Consumer2<LocalizationService, AuthRepository>(
       builder: (context, localization, authService, child) {
         return Scaffold(
+          backgroundColor: AppColors.background,
           body: UnifiedPageBackground(
             child: DecorativeBackground(
               child: Column(
@@ -435,9 +436,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white, // Solid white for better contrast
+        color: AppColors.surface.withOpacity(0.85), // Semi-transparent white
         borderRadius: BorderRadius.circular(16), // Border radius from all sides
-        border: Border.all(color: Colors.white.withOpacity(0.5), width: 1),
+        border: Border.all(color: AppColors.primary.withOpacity(0.08), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),

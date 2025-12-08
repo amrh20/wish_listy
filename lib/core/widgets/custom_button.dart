@@ -122,9 +122,14 @@ class _CustomButtonState extends State<CustomButton>
     switch (widget.variant) {
       case ButtonVariant.primary:
         return BoxDecoration(
-          color: isEnabled
-              ? (widget.customColor ?? AppColors.primary)
-              : (widget.customColor ?? AppColors.primary).withOpacity(0.3),
+          gradient: isEnabled
+              ? AppColors.primaryGradient
+              : LinearGradient(
+                  colors: [
+                    (widget.customColor ?? AppColors.primary).withOpacity(0.3),
+                    (widget.customColor ?? AppColors.primary).withOpacity(0.3),
+                  ],
+                ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: isEnabled && !_isPressed
               ? [

@@ -25,7 +25,7 @@ class UnifiedPageContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: backgroundColor ?? Colors.white.withOpacity(0.95),
+        color: backgroundColor ?? AppColors.background,
         borderRadius: showTopRadius
             ? BorderRadius.only(
                 topLeft: Radius.circular(topRadius),

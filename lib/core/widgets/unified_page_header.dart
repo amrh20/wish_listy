@@ -428,7 +428,7 @@ class UnifiedPageHeader extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? (selectedTabColor ?? AppColors.primary)
+                        ? (selectedTabColor ?? AppColors.primary).withOpacity(0.08)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -441,7 +441,7 @@ class UnifiedPageHeader extends StatelessWidget {
                           tab.icon,
                           size: 18,
                           color: isSelected
-                              ? Colors.white
+                              ? AppColors.primary
                               : AppColors.textSecondary,
                         ),
                         const SizedBox(width: 6),
@@ -453,7 +453,7 @@ class UnifiedPageHeader extends StatelessWidget {
                           tab.label,
                           style: AppStyles.bodyMedium.copyWith(
                             color: isSelected
-                                ? Colors.white
+                                ? AppColors.primary
                                 : AppColors.textSecondary,
                             fontWeight: isSelected
                                 ? FontWeight.w600
@@ -475,14 +475,14 @@ class UnifiedPageHeader extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? Colors.white.withOpacity(0.3)
+                                ? AppColors.primary.withOpacity(0.15)
                                 : (tab.badgeColor ?? AppColors.accent),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             tab.badgeCount.toString(),
                             style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.white,
+                              color: isSelected ? AppColors.primary : Colors.white,
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),

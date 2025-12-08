@@ -166,6 +166,8 @@ class AppStyles {
   );
 
   // Beautiful Button Styles
+  // Note: For new primary buttons, use PrimaryGradientButton widget instead.
+  // This style is kept for backward compatibility.
   static ButtonStyle get primaryButton => ElevatedButton.styleFrom(
     backgroundColor: AppColors.primary,
     foregroundColor: AppColors.textWhite,

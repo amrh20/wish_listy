@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/widgets/primary_gradient_button.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
@@ -443,7 +444,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: AppColors.surface.withOpacity(0.95),
+        backgroundColor: AppColors.background,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -466,7 +467,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
     if (_errorMessage != null) {
       return Scaffold(
-        backgroundColor: AppColors.surface.withOpacity(0.95),
+        backgroundColor: AppColors.background,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -483,11 +484,10 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton.icon(
+                PrimaryGradientButton(
+                  text: 'Retry',
+                  icon: Icons.refresh,
                   onPressed: _loadWishlistDetails,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('Retry'),
-                  style: AppStyles.primaryButton,
                 ),
               ],
             ),
@@ -497,9 +497,9 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.surface.withOpacity(0.95),
+      backgroundColor: AppColors.background,
       body: Container(
-        color: AppColors.surface.withOpacity(0.95),
+        color: AppColors.background,
         child: LayoutBuilder(
           builder: (context, constraints) {
             return CustomScrollView(
@@ -840,7 +840,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.surface.withOpacity(0.95),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -876,10 +876,9 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             ),
-            ElevatedButton(
+            PrimaryGradientButton(
+              text: 'Confirm',
               onPressed: () => Navigator.pop(context, true),
-              style: AppStyles.primaryButton,
-              child: const Text('Confirm'),
             ),
           ],
         ),
@@ -1067,7 +1066,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColors.surface.withOpacity(0.95),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

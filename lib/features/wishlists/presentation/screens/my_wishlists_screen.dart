@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/widgets/primary_gradient_button.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
@@ -171,6 +172,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
         // For authenticated users - show full interface
         return Scaffold(
+          backgroundColor: AppColors.background,
           floatingActionButton: WishlistFabWidget(
             onCreatePersonalWishlist: () =>
                 _navigateToCreateWishlist(isEvent: false),
@@ -261,11 +263,10 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                                             textAlign: TextAlign.center,
                                           ),
                                           const SizedBox(height: 24),
-                                          ElevatedButton.icon(
+                                          PrimaryGradientButton(
+                                            text: 'Retry',
+                                            icon: Icons.refresh,
                                             onPressed: _loadWishlists,
-                                            icon: const Icon(Icons.refresh),
-                                            label: const Text('Retry'),
-                                            style: AppStyles.primaryButton,
                                           ),
                                         ],
                                       ),

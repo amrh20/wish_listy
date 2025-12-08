@@ -97,7 +97,7 @@ class CustomBottomNavigation extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? item['color'].withOpacity(0.1) : Colors.transparent,
+          color: isActive ? AppColors.primary.withOpacity(0.08) : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -108,7 +108,7 @@ class CustomBottomNavigation extends StatelessWidget {
               child: Icon(
                 isActive ? item['activeIcon'] : item['icon'],
                 key: ValueKey(isActive),
-                color: isActive ? item['color'] : AppColors.textPrimary,
+                color: isActive ? AppColors.primary : AppColors.textPrimary,
                 size: 24,
               ),
             ),
@@ -116,7 +116,7 @@ class CustomBottomNavigation extends StatelessWidget {
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 200),
               style: AppStyles.caption.copyWith(
-                color: isActive ? item['color'] : AppColors.textPrimary,
+                color: isActive ? AppColors.primary : AppColors.textPrimary,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
               ),
               child: Text(item['label']),

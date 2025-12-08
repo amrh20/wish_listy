@@ -43,6 +43,8 @@ class AppTheme {
       ),
 
       // Elevated Button Theme
+      // Note: For primary action buttons, use PrimaryGradientButton widget instead.
+      // This theme is kept for Material defaults and backward compatibility.
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,

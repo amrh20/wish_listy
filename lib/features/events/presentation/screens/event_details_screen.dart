@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/widgets/primary_gradient_button.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
@@ -1927,19 +1928,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 ),
               ),
             ),
-            ElevatedButton(
+            PrimaryGradientButton(
+              text: 'Reserve',
               onPressed: () {
                 Navigator.of(context).pop();
                 _confirmReservation(item);
               },
-              style: AppStyles.primaryButton,
-              child: Text(
-                'Reserve',
-                style: AppStyles.bodyMedium.copyWith(
-                  color: AppColors.textWhite,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
             ),
           ],
         );

@@ -200,6 +200,8 @@ class AppTheme {
         bodySmall: bodySmall.copyWith(color: AppColors.textPrimary),
         labelLarge: button.copyWith(color: AppColors.surface),
       ),
+      // Note: For primary action buttons, use PrimaryGradientButton widget instead.
+      // This theme is kept for Material defaults and backward compatibility.
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,

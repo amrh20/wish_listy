@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/widgets/primary_gradient_button.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 
 /// Empty state widget when wishlist has no items
@@ -56,7 +57,9 @@ class EmptyWishlistStateWidget extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             if (!isFriendWishlist)
-              ElevatedButton.icon(
+              PrimaryGradientButton(
+                text: 'Add First Wish',
+                icon: Icons.add_rounded,
                 onPressed: () {
                   Navigator.pushNamed(
                     context,
@@ -70,9 +73,6 @@ class EmptyWishlistStateWidget extends StatelessWidget {
                     // This will be handled by the parent screen
                   });
                 },
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('Add First Wish'),
-                style: AppStyles.primaryButton,
               ),
           ],
         ),

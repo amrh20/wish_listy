@@ -37,18 +37,17 @@ class EventCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.surface, // White background
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.08),
-              width: 1,
+              color: AppColors.border.withOpacity(0.8),
+              width: 1.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.textTertiary.withOpacity(0.05),
-                offset: const Offset(0, 5),
-                blurRadius: 15,
-                spreadRadius: 0,
+                color: AppColors.primary.withOpacity(0.12),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -201,7 +200,7 @@ class EventCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        color: Colors.white, // White background for body
+        color: AppColors.surface, // White background for body
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -76,7 +76,7 @@ class UnifiedTabBar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           decoration: BoxDecoration(
             color: isSelected
-                ? (selectedColor ?? AppColors.primary)
+                ? (selectedColor ?? AppColors.primary).withOpacity(0.08)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
@@ -89,7 +89,7 @@ class UnifiedTabBar extends StatelessWidget {
                   tab.icon,
                   size: 18,
                   color: isSelected
-                      ? Colors.white
+                      ? AppColors.primary
                       : (unselectedTextColor ?? AppColors.textSecondary),
                 ),
                 const SizedBox(width: 6),
@@ -101,7 +101,7 @@ class UnifiedTabBar extends StatelessWidget {
                   tab.label,
                   style: AppStyles.bodyMedium.copyWith(
                     color: isSelected
-                        ? Colors.white
+                        ? AppColors.primary
                         : (unselectedTextColor ?? AppColors.textSecondary),
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
@@ -119,7 +119,7 @@ class UnifiedTabBar extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? Colors.white.withOpacity(0.25)
+                        ? AppColors.primary.withOpacity(0.15)
                         : (tab.badgeColor ?? AppColors.primary).withOpacity(
                             0.15,
                           ),
@@ -129,7 +129,7 @@ class UnifiedTabBar extends StatelessWidget {
                     tab.badgeCount.toString(),
                     style: TextStyle(
                       color: isSelected
-                          ? Colors.white
+                          ? AppColors.primary
                           : (tab.badgeColor ?? AppColors.primary),
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
