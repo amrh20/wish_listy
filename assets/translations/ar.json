@@ -144,8 +144,7 @@
   },
   "wishlists": {
     "title": "قوائم الأمنيات",
-    "myWishlists": "قوائم أمنياتي",
-    "searchWishlists": "البحث في قوائم الأمنيات...",
+    "myWishlists": "الأمنيات",
     "createWishlist": "إنشاء قائمة أمنيات",
     "wishlistName": "اسم قائمة الأمنيات",
     "description": "الوصف",

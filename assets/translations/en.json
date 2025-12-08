@@ -146,8 +146,7 @@
   },
   "wishlists": {
     "title": "Wishlists",
-    "myWishlists": "My Wishlists",
-    "searchWishlists": "Search wishlists...",
+    "myWishlists": "Wishlists",
     "createWishlist": "Create Wishlist",
     "wishlistName": "Wishlist Name",
     "description": "Description",
