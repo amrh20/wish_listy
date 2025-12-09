@@ -11,6 +11,7 @@ import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
 import 'package:wish_listy/features/events/data/repository/event_repository.dart';
+import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import '../widgets/index.dart';
 
@@ -48,6 +49,11 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   final WishlistRepository _wishlistRepository = WishlistRepository();
   final EventRepository _eventRepository = EventRepository();
   String? _createdEventId; // Store created event ID for navigation
+
+  // Edit mode variables
+  String? _eventId; // Event ID when in edit mode
+  Event? _existingEvent; // Existing event data when in edit mode
+  bool get _isEditMode => _eventId != null;
 
   final List<EventTypeOption> _eventTypes = [
     EventTypeOption(
@@ -113,6 +119,27 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     super.initState();
     _initializeAnimations();
     _startAnimations();
+    _handleRouteArguments();
+  }
+
+  void _handleRouteArguments() {
+    // Get route arguments after first frame to ensure context is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      if (args != null) {
+        final eventId = args['eventId'] as String?;
+        final event = args['event'] as Event?;
+
+        if (eventId != null && event != null) {
+          setState(() {
+            _eventId = eventId;
+            _existingEvent = event;
+          });
+          _populateFormFromEvent(event);
+        }
+      }
+    });
   }
 
   void _initializeAnimations() {
@@ -141,6 +168,54 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     _animationController.forward();
   }
 
+  /// Populates form fields from existing event data
+  void _populateFormFromEvent(Event event) {
+    // Set basic fields
+    _nameController.text = event.name;
+    _descriptionController.text = event.description ?? '';
+    _locationController.text = event.location ?? '';
+
+    // Set event type
+    _selectedEventType = event.type.toString().split('.').last;
+
+    // Set privacy
+    _selectedPrivacy = event.privacy ?? 'friends_only';
+
+    // Set mode
+    _selectedEventMode = event.mode ?? 'in_person';
+
+    // Set meeting link
+    _meetingLinkController.text = event.meetingLink ?? '';
+
+    // Parse date and time from event.date
+    final eventDateTime = event.date;
+    _selectedDate = DateTime(
+      eventDateTime.year,
+      eventDateTime.month,
+      eventDateTime.day,
+    );
+    _selectedTime = TimeOfDay(
+      hour: eventDateTime.hour,
+      minute: eventDateTime.minute,
+    );
+
+    // Set wishlist option
+    if (event.wishlistId != null && event.wishlistId!.isNotEmpty) {
+      _wishlistOption = 'link';
+      _linkedWishlistId = event.wishlistId;
+    } else {
+      _wishlistOption = 'none';
+    }
+
+    // Extract invited friends from invitations
+    if (event.invitations.isNotEmpty) {
+      _invitedFriends = event.invitations
+          .map((invitation) => invitation.inviteeId)
+          .where((id) => id.isNotEmpty)
+          .toList();
+    }
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -167,6 +242,14 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                     CreateEventHeaderWidget(
                       onBackPressed: () => Navigator.pop(context),
                       onHelpPressed: _showHelpDialog,
+                      title: _isEditMode
+                          ? (localization.translate('events.editEventTitle') !=
+                                    'events.editEventTitle'
+                                ? localization.translate(
+                                    'events.editEventTitle',
+                                  )
+                                : 'Edit Event')
+                          : null,
                     ),
 
                     // Form
@@ -366,11 +449,20 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                                       // Action Buttons
                                       CreateEventActionsWidget(
                                         onCreatePressed: () =>
-                                            _createEvent(localization),
-                                        onSaveDraftPressed: _saveDraft,
+                                            _saveEvent(localization),
                                         isLoading: _isLoading,
                                         primaryColor:
                                             _getSelectedEventTypeColor(),
+                                        buttonText: _isEditMode
+                                            ? localization.translate(
+                                                        'events.updateEvent',
+                                                      ) !=
+                                                      'events.updateEvent'
+                                                  ? localization.translate(
+                                                      'events.updateEvent',
+                                                    )
+                                                  : 'Update Event'
+                                            : null,
                                       ),
                                     ],
                                   ),
@@ -917,7 +1009,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     );
   }
 
-  Future<void> _createEvent(LocalizationService localization) async {
+  Future<void> _saveEvent(LocalizationService localization) async {
     if (!_formKey.currentState!.validate()) return;
 
     // Validate date
@@ -961,8 +1053,8 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     try {
       String? wishlistId;
 
-      // Handle wishlist creation/linking based on selected option
-      if (_wishlistOption == 'create') {
+      // Handle wishlist creation/linking based on selected option (only for create mode)
+      if (!_isEditMode && _wishlistOption == 'create') {
         // Create empty wishlist linked to event
         final eventName = _nameController.text.trim();
         final wishlistName = '$eventName Wishlist';
@@ -985,6 +1077,9 @@ class _CreateEventScreenState extends State<CreateEventScreen>
         // Use linked wishlist ID
         wishlistId = _linkedWishlistId;
         debugPrint('🔗 Using linked wishlist: $wishlistId');
+      } else if (_isEditMode && _existingEvent?.wishlistId != null) {
+        // In edit mode, preserve existing wishlist ID if no change
+        wishlistId = _existingEvent!.wishlistId;
       }
 
       // Prepare event data
@@ -1002,31 +1097,55 @@ class _CreateEventScreenState extends State<CreateEventScreen>
         }
       }
 
-      // Create event via API
-      debugPrint('📤 Creating event via API...');
-      final createdEvent = await _eventRepository.createEvent(
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(),
-        date: eventDate,
-        type: _selectedEventType,
-        privacy: _selectedPrivacy,
-        mode: _selectedEventMode,
-        location: _locationController.text.trim().isNotEmpty
-            ? _locationController.text.trim()
-            : null,
-        meetingLink: meetingLink,
-        wishlistId: wishlistId,
-        invitedFriends: _invitedFriends,
-      );
+      Event updatedEvent;
 
-      // Store event ID from response
-      _createdEventId = createdEvent.id;
-      debugPrint('✅ Event created successfully: $_createdEventId');
+      if (_isEditMode) {
+        // Update existing event via API
+        debugPrint('📤 Updating event via API...');
+        updatedEvent = await _eventRepository.updateEvent(
+          eventId: _eventId!,
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim(),
+          date: eventDate,
+          type: _selectedEventType,
+          privacy: _selectedPrivacy,
+          mode: _selectedEventMode,
+          location: _locationController.text.trim().isNotEmpty
+              ? _locationController.text.trim()
+              : null,
+          meetingLink: meetingLink,
+          wishlistId: wishlistId,
+          invitedFriends: _invitedFriends,
+        );
+
+        debugPrint('✅ Event updated successfully: ${updatedEvent.id}');
+      } else {
+        // Create new event via API
+        debugPrint('📤 Creating event via API...');
+        updatedEvent = await _eventRepository.createEvent(
+          name: _nameController.text.trim(),
+          description: _descriptionController.text.trim(),
+          date: eventDate,
+          type: _selectedEventType,
+          privacy: _selectedPrivacy,
+          mode: _selectedEventMode,
+          location: _locationController.text.trim().isNotEmpty
+              ? _locationController.text.trim()
+              : null,
+          meetingLink: meetingLink,
+          wishlistId: wishlistId,
+          invitedFriends: _invitedFriends,
+        );
+
+        // Store event ID from response
+        _createdEventId = updatedEvent.id;
+        debugPrint('✅ Event created successfully: $_createdEventId');
+      }
 
       if (mounted) {
         setState(() => _isLoading = false);
         // Show success dialog
-        _showSuccessDialog(localization);
+        _showSuccessDialog(localization, eventId: updatedEvent.id);
       }
     } on ApiException catch (e) {
       if (mounted) {
@@ -1035,37 +1154,23 @@ class _CreateEventScreenState extends State<CreateEventScreen>
           SnackBar(content: Text(e.message), backgroundColor: AppColors.error),
         );
       }
-      debugPrint('❌ API Error creating event: ${e.message}');
+      debugPrint(
+        '❌ API Error ${_isEditMode ? 'updating' : 'creating'} event: ${e.message}',
+      );
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create event: ${e.toString()}'),
+            content: Text(
+              'Failed to ${_isEditMode ? 'update' : 'create'} event: ${e.toString()}',
+            ),
             backgroundColor: AppColors.error,
           ),
         );
       }
-      debugPrint('❌ Error creating event: $e');
+      debugPrint('❌ Error ${_isEditMode ? 'updating' : 'creating'} event: $e');
     }
-  }
-
-  void _saveDraft() {
-    // Save as draft functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.save_outlined, color: Colors.white),
-            const SizedBox(width: 8),
-            Text('Event saved as draft'),
-          ],
-        ),
-        backgroundColor: AppColors.info,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
   }
 
   void _showHelpDialog() {
@@ -1086,54 +1191,82 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     );
   }
 
-  void _showSuccessDialog(LocalizationService localization) {
+  void _showSuccessDialog(
+    LocalizationService localization, {
+    required String eventId,
+  }) {
     final selectedEventType = _eventTypes.firstWhere(
       (type) => type.id == _selectedEventType,
       orElse: () => _eventTypes.first,
     );
 
-    // Simplified message
-    final String message = localization.translate(
-      'events.eventCreatedMessage',
-      args: {'eventName': _nameController.text},
-    );
+    // Different messages for create vs edit
+    final String title = _isEditMode
+        ? 'Event Updated Successfully ${selectedEventType.emoji}'
+        : '${localization.translate('events.eventCreatedSuccessfully')} ${selectedEventType.emoji}';
+
+    final String message = _isEditMode
+        ? 'Your event "${_nameController.text}" has been updated successfully.'
+        : localization.translate(
+            'events.eventCreatedMessage',
+            args: {'eventName': _nameController.text},
+          );
 
     ConfirmationDialog.show(
       context: context,
       isSuccess: true,
-      title:
-          '${localization.translate('events.eventCreatedSuccessfully')} ${selectedEventType.emoji}',
+      title: title,
       message: message,
-      primaryActionLabel: localization.translate('events.inviteGuestsNow'),
+      primaryActionLabel: _isEditMode
+          ? (localization.translate('events.viewEvent') != 'events.viewEvent'
+                ? localization.translate('events.viewEvent')
+                : 'View Event')
+          : localization.translate('events.inviteGuestsNow'),
       onPrimaryAction: () {
         Navigator.of(context).pop(); // Close dialog
-        _showFriendsSelectionModal(); // Open invite guests bottom sheet
+        if (_isEditMode) {
+          // Navigate to event details for edit mode
+          Navigator.pushReplacementNamed(
+            context,
+            AppRoutes.eventDetails,
+            arguments: {'eventId': eventId},
+          );
+        } else {
+          // Open invite guests bottom sheet for create mode
+          _showFriendsSelectionModal();
+        }
       },
       additionalActions: [
-        DialogAction(
-          label: localization.translate('events.viewEvent'),
-          onPressed: () {
-            Navigator.of(context).pop(); // Close dialog
-            // Navigate to event details (redirect only, no API call yet)
-            if (_createdEventId != null) {
+        if (!_isEditMode)
+          DialogAction(
+            label: localization.translate('events.viewEvent'),
+            onPressed: () {
+              Navigator.of(context).pop(); // Close dialog
+              // Navigate to event details, replacing create event screen
               Navigator.pushReplacementNamed(
                 context,
                 AppRoutes.eventDetails,
-                arguments: {'eventId': _createdEventId},
+                arguments: {'eventId': eventId},
               );
-            } else {
-              // Fallback: navigate back to events screen
-              Navigator.of(context).pop();
-            }
-          },
-          variant: ButtonVariant.outline,
-          icon: Icons.visibility_rounded,
-        ),
+            },
+            variant: ButtonVariant.outline,
+            icon: Icons.visibility_rounded,
+          ),
         DialogAction(
           label: localization.translate('events.done'),
           onPressed: () {
             Navigator.of(context).pop(); // Close dialog
-            Navigator.of(context).pop(); // Navigate back to Events screen
+            if (_isEditMode) {
+              // For edit mode, navigate back to event details
+              Navigator.pushReplacementNamed(
+                context,
+                AppRoutes.eventDetails,
+                arguments: {'eventId': eventId},
+              );
+            } else {
+              // For create mode, navigate back to Events screen
+              Navigator.of(context).pop();
+            }
           },
           variant: ButtonVariant.text,
           icon: Icons.check_rounded,

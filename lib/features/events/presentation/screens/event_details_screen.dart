@@ -41,6 +41,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     _loadEventDetails();
   }
 
+  /// Handles back navigation - returns to events list
+  void _handleBackNavigation() {
+    // Check if we can pop normally (if there's a route in the stack)
+    if (Navigator.of(context).canPop()) {
+      // Pop and return true to trigger refresh in EventsScreen
+      Navigator.of(context).pop(true);
+    } else {
+      // If no route to pop, navigate to events list directly
+      Navigator.of(context).pushReplacementNamed(AppRoutes.events);
+    }
+  }
+
   Future<void> _loadEventDetails() async {
     setState(() {
       _isLoading = true;
@@ -269,7 +281,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () => _handleBackNavigation(),
       ),
       actions: [_buildMoreOptionsMenu()],
       flexibleSpace: FlexibleSpaceBar(
@@ -671,8 +683,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   /// Shows delete confirmation dialog
-  void _showDeleteConfirmationDialog() {
-    showDialog(
+  Future<void> _showDeleteConfirmationDialog() async {
+    final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -688,14 +700,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
           ),
           content: Text(
-            'Are you sure you want to delete this event? This action cannot be undone.',
+            'Are you sure you want to delete "${_event!.name}"? This action cannot be undone.',
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(context, false),
               child: Text(
                 'Cancel',
                 style: AppStyles.bodyMedium.copyWith(
@@ -704,11 +716,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               ),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                // TODO: Implement delete event functionality
-                // _deleteEvent();
-              },
+              onPressed: () => Navigator.pop(context, true),
               child: Text(
                 'Delete',
                 style: AppStyles.bodyMedium.copyWith(
@@ -721,6 +729,95 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         );
       },
     );
+
+    if (shouldDelete != true) return;
+
+    // Show loading indicator with event name
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Deleting Event',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '"${_event!.name}"',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.warning,
+          duration: Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+
+    try {
+      // Delete event via API
+      await _eventRepository.deleteEvent(_event!.id);
+
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text('Event deleted successfully'),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Navigate back to events list
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete event: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+      debugPrint('❌ Error deleting event: $e');
+    }
   }
 
   /// Builds the Quick Invite Widget (for empty guests state)

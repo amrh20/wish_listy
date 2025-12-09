@@ -86,6 +86,88 @@ class EventRepository {
     }
   }
 
+  /// Update an existing event
+  ///
+  /// [eventId] - Event ID to update (required)
+  /// [name] - Event name (required)
+  /// [description] - Event description (optional)
+  /// [date] - Event date and time in ISO 8601 format (required)
+  /// [type] - Event type: 'birthday', 'wedding', 'anniversary', etc. (required)
+  /// [privacy] - Privacy setting: 'public', 'private', or 'friends_only' (required)
+  /// [mode] - Event mode: 'in_person', 'online', or 'hybrid' (required)
+  /// [location] - Event location (optional for online events)
+  /// [meetingLink] - Online meeting link (required for online/hybrid, null for in_person)
+  /// [wishlistId] - Linked wishlist ID (optional)
+  /// [invitedFriends] - List of invited friend IDs (optional, can be empty)
+  ///
+  /// Returns the updated event data
+  Future<Event> updateEvent({
+    required String eventId,
+    required String name,
+    String? description,
+    required String date, // ISO 8601 format
+    required String type,
+    required String privacy,
+    required String mode,
+    String? location,
+    String? meetingLink,
+    String? wishlistId,
+    List<String>? invitedFriends,
+  }) async {
+    try {
+      // Prepare request body according to API specification
+      final requestData = <String, dynamic>{
+        'name': name,
+        'date': date,
+        'type': type,
+        'privacy': privacy,
+        'mode': mode,
+        if (description != null && description.isNotEmpty)
+          'description': description,
+        if (location != null && location.isNotEmpty) 'location': location,
+        'meeting_link': meetingLink,
+        if (wishlistId != null && wishlistId.isNotEmpty)
+          'wishlist_id': wishlistId,
+        'invited_friends': invitedFriends ?? [],
+      };
+
+      debugPrint('📤 EventRepository: Updating event');
+      debugPrint('   Event ID: $eventId');
+      debugPrint('   Request Data: $requestData');
+      debugPrint('   Endpoint: PUT /api/events/$eventId');
+
+      // Make API call to update event
+      // Endpoint: PUT /api/events/:id
+      final response = await _apiService.put('/events/$eventId', data: requestData);
+
+      debugPrint('📥 EventRepository: Response received');
+      debugPrint('   Response: $response');
+
+      // Parse response and create Event object
+      // API response structure: {success: true, data: {...}} or {id, name, ...}
+      final eventData = response['data'] ?? response;
+
+      if (eventData is! Map<String, dynamic>) {
+        throw Exception('Invalid response format from server');
+      }
+
+      // Create Event object from response
+      final event = Event.fromJson(eventData);
+
+      debugPrint('✅ EventRepository: Event updated successfully');
+      debugPrint('   Event ID: ${event.id}');
+
+      return event;
+    } on ApiException {
+      // Re-throw ApiException to preserve error details
+      rethrow;
+    } catch (e) {
+      // Handle any unexpected errors
+      debugPrint('❌ Unexpected update event error: $e');
+      throw Exception('Failed to update event. Please try again.');
+    }
+  }
+
   /// Get all events for the current user
   ///
   /// Returns a list of events (both created by user and invited to)
@@ -213,6 +295,35 @@ class EventRepository {
       // Handle any unexpected errors
       debugPrint('❌ Unexpected get event by ID error: $e');
       throw Exception('Failed to load event. Please try again.');
+    }
+  }
+
+  /// Delete an event by ID
+  ///
+  /// [eventId] - Event ID to delete (required)
+  ///
+  /// Returns true if deletion was successful
+  Future<bool> deleteEvent(String eventId) async {
+    try {
+      debugPrint('🗑️ EventRepository: Deleting event');
+      debugPrint('   Event ID: $eventId');
+      debugPrint('   Endpoint: DELETE /api/events/$eventId');
+
+      // Make API call to delete event
+      // Endpoint: DELETE /api/events/:id
+      await _apiService.delete('/events/$eventId');
+
+      debugPrint('✅ EventRepository: Event deleted successfully');
+
+      return true;
+    } on ApiException catch (e) {
+      // Re-throw ApiException to preserve error details
+      debugPrint('❌ API Error deleting event: ${e.message}');
+      rethrow;
+    } catch (e) {
+      // Handle any unexpected errors
+      debugPrint('❌ Unexpected delete event error: $e');
+      throw Exception('Failed to delete event. Please try again.');
     }
   }
 }

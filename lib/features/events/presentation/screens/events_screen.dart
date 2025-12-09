@@ -178,6 +178,8 @@ class EventsScreenState extends State<EventsScreen>
     ),
   ];
 
+  bool _hasLoadedOnce = false;
+
   @override
   void initState() {
     super.initState();
@@ -188,9 +190,26 @@ class EventsScreenState extends State<EventsScreen>
     // Don't load events automatically - wait for tab tap
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload data when screen becomes visible after returning from another screen
+    final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+
+    if (isCurrent && _hasLoadedOnce) {
+      // Screen is now visible and we've loaded before, reload data
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadEvents();
+        }
+      });
+    }
+  }
+
   /// Public method to refresh events (called from MainNavigation)
   void refreshEvents() {
     if (mounted) {
+      _hasLoadedOnce = true;
       _loadEvents();
     }
   }
@@ -236,6 +255,7 @@ class EventsScreenState extends State<EventsScreen>
         _publicEvents =
             []; // Public events would come from a different endpoint
         _isLoading = false;
+        _hasLoadedOnce = true; // Mark as loaded
       });
 
       _applyFilters();
@@ -492,6 +512,9 @@ class EventsScreenState extends State<EventsScreen>
                     myFilteredEvents[index],
                     localization,
                   ),
+                  onEdit: () => _editEvent(myFilteredEvents[index]),
+                  onShare: () => _shareEvent(myFilteredEvents[index]),
+                  onDelete: () => _deleteEvent(myFilteredEvents[index]),
                 );
               },
             ),
@@ -576,12 +599,18 @@ class EventsScreenState extends State<EventsScreen>
   }
 
   // Action Handlers
-  void _viewEventDetails(EventSummary event) {
-    AppRoutes.pushNamed(
+  void _viewEventDetails(EventSummary event) async {
+    await Navigator.pushNamed(
       context,
       AppRoutes.eventDetails,
       arguments: {'eventId': event.id},
     );
+    
+    // Always refresh events list when returning from event details
+    // This ensures data is updated after create/edit/delete operations
+    if (mounted) {
+      _loadEvents();
+    }
   }
 
   void _viewEventWishlist(
@@ -683,6 +712,179 @@ class EventsScreenState extends State<EventsScreen>
     Navigator.pushNamed(context, AppRoutes.eventManagement, arguments: event);
   }
 
+  Future<void> _editEvent(EventSummary eventSummary) async {
+    try {
+      // Fetch full event data for editing
+      final event = await _eventRepository.getEventById(eventSummary.id);
+      
+      // Navigate to create event screen with edit mode
+      Navigator.pushNamed(
+        context,
+        AppRoutes.createEvent,
+        arguments: {
+          'eventId': event.id,
+          'event': event,
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load event: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _shareEvent(EventSummary event) {
+    // TODO: Implement share functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Share functionality coming soon'),
+        backgroundColor: AppColors.info,
+      ),
+    );
+  }
+
+  Future<void> _deleteEvent(EventSummary event) async {
+    // Show confirmation dialog
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor: AppColors.surface,
+          title: Text(
+            'Delete Event',
+            style: AppStyles.headingSmall.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to delete "${event.name}"? This action cannot be undone.',
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'Cancel',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                'Delete',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true) return;
+
+    // Show loading indicator with event name
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Deleting Event',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '"${event.name}"',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.warning,
+          duration: Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+
+    try {
+      // Delete event via API
+      await _eventRepository.deleteEvent(event.id);
+
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text('Event deleted successfully'),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Reload events list to update the screen
+        await _loadEvents();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete event: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+      debugPrint('❌ Error deleting event: $e');
+    }
+  }
 
   Future<void> _refreshEvents() async {
     // Refresh events data from API

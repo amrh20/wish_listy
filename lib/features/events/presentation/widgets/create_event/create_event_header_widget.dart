@@ -8,11 +8,13 @@ import 'package:wish_listy/core/services/localization_service.dart';
 class CreateEventHeaderWidget extends StatelessWidget {
   final VoidCallback onBackPressed;
   final VoidCallback onHelpPressed;
+  final String? title; // Optional title override (for edit mode)
 
   const CreateEventHeaderWidget({
     super.key,
     required this.onBackPressed,
     required this.onHelpPressed,
+    this.title,
   });
 
   @override
@@ -47,7 +49,7 @@ class CreateEventHeaderWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  localization.translate('events.createEventTitle'),
+                  title ?? localization.translate('events.createEventTitle'),
                   style: AppStyles.headingSmall.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
