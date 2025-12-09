@@ -497,7 +497,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.primary.withOpacity(0.04),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [

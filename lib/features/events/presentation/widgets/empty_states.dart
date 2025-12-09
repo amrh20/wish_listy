@@ -19,22 +19,22 @@ class EmptyMyEvents extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 120,
-              height: 120,
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
                 gradient: AppColors.accentGradient,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.accent.withOpacity(0.3),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
               child: Icon(
                 Icons.celebration_outlined,
-                size: 60,
+                size: 48,
                 color: Colors.white,
               ),
             ),
@@ -85,8 +85,8 @@ class EmptyInvitedEvents extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 120,
-              height: 120,
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [AppColors.secondary, AppColors.secondaryLight],
@@ -97,12 +97,12 @@ class EmptyInvitedEvents extends StatelessWidget {
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.secondary.withOpacity(0.3),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
-              child: Icon(Icons.mail_outline, size: 60, color: Colors.white),
+              child: Icon(Icons.mail_outline, size: 48, color: Colors.white),
             ),
             const SizedBox(height: 24),
             Text(

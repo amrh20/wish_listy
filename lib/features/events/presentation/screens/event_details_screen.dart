@@ -161,7 +161,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         // Error State
         if (_errorMessage != null && _event == null) {
           return Scaffold(
-            backgroundColor: AppColors.primary.withOpacity(0.04),
+            backgroundColor: AppColors.background,
             appBar: AppBar(
               backgroundColor: Colors.transparent,
               elevation: 0,
@@ -210,7 +210,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         // Loading State
         if (_isLoading || _event == null) {
           return Scaffold(
-            backgroundColor: AppColors.primary.withOpacity(0.04),
+            backgroundColor: AppColors.background,
             body: Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             ),
@@ -229,7 +229,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             acceptedGuests.length;
 
         return Scaffold(
-          backgroundColor: AppColors.primary.withOpacity(0.04),
+          backgroundColor: AppColors.background,
           body: CustomScrollView(
             slivers: [
               // SliverAppBar (The Header)

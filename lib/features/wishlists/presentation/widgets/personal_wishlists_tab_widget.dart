@@ -62,22 +62,22 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 120,
-              height: 120,
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
                 gradient: AppColors.primaryGradient,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.primary.withOpacity(0.3),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
               child: Icon(
                 Icons.favorite_border_rounded,
-                size: 60,
+                size: 48,
                 color: Colors.white,
               ),
             ),

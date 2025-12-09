@@ -28,21 +28,44 @@ class ApiService {
       //
       // TO FIX CONNECTION REFUSED ON PHYSICAL DEVICE:
       // 1. Find your computer's IP: ifconfig (Mac/Linux) or ipconfig (Windows)
-      // 2. Replace 10.0.2.2 with your IP (e.g., 192.168.1.3)
+      // 2. Replace the IP below with your computer's IP (e.g., 192.168.1.3)
       // 3. Make sure backend listens on 0.0.0.0, not just localhost
       // 4. Ensure both devices are on the same WiFi network
+      // 5. Check firewall settings on your computer
       //
-      // Current detected IP: 192.168.1.3 (update if different)
       // For Emulator: use 'http://10.0.2.2:4000/api'
-      // For Physical Device: use 'http://192.168.1.3:4000/api'
-
-      // For Physical Device: use your computer's IP address
-      // For Emulator: use 10.0.2.2
-      //
-      // Detected IP: 192.168.1.3
-      // If this doesn't work, find your IP with: ifconfig (Mac) or ipconfig (Windows)
-      return 'http://192.168.1.3:4000/api'; // Physical device - UPDATE IF NEEDED
-      // return 'http://10.0.2.2:4000/api'; // Uncomment for Android Emulator
+      // For Physical Device: use 'http://YOUR_COMPUTER_IP:4000/api'
+      
+      // TODO: UPDATE THIS IP ADDRESS TO MATCH YOUR COMPUTER'S IP
+      // Find your IP with: 
+      //   - Mac/Linux: ifconfig | grep "inet " | grep -v 127.0.0.1
+      //   - Windows: ipconfig | findstr IPv4
+      //   - Or check your router's connected devices list
+      
+      // Try to detect if running on emulator or physical device
+      // For Emulator: use '10.0.2.2'
+      // For Physical Device: use your computer's IP address (found: 192.168.1.5)
+      // 
+      // To find your IP: ifconfig (Mac/Linux) or ipconfig (Windows)
+      // Make sure both your computer and phone are on the same WiFi network!
+      
+      const String androidIP = '192.168.1.5'; // Physical device - Your computer's IP
+      // const String androidIP = '10.0.2.2'; // Uncomment for Android Emulator
+      
+      final url = 'http://$androidIP:4000/api';
+      
+      if (kDebugMode) {
+        debugPrint('🔗 ANDROID API URL: $url');
+        debugPrint('📱 Device Type: Physical Device (Samsung)');
+        debugPrint('⚠️ If login fails, check:');
+        debugPrint('   1. Is backend server running on port 4000?');
+        debugPrint('   2. Is IP address correct? (Current: $androidIP)');
+        debugPrint('   3. Are both devices on same WiFi network?');
+        debugPrint('   4. Is firewall blocking port 4000?');
+        debugPrint('   5. Backend should listen on 0.0.0.0, not just localhost');
+      }
+      
+      return url;
     }
 
     if (_isIOS) {
@@ -120,12 +143,40 @@ class ApiService {
 
   /// Handle different types of errors and convert them to user-friendly messages
   void _handleError(DioException error) {
+    // Enhanced error logging for debugging
+    if (kDebugMode) {
+      debugPrint('🔴 API Error Details:');
+      debugPrint('   Type: ${error.type}');
+      debugPrint('   Message: ${error.message}');
+      debugPrint('   URL: ${error.requestOptions.uri}');
+      if (error.response != null) {
+        debugPrint('   Status Code: ${error.response?.statusCode}');
+        debugPrint('   Response: ${error.response?.data}');
+      }
+      if (error.type == DioExceptionType.connectionError) {
+        debugPrint('   ⚠️ Connection Error - Check:');
+        debugPrint('      - Is backend server running?');
+        debugPrint('      - Is IP address correct? (Current: ${_baseUrl})');
+        debugPrint('      - Are devices on same network?');
+        debugPrint('      - Is firewall blocking connection?');
+      }
+    }
+    
     switch (error.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
         throw ApiException(
-          'Connection timeout. Please check your internet connection.',
+          'Connection timeout. Please check your internet connection and ensure the server is running.',
+        );
+      
+      case DioExceptionType.connectionError:
+        throw ApiException(
+          'Cannot connect to server. Please check:\n'
+          '1. Backend server is running\n'
+          '2. Correct IP address in API settings\n'
+          '3. Both devices on same WiFi network\n'
+          '4. Firewall is not blocking the connection',
         );
 
       case DioExceptionType.badResponse:
