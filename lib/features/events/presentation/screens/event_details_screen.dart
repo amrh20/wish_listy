@@ -3,31 +3,30 @@ import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/primary_gradient_button.dart';
+import 'package:wish_listy/core/widgets/modern_wishlist_card.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
-import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'package:wish_listy/features/events/data/repository/event_repository.dart';
-import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final String eventId;
+  final bool isOwner;
 
-  const EventDetailsScreen({super.key, required this.eventId});
+  const EventDetailsScreen({
+    super.key,
+    required this.eventId,
+    this.isOwner = true, // Default to true since only Owner API is ready
+  });
 
   @override
   _EventDetailsScreenState createState() => _EventDetailsScreenState();
 }
 
-class _EventDetailsScreenState extends State<EventDetailsScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-
+class _EventDetailsScreenState extends State<EventDetailsScreen> {
   // Event data
-  EventDetails? _eventDetails;
+  Event? _event;
 
   // Loading and error states
   bool _isLoading = true;
@@ -39,31 +38,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
   @override
   void initState() {
     super.initState();
-    _initializeAnimations();
     _loadEventDetails();
-    _startAnimations();
-  }
-
-  void _initializeAnimations() {
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-      ),
-    );
-
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-          ),
-        );
   }
 
   Future<void> _loadEventDetails() async {
@@ -74,21 +49,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
 
     try {
       debugPrint('📥 Loading event details for ID: ${widget.eventId}');
-
-      // Get current user ID from AuthRepository
-      final authService = Provider.of<AuthRepository>(context, listen: false);
-      final currentUserId = authService.userId;
-
-      // Fetch event from API
       final event = await _eventRepository.getEventById(widget.eventId);
 
       if (!mounted) return;
 
-      // Convert Event to EventDetails
-      final eventDetails = _convertEventToEventDetails(event, currentUserId);
-
       setState(() {
-        _eventDetails = eventDetails;
+        _event = event;
         _isLoading = false;
       });
 
@@ -98,410 +64,102 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
       setState(() {
         _errorMessage = e.message;
         _isLoading = false;
-        // Use default/empty event details as fallback
-        _eventDetails = _getDefaultEventDetails();
       });
-      debugPrint('❌ API Error loading event details: ${e.message}');
+      debugPrint('❌ API Error loading event: ${e.message}');
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load event details. Please try again.';
+        _errorMessage = 'Failed to load event. Please try again.';
         _isLoading = false;
-        // Use default/empty event details as fallback
-        _eventDetails = _getDefaultEventDetails();
       });
-      debugPrint('❌ Error loading event details: $e');
+      debugPrint('❌ Error loading event: $e');
     }
   }
 
-  EventDetails _getDefaultEventDetails() {
-    return EventDetails(
-      id: widget.eventId,
-      name: 'Event Details',
-      description: 'Event details will be loaded here.',
-      hostName: 'Host Name',
-      hostProfilePicture: null,
-      date: DateTime.now().add(Duration(days: 7)),
-      time: 'TBD',
-      location: 'Location TBD',
-      eventType: EventDetailsType.other,
-      totalInvited: 0,
-      totalAccepted: 0,
-      totalDeclined: 0,
-      totalPending: 0,
-      wishlistItems: 0,
-      isHost: false,
-      attendanceStatus: AttendanceStatus.pending,
-      invitedFriends: [],
-      wishlistPreview: [],
-    );
-  }
-
-  EventDetails _convertEventToEventDetails(Event event, String? currentUserId) {
-    // Determine if current user is the host
-    final isHost = currentUserId != null && event.creatorId == currentUserId;
-
-    // Convert EventType to EventDetailsType
-    EventDetailsType eventDetailsType;
-    switch (event.type) {
+  Color _getEventTypeColor(EventType type) {
+    switch (type) {
       case EventType.birthday:
-        eventDetailsType = EventDetailsType.birthday;
-        break;
+        return AppColors.secondary;
       case EventType.wedding:
-        eventDetailsType = EventDetailsType.wedding;
-        break;
+        return AppColors.primary;
       case EventType.anniversary:
-        eventDetailsType = EventDetailsType.anniversary;
-        break;
+        return AppColors.error;
       case EventType.graduation:
-        eventDetailsType = EventDetailsType.graduation;
-        break;
-      case EventType.vacation:
-        eventDetailsType = EventDetailsType.vacation;
-        break;
+        return AppColors.accent;
+      case EventType.holiday:
+        return AppColors.success;
+      case EventType.babyShower:
+        return AppColors.info;
+      case EventType.houseWarming:
+        return AppColors.warning;
       default:
-        eventDetailsType = EventDetailsType.other;
-    }
-
-    // Extract time from date
-    final timeString = _formatTime(event.date);
-
-    // Calculate invitation counts
-    final totalInvited = event.invitations.length;
-    final totalAccepted = event.invitations
-        .where((inv) => inv.status == InvitationStatus.accepted)
-        .length;
-    final totalDeclined = event.invitations
-        .where((inv) => inv.status == InvitationStatus.declined)
-        .length;
-    final totalPending = event.invitations
-        .where((inv) => inv.status == InvitationStatus.pending)
-        .length;
-
-    // Convert invitations to EventGuest list
-    final invitedFriends = event.invitations.map((invitation) {
-      GuestStatus guestStatus;
-      switch (invitation.status) {
-        case InvitationStatus.accepted:
-          guestStatus = GuestStatus.accepted;
-          break;
-        case InvitationStatus.declined:
-          guestStatus = GuestStatus.declined;
-          break;
-        case InvitationStatus.pending:
-          guestStatus = GuestStatus.pending;
-          break;
-      }
-
-      return EventGuest(
-        id: invitation.inviteeId,
-        name: 'Guest ${invitation.inviteeId}', // TODO: Fetch actual user name
-        profilePicture: null, // TODO: Fetch actual profile picture
-        status: guestStatus,
-      );
-    }).toList();
-
-    // Determine attendance status for current user
-    AttendanceStatus attendanceStatus = AttendanceStatus.pending;
-    if (currentUserId != null) {
-      final userInvitation = event.invitations
-          .where((inv) => inv.inviteeId == currentUserId)
-          .firstOrNull;
-      if (userInvitation != null) {
-        switch (userInvitation.status) {
-          case InvitationStatus.accepted:
-            attendanceStatus = AttendanceStatus.accepted;
-            break;
-          case InvitationStatus.declined:
-            attendanceStatus = AttendanceStatus.declined;
-            break;
-          case InvitationStatus.pending:
-            attendanceStatus = AttendanceStatus.pending;
-            break;
-        }
-      } else if (isHost) {
-        attendanceStatus = AttendanceStatus.accepted;
-      }
-    }
-
-    return EventDetails(
-      id: event.id,
-      name: event.name,
-      description: event.description,
-      hostName: 'Host', // TODO: Fetch actual host name from creator ID
-      hostProfilePicture: null, // TODO: Fetch actual host profile picture
-      date: event.date,
-      time: timeString,
-      location: event.location ?? 'Location TBD',
-      eventType: eventDetailsType,
-      totalInvited: totalInvited,
-      totalAccepted: totalAccepted,
-      totalDeclined: totalDeclined,
-      totalPending: totalPending,
-      wishlistItems: 0, // TODO: Fetch actual wishlist item count
-      isHost: isHost,
-      attendanceStatus: attendanceStatus,
-      invitedFriends: invitedFriends,
-      wishlistPreview: [], // TODO: Fetch actual wishlist preview
-    );
-  }
-
-  String _formatTime(DateTime dateTime) {
-    final hour = dateTime.hour;
-    final minute = dateTime.minute;
-    final period = hour >= 12 ? 'PM' : 'AM';
-    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
-    return '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period';
-  }
-
-  Future<void> _refreshEventDetails() async {
-    await _loadEventDetails();
-  }
-
-  // Legacy mock data method - kept for reference but not used
-  void _loadEventDetailsMock() {
-    // Load event details based on event ID - replace with actual API call
-    // For now, we'll create mock data based on the event ID
-    final eventId = widget.eventId;
-
-    // Mock event details - in real app, this would be an API call
-    if (eventId == '1') {
-      _eventDetails = EventDetails(
-        id: eventId,
-        name: 'Sarah\'s Birthday Party 🎂',
-        description:
-            'Join us for an amazing birthday celebration with friends, music, delicious food, and lots of fun! We\'ll have games, dancing, and a surprise or two. Can\'t wait to celebrate with everyone!',
-        hostName: 'Sarah Johnson',
-        hostProfilePicture: null,
-        date: DateTime.now().add(Duration(days: 15)),
-        time: '6:00 PM',
-        location: 'Sarah\'s House, 123 Main Street, Downtown',
-        eventType: EventDetailsType.birthday,
-        totalInvited: 24,
-        totalAccepted: 18,
-        totalDeclined: 2,
-        totalPending: 4,
-        wishlistItems: 12,
-        isHost: false,
-        attendanceStatus: AttendanceStatus.accepted,
-        invitedFriends: [
-          EventGuest(
-            id: '1',
-            name: 'Ahmed Ali',
-            profilePicture: null,
-            status: GuestStatus.accepted,
-          ),
-          EventGuest(
-            id: '2',
-            name: 'Emma Watson',
-            profilePicture: null,
-            status: GuestStatus.accepted,
-          ),
-          EventGuest(
-            id: '3',
-            name: 'Mike Thompson',
-            profilePicture: null,
-            status: GuestStatus.pending,
-          ),
-          EventGuest(
-            id: '4',
-            name: 'Lisa Chen',
-            profilePicture: null,
-            status: GuestStatus.declined,
-          ),
-        ],
-        wishlistPreview: [
-          WishlistItemPreview(
-            id: '1',
-            name: 'Wireless Bluetooth Headphones',
-            price: '\$99',
-            isPurchased: false,
-          ),
-          WishlistItemPreview(
-            id: '2',
-            name: 'Vintage Leather Journal',
-            price: '\$45',
-            isPurchased: true,
-          ),
-          WishlistItemPreview(
-            id: '3',
-            name: 'Essential Oils Diffuser',
-            price: '\$65',
-            isPurchased: false,
-          ),
-        ],
-      );
-    } else if (eventId == '2') {
-      _eventDetails = EventDetails(
-        id: eventId,
-        name: 'My Graduation Ceremony 🎓',
-        description:
-            'Celebrating the completion of my university journey! Join me for this special milestone with family and friends. There will be a formal ceremony followed by a reception with refreshments and photo opportunities.',
-        hostName: 'Ahmed Hassan',
-        hostProfilePicture: null,
-        date: DateTime.now().add(Duration(days: 12)),
-        time: '2:00 PM',
-        location: 'University Auditorium, Main Campus',
-        eventType: EventDetailsType.graduation,
-        totalInvited: 18,
-        totalAccepted: 15,
-        totalDeclined: 1,
-        totalPending: 2,
-        wishlistItems: 8,
-        isHost: true,
-        attendanceStatus: AttendanceStatus.accepted,
-        invitedFriends: [
-          EventGuest(
-            id: '1',
-            name: 'Noha Ahmed',
-            profilePicture: null,
-            status: GuestStatus.accepted,
-          ),
-          EventGuest(
-            id: '2',
-            name: 'Omar Hassan',
-            profilePicture: null,
-            status: GuestStatus.accepted,
-          ),
-          EventGuest(
-            id: '3',
-            name: 'Fatima Ali',
-            profilePicture: null,
-            status: GuestStatus.pending,
-          ),
-        ],
-        wishlistPreview: [
-          WishlistItemPreview(
-            id: '1',
-            name: 'Professional Watch',
-            price: '\$150',
-            isPurchased: false,
-          ),
-          WishlistItemPreview(
-            id: '2',
-            name: 'Leather Portfolio',
-            price: '\$80',
-            isPurchased: false,
-          ),
-          WishlistItemPreview(
-            id: '3',
-            name: 'Gift Cards',
-            price: '\$50',
-            isPurchased: false,
-          ),
-        ],
-      );
-    } else if (eventId == '3') {
-      _eventDetails = EventDetails(
-        id: eventId,
-        name: 'Summer Vacation Trip 🏖️',
-        description:
-            'Family vacation to the beautiful beaches! We\'ll be staying at a beachfront resort with activities like swimming, snorkeling, beach volleyball, and evening bonfires. Perfect for relaxation and family bonding.',
-        hostName: 'Ahmed Hassan',
-        hostProfilePicture: null,
-        date: DateTime.now().add(Duration(days: 25)),
-        time: '10:00 AM',
-        location: 'Beach Resort, Red Sea Coast',
-        eventType: EventDetailsType.vacation,
-        totalInvited: 12,
-        totalAccepted: 10,
-        totalDeclined: 0,
-        totalPending: 2,
-        wishlistItems: 6,
-        isHost: true,
-        attendanceStatus: AttendanceStatus.accepted,
-        invitedFriends: [
-          EventGuest(
-            id: '1',
-            name: 'Family Members',
-            profilePicture: null,
-            status: GuestStatus.accepted,
-          ),
-          EventGuest(
-            id: '2',
-            name: 'Close Friends',
-            profilePicture: null,
-            status: GuestStatus.accepted,
-          ),
-        ],
-        wishlistPreview: [
-          WishlistItemPreview(
-            id: '1',
-            name: 'Beach Umbrella',
-            price: '\$45',
-            isPurchased: false,
-          ),
-          WishlistItemPreview(
-            id: '2',
-            name: 'Snorkeling Gear',
-            price: '\$120',
-            isPurchased: false,
-          ),
-          WishlistItemPreview(
-            id: '3',
-            name: 'Beach Towels',
-            price: '\$35',
-            isPurchased: false,
-          ),
-        ],
-      );
-    } else {
-      // Default event details for unknown event IDs
-      _eventDetails = EventDetails(
-        id: eventId,
-        name: 'Event Details',
-        description: 'Event details will be loaded here.',
-        hostName: 'Host Name',
-        hostProfilePicture: null,
-        date: DateTime.now().add(Duration(days: 7)),
-        time: 'TBD',
-        location: 'Location TBD',
-        eventType: EventDetailsType.other,
-        totalInvited: 0,
-        totalAccepted: 0,
-        totalDeclined: 0,
-        totalPending: 0,
-        wishlistItems: 0,
-        isHost: false,
-        attendanceStatus: AttendanceStatus.pending,
-        invitedFriends: [],
-        wishlistPreview: [],
-      );
+        return AppColors.primary;
     }
   }
 
-  void _startAnimations() {
-    _animationController.forward();
+  IconData _getEventTypeIcon(EventType type) {
+    switch (type) {
+      case EventType.birthday:
+        return Icons.cake_outlined;
+      case EventType.wedding:
+        return Icons.favorite_outline;
+      case EventType.anniversary:
+        return Icons.favorite_border;
+      case EventType.graduation:
+        return Icons.school_outlined;
+      case EventType.holiday:
+        return Icons.celebration_outlined;
+      case EventType.vacation:
+        return Icons.beach_access_outlined;
+      case EventType.babyShower:
+        return Icons.child_friendly_outlined;
+      case EventType.houseWarming:
+        return Icons.home_outlined;
+      case EventType.retirement:
+        return Icons.work_off_outlined;
+      case EventType.promotion:
+        return Icons.trending_up_outlined;
+      default:
+        return Icons.event_outlined;
+    }
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
+  String _formatDateTime(DateTime date) {
+    final months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year} at ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}';
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
-        // Show loading indicator
-        if (_isLoading) {
+        // Error State
+        if (_errorMessage != null && _event == null) {
           return Scaffold(
-            backgroundColor: Colors.grey.shade50,
-            body: Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            ),
-          );
-        }
-
-        // Show error message
-        if (_errorMessage != null && _eventDetails == null) {
-          return Scaffold(
-            backgroundColor: Colors.grey.shade50,
+            backgroundColor: AppColors.primary.withOpacity(0.04),
             appBar: AppBar(
-              title: Text('Event Details'),
               backgroundColor: Colors.transparent,
               elevation: 0,
+              leading: IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios,
+                  color: AppColors.textPrimary,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
             ),
             body: Center(
               child: Padding(
@@ -525,7 +183,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
-                    CustomButton(text: 'Retry', onPressed: _loadEventDetails),
+                    PrimaryGradientButton(
+                      text: 'Retry',
+                      icon: Icons.refresh,
+                      onPressed: _loadEventDetails,
+                    ),
                   ],
                 ),
               ),
@@ -533,100 +195,88 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
           );
         }
 
-        // Show event details
-        if (_eventDetails == null) {
+        // Loading State
+        if (_isLoading || _event == null) {
           return Scaffold(
-            backgroundColor: Colors.grey.shade50,
+            backgroundColor: AppColors.primary.withOpacity(0.04),
             body: Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             ),
           );
         }
 
+        final eventColor = _getEventTypeColor(_event!.type);
+        final acceptedGuests = _event!.invitations
+            .where((inv) => inv.status == InvitationStatus.accepted)
+            .take(5)
+            .toList();
+        final remainingCount =
+            _event!.invitations
+                .where((inv) => inv.status == InvitationStatus.accepted)
+                .length -
+            acceptedGuests.length;
+
         return Scaffold(
-          backgroundColor: Colors.grey.shade50,
-          body: Stack(
-            children: [
-              // Content
-              RefreshIndicator(
-                onRefresh: _refreshEventDetails,
-                color: _getEventTypeColor(_eventDetails!.eventType),
-                child: CustomScrollView(
-                  slivers: [
-                    // App Bar with Event Header
-                    _buildSliverAppBar(),
+          backgroundColor: AppColors.primary.withOpacity(0.04),
+          body: CustomScrollView(
+            slivers: [
+              // SliverAppBar (The Header)
+              _buildSliverAppBar(eventColor, localization),
 
-                    // Event Content
-                    SliverToBoxAdapter(
-                      child: AnimatedBuilder(
-                        animation: _animationController,
-                        builder: (context, child) {
-                          return FadeTransition(
-                            opacity: _fadeAnimation,
-                            child: SlideTransition(
-                              position: _slideAnimation,
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Event Info Card
-                                    _buildEventInfoCard(),
-                                    const SizedBox(height: 24),
+              // Content Body
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Unified Info Sheet (Merged Date, Location, Description, Guests)
+                      _buildUnifiedInfoSheet(acceptedGuests, remainingCount),
 
-                                    // Attendance Card
-                                    _buildAttendanceCard(localization),
-                                    const SizedBox(height: 24),
+                      const SizedBox(height: 16),
 
-                                    // Guests Section
-                                    _buildGuestsSection(),
-                                    const SizedBox(height: 24),
+                      // Linked Wishlist (Kept Separate)
+                      if (widget.isOwner || _event!.wishlistId != null)
+                        _buildWishlistCard(localization),
 
-                                    // Wishlist Preview
-                                    _buildWishlistPreview(),
-                                    const SizedBox(height: 24),
-
-                                    // Action Buttons
-                                    _buildActionButtons(localization),
-                                    const SizedBox(
-                                      height: 100,
-                                    ), // Bottom padding
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                      SizedBox(
+                        height: 20 + MediaQuery.of(context).padding.bottom,
+                      ), // Bottom padding
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
+          // Bottom Navigation Bar removed - actions moved to More Options menu
         );
       },
     );
   }
 
-  Widget _buildSliverAppBar() {
-    final eventColor = _getEventTypeColor(_eventDetails!.eventType);
-    final daysUntil = _eventDetails!.date.difference(DateTime.now()).inDays;
+  Widget _buildSliverAppBar(
+    Color eventColor,
+    LocalizationService localization,
+  ) {
+    final daysUntil = _event!.date.difference(DateTime.now()).inDays;
+    final isPast = _event!.status == EventStatus.completed;
 
     return SliverAppBar(
-      expandedHeight: 300,
+      expandedHeight: 280,
       floating: false,
       pinned: true,
       backgroundColor: Colors.transparent,
       elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+        onPressed: () => Navigator.pop(context),
+      ),
+      actions: [_buildMoreOptionsMenu()],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [eventColor, eventColor.withOpacity(0.8)],
-            ),
+            gradient: AppColors
+                .primaryGradient, // Use Purple Gradient (Unified Identity)
           ),
           child: SafeArea(
             child: Padding(
@@ -635,7 +285,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 40),
-
                   // Event Icon
                   Container(
                     width: 80,
@@ -652,37 +301,24 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                       ],
                     ),
                     child: Icon(
-                      _getEventTypeIcon(_eventDetails!.eventType),
-                      color: eventColor,
+                      _getEventTypeIcon(_event!.type),
+                      color: AppColors.primary,
                       size: 40,
                     ),
                   ),
-
                   const SizedBox(height: 16),
-
                   // Event Name
                   Text(
-                    _eventDetails!.name,
-                    style: AppStyles.headingMedium.copyWith(
+                    _event!.name,
+                    style: AppStyles.headingLarge.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
+                      fontSize: 28,
                     ),
                     textAlign: TextAlign.center,
                   ),
-
-                  const SizedBox(height: 8),
-
-                  // Host Info
-                  Text(
-                    'Hosted by ${_eventDetails!.hostName}',
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Countdown
+                  const SizedBox(height: 12),
+                  // Date Badge
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -692,18 +328,29 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Text(
-                      daysUntil > 0
-                          ? daysUntil == 1
-                                ? 'Tomorrow!'
-                                : 'In $daysUntil days'
-                          : daysUntil == 0
-                          ? 'Today!'
-                          : 'Event passed',
-                      style: AppStyles.bodyMedium.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          isPast
+                              ? 'Past Event'
+                              : daysUntil == 0
+                              ? 'Today'
+                              : daysUntil == 1
+                              ? 'Tomorrow'
+                              : 'In $daysUntil days',
+                          style: AppStyles.bodyMedium.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -712,1157 +359,319 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
           ),
         ),
       ),
-      actions: [
-        IconButton(
-          onPressed: _shareEvent,
-          icon: Icon(Icons.share_outlined, color: Colors.white),
-        ),
-        PopupMenuButton<String>(
-          onSelected: _handleMenuAction,
-          icon: Icon(Icons.more_vert, color: Colors.white),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          itemBuilder: (context) => [
-            if (_eventDetails!.isHost) ...[
-              PopupMenuItem(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_outlined, size: 20),
-                    SizedBox(width: 12),
-                    Text('Edit Event'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'manage_guests',
-                child: Row(
-                  children: [
-                    Icon(Icons.people_outlined, size: 20),
-                    SizedBox(width: 12),
-                    Text('Manage Guests'),
-                  ],
-                ),
-              ),
-            ],
-            PopupMenuItem(
-              value: 'add_to_calendar',
-              child: Row(
-                children: [
-                  Icon(Icons.calendar_month_outlined, size: 20),
-                  SizedBox(width: 12),
-                  Text('Add to Calendar'),
-                ],
-              ),
-            ),
-            if (!_eventDetails!.isHost)
-              PopupMenuItem(
-                value: 'report',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.report_outlined,
-                      size: 20,
-                      color: AppColors.error,
-                    ),
-                    SizedBox(width: 12),
-                    Text(
-                      'Report Event',
-                      style: TextStyle(color: AppColors.error),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ],
     );
   }
 
-  Widget _buildEventInfoCard() {
+  /// Builds the unified info sheet (merged Date, Location, Description, Guests)
+  Widget _buildUnifiedInfoSheet(
+    List<EventInvitation> acceptedGuests,
+    int remainingCount,
+  ) {
+    final hasDescription =
+        _event!.description != null && _event!.description!.isNotEmpty;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.border.withOpacity(0.8),
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.textTertiary.withOpacity(0.1),
+            color: AppColors.primary.withOpacity(0.12),
+            blurRadius: 20,
             offset: const Offset(0, 4),
-            blurRadius: 12,
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Event Details', style: AppStyles.headingSmall),
+          // Meta-Tags Row (Type, Privacy, Status)
+          _buildMetaTagsRow(),
           const SizedBox(height: 16),
-
-          // Date & Time
-          _buildInfoRow(
-            icon: Icons.calendar_today_outlined,
-            title: 'Date & Time',
-            value:
-                '${_formatDate(_eventDetails!.date)} at ${_eventDetails!.time}',
-            color: AppColors.info,
-          ),
-
-          const SizedBox(height: 16),
-
-          // Location
-          _buildInfoRow(
-            icon: Icons.location_on_outlined,
-            title: 'Location',
-            value: _eventDetails!.location,
-            color: AppColors.accent,
-            onTap: _openMap,
-          ),
-
-          if (_eventDetails!.description != null) ...[
-            const SizedBox(height: 20),
-
-            // Description
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          // Row 1: Meta Info (Date & Location)
+          Row(
+            children: [
+              // Date
+              Expanded(
+                child: Row(
                   children: [
                     Icon(
-                      Icons.description_outlined,
-                      color: AppColors.secondary,
+                      Icons.calendar_today_outlined,
+                      color: AppColors.primary,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'Description',
-                      style: AppStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
+                    Expanded(
+                      child: Text(
+                        _formatDateTime(_event!.date),
+                        style: AppStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _eventDetails!.description!,
-                  style: AppStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-    VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.textTertiary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: AppStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (onTap != null)
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: AppColors.textTertiary,
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAttendanceCard(LocalizationService localization) {
-    if (_eventDetails!.isHost) {
-      return _buildHostAttendanceView();
-    } else {
-      return _buildGuestAttendanceView(localization);
-    }
-  }
-
-  Widget _buildHostAttendanceView() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Guest Responses', style: AppStyles.headingSmall),
-          const SizedBox(height: 16),
-
-          Row(
-            children: [
-              Expanded(
-                child: _buildAttendanceStatItem(
-                  icon: Icons.check_circle_outline,
-                  label: 'Accepted',
-                  count: _eventDetails!.totalAccepted,
-                  total: _eventDetails!.totalInvited,
-                  color: AppColors.success,
-                ),
-              ),
-              Expanded(
-                child: _buildAttendanceStatItem(
-                  icon: Icons.cancel_outlined,
-                  label: 'Declined',
-                  count: _eventDetails!.totalDeclined,
-                  total: _eventDetails!.totalInvited,
-                  color: AppColors.error,
-                ),
-              ),
-              Expanded(
-                child: _buildAttendanceStatItem(
-                  icon: Icons.schedule_outlined,
-                  label: 'Pending',
-                  count: _eventDetails!.totalPending,
-                  total: _eventDetails!.totalInvited,
-                  color: AppColors.warning,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGuestAttendanceView(LocalizationService localization) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _getAttendanceStatusColor(
-            _eventDetails!.attendanceStatus,
-          ).withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Your Response', style: AppStyles.headingSmall),
-          const SizedBox(height: 16),
-
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: _getAttendanceStatusColor(
-                    _eventDetails!.attendanceStatus,
-                  ).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  _getAttendanceStatusIcon(_eventDetails!.attendanceStatus),
-                  color: _getAttendanceStatusColor(
-                    _eventDetails!.attendanceStatus,
-                  ),
-                  size: 20,
                 ),
               ),
               const SizedBox(width: 16),
+              // Location
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(
-                      _getAttendanceStatusText(
-                        _eventDetails!.attendanceStatus,
-                        localization,
-                      ),
-                      style: AppStyles.bodyLarge.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: _getAttendanceStatusColor(
-                          _eventDetails!.attendanceStatus,
-                        ),
-                      ),
+                    Icon(
+                      Icons.location_on_outlined,
+                      color: AppColors.textSecondary,
+                      size: 20,
                     ),
-                    Text(
-                      'You ${_getAttendanceStatusDescription(_eventDetails!.attendanceStatus)} this event',
-                      style: AppStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _event!.location ?? 'Location TBD',
+                        style: AppStyles.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              if (_eventDetails!.attendanceStatus != AttendanceStatus.accepted)
-                TextButton(onPressed: _changeAttendance, child: Text('Change')),
             ],
           ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildAttendanceStatItem({
-    required IconData icon,
-    required String label,
-    required int count,
-    required int total,
-    required Color color,
-  }) {
-    final percentage = total > 0 ? (count / total * 100).round() : 0;
+          // Divider
+          const Divider(height: 30),
 
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 24),
-        const SizedBox(height: 8),
-        Text(
-          '$count',
-          style: AppStyles.headingSmall.copyWith(
-            color: color,
-            fontWeight: FontWeight.bold,
+          // Description Section
+          Text(
+            'About',
+            style: AppStyles.headingSmall.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: AppStyles.caption.copyWith(color: AppColors.textTertiary),
-        ),
-        Text(
-          '$percentage%',
-          style: AppStyles.caption.copyWith(
-            color: color,
-            fontWeight: FontWeight.w600,
+          const SizedBox(height: 12),
+          Text(
+            hasDescription
+                ? _event!.description!
+                : 'No description provided for this event.',
+            style: AppStyles.bodyMedium.copyWith(
+              color: hasDescription
+                  ? AppColors.textSecondary
+                  : AppColors.textTertiary,
+              height: 1.5,
+              fontStyle: hasDescription ? FontStyle.normal : FontStyle.italic,
+            ),
           ),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildGuestsSection() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Guests (${_eventDetails!.totalInvited})',
-                style: AppStyles.headingSmall,
-              ),
-              TextButton(
-                onPressed: _viewAllGuests,
-                child: Text(
-                  'View All',
-                  style: AppStyles.bodyMedium.copyWith(
-                    color: _getEventTypeColor(_eventDetails!.eventType),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
+          // Divider
+          const Divider(height: 30),
+
+          // Guests Section
+          Text(
+            'Who\'s Coming',
+            style: AppStyles.headingSmall.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
           const SizedBox(height: 16),
-
-          Column(
-            children: _eventDetails!.invitedFriends.take(4).map((guest) {
-              return _buildGuestItem(guest);
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGuestItem(EventGuest guest) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: _getGuestStatusColor(
-              guest.status,
-            ).withOpacity(0.1),
-            child: Text(
-              guest.name[0].toUpperCase(),
-              style: AppStyles.bodyMedium.copyWith(
-                color: _getGuestStatusColor(guest.status),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              guest.name,
-              style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w500),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: _getGuestStatusColor(guest.status).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              _getGuestStatusText(guest.status),
-              style: AppStyles.caption.copyWith(
-                color: _getGuestStatusColor(guest.status),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWishlistPreview() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.secondary.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.card_giftcard_outlined,
-                color: AppColors.secondary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Event Wishlist (${_eventDetails!.wishlistItems} items)',
-                  style: AppStyles.headingSmall,
-                ),
-              ),
-              TextButton(
-                onPressed: _viewFullWishlist,
-                child: Text(
-                  'View All',
-                  style: AppStyles.bodyMedium.copyWith(
-                    color: AppColors.secondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          Column(
-            children: _eventDetails!.wishlistPreview.map((item) {
-              return _buildWishlistItemPreview(item);
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWishlistItemPreview(WishlistItemPreview item) {
-    return GestureDetector(
-      onTap: () => _viewWishlistItem(item),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(12),
-          border: item.isPurchased
-              ? Border.all(color: AppColors.success.withOpacity(0.3))
-              : null,
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: item.isPurchased
-                    ? AppColors.success.withOpacity(0.1)
-                    : AppColors.secondary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                item.isPurchased
-                    ? Icons.check_circle_outline
-                    : Icons.card_giftcard_outlined,
-                color: item.isPurchased
-                    ? AppColors.success
-                    : AppColors.secondary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.name,
-                    style: AppStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w500,
-                      decoration: item.isPurchased
-                          ? TextDecoration.lineThrough
-                          : null,
-                      color: item.isPurchased
-                          ? AppColors.textTertiary
-                          : AppColors.textPrimary,
+          if (acceptedGuests.isEmpty)
+            _buildQuickInviteWidget()
+          else
+            Row(
+              children: [
+                ...acceptedGuests.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final guest = entry.value;
+                  return Container(
+                    margin: EdgeInsets.only(left: index > 0 ? -12 : 0),
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppColors.primary,
+                      child: Text(
+                        guest.inviteeId.isNotEmpty
+                            ? guest.inviteeId[0].toUpperCase()
+                            : 'G',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+                if (remainingCount > 0)
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppColors.surfaceVariant,
+                      child: Text(
+                        '+$remainingCount',
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the More Options Menu (PopupMenuButton)
+  Widget _buildMoreOptionsMenu() {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, color: Colors.white),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: AppColors.surface,
+      elevation: 8,
+      onSelected: (value) {
+        _handleMenuAction(value);
+      },
+      itemBuilder: (BuildContext context) {
+        final items = <PopupMenuEntry<String>>[];
+
+        if (widget.isOwner) {
+          // Owner Actions
+          items.add(
+            PopupMenuItem<String>(
+              value: 'manage_guests',
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.group_add_outlined,
+                    color: AppColors.textPrimary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
                   Text(
-                    item.price,
-                    style: AppStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
+                    'Manage Guests',
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
               ),
             ),
-            if (item.isPurchased)
-              Text(
-                'Purchased',
-                style: AppStyles.caption.copyWith(
-                  color: AppColors.success,
-                  fontWeight: FontWeight.w600,
-                ),
-              )
-            else
-              // Add Reserve Button for unpurchased items
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.primary.withOpacity(0.3),
-                    width: 1,
+          );
+          items.add(
+            PopupMenuItem<String>(
+              value: 'edit_event',
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.edit_outlined,
+                    color: AppColors.textPrimary,
+                    size: 20,
                   ),
-                ),
-                child: TextButton(
-                  onPressed: () => _reserveWishlistItem(item),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
+                  const SizedBox(width: 12),
+                  Text(
+                    'Edit Event',
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.textPrimary,
                     ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: Text(
-                    'Reserve',
-                    style: AppStyles.caption.copyWith(
-                      color: AppColors.primary,
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Share Event (available for both owner and guest)
+        items.add(
+          PopupMenuItem<String>(
+            value: 'share_event',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.share_outlined,
+                  color: AppColors.textPrimary,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Share Event',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        // Divider before delete (only for owner)
+        if (widget.isOwner) {
+          items.add(const PopupMenuDivider());
+          items.add(
+            PopupMenuItem<String>(
+              value: 'delete_event',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Delete Event',
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.error,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                ),
+                ],
               ),
-          ],
-        ),
-      ),
+            ),
+          );
+        }
+
+        return items;
+      },
     );
   }
 
-  Widget _buildActionButtons(LocalizationService localization) {
-    if (_eventDetails!.isHost) {
-      // My Event - Full Control
-      return Column(
-        children: [
-          // Main Management Button
-          CustomButton(
-            text: localization.translate('events.manageEvent'),
-            onPressed: _manageEvent,
-            variant: ButtonVariant.primary,
-            customColor: _getEventTypeColor(_eventDetails!.eventType),
-          ),
-          const SizedBox(height: 16),
-
-          // Event Management Section
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _getEventTypeColor(
-                  _eventDetails!.eventType,
-                ).withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  localization.translate('events.eventManagement'),
-                  style: AppStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        text: localization.translate('events.editEventDetails'),
-                        onPressed: _editEventDetails,
-                        variant: ButtonVariant.outline,
-                        customColor: _getEventTypeColor(
-                          _eventDetails!.eventType,
-                        ),
-                        icon: Icons.edit_outlined,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: CustomButton(
-                        text: localization.translate('events.deleteEvent'),
-                        onPressed: _deleteEvent,
-                        variant: ButtonVariant.outline,
-                        customColor: AppColors.error,
-                        icon: Icons.delete_outline,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Guest Management Section
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.info.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  localization.translate('events.guestManagement'),
-                  style: AppStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        text: localization.translate(
-                          'events.inviteMoreFriends',
-                        ),
-                        onPressed: _inviteMoreFriends,
-                        variant: ButtonVariant.outline,
-                        customColor: AppColors.info,
-                        icon: Icons.person_add_outlined,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: CustomButton(
-                        text: localization.translate('events.viewGuestList'),
-                        onPressed: _viewGuestList,
-                        variant: ButtonVariant.outline,
-                        customColor: AppColors.info,
-                        icon: Icons.people_outline,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Wishlist Management Section
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.secondary.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  localization.translate('events.wishlistActions'),
-                  style: AppStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        text: localization.translate(
-                          'events.editWishlistItems',
-                        ),
-                        onPressed: _editWishlist,
-                        variant: ButtonVariant.outline,
-                        customColor: AppColors.secondary,
-                        icon: Icons.edit_outlined,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: CustomButton(
-                        text: localization.translate('events.addWishlistItems'),
-                        onPressed: _addWishlistItems,
-                        variant: ButtonVariant.outline,
-                        customColor: AppColors.secondary,
-                        icon: Icons.add_outlined,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    } else {
-      // Friend's Event - Limited Actions
-      return Column(
-        children: [
-          // RSVP Section
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _getEventTypeColor(
-                  _eventDetails!.eventType,
-                ).withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  localization.translate('events.rsvpActions'),
-                  style: AppStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  localization.translate('events.respondToInvitation'),
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        text: _getAttendanceStatusText(
-                          _eventDetails!.attendanceStatus,
-                          localization,
-                        ),
-                        onPressed: _changeAttendance,
-                        variant:
-                            _eventDetails!.attendanceStatus ==
-                                AttendanceStatus.accepted
-                            ? ButtonVariant.primary
-                            : ButtonVariant.outline,
-                        customColor: _getEventTypeColor(
-                          _eventDetails!.eventType,
-                        ),
-                        icon: _getAttendanceStatusIcon(
-                          _eventDetails!.attendanceStatus,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: CustomButton(
-                        text: localization.translate('events.changeResponse'),
-                        onPressed: _showRSVPOptions,
-                        variant: ButtonVariant.outline,
-                        customColor: AppColors.info,
-                        icon: Icons.swap_horiz_outlined,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Wishlist Section
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.secondary.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  localization.translate('events.wishlistActions'),
-                  style: AppStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'View and reserve items from the event wishlist',
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                CustomButton(
-                  text: localization.translate('events.viewEventWishlist'),
-                  onPressed: _viewFullWishlist,
-                  variant: ButtonVariant.primary,
-                  customColor: AppColors.secondary,
-                  icon: Icons.card_giftcard_outlined,
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
-  }
-
-  // Helper Methods
-  String _getAttendanceStatusText(
-    AttendanceStatus status,
-    LocalizationService localization,
-  ) {
-    switch (status) {
-      case AttendanceStatus.accepted:
-        return localization.translate('events.going');
-      case AttendanceStatus.declined:
-        return localization.translate('events.notGoing');
-      case AttendanceStatus.maybe:
-        return localization.translate('events.maybe');
-      case AttendanceStatus.pending:
-        return localization.translate('events.pending');
-    }
-  }
-
-  IconData _getAttendanceStatusIcon(AttendanceStatus status) {
-    switch (status) {
-      case AttendanceStatus.accepted:
-        return Icons.check_circle_outline;
-      case AttendanceStatus.declined:
-        return Icons.cancel_outlined;
-      case AttendanceStatus.maybe:
-        return Icons.help_outline;
-      case AttendanceStatus.pending:
-        return Icons.schedule_outlined;
-    }
-  }
-
-  Color _getEventTypeColor(EventDetailsType type) {
-    switch (type) {
-      case EventDetailsType.birthday:
-        return AppColors.secondary;
-      case EventDetailsType.wedding:
-        return AppColors.primary;
-      case EventDetailsType.anniversary:
-        return AppColors.error;
-      case EventDetailsType.graduation:
-        return AppColors.accent;
-      case EventDetailsType.vacation:
-        return AppColors.warning;
-      default:
-        return AppColors.primary;
-    }
-  }
-
-  IconData _getEventTypeIcon(EventDetailsType type) {
-    switch (type) {
-      case EventDetailsType.birthday:
-        return Icons.cake_outlined;
-      case EventDetailsType.wedding:
-        return Icons.favorite_outline;
-      case EventDetailsType.anniversary:
-        return Icons.favorite_border;
-      case EventDetailsType.graduation:
-        return Icons.school_outlined;
-      case EventDetailsType.vacation:
-        return Icons.beach_access_outlined;
-      default:
-        return Icons.event_outlined;
-    }
-  }
-
-  Color _getAttendanceStatusColor(AttendanceStatus status) {
-    switch (status) {
-      case AttendanceStatus.accepted:
-        return AppColors.success;
-      case AttendanceStatus.declined:
-        return AppColors.error;
-      case AttendanceStatus.pending:
-        return AppColors.warning;
-      case AttendanceStatus.maybe:
-        return AppColors.warning;
-    }
-  }
-
-  String _getAttendanceStatusDescription(AttendanceStatus status) {
-    switch (status) {
-      case AttendanceStatus.accepted:
-        return 'accepted';
-      case AttendanceStatus.declined:
-        return 'declined';
-      case AttendanceStatus.pending:
-        return 'haven\'t responded to';
-      case AttendanceStatus.maybe:
-        return 'might attend';
-    }
-  }
-
-  Color _getGuestStatusColor(GuestStatus status) {
-    switch (status) {
-      case GuestStatus.accepted:
-        return AppColors.success;
-      case GuestStatus.declined:
-        return AppColors.error;
-      case GuestStatus.pending:
-        return AppColors.warning;
-      case GuestStatus.maybe:
-        return AppColors.warning;
-    }
-  }
-
-  String _getGuestStatusText(GuestStatus status) {
-    switch (status) {
-      case GuestStatus.accepted:
-        return 'Going';
-      case GuestStatus.declined:
-        return 'Declined';
-      case GuestStatus.pending:
-        return 'Pending';
-      case GuestStatus.maybe:
-        return 'Maybe';
-    }
-  }
-
-  String _formatDate(DateTime date) {
-    final months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
-  }
-
-  // Action Handlers
-  void _handleMenuAction(String action) {
-    switch (action) {
-      case 'edit':
-        _editEvent();
-        break;
+  /// Handles menu action selection
+  void _handleMenuAction(String value) {
+    switch (value) {
       case 'manage_guests':
-        _manageGuests();
+        // Navigate to guest management
+        if (widget.isOwner) {
+          // TODO: Navigate to guest management screen
+          Navigator.pushNamed(
+            context,
+            AppRoutes.eventManagement,
+            arguments: _event,
+          );
+        }
         break;
-      case 'add_to_calendar':
-        _addToCalendar();
+      case 'edit_event':
+        // Navigate to edit event screen
+        Navigator.pushNamed(
+          context,
+          AppRoutes.createEvent,
+          arguments: {'eventId': _event!.id, 'event': _event},
+        );
         break;
-      case 'report':
-        _reportEvent();
+      case 'share_event':
+        // Share event
+        // TODO: Implement share functionality
+        break;
+      case 'delete_event':
+        // Show delete confirmation dialog
+        _showDeleteConfirmationDialog();
         break;
     }
   }
 
-  void _shareEvent() {
-    // Share event functionality
-  }
-
-  void _openMap() {
-    // Open location in maps
-  }
-
-  void _changeAttendance() {
-    // Show attendance options
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Your Response', style: AppStyles.headingSmall),
-            const SizedBox(height: 24),
-
-            _buildAttendanceOption(
-              icon: Icons.check_circle_outline,
-              title: 'Going',
-              subtitle: 'I\'ll be there!',
-              color: AppColors.success,
-              onTap: () {
-                Navigator.pop(context);
-                // Update attendance
-              },
-            ),
-
-            _buildAttendanceOption(
-              icon: Icons.help_outline,
-              title: 'Maybe',
-              subtitle: 'I\'m not sure yet',
-              color: AppColors.warning,
-              onTap: () {
-                Navigator.pop(context);
-                // Update attendance
-              },
-            ),
-
-            _buildAttendanceOption(
-              icon: Icons.cancel_outlined,
-              title: 'Can\'t Go',
-              subtitle: 'I won\'t be able to attend',
-              color: AppColors.error,
-              onTap: () {
-                Navigator.pop(context);
-                // Update attendance
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAttendanceOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Icon(icon, color: color),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      onTap: onTap,
-    );
-  }
-
-  void _viewAllGuests() {
-    // Navigate to all guests screen
-  }
-
-  void _viewFullWishlist() {
-    // Navigate to full wishlist
-    Navigator.pushNamed(
-      context,
-      AppRoutes.eventWishlist,
-      arguments: EventSummary(
-        id: _eventDetails!.id,
-        name: _eventDetails!.name,
-        date: _eventDetails!.date,
-        type: _convertEventType(_eventDetails!.eventType),
-        location: _eventDetails!.location,
-        description: _eventDetails!.description,
-        hostName: _eventDetails!.hostName,
-        status: _convertAttendanceStatus(_eventDetails!.attendanceStatus),
-        invitedCount: _eventDetails!.totalInvited,
-        acceptedCount: _eventDetails!.totalAccepted,
-        wishlistItemCount: _eventDetails!.wishlistItems,
-        isCreatedByMe: _eventDetails!.isHost,
-      ),
-    );
-  }
-
-  void _viewWishlistItem(WishlistItemPreview item) {
-    // Navigate to individual wishlist item details
-    Navigator.pushNamed(
-      context,
-      AppRoutes.wishlistItemDetails,
-      arguments: item,
-    );
-  }
-
-  void _reserveWishlistItem(WishlistItemPreview item) {
-    // Show reservation confirmation dialog
+  /// Shows delete confirmation dialog
+  void _showDeleteConfirmationDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1870,57 +679,23 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: Text('Reserve Item', style: AppStyles.headingSmall),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Are you sure you want to reserve this item?',
-                style: AppStyles.bodyMedium,
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.card_giftcard_outlined,
-                      color: AppColors.secondary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.name,
-                            style: AppStyles.bodyMedium.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            item.price,
-                            style: AppStyles.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          backgroundColor: AppColors.surface,
+          title: Text(
+            'Delete Event',
+            style: AppStyles.headingSmall.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to delete this event? This action cannot be undone.',
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.pop(context),
               child: Text(
                 'Cancel',
                 style: AppStyles.bodyMedium.copyWith(
@@ -1928,12 +703,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
                 ),
               ),
             ),
-            PrimaryGradientButton(
-              text: 'Reserve',
+            TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
-                _confirmReservation(item);
+                Navigator.pop(context);
+                // TODO: Implement delete event functionality
+                // _deleteEvent();
               },
+              child: Text(
+                'Delete',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         );
@@ -1941,315 +723,286 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     );
   }
 
-  void _confirmReservation(WishlistItemPreview item) {
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              color: AppColors.textWhite,
-              size: 20,
+  /// Builds the Quick Invite Widget (for empty guests state)
+  Widget _buildQuickInviteWidget() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // Trigger same action as "Manage Guests"
+          if (widget.isOwner) {
+            // TODO: Navigate to guest management
+          }
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.04),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.2),
+              width: 1.5,
+              style: BorderStyle.solid,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Successfully reserved "${item.name}" for ${_eventDetails!.hostName}\'s event!',
-                style: AppStyles.bodyMedium.copyWith(
-                  color: AppColors.textWhite,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.person_add_alt_1, color: AppColors.primary, size: 28),
+              const SizedBox(width: 12),
+              Text(
+                'Invite Friends to this Event',
+                style: AppStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
                 ),
               ),
-            ),
-          ],
-        ),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 4),
-        action: SnackBarAction(
-          label: 'View Wishlist',
-          textColor: AppColors.textWhite,
-          onPressed: () {
-            _viewFullWishlist();
-          },
+            ],
+          ),
         ),
       ),
     );
-
-    // In a real app, you would update the item status to reserved
-    // For now, we'll just show the success message
   }
 
-  // Helper method to convert EventDetailsType to EventType
-  EventType _convertEventType(EventDetailsType detailsType) {
-    switch (detailsType) {
-      case EventDetailsType.birthday:
-        return EventType.birthday;
-      case EventDetailsType.wedding:
-        return EventType.wedding;
-      case EventDetailsType.anniversary:
-        return EventType.anniversary;
-      case EventDetailsType.graduation:
-        return EventType.graduation;
-      case EventDetailsType.vacation:
-        return EventType.vacation;
-      case EventDetailsType.other:
-        return EventType.other;
+  /// Builds the Meta-Tags Row (Type, Privacy, Status)
+  Widget _buildMetaTagsRow() {
+    final tags = <Widget>[];
+
+    // Type Tag
+    final typeIcon = _getEventTypeIcon(_event!.type);
+    final typeText = _getEventTypeText(_event!.type);
+    tags.add(_buildTag(typeText, typeIcon, AppColors.accent));
+
+    // Privacy Tag
+    if (_event!.privacy != null) {
+      final privacyIcon = _getPrivacyIcon(_event!.privacy!);
+      final privacyText = _getPrivacyText(_event!.privacy!);
+      tags.add(_buildTag(privacyText, privacyIcon, AppColors.info));
     }
+
+    // Status Tag
+    final statusIcon = _getStatusIcon(_event!.status);
+    final statusText = _getStatusText(_event!.status);
+    final statusColor = _getStatusColor(_event!.status);
+    tags.add(_buildTag(statusText, statusIcon, statusColor));
+
+    return Wrap(spacing: 8, runSpacing: 8, children: tags);
   }
 
-  // Helper method to convert AttendanceStatus to EventStatus
-  EventStatus _convertAttendanceStatus(AttendanceStatus attendanceStatus) {
-    switch (attendanceStatus) {
-      case AttendanceStatus.pending:
-        return EventStatus.upcoming;
-      case AttendanceStatus.accepted:
-        return EventStatus.ongoing;
-      case AttendanceStatus.declined:
-        return EventStatus.cancelled;
-      case AttendanceStatus.maybe:
-        return EventStatus.upcoming;
-    }
-  }
-
-  void _manageEvent() {
-    // Navigate to event management
-  }
-
-  void _editWishlist() {
-    // Navigate to edit wishlist
-    Navigator.pushNamed(
-      context,
-      AppRoutes.eventWishlist,
-      arguments: {
-        'eventId': _eventDetails!.id,
-        'eventName': _eventDetails!.name,
-        'isHost': _eventDetails!.isHost,
-      },
-    );
-  }
-
-  void _editEventDetails() {
-    // Navigate to edit event details
-    Navigator.pushNamed(
-      context,
-      AppRoutes.eventSettings,
-      arguments: {'eventId': _eventDetails!.id, 'eventDetails': _eventDetails},
-    );
-  }
-
-  void _deleteEvent() {
-    // Show delete confirmation dialog
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Delete Event'),
-        content: Text(
-          'Are you sure you want to delete this event? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // TODO: Implement delete event
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Event deleted successfully'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: Text('Delete'),
+  /// Builds a single tag widget
+  Widget _buildTag(String text, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20), // StadiumBorder (pill shape)
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 14),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: AppStyles.bodySmall.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _viewGuestList() {
-    // Navigate to guest list
-    Navigator.pushNamed(
-      context,
-      AppRoutes.guestManagement,
-      arguments: {
-        'eventId': _eventDetails!.id,
-        'eventName': _eventDetails!.name,
-      },
-    );
+  /// Gets display text for EventType
+  String _getEventTypeText(EventType type) {
+    final typeString = type.toString().split('.').last;
+    // Convert camelCase to Title Case
+    return typeString
+        .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(1)}')
+        .split(' ')
+        .map(
+          (word) => word.isEmpty
+              ? ''
+              : word[0].toUpperCase() + word.substring(1).toLowerCase(),
+        )
+        .join(' ')
+        .trim();
   }
 
-  void _addWishlistItems() {
-    // Navigate to add wishlist items
-    Navigator.pushNamed(
-      context,
-      AppRoutes.addItem,
-      arguments: {
-        'eventId': _eventDetails!.id,
-        'eventName': _eventDetails!.name,
-        'isEventWishlist': true,
-      },
-    );
+  /// Gets icon for Privacy
+  IconData _getPrivacyIcon(String privacy) {
+    switch (privacy.toLowerCase()) {
+      case 'public':
+        return Icons.public;
+      case 'private':
+        return Icons.lock;
+      case 'friends_only':
+        return Icons.group;
+      default:
+        return Icons.info;
+    }
   }
 
-  void _showRSVPOptions() {
-    // Show RSVP options dialog
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Change RSVP'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: Icon(
-                Icons.check_circle_outline,
-                color: AppColors.success,
-              ),
-              title: Text('Going'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() {
-                  _eventDetails!.attendanceStatus = AttendanceStatus.accepted;
-                });
-                // TODO: Update RSVP status
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.cancel_outlined, color: AppColors.error),
-              title: Text('Not Going'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() {
-                  _eventDetails!.attendanceStatus = AttendanceStatus.accepted;
-                });
-                // TODO: Update RSVP status
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.help_outline, color: AppColors.warning),
-              title: Text('Maybe'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() {
-                  _eventDetails!.attendanceStatus = AttendanceStatus.maybe;
-                });
-                // TODO: Update RSVP status
-              },
+  /// Gets display text for Privacy
+  String _getPrivacyText(String privacy) {
+    switch (privacy.toLowerCase()) {
+      case 'public':
+        return 'Public';
+      case 'private':
+        return 'Private';
+      case 'friends_only':
+        return 'Friends Only';
+      default:
+        return privacy;
+    }
+  }
+
+  /// Gets icon for Status
+  IconData _getStatusIcon(EventStatus status) {
+    switch (status) {
+      case EventStatus.upcoming:
+        return Icons.access_time_filled;
+      case EventStatus.ongoing:
+        return Icons.play_circle_filled;
+      case EventStatus.completed:
+        return Icons.check_circle;
+      case EventStatus.cancelled:
+        return Icons.cancel;
+    }
+  }
+
+  /// Gets display text for Status
+  String _getStatusText(EventStatus status) {
+    switch (status) {
+      case EventStatus.upcoming:
+        return 'Upcoming';
+      case EventStatus.ongoing:
+        return 'Ongoing';
+      case EventStatus.completed:
+        return 'Completed';
+      case EventStatus.cancelled:
+        return 'Cancelled';
+    }
+  }
+
+  /// Gets color for Status
+  Color _getStatusColor(EventStatus status) {
+    switch (status) {
+      case EventStatus.upcoming:
+        return AppColors.success; // Green
+      case EventStatus.ongoing:
+        return AppColors.info; // Blue
+      case EventStatus.completed:
+        return AppColors.textTertiary; // Grey
+      case EventStatus.cancelled:
+        return AppColors.error; // Red
+    }
+  }
+
+  Widget _buildWishlistCard(LocalizationService localization) {
+    if (_event!.wishlistId == null && widget.isOwner) {
+      // Create Event Wishlist placeholder
+      return Container(
+        width: double.infinity, // Full width to match main sheet
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: AppColors.secondary.withOpacity(0.3), // Teal border
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _inviteMoreFriends() {
-    // Navigate to invite friends
-  }
-
-  void _editEvent() {
-    // Navigate to edit event
-  }
-
-  void _manageGuests() {
-    // Navigate to manage guests
-  }
-
-  void _addToCalendar() {
-    // Add to device calendar
-  }
-
-  void _reportEvent() {
-    // Report event
+        child: Column(
+          children: [
+            Icon(
+              Icons.card_giftcard_outlined,
+              color: AppColors.secondary, // Teal icon
+              size: 48,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Create Event Wishlist',
+              style: AppStyles.headingSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Link a wishlist to this event so guests can see what to gift',
+              style: AppStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  // TODO: Navigate to create wishlist for event
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.secondary, // Teal background
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.add, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Create Wishlist',
+                      style: AppStyles.button.copyWith(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (_event!.wishlistId != null) {
+      // Show mini wishlist card with full width
+      return Container(
+        width: double.infinity, // Full width to match main sheet
+        child: ModernWishlistCard(
+          title: 'Event Wishlist', // TODO: Get wishlist name from API
+          totalItems: 0, // TODO: Get from API
+          giftedItems: 0, // TODO: Get from API
+          completionPercentage: 0.0, // TODO: Calculate
+          onView: () {
+            Navigator.pushNamed(
+              context,
+              AppRoutes.wishlistItems,
+              arguments: {
+                'wishlistId': _event!.wishlistId,
+                'wishlistName': 'Event Wishlist',
+              },
+            );
+          },
+          onAddItem: () {
+            // TODO: Navigate to add item
+          },
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }
-
-// Mock data models
-class EventDetails {
-  final String id;
-  final String name;
-  final String? description;
-  final String hostName;
-  final String? hostProfilePicture;
-  final DateTime date;
-  final String time;
-  final String location;
-  final EventDetailsType eventType;
-  final int totalInvited;
-  final int totalAccepted;
-  final int totalDeclined;
-  final int totalPending;
-  final int wishlistItems;
-  final bool isHost;
-  AttendanceStatus attendanceStatus;
-  final List<EventGuest> invitedFriends;
-  final List<WishlistItemPreview> wishlistPreview;
-
-  EventDetails({
-    required this.id,
-    required this.name,
-    this.description,
-    required this.hostName,
-    this.hostProfilePicture,
-    required this.date,
-    required this.time,
-    required this.location,
-    required this.eventType,
-    required this.totalInvited,
-    required this.totalAccepted,
-    required this.totalDeclined,
-    required this.totalPending,
-    required this.wishlistItems,
-    required this.isHost,
-    required this.attendanceStatus,
-    required this.invitedFriends,
-    required this.wishlistPreview,
-  });
-}
-
-class EventGuest {
-  final String id;
-  final String name;
-  final String? profilePicture;
-  final GuestStatus status;
-
-  EventGuest({
-    required this.id,
-    required this.name,
-    this.profilePicture,
-    required this.status,
-  });
-}
-
-class WishlistItemPreview {
-  final String id;
-  final String name;
-  final String price;
-  final bool isPurchased;
-
-  WishlistItemPreview({
-    required this.id,
-    required this.name,
-    required this.price,
-    required this.isPurchased,
-  });
-}
-
-enum EventDetailsType {
-  birthday,
-  wedding,
-  anniversary,
-  graduation,
-  vacation, // Added vacation type
-  other,
-}
-
-enum AttendanceStatus { pending, accepted, declined, maybe }
-
-enum GuestStatus { pending, accepted, declined, maybe }

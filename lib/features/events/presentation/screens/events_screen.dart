@@ -397,24 +397,12 @@ class EventsScreenState extends State<EventsScreen>
                   // Unified Page Header with Integrated Tabs
                   UnifiedPageHeader(
                     title: localization.translate('events.title'),
-                    titleIcon: Icons.celebration_rounded,
-                    titleIconColor: AppColors.accent,
                     showSearch: true,
                     searchHint: localization.translate('events.searchEvents'),
                     searchController: _searchController,
                     onSearchChanged: (query) {
                       // Search is handled by listener
                     },
-                    actions: [
-                      HeaderAction(
-                        icon: Icons.calendar_month_outlined,
-                        onTap: _showCalendarView,
-                      ),
-                      HeaderAction(
-                        icon: Icons.filter_list_outlined,
-                        onTap: _showFilterOptions,
-                      ),
-                    ],
                     tabs: [
                       UnifiedTab(
                         label: localization.translate('events.myEvents'),
@@ -695,42 +683,6 @@ class EventsScreenState extends State<EventsScreen>
     Navigator.pushNamed(context, AppRoutes.eventManagement, arguments: event);
   }
 
-  void _showCalendarView() {
-    final localization = Provider.of<LocalizationService>(
-      context,
-      listen: false,
-    );
-
-    EventModals.showCalendarView(context, _filteredEvents, localization);
-  }
-
-  void _showFilterOptions() {
-    EventModals.showFilterOptions(
-      context,
-      _selectedSortOption,
-      _selectedEventType,
-      (sortOption) {
-        setState(() {
-          _selectedSortOption = sortOption;
-        });
-      },
-      (eventType) {
-        setState(() {
-          _selectedEventType = eventType;
-        });
-      },
-      () {
-        setState(() {
-          _selectedSortOption = 'date_upcoming';
-          _selectedEventType = null;
-        });
-        _applyFilters();
-      },
-      () {
-        _applyFilters();
-      },
-    );
-  }
 
   Future<void> _refreshEvents() async {
     // Refresh events data from API

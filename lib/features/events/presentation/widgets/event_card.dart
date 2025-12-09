@@ -76,9 +76,14 @@ class EventCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, EventSummary event, bool isPast, int daysUntil) {
+  Widget _buildHeader(
+    BuildContext context,
+    EventSummary event,
+    bool isPast,
+    int daysUntil,
+  ) {
     final eventColor = _getEventTypeColor(event.type);
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -104,9 +109,7 @@ class EventCard extends StatelessWidget {
             ),
             child: Icon(
               _getEventTypeIcon(event.type),
-              color: isPast
-                  ? AppColors.textTertiary
-                  : eventColor,
+              color: isPast ? AppColors.textTertiary : eventColor,
               size: 32,
             ),
           ),
@@ -279,6 +282,8 @@ class EventCard extends StatelessWidget {
 
           const SizedBox(height: 16),
 
+          const SizedBox(height: 16),
+
           // Single Sleek Primary Button
           if (!isPast) ...[
             if (event.isCreatedByMe)
@@ -419,7 +424,7 @@ class EventCard extends StatelessWidget {
     required VoidCallback? onPressed,
   }) {
     final isEnabled = onPressed != null;
-    
+
     return SizedBox(
       height: 44,
       width: double.infinity,
@@ -458,9 +463,7 @@ class EventCard extends StatelessWidget {
       builder: (context) => Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(24),
-          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SafeArea(
           child: Column(
@@ -520,7 +523,7 @@ class EventCard extends StatelessWidget {
     bool isDestructive = false,
   }) {
     final color = isDestructive ? AppColors.error : AppColors.textPrimary;
-    
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -529,11 +532,7 @@ class EventCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Row(
             children: [
-              Icon(
-                icon,
-                color: color,
-                size: 24,
-              ),
+              Icon(icon, color: color, size: 24),
               const SizedBox(width: 16),
               Text(
                 label,
