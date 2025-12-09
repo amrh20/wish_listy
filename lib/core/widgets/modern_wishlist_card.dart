@@ -248,7 +248,7 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
               const SizedBox(height: 4),
               Text(
                 widget.description ??
-                    '${widget.totalItems} ${widget.totalItems == 1 ? 'item' : 'items'}',
+                    '${widget.totalItems} ${widget.totalItems == 1 ? 'wish' : 'wishes'}',
                 style: GoogleFonts.readexPro(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,

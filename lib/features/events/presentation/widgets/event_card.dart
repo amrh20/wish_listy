@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
-import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 
@@ -13,6 +12,10 @@ class EventCard extends StatelessWidget {
   final VoidCallback? onViewWishlist;
   final VoidCallback? onAddWishlist;
   final VoidCallback? onViewDetails;
+  final VoidCallback? onShare;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDuplicate;
+  final VoidCallback? onDelete;
 
   const EventCard({
     super.key,
@@ -23,6 +26,10 @@ class EventCard extends StatelessWidget {
     this.onViewWishlist,
     this.onAddWishlist,
     this.onViewDetails,
+    this.onShare,
+    this.onEdit,
+    this.onDuplicate,
+    this.onDelete,
   });
 
   @override
@@ -58,7 +65,7 @@ class EventCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(24),
               child: Column(
                 children: [
-                  _buildHeader(event, isPast, daysUntil),
+                  _buildHeader(context, event, isPast, daysUntil),
                   _buildContent(event, isPast),
                 ],
               ),
@@ -69,7 +76,7 @@ class EventCard extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(EventSummary event, bool isPast, int daysUntil) {
+  Widget _buildHeader(BuildContext context, EventSummary event, bool isPast, int daysUntil) {
     final eventColor = _getEventTypeColor(event.type);
     
     return Container(
@@ -191,6 +198,24 @@ class EventCard extends StatelessWidget {
               ],
             ),
           ),
+
+          // MoreVert Menu Button
+          if (event.isCreatedByMe)
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _showContextMenu(context),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Icon(
+                    Icons.more_vert,
+                    size: 20,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -254,73 +279,31 @@ class EventCard extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Action Buttons
+          // Single Sleek Primary Button
           if (!isPast) ...[
-            Row(
-              children: [
-                if (event.isCreatedByMe) ...[
-                  // Event creator buttons
-                  Expanded(
-                    child: CustomButton(
-                      text: localization.translate('ui.manageEvent'),
-                      onPressed: onManageEvent,
-                      variant: ButtonVariant.outline,
-                      customColor: AppColors.primary, // Use primary color for all buttons
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: CustomButton(
-                      text: event.wishlistId != null
-                          ? localization.translate('ui.viewWishlist')
-                          : localization.translate('ui.addWishlist'),
-                      onPressed: event.wishlistId != null
-                          ? onViewWishlist
-                          : onAddWishlist,
-                      variant: ButtonVariant.primary,
-                      customColor: AppColors.primary, // Use primary color for all buttons
-                    ),
-                  ),
-                ] else ...[
-                  // Guest buttons
-                  Expanded(
-                    child: CustomButton(
-                      text: 'View Details',
-                      onPressed: onViewDetails,
-                      variant: ButtonVariant.outline,
-                      customColor: AppColors.primary, // Use primary color for all buttons
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  if (event.wishlistId != null) ...[
-                    Expanded(
-                      child: CustomButton(
-                        text: localization.translate('ui.viewWishlist'),
-                        onPressed: onViewWishlist,
-                        variant: ButtonVariant.primary,
-                        customColor: AppColors.primary, // Use primary color for all buttons
-                      ),
-                    ),
-                  ] else ...[
-                    Expanded(
-                      child: CustomButton(
-                        text: localization.translate('ui.noWishlist'),
-                        onPressed: null, // Disabled button
-                        variant: ButtonVariant.outline,
-                        customColor: AppColors.textTertiary,
-                      ),
-                    ),
-                  ],
-                ],
-              ],
-            ),
+            if (event.isCreatedByMe)
+              _buildSleekButton(
+                text: event.wishlistId != null
+                    ? localization.translate('ui.manageEvent')
+                    : localization.translate('ui.addWishlist'),
+                onPressed: event.wishlistId != null
+                    ? onManageEvent
+                    : onAddWishlist,
+              )
+            else
+              _buildSleekButton(
+                text: event.wishlistId != null
+                    ? localization.translate('ui.viewWishlist')
+                    : 'View Details',
+                onPressed: event.wishlistId != null
+                    ? onViewWishlist
+                    : onViewDetails,
+              ),
           ] else ...[
             // Past event actions
-            CustomButton(
+            _buildSleekButton(
               text: 'View Event Details',
               onPressed: onViewDetails,
-              variant: ButtonVariant.outline,
-              customColor: AppColors.textTertiary,
             ),
           ],
         ],
@@ -428,5 +411,142 @@ class EventCard extends StatelessWidget {
       'Dec',
     ];
     return months[month - 1];
+  }
+
+  /// Builds a sleek, compact button with 44px height and 14px font
+  Widget _buildSleekButton({
+    required String text,
+    required VoidCallback? onPressed,
+  }) {
+    final isEnabled = onPressed != null;
+    
+    return SizedBox(
+      height: 44,
+      width: double.infinity,
+      child: Material(
+        color: isEnabled
+            ? AppColors.primary
+            : AppColors.primary.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14.0,
+                fontWeight: FontWeight.w600,
+                color: isEnabled ? Colors.white : Colors.white.withOpacity(0.6),
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Shows the context menu bottom sheet with event actions
+  void _showContextMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(24),
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag Handle
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              // Menu Items
+              _buildMenuItem(
+                icon: Icons.share_outlined,
+                label: 'Share Event',
+                onTap: () {
+                  Navigator.pop(context);
+                  onShare?.call();
+                },
+              ),
+              _buildMenuItem(
+                icon: Icons.edit_outlined,
+                label: 'Edit Event',
+                onTap: () {
+                  Navigator.pop(context);
+                  onEdit?.call();
+                },
+              ),
+              _buildMenuItem(
+                icon: Icons.delete_outline,
+                label: 'Delete Event',
+                onTap: () {
+                  Navigator.pop(context);
+                  onDelete?.call();
+                },
+                isDestructive: true,
+              ),
+
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds a menu item for the bottom sheet
+  Widget _buildMenuItem({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    final color = isDestructive ? AppColors.error : AppColors.textPrimary;
+    
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                color: color,
+                size: 24,
+              ),
+              const SizedBox(width: 16),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

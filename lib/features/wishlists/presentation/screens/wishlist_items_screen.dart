@@ -497,29 +497,32 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Container(
-        color: AppColors.background,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return CustomScrollView(
-              slivers: [
-                // SliverAppBar with Minimalist header
-                SliverAppBar(
-                  expandedHeight: 140,
-                  floating: false,
-                  pinned: true,
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  leading: IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-                  ),
-                  actions: [
-                    if (!widget.isFriendWishlist)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: IconButton(
+      backgroundColor: AppColors.primary.withOpacity(0.04),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Clean Header Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top Row: Back Button & Actions
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          Icons.arrow_back_ios,
+                          color: AppColors.textPrimary,
+                          size: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const Spacer(),
+                      if (!widget.isFriendWishlist)
+                        IconButton(
                           onPressed: () {
                             Navigator.pushNamed(
                               context,
@@ -548,284 +551,237 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                             ),
                           ),
                         ),
-                      ),
-                  ],
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Container(
-                      padding: EdgeInsets.only(
-                        top: kToolbarHeight + 10,
-                        bottom: 10,
-                        left: 56, // Padding to avoid back button
-                        right: 80, // Padding to avoid action buttons
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Row 1: Title Only (Edit button is in actions)
-                          Text(
-                            _wishlistName.isNotEmpty
-                                ? _wishlistName
-                                : widget.wishlistName,
-                            style: AppStyles.headingLarge.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                              fontSize: 24,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 8),
-                          // Row 2: Info Chips
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Chip 1: Total Items
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.inventory_2,
-                                      size: 14,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '$_totalItems Items',
-                                      style: AppStyles.bodySmall.copyWith(
-                                        color: AppColors.textPrimary,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              // Chip 2: Gifted
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.check_circle,
-                                      size: 14,
-                                      color: AppColors.primary,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '$_purchasedItems Gifted',
-                                      style: AppStyles.bodySmall.copyWith(
-                                        color: AppColors.primary,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Title
+                  Text(
+                    _wishlistName.isNotEmpty
+                        ? _wishlistName
+                        : widget.wishlistName,
+                    style: AppStyles.headingLarge.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      fontSize: 28,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Stats Subtitle
+                  Text(
+                    '$_totalItems Wishes • $_purchasedItems Gifted',
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
                     ),
                   ),
-                ),
+                ],
+              ),
+            ),
 
-                // Search & Filters Section
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Column(
-                      children: [
-                        // Search Bar
-                        Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.surface.withOpacity(0.95),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppColors.surfaceVariant,
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.textTertiary.withOpacity(0.05),
-                                offset: const Offset(0, 2),
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                          child: TextField(
-                            controller: _searchController,
-                            onChanged: (value) {
-                              setState(() {
-                                _searchQuery = value;
-                              });
-                            },
-                            decoration: InputDecoration(
-                              hintText: 'Search wishes...',
-                              hintStyle: AppStyles.bodyMedium.copyWith(
-                                color: AppColors.textTertiary,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.search_outlined,
-                                color: AppColors.textTertiary,
-                                size: 20,
-                              ),
-                              filled: true,
-                              fillColor: AppColors.surface.withOpacity(0.95),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: AppColors.secondary,
-                                  width: 2,
-                                ),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                            ),
-                            style: AppStyles.bodyMedium,
+            const SizedBox(height: 24),
+
+            // White Tabs Container (The "Dock" Look)
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(30),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.textTertiary.withOpacity(0.08),
+                    offset: const Offset(0, -2),
+                    blurRadius: 8,
+                    spreadRadius: 0,
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              child: Column(
+                children: [
+                  // Search Bar
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.surfaceVariant,
+                        width: 1,
+                      ),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search wishes...',
+                        hintStyle: AppStyles.bodyMedium.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search_outlined,
+                          color: AppColors.textTertiary,
+                          size: 20,
+                        ),
+                        filled: true,
+                        fillColor: Colors.transparent,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: AppColors.secondary,
+                            width: 2,
                           ),
                         ),
-
-                        const SizedBox(height: 12),
-
-                        // Filter Chips
-                        Row(
-                          children: [
-                            WishlistFilterChipWidget(
-                              value: 'all',
-                              label: 'All',
-                              icon: Icons.all_inclusive,
-                              isSelected: _selectedFilter == 'all',
-                              onTap: () {
-                                setState(() {
-                                  _selectedFilter = 'all';
-                                });
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            WishlistFilterChipWidget(
-                              value: 'available',
-                              label: 'Available',
-                              icon: Icons.shopping_bag_outlined,
-                              isSelected: _selectedFilter == 'available',
-                              onTap: () {
-                                setState(() {
-                                  _selectedFilter = 'available';
-                                });
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            WishlistFilterChipWidget(
-                              value: 'purchased',
-                              label: 'Gifted',
-                              icon: Icons.check_circle_outline,
-                              isSelected: _selectedFilter == 'purchased',
-                              onTap: () {
-                                setState(() {
-                                  _selectedFilter = 'purchased';
-                                });
-                              },
-                            ),
-                          ],
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
                         ),
-                      ],
+                      ),
+                      style: AppStyles.bodyMedium,
                     ),
                   ),
-                ),
 
-                // Items List
-                if (_items.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).padding.bottom,
-                      ),
-                      child: EmptyWishlistStateWidget(
-                        wishlistId: widget.wishlistId,
-                        wishlistName: _wishlistName.isNotEmpty
-                            ? _wishlistName
-                            : widget.wishlistName,
-                        isFriendWishlist: widget.isFriendWishlist,
-                      ),
-                    ),
-                  )
-                else if (_filteredItems.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        bottom: MediaQuery.of(context).padding.bottom,
-                      ),
-                      child: const EmptySearchStateWidget(),
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(
-                      16,
-                      8,
-                      16,
-                      16, // Extra bottom padding to prevent overflow
-                    ),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final item = _filteredItems[index];
-                        final isPurchased = item.status == ItemStatus.purchased;
-                        final priorityColor = _getPriorityColor(item.priority);
+                  const SizedBox(height: 16),
 
-                        return WishlistItemCardWidget(
-                          item: item,
-                          isPurchased: isPurchased,
-                          priorityColor: priorityColor,
-                          onTap: () => _openItemDetails(item),
-                          onToggleGifted: widget.isFriendWishlist
-                              ? null
-                              : () => _togglePurchaseStatus(item),
-                          onEdit: widget.isFriendWishlist
-                              ? null
-                              : () => _editItem(item),
-                          onDelete: widget.isFriendWishlist
-                              ? null
-                              : () => _deleteItem(item),
-                          enableSwipe: !widget.isFriendWishlist,
-                        );
-                      }, childCount: _filteredItems.length),
-                    ),
+                  // Filter Chips
+                  Row(
+                    children: [
+                      WishlistFilterChipWidget(
+                        value: 'all',
+                        label: 'All',
+                        icon: Icons.all_inclusive,
+                        isSelected: _selectedFilter == 'all',
+                        onTap: () {
+                          setState(() {
+                            _selectedFilter = 'all';
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      WishlistFilterChipWidget(
+                        value: 'available',
+                        label: 'Available',
+                        icon: Icons.shopping_bag_outlined,
+                        isSelected: _selectedFilter == 'available',
+                        onTap: () {
+                          setState(() {
+                            _selectedFilter = 'available';
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      WishlistFilterChipWidget(
+                        value: 'purchased',
+                        label: 'Gifted',
+                        icon: Icons.check_circle_outline,
+                        isSelected: _selectedFilter == 'purchased',
+                        onTap: () {
+                          setState(() {
+                            _selectedFilter = 'purchased';
+                          });
+                        },
+                      ),
+                    ],
                   ),
-              ],
-            );
-          },
+                ],
+              ),
+            ),
+
+            // Scrollable Content
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return CustomScrollView(
+                    slivers: [
+                      // Items List
+                      if (_items.isEmpty)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              bottom: MediaQuery.of(context).padding.bottom,
+                            ),
+                            child: EmptyWishlistStateWidget(
+                              wishlistId: widget.wishlistId,
+                              wishlistName: _wishlistName.isNotEmpty
+                                  ? _wishlistName
+                                  : widget.wishlistName,
+                              isFriendWishlist: widget.isFriendWishlist,
+                            ),
+                          ),
+                        )
+                      else if (_filteredItems.isEmpty)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              bottom: MediaQuery.of(context).padding.bottom,
+                            ),
+                            child: const EmptySearchStateWidget(),
+                          ),
+                        )
+                      else
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                            16,
+                            8,
+                            16,
+                            16, // Extra bottom padding to prevent overflow
+                          ),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final item = _filteredItems[index];
+                              final isPurchased =
+                                  item.status == ItemStatus.purchased;
+                              final priorityColor = _getPriorityColor(
+                                item.priority,
+                              );
+
+                              return WishlistItemCardWidget(
+                                item: item,
+                                isPurchased: isPurchased,
+                                priorityColor: priorityColor,
+                                onTap: () => _openItemDetails(item),
+                                onToggleGifted: widget.isFriendWishlist
+                                    ? null
+                                    : () => _togglePurchaseStatus(item),
+                                onEdit: widget.isFriendWishlist
+                                    ? null
+                                    : () => _editItem(item),
+                                onDelete: widget.isFriendWishlist
+                                    ? null
+                                    : () => _deleteItem(item),
+                                enableSwipe: !widget.isFriendWishlist,
+                              );
+                            }, childCount: _filteredItems.length),
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );

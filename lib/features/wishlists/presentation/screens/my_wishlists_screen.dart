@@ -185,8 +185,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                   // Unified Page Header with Integrated Tabs
                   UnifiedPageHeader(
                     title: localization.translate('wishlists.myWishlists'),
-                    titleIcon: Icons.favorite_rounded,
-                    titleIconColor: AppColors.primary,
                     showSearch: true,
                     searchHint: localization.translate(
                       'wishlists.searchWishlists',

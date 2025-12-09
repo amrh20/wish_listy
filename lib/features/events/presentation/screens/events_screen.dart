@@ -482,7 +482,9 @@ class EventsScreenState extends State<EventsScreen>
     return RefreshIndicator(
       onRefresh: _refreshEvents,
       color: AppColors.accent,
-      child: myFilteredEvents.isEmpty
+      child: _isLoading
+          ? _buildEventSkeletonList()
+          : myFilteredEvents.isEmpty
           ? EmptyMyEvents(localization: localization)
           : ListView.builder(
               padding: const EdgeInsets.all(16),
@@ -522,7 +524,9 @@ class EventsScreenState extends State<EventsScreen>
     return RefreshIndicator(
       onRefresh: _refreshEvents,
       color: AppColors.secondary,
-      child: invitedFilteredEvents.isEmpty
+      child: _isLoading
+          ? _buildEventSkeletonList()
+          : invitedFilteredEvents.isEmpty
           ? EmptyInvitedEvents(localization: localization)
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -731,5 +735,230 @@ class EventsScreenState extends State<EventsScreen>
   Future<void> _refreshEvents() async {
     // Refresh events data from API
     await _loadEvents();
+  }
+
+  /// Build skeleton loading list for event cards
+  Widget _buildEventSkeletonList() {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        // Create pulsing effect using sine wave - lighter and smoother
+        final pulseValue =
+            (0.15 +
+            (0.2 *
+                (0.5 +
+                    0.5 * (1 + (2 * _animationController.value - 1).abs()))));
+
+        return ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: 3, // Show 3 skeleton cards
+          separatorBuilder: (context, index) => const SizedBox(height: 16),
+          itemBuilder: (context, index) {
+            return _buildEventCardSkeleton(pulseValue);
+          },
+        );
+      },
+    );
+  }
+
+  /// Build a single event card skeleton
+  Widget _buildEventCardSkeleton(double pulseValue) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: AppColors.border.withOpacity(0.8),
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withOpacity(0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Header Section (Teal Background)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withOpacity(0.06),
+              ),
+              child: Row(
+                children: [
+                  // Icon Skeleton
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppColors.secondary.withOpacity(
+                            0.08 + pulseValue * 0.05,
+                          ),
+                          AppColors.secondary.withOpacity(
+                            0.12 + pulseValue * 0.05,
+                          ),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Title and Location Skeleton
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 180,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: AppColors.secondary.withOpacity(
+                              0.1 + pulseValue * 0.05,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: 120,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: AppColors.secondary.withOpacity(
+                              0.08 + pulseValue * 0.03,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Date Badge Skeleton
+                  Container(
+                    width: 50,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withOpacity(
+                        0.1 + pulseValue * 0.05,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  // MoreVert Button Skeleton
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withOpacity(
+                        0.08 + pulseValue * 0.03,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Body Section (White Background)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(color: AppColors.surface),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Description Skeleton
+                  Container(
+                    width: double.infinity,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withOpacity(
+                        0.06 + pulseValue * 0.03,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 200,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withOpacity(
+                        0.06 + pulseValue * 0.03,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Stats Row Skeleton
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildEventStatSkeleton(pulseValue),
+                      _buildEventStatSkeleton(pulseValue),
+                      _buildEventStatSkeleton(pulseValue),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Action Button Skeleton
+                  Container(
+                    height: 44,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(
+                        0.06 + pulseValue * 0.03,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build a stat column skeleton for events
+  Widget _buildEventStatSkeleton(double pulseValue) {
+    return Column(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: AppColors.secondary.withOpacity(0.06 + pulseValue * 0.03),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: 30,
+          height: 16,
+          decoration: BoxDecoration(
+            color: AppColors.secondary.withOpacity(0.1 + pulseValue * 0.05),
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          width: 50,
+          height: 12,
+          decoration: BoxDecoration(
+            color: AppColors.secondary.withOpacity(0.08 + pulseValue * 0.03),
+            borderRadius: BorderRadius.circular(6),
+          ),
+        ),
+      ],
+    );
   }
 }
