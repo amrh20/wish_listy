@@ -84,25 +84,42 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
           builder: (context, child) {
             if (!mounted) return const SizedBox.shrink();
 
+            final defaultColors = [
+              Colors.white,
+              Colors.blue.shade50.withOpacity(0.3),
+              Colors.purple.shade50.withOpacity(0.2),
+              Colors.white,
+            ];
+            final colors = widget.colors ?? defaultColors;
+            
+            // Generate stops based on the number of colors
+            final stops = List.generate(
+              colors.length,
+              (index) {
+                if (colors.length == 1) {
+                  return 0.0;
+                }
+                // Distribute stops evenly, with animation effect
+                final baseStop = index / (colors.length - 1);
+                if (index == 0) {
+                  return 0.0;
+                } else if (index == colors.length - 1) {
+                  return 1.0;
+                } else {
+                  // Add animation effect to middle stops
+                  final animationOffset = _gradientAnimation.value * 0.1;
+                  return baseStop + animationOffset;
+                }
+              },
+            );
+            
             return Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors:
-                      widget.colors ??
-                      [
-                        Colors.white,
-                        Colors.blue.shade50.withOpacity(0.3),
-                        Colors.purple.shade50.withOpacity(0.2),
-                        Colors.white,
-                      ],
-                  stops: [
-                    0.0,
-                    0.3 + (_gradientAnimation.value * 0.2),
-                    0.7 + (_gradientAnimation.value * 0.1),
-                    1.0,
-                  ],
+                  colors: colors,
+                  stops: stops,
                 ),
               ),
             );

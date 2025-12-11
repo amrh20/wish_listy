@@ -1,91 +1,227 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
+import '../utils/accessibility_utils.dart';
 
 class AppStyles {
+  // Icon size constants for standardization
+  static const double iconSizeSmall = AccessibilityUtils.iconSizeSmall;
+  static const double iconSizeMedium = AccessibilityUtils.iconSizeMedium;
+  static const double iconSizeLarge = AccessibilityUtils.iconSizeLarge;
+  static const double iconSizeExtraLarge = AccessibilityUtils.iconSizeExtraLarge;
+
+  // Helper method to get text style with accessibility support
+  static TextStyle _getTextStyle({
+    required double fontSize,
+    required FontWeight fontWeight,
+    required Color color,
+    double? height,
+    double? letterSpacing,
+    BuildContext? context,
+    double? minSize,
+  }) {
+    // Calculate scaled font size if context is provided
+    final finalFontSize = context != null
+        ? AccessibilityUtils.getScaledFontSize(
+            context,
+            fontSize,
+            minSize: minSize ?? AccessibilityUtils.minFontSize,
+          )
+        : fontSize;
+
+    return GoogleFonts.readexPro(
+      fontSize: finalFontSize,
+      fontWeight: fontWeight,
+      color: color,
+      height: height,
+      letterSpacing: letterSpacing,
+    );
+  }
+
   // Beautiful Text Styles with Readex Pro Font (Trendy & Catchy)
-  // Font sizes optimized for mobile screens
-  static TextStyle get heading1 => GoogleFonts.readexPro(
-    fontSize: 28,
-    fontWeight: FontWeight.w800,
-    color: AppColors.textPrimary,
-    height: 1.1,
-    letterSpacing: -0.5,
-  );
+  // Font sizes optimized for mobile screens with accessibility support
+  
+  // Context-aware methods for accessibility (use these when you have BuildContext)
+  static TextStyle heading1WithContext(BuildContext context) => _getTextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textPrimary,
+        height: 1.1,
+        letterSpacing: -0.5,
+        context: context,
+      );
 
-  static TextStyle get heading2 => GoogleFonts.readexPro(
-    fontSize: 24,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textPrimary,
-    height: 1.2,
-    letterSpacing: -0.3,
-  );
+  static TextStyle heading2WithContext(BuildContext context) => _getTextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+        height: 1.2,
+        letterSpacing: -0.3,
+        context: context,
+      );
 
-  static TextStyle get heading3 => GoogleFonts.readexPro(
-    fontSize: 20,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-    height: 1.3,
-    letterSpacing: -0.2,
-  );
+  static TextStyle heading3WithContext(BuildContext context) => _getTextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+        height: 1.3,
+        letterSpacing: -0.2,
+        context: context,
+      );
 
-  static TextStyle get heading4 => GoogleFonts.readexPro(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-    height: 1.4,
-    letterSpacing: -0.1,
-  );
+  static TextStyle heading4WithContext(BuildContext context) => _getTextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+        height: 1.4,
+        letterSpacing: -0.1,
+        context: context,
+      );
 
   // Additional text styles - optimized sizes
-  static TextStyle get headingLarge => GoogleFonts.readexPro(
-    fontSize: 22,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textPrimary,
-    height: 1.2,
-  );
+  static TextStyle headingLargeWithContext(BuildContext context) => _getTextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+        height: 1.2,
+        context: context,
+      );
 
-  static TextStyle get headingMedium => GoogleFonts.readexPro(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-    height: 1.3,
-  );
+  static TextStyle headingMediumWithContext(BuildContext context) => _getTextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+        height: 1.3,
+        context: context,
+      );
 
-  static TextStyle get headingSmall => GoogleFonts.readexPro(
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-    height: 1.3,
-  );
+  static TextStyle headingSmallWithContext(BuildContext context) => _getTextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+        height: 1.3,
+        context: context,
+      );
 
-  static TextStyle get bodyLarge => GoogleFonts.readexPro(
-    fontSize: 15,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textPrimary,
-    height: 1.5,
-  );
+  static TextStyle bodyLargeWithContext(BuildContext context) => _getTextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textPrimary,
+        height: 1.5,
+        context: context,
+      );
 
-  static TextStyle get bodyMedium => GoogleFonts.readexPro(
-    fontSize: 13,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textPrimary,
-    height: 1.5,
-  );
+  static TextStyle bodyMediumWithContext(BuildContext context) => _getTextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textPrimary,
+        height: 1.5,
+        context: context,
+        minSize: AccessibilityUtils.minFontSize,
+      );
 
-  static TextStyle get bodySmall => GoogleFonts.readexPro(
-    fontSize: 11,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textSecondary,
-    height: 1.4,
-  );
+  static TextStyle bodySmallWithContext(BuildContext context) => _getTextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textSecondary,
+        height: 1.4,
+        context: context,
+        minSize: AccessibilityUtils.minFontSize,
+      );
 
-  static TextStyle get caption => GoogleFonts.readexPro(
-    fontSize: 10,
-    fontWeight: FontWeight.w400,
-    color: AppColors.textTertiary,
-    height: 1.3,
-  );
+  static TextStyle captionWithContext(BuildContext context) => _getTextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textTertiary,
+        height: 1.3,
+        context: context,
+        minSize: AccessibilityUtils.minFontSize,
+      );
+
+  // Getters for backward compatibility (default styles without scaling)
+  static TextStyle get heading1 => _getTextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.w800,
+        color: AppColors.textPrimary,
+        height: 1.1,
+        letterSpacing: -0.5,
+      );
+
+  static TextStyle get heading2 => _getTextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+        height: 1.2,
+        letterSpacing: -0.3,
+      );
+
+  static TextStyle get heading3 => _getTextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+        height: 1.3,
+        letterSpacing: -0.2,
+      );
+
+  static TextStyle get heading4 => _getTextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+        height: 1.4,
+        letterSpacing: -0.1,
+      );
+
+  static TextStyle get headingLarge => _getTextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+        height: 1.2,
+      );
+
+  static TextStyle get headingMedium => _getTextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+        height: 1.3,
+      );
+
+  static TextStyle get headingSmall => _getTextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+        height: 1.3,
+      );
+
+  static TextStyle get bodyLarge => _getTextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textPrimary,
+        height: 1.5,
+      );
+
+  static TextStyle get bodyMedium => _getTextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textPrimary,
+        height: 1.5,
+        minSize: AccessibilityUtils.minFontSize,
+      );
+
+  static TextStyle get bodySmall => _getTextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textSecondary,
+        height: 1.4,
+        minSize: AccessibilityUtils.minFontSize,
+      );
+
+  static TextStyle get caption => _getTextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w400,
+        color: AppColors.textTertiary,
+        height: 1.3,
+        minSize: AccessibilityUtils.minFontSize,
+      );
 
   static TextStyle get button => GoogleFonts.readexPro(
     fontSize: 14,

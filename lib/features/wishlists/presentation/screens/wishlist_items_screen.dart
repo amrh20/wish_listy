@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/primary_gradient_button.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
+import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import '../widgets/wishlist_item_card_widget.dart';
 import '../widgets/empty_wishlist_state_widget.dart';
@@ -57,12 +60,12 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
     _loadWishlistDetails();
   }
 
-  /// Load wishlist details and items from API
+  /// Load wishlist details and items from API or local storage
   Future<void> _loadWishlistDetails() async {
     debugPrint('⭐ WishlistItemsScreen: _loadWishlistDetails STARTED');
     debugPrint('   Current thread: ${DateTime.now()}');
 
-    // Validate wishlistId before making API call
+    // Validate wishlistId
     if (widget.wishlistId.isEmpty) {
       debugPrint('❌ WishlistItemsScreen: Empty wishlistId provided');
       setState(() {
@@ -87,16 +90,63 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
     debugPrint('✅ WishlistItemsScreen: setState completed, _isLoading = true');
 
     try {
-      debugPrint('📡 WishlistItemsScreen: About to call getWishlistById API');
-      debugPrint('   Wishlist ID: ${widget.wishlistId}');
-      debugPrint('   Wishlist Name: ${widget.wishlistName}');
-      debugPrint('   Total Items: ${widget.totalItems}');
-      debugPrint('   Purchased Items: ${widget.purchasedItems}');
+      // Check if user is guest
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      Map<String, dynamic> wishlistData;
+      
+      if (authService.isGuest) {
+        // Load from local storage for guests
+        debugPrint('👤 WishlistItemsScreen: Loading guest wishlist from local storage');
+        final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+        final wishlist = await guestDataRepo.getWishlistById(widget.wishlistId);
+        
+        if (wishlist == null) {
+          throw Exception('Wishlist not found');
+        }
+        
+        // Load items for this wishlist
+        final items = await guestDataRepo.getWishlistItems(widget.wishlistId);
+        
+        // Convert Wishlist model to Map format for consistency
+        wishlistData = {
+          'id': wishlist.id,
+          'name': wishlist.name,
+          'description': wishlist.description,
+          'privacy': wishlist.visibility.toString().split('.').last,
+          'category': 'general', // Default category for guest wishlists
+          'createdAt': wishlist.createdAt.toIso8601String(),
+          'updatedAt': wishlist.updatedAt.toIso8601String(),
+          'items': items.map((item) => {
+            'id': item.id,
+            'name': item.name,
+            'description': item.description,
+            'link': item.link,
+            'image_url': item.imageUrl,
+            'priority': item.priority.toString().split('.').last,
+            'status': item.status.toString().split('.').last,
+            'createdAt': item.createdAt.toIso8601String(),
+            'updatedAt': item.updatedAt.toIso8601String(),
+          }).toList(),
+          'stats': {
+            'totalItems': items.length,
+            'purchasedItems': items.where((item) => item.status == ItemStatus.purchased).length,
+          },
+        };
+        
+        debugPrint('✅ WishlistItemsScreen: Loaded guest wishlist with ${items.length} items');
+      } else {
+        // Load from API for authenticated users
+        debugPrint('📡 WishlistItemsScreen: About to call getWishlistById API');
+        debugPrint('   Wishlist ID: ${widget.wishlistId}');
+        debugPrint('   Wishlist Name: ${widget.wishlistName}');
+        debugPrint('   Total Items: ${widget.totalItems}');
+        debugPrint('   Purchased Items: ${widget.purchasedItems}');
 
-      // Call API to get wishlist details
-      final wishlistData = await _wishlistRepository.getWishlistById(
-        widget.wishlistId,
-      );
+        // Call API to get wishlist details
+        wishlistData = await _wishlistRepository.getWishlistById(
+          widget.wishlistId,
+        );
+      }
 
       debugPrint(
         '📡 WishlistItemsScreen: Received wishlist data: $wishlistData',
@@ -107,7 +157,10 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       // Validate response
       if (wishlistData.isEmpty) {
         debugPrint('❌ WishlistItemsScreen: Empty wishlistData');
-        throw Exception('Empty response from API');
+        final authService = Provider.of<AuthRepository>(context, listen: false);
+        throw Exception(authService.isGuest 
+            ? 'Wishlist not found in local storage' 
+            : 'Empty response from API');
       }
 
       // Handle both direct fields and nested wishlist object
@@ -132,7 +185,10 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
       if (data.isEmpty) {
         debugPrint('❌ WishlistItemsScreen: Empty data after parsing');
-        throw Exception('Invalid response format from API');
+        final authService = Provider.of<AuthRepository>(context, listen: false);
+        throw Exception(authService.isGuest 
+            ? 'Invalid wishlist data format' 
+            : 'Invalid response format from API');
       }
 
       debugPrint('📊 WishlistItemsScreen: Parsed data structure');
@@ -316,7 +372,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
     }
   }
 
-  /// Convert API response item to WishlistItem
+  /// Convert item data (from API or Hive) to WishlistItem
   WishlistItem _convertToWishlistItem(Map<String, dynamic> data) {
     // Parse priority
     ItemPriority priority = ItemPriority.medium;
@@ -757,21 +813,28 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                                 item.priority,
                               );
 
+                              // Check if user is guest
+                              final authService = Provider.of<AuthRepository>(context, listen: false);
+                              final isGuest = authService.isGuest;
+                              
                               return WishlistItemCardWidget(
                                 item: item,
                                 isPurchased: isPurchased,
                                 priorityColor: priorityColor,
                                 onTap: () => _openItemDetails(item),
-                                onToggleGifted: widget.isFriendWishlist
+                                // Hide "Mark as Gifted" for guest users and friend wishlists
+                                onToggleGifted: (widget.isFriendWishlist || isGuest)
                                     ? null
                                     : () => _togglePurchaseStatus(item),
+                                // Show edit/delete menu for guest users (not for friend wishlists)
                                 onEdit: widget.isFriendWishlist
                                     ? null
                                     : () => _editItem(item),
                                 onDelete: widget.isFriendWishlist
                                     ? null
                                     : () => _deleteItem(item),
-                                enableSwipe: !widget.isFriendWishlist,
+                                // Disable swipe for friend wishlists and guest users
+                                enableSwipe: !widget.isFriendWishlist && !isGuest,
                               );
                             }, childCount: _filteredItems.length),
                           ),
@@ -857,21 +920,63 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       debugPrint('   Current status: ${item.status}');
       debugPrint('   New status: $newStatus');
 
-      // TODO: Implement API call to update item status
-      // await _wishlistRepository.updateItemStatus(item.id, newStatus);
+      // Check if user is guest
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      
+      if (authService.isGuest) {
+        // Update in local storage for guests
+        try {
+          final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+          final updatedItem = item.copyWith(status: newStatus, updatedAt: DateTime.now());
+          await guestDataRepo.updateWishlistItem(updatedItem);
+          debugPrint('✅ WishlistItemsScreen: Guest item updated successfully in Hive');
+        } catch (e) {
+          debugPrint('❌ WishlistItemsScreen: Error updating guest item: $e');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Failed to update item: ${e.toString()}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: AppColors.error,
+                duration: const Duration(seconds: 3),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return; // Exit early on error
+        }
+      } else {
+        // TODO: Implement API call to update item status for authenticated users
+        // await _wishlistRepository.updateItemStatus(item.id, newStatus);
+      }
 
       // Update local state immediately for better UX
-      setState(() {
-        final index = _items.indexWhere((i) => i.id == item.id);
-        if (index != -1) {
-          _items[index] = item.copyWith(status: newStatus);
-          if (newStatus == ItemStatus.purchased) {
-            _purchasedItems++;
-          } else {
-            _purchasedItems = _purchasedItems > 0 ? _purchasedItems - 1 : 0;
+      if (mounted) {
+        setState(() {
+          final index = _items.indexWhere((i) => i.id == item.id);
+          if (index != -1) {
+            _items[index] = item.copyWith(status: newStatus);
+            if (newStatus == ItemStatus.purchased) {
+              _purchasedItems++;
+            } else {
+              _purchasedItems = _purchasedItems > 0 ? _purchasedItems - 1 : 0;
+            }
           }
-        }
-      });
+        });
+      }
 
       if (mounted) {
         // Show success dialog instead of SnackBar
@@ -1093,8 +1198,17 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         );
       }
 
-      // Call API to delete item
-      await _wishlistRepository.deleteItem(item.id);
+      // Check if user is guest
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      
+      if (authService.isGuest) {
+        // Delete from local storage for guests
+        final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+        await guestDataRepo.deleteWishlistItem(item.id);
+      } else {
+        // Call API to delete item for authenticated users
+        await _wishlistRepository.deleteItem(item.id);
+      }
 
       debugPrint('✅ WishlistItemsScreen: Item deleted successfully');
 
@@ -1139,7 +1253,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         );
       }
     } on ApiException catch (e) {
-      debugPrint('❌ WishlistItemsScreen: Error deleting item: ${e.message}');
+      debugPrint('❌ WishlistItemsScreen: ApiException deleting item: ${e.message}');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1175,6 +1289,42 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         );
       }
     } catch (e) {
+      debugPrint('❌ WishlistItemsScreen: Error deleting item: $e');
+      debugPrint('   Error type: ${e.runtimeType}');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Failed to delete item: ${e.toString()}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
       debugPrint('❌ WishlistItemsScreen: Unexpected error deleting item: $e');
 
       if (mounted) {

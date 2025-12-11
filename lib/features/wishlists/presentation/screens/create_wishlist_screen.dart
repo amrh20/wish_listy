@@ -7,6 +7,12 @@ import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
+import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
+import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
+import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/core/widgets/custom_button.dart';
 import '../widgets/create_wishlist_header_widget.dart';
 import '../widgets/privacy_selection_widget.dart';
 import '../widgets/category_selection_widget.dart';
@@ -122,8 +128,9 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LocalizationService>(
-      builder: (context, localization, child) {
+    return Consumer2<LocalizationService, AuthRepository>(
+      builder: (context, localization, authService, child) {
+        final isGuest = authService.isGuest;
         return Scaffold(
           body: DecorativeBackground(
             showGifts: true,
@@ -210,33 +217,34 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
 
                                 const SizedBox(height: 24),
 
-                                // Privacy Selection
-                                PrivacySelectionWidget(
-                                  privacyOptions: _privacyOptions,
-                                  selectedPrivacy: _selectedPrivacy,
-                                  onPrivacySelected: (privacy) {
-                                    setState(() {
-                                      _selectedPrivacy = privacy;
-                                    });
-                                  },
-                                  getPrivacyIcon:
-                                      WishlistFormHelpers.getPrivacyIcon,
-                                  getPrivacyTitle: (privacy) =>
-                                      WishlistFormHelpers.getPrivacyTitle(
-                                        privacy,
-                                        localization,
-                                      ),
-                                  getPrivacyDescription: (privacy) =>
-                                      WishlistFormHelpers.getPrivacyDescription(
-                                        privacy,
-                                        localization,
-                                      ),
-                                  getTitle: () => localization.translate(
-                                    'wishlists.privacy',
+                                // Privacy Selection - Hide for guest users
+                                if (!isGuest) ...[
+                                  PrivacySelectionWidget(
+                                    privacyOptions: _privacyOptions,
+                                    selectedPrivacy: _selectedPrivacy,
+                                    onPrivacySelected: (privacy) {
+                                      setState(() {
+                                        _selectedPrivacy = privacy;
+                                      });
+                                    },
+                                    getPrivacyIcon:
+                                        WishlistFormHelpers.getPrivacyIcon,
+                                    getPrivacyTitle: (privacy) =>
+                                        WishlistFormHelpers.getPrivacyTitle(
+                                          privacy,
+                                          localization,
+                                        ),
+                                    getPrivacyDescription: (privacy) =>
+                                        WishlistFormHelpers.getPrivacyDescription(
+                                          privacy,
+                                          localization,
+                                        ),
+                                    getTitle: () => localization.translate(
+                                      'wishlists.privacy',
+                                    ),
                                   ),
-                                ),
-
-                                const SizedBox(height: 24),
+                                  const SizedBox(height: 24),
+                                ],
 
                                 // Category Selection
                                 CategorySelectionWidget(
@@ -321,9 +329,31 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     if (widget.wishlistId == null) return;
     setState(() => _isLoading = true);
     try {
-      final wishlistData = await _wishlistRepository.getWishlistById(
-        widget.wishlistId!,
-      );
+      // Check if user is guest
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      Map<String, dynamic> wishlistData;
+      
+      if (authService.isGuest) {
+        // Load from local storage for guests
+        final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+        final wishlist = await guestDataRepo.getWishlistById(widget.wishlistId!);
+        if (wishlist == null) {
+          throw Exception('Wishlist not found');
+        }
+        // Convert Wishlist model to Map format
+        wishlistData = {
+          'id': wishlist.id,
+          'name': wishlist.name,
+          'description': wishlist.description,
+          'privacy': wishlist.visibility.toString().split('.').last,
+          'category': 'general', // Default category for guest wishlists
+        };
+      } else {
+        // Load from API for authenticated users
+        wishlistData = await _wishlistRepository.getWishlistById(
+          widget.wishlistId!,
+        );
+      }
       // Populate form fields
       if (mounted) {
         final category = wishlistData['category']?.toString() ?? 'general';
@@ -405,6 +435,16 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     LocalizationService localization,
     String finalCategory,
   ) async {
+    // Check if user is guest
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    
+    if (authService.isGuest) {
+      // Update wishlist locally for guest
+      await _handleUpdateGuestWishlist(finalCategory);
+      return;
+    }
+    
+    // Update wishlist via API for authenticated users
     final response = await _wishlistRepository.updateWishlist(
       wishlistId: widget.wishlistId!,
       name: _nameController.text.trim(),
@@ -431,10 +471,56 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     }
   }
 
+  /// Update wishlist locally for guest users
+  Future<void> _handleUpdateGuestWishlist(String finalCategory) async {
+    try {
+      final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+      
+      // Get existing wishlist
+      final existingWishlist = await guestDataRepo.getWishlistById(widget.wishlistId!);
+      if (existingWishlist == null) {
+        throw Exception('Wishlist not found');
+      }
+      
+      // Update wishlist with new data
+      // Note: Guest wishlists keep 'private' visibility (local-only)
+      final updatedWishlist = existingWishlist.copyWith(
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        updatedAt: DateTime.now(),
+      );
+      
+      await guestDataRepo.updateWishlist(updatedWishlist);
+      
+      setState(() => _isLoading = false);
+      
+      if (mounted) {
+        WishlistSuccessDialogHelper.showEditSuccessDialog(context);
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        _showErrorSnackBar('Failed to update wishlist: $e');
+      }
+    }
+  }
+
   Future<void> _handleCreateWishlist(
     LocalizationService localization,
     String finalCategory,
   ) async {
+    // Check if user is guest
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    
+    if (authService.isGuest) {
+      // Create wishlist locally for guest
+      await _handleCreateGuestWishlist(finalCategory);
+      return;
+    }
+    
+    // Create wishlist via API for authenticated users
     final response = await _wishlistRepository.createWishlist(
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim().isEmpty
@@ -499,6 +585,106 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   }
 
   /// Show error message as a dialog with Lottie animation
+  Future<void> _handleCreateGuestWishlist(String finalCategory) async {
+    try {
+      final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+      
+      // Create Wishlist model
+      // For guest users, use 'private' visibility as default (local-only data)
+      // This helps identify guest wishlists during migration after signup
+      final wishlist = Wishlist(
+        id: '', // Will be generated by repository
+        userId: 'guest',
+        type: WishlistType.public,
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim().isEmpty
+            ? null
+            : _descriptionController.text.trim(),
+        // Guest wishlists are always private (local-only)
+        // This serves as an identifier for guest-created wishlists
+        visibility: WishlistVisibility.private,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      
+      // Save to local storage
+      final wishlistId = await guestDataRepo.createWishlist(wishlist);
+      
+      setState(() => _isLoading = false);
+      
+      if (mounted) {
+        // Show success dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    color: Colors.white,
+                    size: 48,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Wishlist Created!',
+                  style: AppStyles.headingMediumWithContext(context).copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Your wishlist has been saved locally. Start adding wishes!',
+                  style: AppStyles.bodyMediumWithContext(context).copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                CustomButton(
+                  text: 'Start Adding Wishes',
+                  onPressed: () {
+                    Navigator.pop(context); // Close dialog
+                    Navigator.pop(context); // Go back to home
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.wishlistItems,
+                      arguments: {
+                        'wishlistId': wishlistId,
+                        'wishlistName': _nameController.text.trim(),
+                        'totalItems': 0,
+                        'purchasedItems': 0,
+                      },
+                    );
+                  },
+                  variant: ButtonVariant.gradient,
+                  gradientColors: [AppColors.primary, AppColors.secondary],
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        _showErrorSnackBar('Failed to create wishlist: $e');
+      }
+    }
+  }
+
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
     ConfirmationDialog.show(

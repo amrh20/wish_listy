@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 
 class CustomBottomNavigation extends StatelessWidget {
   final int currentIndex;
@@ -16,9 +17,11 @@ class CustomBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LocalizationService>(
-      builder: (context, localization, child) {
+    return Consumer2<LocalizationService, AuthRepository>(
+      builder: (context, localization, authService, child) {
         if (!context.mounted) return const SizedBox.shrink();
+
+        final isGuest = authService.isGuest;
 
         final navigationItems = [
           {
@@ -26,30 +29,35 @@ class CustomBottomNavigation extends StatelessWidget {
             'activeIcon': Icons.home_rounded,
             'label': localization.translate('navigation.home'),
             'color': AppColors.primary,
+            'isRestricted': false,
           },
           {
             'icon': Icons.favorite_outline,
             'activeIcon': Icons.favorite_rounded,
             'label': localization.translate('navigation.wishlist'),
             'color': AppColors.primary,
+            'isRestricted': false,
           },
           {
             'icon': Icons.celebration_outlined,
             'activeIcon': Icons.celebration_rounded,
             'label': localization.translate('navigation.events'),
             'color': AppColors.primary,
+            'isRestricted': true,
           },
           {
             'icon': Icons.people_outline,
             'activeIcon': Icons.people_rounded,
             'label': localization.translate('navigation.friends'),
             'color': AppColors.primary,
+            'isRestricted': true,
           },
           {
             'icon': Icons.person_outline,
             'activeIcon': Icons.person_rounded,
             'label': localization.translate('navigation.profile'),
             'color': AppColors.primary,
+            'isRestricted': true,
           },
         ];
 
@@ -75,8 +83,14 @@ class CustomBottomNavigation extends StatelessWidget {
                   final index = entry.key;
                   final item = entry.value;
                   final isActive = currentIndex == index;
+                  final isRestricted = item['isRestricted'] as bool && isGuest;
 
-                  return _buildNavigationButton(item, index, isActive);
+                  return _buildNavigationButton(
+                    item,
+                    index,
+                    isActive,
+                    isRestricted: isRestricted,
+                  );
                 }).toList(),
               ),
             ),
@@ -89,8 +103,9 @@ class CustomBottomNavigation extends StatelessWidget {
   Widget _buildNavigationButton(
     Map<String, dynamic> item,
     int index,
-    bool isActive,
-  ) {
+    bool isActive, {
+    bool isRestricted = false,
+  }) {
     return GestureDetector(
       onTap: () => onTap(index),
       child: AnimatedContainer(
@@ -103,20 +118,55 @@ class CustomBottomNavigation extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              child: Icon(
-                isActive ? item['activeIcon'] : item['icon'],
-                key: ValueKey(isActive),
-                color: isActive ? AppColors.primary : AppColors.textPrimary,
-                size: 24,
-              ),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    isActive ? item['activeIcon'] : item['icon'],
+                    key: ValueKey(isActive),
+                    color: isActive
+                        ? AppColors.primary
+                        : (isRestricted
+                            ? AppColors.textTertiary
+                            : AppColors.textPrimary),
+                    size: 24,
+                  ),
+                ),
+                if (isRestricted)
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.surface,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.lock,
+                        size: 9,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 4),
             AnimatedDefaultTextStyle(
               duration: const Duration(milliseconds: 200),
               style: AppStyles.caption.copyWith(
-                color: isActive ? AppColors.primary : AppColors.textPrimary,
+                color: isActive
+                    ? AppColors.primary
+                    : (isRestricted
+                        ? AppColors.textTertiary
+                        : AppColors.textPrimary),
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
               ),
               child: Text(item['label']),

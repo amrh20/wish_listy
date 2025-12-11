@@ -7,7 +7,10 @@ import 'package:wish_listy/core/widgets/top_navigation.dart';
 import 'package:wish_listy/core/widgets/bottom_navigation.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
-import 'package:wish_listy/features/auth/presentation/widgets/guest_restriction_dialog.dart';
+import 'package:wish_listy/features/auth/presentation/widgets/guest_onboarding_bottom_sheet.dart';
+import 'package:wish_listy/core/widgets/custom_button.dart';
+import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/core/constants/app_styles.dart';
 import 'home_screen.dart';
 import 'package:wish_listy/features/wishlists/presentation/screens/my_wishlists_screen.dart';
 import 'package:wish_listy/features/events/presentation/screens/events_screen.dart';
@@ -32,6 +35,13 @@ class _MainNavigationState extends State<MainNavigation>
   void initState() {
     super.initState();
     _initializeFabAnimation();
+    // Show guest onboarding if needed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      if (authService.isGuest) {
+        GuestOnboardingBottomSheet.showIfNeeded(context);
+      }
+    });
   }
 
   void _initializeFabAnimation() {
@@ -55,18 +65,34 @@ class _MainNavigationState extends State<MainNavigation>
     // Check if guest user is trying to access restricted features
     if (authService.isGuest) {
       if (index == 1) {
-        // Wishlists - allow but show limited view
-        // Allow access but the screen will handle guest limitations
+        // Wishlists - fully allowed for guests (local storage)
+        // Allow access with full local functionality
       } else if (index == 2) {
-        // Events - allow but show limited view
-        // Allow access but the screen will handle guest limitations
+        // Events - locked for guests
+        _showLockedFeatureBottomSheet(
+          context,
+          'Events',
+          Icons.celebration_outlined,
+          'Create events, invite friends, and link them to your wishlists by creating a free account.',
+        );
+        return;
       } else if (index == 3) {
-        // Friends - restricted for guests
-        GuestRestrictionDialog.show(context, 'Friends');
+        // Friends - locked for guests
+        _showLockedFeatureBottomSheet(
+          context,
+          'Friends',
+          Icons.people_outline,
+          'Connect with friends, see their wishlists, and coordinate gift-giving by creating a free account.',
+        );
         return;
       } else if (index == 4) {
-        // Profile - restricted for guests
-        GuestRestrictionDialog.show(context, 'Profile');
+        // Profile - locked for guests
+        _showLockedFeatureBottomSheet(
+          context,
+          'Profile',
+          Icons.person_outline,
+          'Customize your profile, manage settings, and access all features by creating a free account.',
+        );
         return;
       }
     }
@@ -283,6 +309,106 @@ class _MainNavigationState extends State<MainNavigation>
         elevation: 0,
         heroTag: 'profile_fab',
         child: const Icon(Icons.edit, color: Colors.white, size: 28),
+      ),
+    );
+  }
+
+  void _showLockedFeatureBottomSheet(
+    BuildContext context,
+    String featureName,
+    IconData icon,
+    String description,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(32),
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              // Icon
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 48,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Title
+              Text(
+                'Unlock $featureName',
+                style: AppStyles.headingLargeWithContext(context).copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+
+              // Description
+              Text(
+                description,
+                style: AppStyles.bodyLargeWithContext(context).copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+
+              // CTA Button
+              CustomButton(
+                text: 'Create a Free Account',
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, AppRoutes.signup);
+                },
+                variant: ButtonVariant.gradient,
+                gradientColors: [AppColors.primary, AppColors.secondary],
+                size: ButtonSize.large,
+              ),
+              const SizedBox(height: 12),
+
+              // Secondary button
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Not Now',
+                  style: AppStyles.bodyMediumWithContext(context).copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

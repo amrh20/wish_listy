@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
+import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 
 class ItemDetailsScreen extends StatefulWidget {
   final WishlistItem item;
@@ -26,6 +30,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   WishlistItem? _currentItem;
   bool _isLoading = true;
   String? _errorMessage;
+  String? _wishlistName; // Store wishlist name for navigation
 
   @override
   void initState() {
@@ -42,23 +47,69 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         _errorMessage = null;
       });
 
-      debugPrint(
-        '📡 ItemDetailsScreen: Fetching item details for ID: ${widget.item.id}',
-      );
+      // Check if user is guest
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      
+      if (authService.isGuest) {
+        // Load from local storage for guests
+        debugPrint('👤 ItemDetailsScreen: Loading guest item from Hive');
+        debugPrint('   ItemId: ${widget.item.id}');
+        debugPrint('   WishlistId: ${widget.item.wishlistId}');
+        
+        final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+        final items = await guestDataRepo.getWishlistItems(widget.item.wishlistId);
+        
+        debugPrint('   Found ${items.length} items in wishlist');
+        
+        // Find the specific item by ID
+        final item = items.firstWhere(
+          (item) => item.id == widget.item.id,
+          orElse: () {
+            debugPrint('❌ ItemDetailsScreen: Item ${widget.item.id} not found in Hive');
+            throw Exception('Item not found in local storage');
+          },
+        );
+        
+        debugPrint('✅ ItemDetailsScreen: Found item: ${item.name}');
+        
+        // Load wishlist name for navigation
+        final wishlist = await guestDataRepo.getWishlistById(widget.item.wishlistId);
+        
+        // Use the item directly (no need to convert from JSON)
+        if (mounted) {
+          setState(() {
+            _currentItem = item;
+            _wishlistName = wishlist?.name ?? 'Wishlist';
+            _isLoading = false;
+          });
+          _startAnimations();
+        }
+      } else {
+        // Load from API for authenticated users
+        debugPrint(
+          '📡 ItemDetailsScreen: Fetching item details from API for ID: ${widget.item.id}',
+        );
 
-      final itemData = await _wishlistRepository.getItemById(widget.item.id);
+        final itemData = await _wishlistRepository.getItemById(widget.item.id);
 
-      debugPrint('📡 ItemDetailsScreen: Received item data: $itemData');
+        debugPrint('📡 ItemDetailsScreen: Received item data: $itemData');
 
-      // Parse the item data to WishlistItem model
-      final updatedItem = WishlistItem.fromJson(itemData);
+        // Parse the item data to WishlistItem model
+        final updatedItem = WishlistItem.fromJson(itemData);
+        
+        // Try to get wishlist name from itemData or use default
+        final wishlistName = itemData['wishlistName']?.toString() ?? 
+                            itemData['wishlist']?['name']?.toString() ?? 
+                            'Wishlist';
 
-      if (mounted) {
-        setState(() {
-          _currentItem = updatedItem;
-          _isLoading = false;
-        });
-        _startAnimations();
+        if (mounted) {
+          setState(() {
+            _currentItem = updatedItem;
+            _wishlistName = wishlistName;
+            _isLoading = false;
+          });
+          _startAnimations();
+        }
       }
     } on ApiException catch (e) {
       debugPrint('❌ ItemDetailsScreen: ApiException: ${e.message}');
@@ -70,9 +121,12 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       }
     } catch (e) {
       debugPrint('❌ ItemDetailsScreen: Unexpected error: $e');
+      debugPrint('   Error type: ${e.runtimeType}');
       if (mounted) {
         setState(() {
-          _errorMessage = 'Failed to load item details. Please try again.';
+          _errorMessage = e.toString().contains('Exception')
+              ? e.toString().replaceFirst('Exception: ', '')
+              : 'Failed to load item details. Please try again.';
           _isLoading = false;
         });
       }
@@ -458,6 +512,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   Widget _buildActionButtons() {
     final isPurchased =
         (_currentItem?.status ?? widget.item.status) == ItemStatus.purchased;
+    
+    // Check if user is guest
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    final isGuest = authService.isGuest;
 
     // Standardized button height and border radius
     const double buttonHeight = 56.0;
@@ -466,29 +524,30 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
     return Column(
       children: [
-        // Button 1: Mark as Gifted (Primary State Action)
-        SizedBox(
-          width: double.infinity,
-          height: buttonHeight,
-          child: ElevatedButton(
-            onPressed: _togglePurchaseStatus,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.success,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(buttonBorderRadius),
+        // Button 1: Mark as Gifted (Primary State Action) - Hide for guest users
+        if (!isGuest) ...[
+          SizedBox(
+            width: double.infinity,
+            height: buttonHeight,
+            child: ElevatedButton(
+              onPressed: _togglePurchaseStatus,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(buttonBorderRadius),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-            ),
-            child: Text(
-              isPurchased ? 'Mark as Available' : 'Mark as Gifted',
-              style: AppStyles.button,
+              child: Text(
+                isPurchased ? 'Mark as Available' : 'Mark as Gifted',
+                style: AppStyles.button,
+              ),
             ),
           ),
-        ),
-
-        SizedBox(height: buttonSpacing),
+          SizedBox(height: buttonSpacing),
+        ],
 
         // Button 2: Share Item (Secondary Action)
         SizedBox(
@@ -643,12 +702,23 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
   void _editItem() {
     // Navigate to edit item screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Edit functionality coming soon!'),
-        backgroundColor: AppColors.info,
-      ),
-    );
+    final item = _currentItem ?? widget.item;
+    Navigator.pushNamed(
+      context,
+      AppRoutes.addItem,
+      arguments: {
+        'wishlistId': item.wishlistId,
+        'wishlistName': _wishlistName ?? 'Wishlist',
+        'itemId': item.id,
+        'isEditing': true,
+        'item': item,
+      },
+    ).then((_) {
+      // Refresh item details when returning from edit screen
+      if (mounted) {
+        _fetchItemDetails();
+      }
+    });
   }
 
   void _shareItem() {
@@ -662,34 +732,218 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   void _deleteItem() {
+    final item = _currentItem ?? widget.item;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Item'),
+        backgroundColor: AppColors.surface.withOpacity(0.95),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.delete_outline, color: AppColors.error, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Delete Item',
+                style: AppStyles.headingSmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
         content: Text(
-          'Are you sure you want to delete "${_currentItem?.name ?? widget.item.name}"? This action cannot be undone.',
+          'Are you sure you want to delete "${item.name}"? This action cannot be undone.',
+          style: AppStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: Text(
+              'Cancel',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Item deleted successfully'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            },
+            onPressed: () => _performDeleteItem(item),
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: Text('Delete'),
+            child: Text(
+              'Delete',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _performDeleteItem(WishlistItem item) async {
+    // Close dialog first
+    Navigator.pop(context);
+    
+    try {
+      debugPrint('🗑️ ItemDetailsScreen: Deleting item: ${item.id}');
+
+      // Show loading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text('Deleting item...'),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Check if user is guest
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      
+      if (authService.isGuest) {
+        // Delete from local storage for guests
+        final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+        await guestDataRepo.deleteWishlistItem(item.id);
+        debugPrint('✅ ItemDetailsScreen: Guest item deleted successfully from Hive');
+      } else {
+        // Call API to delete item for authenticated users
+        await _wishlistRepository.deleteItem(item.id);
+        debugPrint('✅ ItemDetailsScreen: Item deleted successfully from API');
+      }
+
+      // Navigate back to previous screen
+      if (mounted) {
+        Navigator.pop(context);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${item.name} deleted successfully',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } on ApiException catch (e) {
+      debugPrint('❌ ItemDetailsScreen: ApiException deleting item: ${e.message}');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Failed to delete item: ${e.message}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ ItemDetailsScreen: Error deleting item: $e');
+      debugPrint('   Error type: ${e.runtimeType}');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Failed to delete item: ${e.toString()}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
   }
 }

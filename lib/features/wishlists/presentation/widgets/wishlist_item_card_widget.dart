@@ -268,116 +268,116 @@ class _ModernWishlistItemContent extends StatelessWidget {
             ),
           ],
         ),
-        trailing: onToggleGifted != null
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Purchase Toggle IconButton
-                  IconButton(
-                    onPressed: () {
-                      // This callback is handled separately and won't trigger ListTile.onTap
-                      onToggleGifted?.call();
-                    },
-                    iconSize: 20.0,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 24,
-                      minHeight: 24,
-                    ),
-                    icon: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: isPurchased
-                            ? const Color(0xFF2ECC71)
-                            : Colors.transparent,
-                        shape: BoxShape.circle,
-                        border: isPurchased
-                            ? null
-                            : Border.all(
-                                color: Colors.grey.withOpacity(0.3),
-                                width: 2,
-                              ),
-                      ),
-                      child: isPurchased
-                          ? const Icon(
-                              Icons.check,
-                              color: Colors.white,
-                              size: 16,
-                            )
-                          : null,
-                    ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Purchase Toggle IconButton - only show if onToggleGifted is provided
+            if (onToggleGifted != null) ...[
+              IconButton(
+                onPressed: () {
+                  // This callback is handled separately and won't trigger ListTile.onTap
+                  onToggleGifted?.call();
+                },
+                iconSize: 20.0,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 24,
+                  minHeight: 24,
+                ),
+                icon: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: isPurchased
+                        ? const Color(0xFF2ECC71)
+                        : Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: isPurchased
+                        ? null
+                        : Border.all(
+                            color: Colors.grey.withOpacity(0.3),
+                            width: 2,
+                          ),
                   ),
-                  const SizedBox(width: 8),
-                  // Context Menu PopupMenuButton
-                  if (onEdit != null || onDelete != null)
-                    PopupMenuButton<String>(
-                      color: Colors.white,
-                      icon: Icon(
-                        Icons.more_vert,
-                        color: AppColors.textTertiary,
-                        size: 20,
-                      ),
-                      iconSize: 20,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 32,
-                        minHeight: 32,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          onEdit?.call();
-                        } else if (value == 'delete') {
-                          onDelete?.call();
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        if (onEdit != null)
-                          PopupMenuItem<String>(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.edit,
-                                  color: AppColors.textPrimary,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Edit',
-                                  style: AppStyles.bodyMedium.copyWith(
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ],
+                  child: isPurchased
+                      ? const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 16,
+                        )
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            // Context Menu PopupMenuButton - show if edit/delete are available
+            if (onEdit != null || onDelete != null)
+              PopupMenuButton<String>(
+                color: Colors.white,
+                icon: Icon(
+                  Icons.more_vert,
+                  color: AppColors.textTertiary,
+                  size: 20,
+                ),
+                iconSize: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 32,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    onEdit?.call();
+                  } else if (value == 'delete') {
+                    onDelete?.call();
+                  }
+                },
+                itemBuilder: (context) => [
+                  if (onEdit != null)
+                    PopupMenuItem<String>(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.edit,
+                            color: AppColors.textPrimary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Edit',
+                            style: AppStyles.bodyMedium.copyWith(
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                        if (onDelete != null)
-                          PopupMenuItem<String>(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete, color: Colors.red, size: 20),
-                                const SizedBox(width: 12),
-                                Text(
-                                  'Delete',
-                                  style: AppStyles.bodyMedium.copyWith(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                        ],
+                      ),
+                    ),
+                  if (onDelete != null)
+                    PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, color: Colors.red, size: 20),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Delete',
+                            style: AppStyles.bodyMedium.copyWith(
+                              color: Colors.red,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
                 ],
               )
-            : // For friend wishlists, only show purchase status indicator
+            else if (onToggleGifted == null)
+              // For friend wishlists, only show purchase status indicator
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 width: 24,
@@ -396,6 +396,8 @@ class _ModernWishlistItemContent extends StatelessWidget {
                     ? const Icon(Icons.check, color: Colors.white, size: 16)
                     : null,
               ),
+          ],
+        ),
         onTap: onTap,
       ),
     );

@@ -113,4 +113,26 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+
+  // ===========================================================================
+  // 6. HIGH CONTRAST COLORS (Accessibility for Seniors)
+  // ===========================================================================
+
+  // High contrast variants for better visibility
+  static const Color primaryHighContrast = Color(0xFF5B21B6); // Darker purple
+  static const Color secondaryHighContrast = Color(0xFF0F766E); // Darker teal
+  static const Color textPrimaryHighContrast = Color(0xFF000000); // Pure black
+  static const Color textSecondaryHighContrast = Color(0xFF1E293B); // Dark grey
+  static const Color backgroundHighContrast = Color(0xFFFFFFFF); // Pure white
+  static const Color surfaceHighContrast = Color(0xFFFFFFFF); // Pure white
+  static const Color borderHighContrast = Color(0xFF000000); // Pure black
+
+  /// Get color based on high contrast preference
+  static Color getColor(BuildContext context, {
+    required Color normalColor,
+    required Color highContrastColor,
+  }) {
+    final isHighContrast = MediaQuery.of(context).highContrast;
+    return isHighContrast ? highContrastColor : normalColor;
+  }
 }

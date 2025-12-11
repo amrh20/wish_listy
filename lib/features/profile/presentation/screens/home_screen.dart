@@ -11,6 +11,8 @@ import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
+import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
+import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -20,7 +22,7 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -31,6 +33,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isCheckingWishlists = false;
   int _wishlistCount = 0;
   final WishlistRepository _wishlistRepository = WishlistRepository();
+  
+  // Guest user data
+  List<Wishlist> _guestWishlists = [];
+  bool _isLoadingGuestData = false;
+  bool _hasLoadedOnce = false;
 
   // Mock data - replace with real data from your backend
   final List<UpcomingEvent> _upcomingEvents = [
@@ -106,9 +113,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeAnimations();
     _checkWishlists();
     _startAnimations();
+    _loadGuestWishlists();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _animationController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Reload data when app comes to foreground
+    if (state == AppLifecycleState.resumed) {
+      _loadGuestWishlists();
+      _checkWishlists();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload guest wishlists when screen becomes visible
+    // This ensures data is fresh when navigating back to home screen
+    if (!_hasLoadedOnce) {
+      _hasLoadedOnce = true;
+      return; // Skip reload on first call (already loaded in initState)
+    }
+    
+    // Reload data when screen becomes visible again (e.g., navigating back from another screen)
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest) {
+      // Reload guest wishlists to reflect any changes (e.g., deletions)
+      _loadGuestWishlists();
+    }
   }
 
   /// Check if user has any wishlists
@@ -179,17 +224,82 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _animationController.forward();
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer2<LocalizationService, AuthRepository>(
       builder: (context, localization, authService, child) {
+        // For guest users, use custom hero header layout
+        if (authService.isGuest) {
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            body: UnifiedPageBackground(
+              child: DecorativeBackground(
+                child: Column(
+                  children: [
+                    // Custom Hero Header for Guests
+                    _buildGuestHeroHeader(localization),
+
+                    // Content in rounded container (with negative margin to overlap header)
+                    Expanded(
+                      child: Transform.translate(
+                        offset: const Offset(0, -8), // Move up to overlap header
+                        child: UnifiedPageContainer(
+                          showTopRadius: true,
+                          child: RefreshIndicator(
+                            onRefresh: _refreshData,
+                            color: AppColors.primary,
+                            child: SingleChildScrollView(
+                              controller: _scrollController,
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: AnimatedBuilder(
+                                animation: _animationController,
+                                builder: (context, child) {
+                                  return FadeTransition(
+                                    opacity: _fadeAnimation,
+                                    child: SlideTransition(
+                                      position: _slideAnimation,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16.0),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            // Guest Wishlist Section
+                                            if (_isLoadingGuestData) ...[
+                                              const Center(
+                                                child: Padding(
+                                                  padding: EdgeInsets.all(32.0),
+                                                  child: CircularProgressIndicator(),
+                                                ),
+                                              ),
+                                            ] else if (_guestWishlists.isEmpty) ...[
+                                              _buildCreateFirstWishlistButton(),
+                                            ] else ...[
+                                              _buildGuestWishlistList(),
+                                            ],
+
+                                            const SizedBox(height: 100), // Bottom padding
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        // For authenticated users, use original layout
         return Scaffold(
           backgroundColor: AppColors.background,
           body: UnifiedPageBackground(
@@ -227,18 +337,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          // Guest Mode Welcome Card
-                                          if (authService.isGuest == true) ...[
-                                            _buildGuestWelcomeCard(
-                                              localization,
-                                            ),
-                                            const SizedBox(height: 24),
-                                          ],
-
                                           // Regular Welcome Card for logged users (only if no wishlists)
-                                          if (authService.isAuthenticated ==
-                                                  true &&
-                                              _showWelcomeCard &&
+                                          if (_showWelcomeCard &&
                                               !_hasWishlists &&
                                               !_isCheckingWishlists) ...[
                                             _buildWelcomeCard(localization),
@@ -247,7 +347,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                                           // Summary Card is now in the header (removed from body)
 
-                                          // Quick Actions (limited for guests)
+                                          // Quick Actions
                                           _buildQuickActions(localization),
                                           SizedBox(
                                             height: _hasWishlists ? 20 : 24,
@@ -269,13 +369,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           if (authService.isAuthenticated) ...[
                                             _buildGiftSuggestions(localization),
                                             const SizedBox(height: 32),
-                                          ],
-
-                                          // Guest encouragement section
-                                          if (authService.isGuest == true) ...[
-                                            _buildGuestEncouragementSection(
-                                              localization,
-                                            ),
                                           ],
 
                                           const SizedBox(
@@ -302,26 +395,88 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
+  /// Build custom hero header for guest users
+  Widget _buildGuestHeroHeader(LocalizationService localization) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final headerHeight = screenHeight * 0.30; // 30% of screen height
+
+    return Container(
+      height: headerHeight,
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+          child: Column(
+            children: [
+              // Top Row: Logo and Sign In button
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // WishListy Logo/Text
+                  Text(
+                    'WishListy',
+                    style: AppStyles.headingLarge.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                    ),
+                  ),
+                  // Sign In Icon Button
+                  IconButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRoutes.login);
+                    },
+                    icon: const Icon(
+                      Icons.login_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      padding: const EdgeInsets.all(10),
+                      minimumSize: const Size(40, 40),
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              // Center Content: Welcome Message
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Hello there! 👋',
+                    style: AppStyles.headingLarge.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 28,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Start by creating your first wishlist and organize your dreams.',
+                    style: AppStyles.bodyLarge.copyWith(
+                      color: Colors.white.withOpacity(0.9),
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildUnifiedHeader(
     LocalizationService localization,
     AuthRepository authService,
   ) {
-    if (authService.isGuest) {
-      return UnifiedPageHeader(
-        title: 'WishListy',
-        subtitle: localization.translate('guest.welcome.subtitle'),
-        showSearch: false,
-        actions: [
-          HeaderAction(
-            icon: Icons.login,
-            onTap: () {
-              Navigator.pushNamed(context, AppRoutes.login);
-            },
-          ),
-        ],
-      );
-    }
-
     return UnifiedPageHeader(
       title: '${localization.translate('home.greeting')} 👋',
       subtitle: authService.userName ?? 'User',
@@ -404,7 +559,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     _showWelcomeCard = false;
                   });
                 },
-                icon: Icon(Icons.close, color: Colors.white),
+                icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                style: IconButton.styleFrom(
+                  minimumSize: const Size(40, 40),
+                  padding: const EdgeInsets.all(8),
+                ),
               ),
             ],
           ),
@@ -471,7 +630,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             child: Icon(
               Icons.favorite_rounded,
               color: AppColors.primary,
-              size: 32,
+              size: 28,
             ),
           ),
           const SizedBox(width: 16),
@@ -833,13 +992,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         child: Column(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(height: 12),
             Text(
@@ -949,8 +1108,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Row(
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
                         color: AppColors.accent.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
@@ -958,7 +1117,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       child: Icon(
                         Icons.celebration_outlined,
                         color: AppColors.accent,
-                        size: 20,
+                        size: 18,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -1208,7 +1367,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       padding: const EdgeInsets.all(32),
       child: Column(
         children: [
-          Icon(icon, size: 48, color: AppColors.textTertiary),
+          Icon(icon, size: 40, color: AppColors.textTertiary),
           const SizedBox(height: 16),
           Text(
             title,
@@ -1238,129 +1397,307 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
   }
 
-  // Guest-specific methods
-  Widget _buildGuestWelcomeCard(LocalizationService localization) {
+
+  // Guest wishlist methods
+  Future<void> _loadGuestWishlists() async {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    
+    if (!authService.isGuest) return;
+    
+    setState(() {
+      _isLoadingGuestData = true;
+    });
+    
+    try {
+      final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+      final wishlists = await guestDataRepo.getAllWishlists();
+      
+      setState(() {
+        _guestWishlists = wishlists;
+        _isLoadingGuestData = false;
+      });
+      
+      debugPrint('✅ HomeScreen: Loaded ${wishlists.length} guest wishlists');
+    } catch (e) {
+      debugPrint('❌ HomeScreen: Error loading guest wishlists: $e');
+      setState(() {
+        _isLoadingGuestData = false;
+      });
+    }
+  }
+
+  Widget _buildCreateFirstWishlistButton() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.secondary, AppColors.secondaryLight],
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.2),
+          width: 2,
         ),
-        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.secondary.withOpacity(0.3),
-            offset: const Offset(0, 8),
-            blurRadius: 24,
-            spreadRadius: 0,
+            color: AppColors.primary.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.explore_outlined, color: Colors.white, size: 32),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  localization.translate('guest.welcome.title'),
-                  style: AppStyles.headingSmall.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
+          Container(
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.favorite_outline,
+              size: 30,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'Create Your First Wishlist',
+            style: AppStyles.headingMediumWithContext(context).copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
           Text(
-            localization.translate('guest.welcome.description'),
-            style: AppStyles.bodyMedium.copyWith(
-              color: Colors.white.withOpacity(0.9),
-              height: 1.4,
+            'Start building your wishlist and organize your gift ideas',
+            style: AppStyles.bodyMediumWithContext(context).copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
             ),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           CustomButton(
-            text: localization.translate('guest.welcome.loginButton'),
+            text: 'Create Your First Wishlist',
             onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.login);
+              Navigator.pushNamed(context, AppRoutes.createWishlist);
             },
-            variant: ButtonVariant.secondary,
-            customColor: Colors.white,
-            customTextColor: AppColors.secondary,
-            size: ButtonSize.small,
-            fullWidth: false,
+            variant: ButtonVariant.gradient,
+            gradientColors: [AppColors.primary, AppColors.secondary],
+            size: ButtonSize.medium,
+            icon: Icons.add,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildGuestEncouragementSection(LocalizationService localization) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2), width: 1),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.star_outline, size: 48, color: AppColors.primary),
-          const SizedBox(height: 16),
-          Text(
-            localization.translate('guest.encouragement.title'),
-            style: AppStyles.heading4.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            localization.translate('guest.encouragement.description'),
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          Row(
+  Widget _buildGuestWishlistList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: CustomButton(
-                  text: localization.translate(
-                    'guest.encouragement.createAccountButton',
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'My Wishlists',
+                    style: AppStyles.headingMediumWithContext(context).copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                  onPressed: () {
-                    Navigator.pushNamed(context, AppRoutes.signup);
-                  },
-                  variant: ButtonVariant.outline,
-                  size: ButtonSize.small,
-                ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_guestWishlists.length} ${_guestWishlists.length == 1 ? 'wishlist' : 'wishlists'}',
+                    style: AppStyles.bodySmallWithContext(context).copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: CustomButton(
-                  text: localization.translate(
-                    'guest.encouragement.loginButton',
+              // Add Button
+              Container(
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.pushNamed(context, AppRoutes.createWishlist);
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.add_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'New',
+                            style: AppStyles.bodyMedium.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  onPressed: () {
-                    Navigator.pushNamed(context, AppRoutes.login);
-                  },
-                  variant: ButtonVariant.gradient,
-                  size: ButtonSize.small,
                 ),
               ),
             ],
           ),
+        ),
+        const SizedBox(height: 20),
+        // Wishlist Cards
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _guestWishlists.length,
+          itemBuilder: (context, index) {
+            final wishlist = _guestWishlists[index];
+            return _buildGuestWishlistCard(wishlist);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGuestWishlistCard(Wishlist wishlist) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.border.withOpacity(0.5),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textTertiary.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
         ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.pushNamed(
+              context,
+              AppRoutes.wishlistItems,
+              arguments: {
+                'wishlistId': wishlist.id,
+                'wishlistName': wishlist.name,
+                'totalItems': wishlist.totalItems,
+                'purchasedItems': wishlist.purchasedItems,
+              },
+            );
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                // Icon Container
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.favorite_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        wishlist.name,
+                        style: AppStyles.headingSmallWithContext(context).copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.card_giftcard_rounded,
+                            size: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${wishlist.totalItems} ${wishlist.totalItems == 1 ? "wish" : "wishes"}',
+                            style: AppStyles.bodyMediumWithContext(context).copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Arrow Icon
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceVariant,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 16,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

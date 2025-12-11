@@ -322,7 +322,7 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
         _buildStatItem(
           icon: Icons.card_giftcard_rounded,
           value: widget.totalItems.toString(),
-          label: 'Gifts',
+          label: 'Wishes',
           color: AppColors.primary, // Match header theme (Purple)
         ),
         _buildStatItem(

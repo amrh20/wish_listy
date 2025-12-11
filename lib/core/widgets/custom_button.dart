@@ -108,11 +108,11 @@ class _CustomButtonState extends State<CustomButton>
   double _getButtonHeight() {
     switch (widget.size) {
       case ButtonSize.small:
-        return 40;
+        return 44; // Minimum touch target size
       case ButtonSize.medium:
-        return 52;
+        return 54; // Refined height for better mobile UI balance
       case ButtonSize.large:
-        return 60;
+        return 56; // Refined height for better mobile UI balance
     }
   }
 
@@ -214,7 +214,7 @@ class _CustomButtonState extends State<CustomButton>
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: widget.size == ButtonSize.small ? 12 : 16,
-        vertical: widget.size == ButtonSize.small ? 8 : 12,
+        vertical: widget.size == ButtonSize.small ? 8 : 10,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -282,7 +282,7 @@ class _CustomButtonState extends State<CustomButton>
       case ButtonSize.medium:
         return 16;
       case ButtonSize.large:
-        return 18;
+        return 17;
     }
   }
 }

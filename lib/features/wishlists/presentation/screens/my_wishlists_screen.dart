@@ -13,8 +13,10 @@ import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
+import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
+import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
+import 'package:wish_listy/core/widgets/custom_button.dart';
 import '../widgets/index.dart';
-import '../widgets/guest_wishlists_view_widget.dart';
 
 class MyWishlistsScreen extends StatefulWidget {
   const MyWishlistsScreen({super.key});
@@ -125,52 +127,8 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   Widget build(BuildContext context) {
     return Consumer2<LocalizationService, AuthRepository>(
       builder: (context, localization, authService, child) {
-        // For guest users - show different interface
-        if (authService.isGuest) {
-          return Scaffold(
-            body: DecorativeBackground(
-              showGifts: true,
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    // Guest App Bar
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.favorite_rounded,
-                            color: AppColors.primary,
-                            size: 28,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            localization.translate(
-                              'wishlists.exploreWishlists',
-                            ),
-                            style: AppStyles.headingLarge.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Guest Wishlists View
-                    Expanded(
-                      child: GuestWishlistsViewWidget(
-                        publicWishlists:
-                            const [], // Empty for now, can be populated later
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-
-        // For authenticated users - show full interface
+        // For guest users - show full interface with local data
+        // For authenticated users - show full interface with API data
         return Scaffold(
           backgroundColor: AppColors.background,
           floatingActionButton: WishlistFabWidget(
@@ -191,32 +149,38 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                     ),
                     searchController: _searchController,
                     onSearchChanged: (query) {
-                      // Handle search query change
-                      // You can add search filtering logic here
+                      _onSearchChanged(query);
                     },
-                    tabs: [
-                      UnifiedTab(
-                        label: localization.translate('wishlists.myWishlists'),
-                        icon: Icons.favorite_rounded,
-                        badgeCount: _personalWishlists.length,
-                      ),
-                      UnifiedTab(
-                        label: localization.translate(
-                          'wishlists.friendsWishlists',
-                        ),
-                        icon: Icons.people_rounded,
-                      ),
-                    ],
-                    selectedTabIndex: _mainTabController.index,
-                    onTabChanged: (index) {
-                      _mainTabController.animateTo(index);
-                      setState(() {
-                        // Reset category filter when switching tabs
-                        if (index != 0) {
-                          _selectedCategory = null;
-                        }
-                      });
-                    },
+                    // Hide tabs completely for guest users
+                    tabs: authService.isGuest
+                        ? null
+                        : [
+                            UnifiedTab(
+                              label: localization.translate('wishlists.myWishlists'),
+                              icon: Icons.favorite_rounded,
+                              badgeCount: _personalWishlists.length,
+                            ),
+                            UnifiedTab(
+                              label: localization.translate(
+                                'wishlists.friendsWishlists',
+                              ),
+                              icon: Icons.people_rounded,
+                            ),
+                          ],
+                    selectedTabIndex: authService.isGuest
+                        ? null
+                        : _mainTabController.index,
+                    onTabChanged: authService.isGuest
+                        ? null
+                        : (index) {
+                            _mainTabController.animateTo(index);
+                            setState(() {
+                              // Reset category filter when switching tabs
+                              if (index != 0) {
+                                _selectedCategory = null;
+                              }
+                            });
+                          },
                   ),
 
                   // Tab Content in rounded container
@@ -225,7 +189,8 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                       child: Column(
                         children: [
                           // Category Filter Tabs (only show if there are categories and on Personal tab)
-                          if (_mainTabController.index == 0 &&
+                          // For guests, always show (no tabs), for authenticated users only on first tab
+                          if ((authService.isGuest || _mainTabController.index == 0) &&
                               _availableCategories.isNotEmpty) ...[
                             Padding(
                               padding: const EdgeInsets.only(
@@ -270,10 +235,9 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                                       ),
                                     ),
                                   )
-                                : TabBarView(
-                                    controller: _mainTabController,
-                                    children: [
-                                      PersonalWishlistsTabWidget(
+                                : authService.isGuest
+                                    // For guest users: show only personal wishlists (no tabs)
+                                    ? PersonalWishlistsTabWidget(
                                         personalWishlists: _personalWishlists,
                                         onWishlistTap: _navigateToWishlistItems,
                                         onAddItem: _navigateToAddItem,
@@ -283,10 +247,25 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                                               isEvent: false,
                                             ),
                                         onRefresh: _refreshWishlists,
+                                      )
+                                    // For authenticated users: show TabBarView with both tabs
+                                    : TabBarView(
+                                        controller: _mainTabController,
+                                        children: [
+                                          PersonalWishlistsTabWidget(
+                                            personalWishlists: _personalWishlists,
+                                            onWishlistTap: _navigateToWishlistItems,
+                                            onAddItem: _navigateToAddItem,
+                                            onMenuAction: _handleWishlistAction,
+                                            onCreateWishlist: () =>
+                                                _navigateToCreateWishlist(
+                                                  isEvent: false,
+                                                ),
+                                            onRefresh: _refreshWishlists,
+                                          ),
+                                          FriendsWishlistsTabWidget(),
+                                        ],
                                       ),
-                                      FriendsWishlistsTabWidget(),
-                                    ],
-                                  ),
                           ),
                         ],
                       ),
@@ -362,11 +341,86 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   void _shareWishlist(WishlistSummary wishlist) {
-    // TODO: Implement share functionality
+    // Check if user is guest
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    
+    if (authService.isGuest) {
+      // Show guest conversion dialog for sharing
+      _showGuestShareDialog();
+      return;
+    }
+    
+    // TODO: Implement share functionality for authenticated users
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Share wishlist: ${wishlist.name}'),
         behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showGuestShareDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.share,
+                color: Colors.white,
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Save Your Wishlist & Share it!',
+              style: AppStyles.headingMediumWithContext(context).copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'To get a unique shareable link and ensure your wishlist is saved permanently, please create a quick, free account.',
+              style: AppStyles.bodyMediumWithContext(context).copyWith(
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            CustomButton(
+              text: 'Create Account & Get Link',
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.signup);
+              },
+              variant: ButtonVariant.gradient,
+              gradientColors: [AppColors.primary, AppColors.secondary],
+              size: ButtonSize.large,
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Not Now',
+                style: AppStyles.bodyMediumWithContext(context).copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -469,8 +523,17 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         );
       }
 
-      // Call API to delete wishlist
-      await _wishlistRepository.deleteWishlist(wishlist.id);
+      // Check if user is guest
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      
+      if (authService.isGuest) {
+        // Delete from local storage
+        final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+        await guestDataRepo.deleteWishlist(wishlist.id);
+      } else {
+        // Call API to delete wishlist
+        await _wishlistRepository.deleteWishlist(wishlist.id);
+      }
 
       debugPrint('✅ MyWishlistsScreen: Wishlist deleted successfully');
 
@@ -573,8 +636,84 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     }
   }
 
-  /// Load wishlists from API
+  /// Load wishlists from local storage for guest users
+  Future<void> _loadGuestWishlists() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+      final wishlists = await guestDataRepo.getAllWishlists();
+      
+      // Convert to WishlistSummary format
+      // For guest users, we need to load items separately to get accurate counts
+      final personalWishlists = <WishlistSummary>[];
+      
+      for (final wishlist in wishlists) {
+        // Load items for this wishlist to get accurate count
+        final items = await guestDataRepo.getWishlistItems(wishlist.id);
+        final purchasedCount = items.where((item) => item.status == ItemStatus.purchased).length;
+        
+        // Extract category if available (default to 'general')
+        final category = 'general'; // Can be extended if category is stored in Wishlist model
+        
+        personalWishlists.add(
+          WishlistSummary(
+            id: wishlist.id,
+            name: wishlist.name,
+            itemCount: items.length, // Use actual items count from Hive
+            purchasedCount: purchasedCount, // Use actual purchased count from Hive
+            lastUpdated: wishlist.updatedAt,
+            privacy: wishlist.visibility == WishlistVisibility.public
+                ? WishlistPrivacy.public
+                : wishlist.visibility == WishlistVisibility.private
+                    ? WishlistPrivacy.private
+                    : WishlistPrivacy.onlyInvited,
+            category: category,
+          ),
+        );
+      }
+      
+      // Build category map for filtering
+      final categoryMap = <String, String>{};
+      final categorySet = <String>{};
+      
+      for (final wishlist in personalWishlists) {
+        final cat = wishlist.category ?? 'general';
+        categoryMap[wishlist.id] = cat;
+        categorySet.add(cat);
+      }
+      
+      setState(() {
+        _personalWishlists = personalWishlists;
+        _allPersonalWishlists = List.from(personalWishlists);
+        _wishlistIdToCategory = categoryMap;
+        _availableCategories = categorySet.toList()..sort();
+        _isLoading = false;
+        _hasLoadedOnce = true;
+      });
+      
+      debugPrint('✅ MyWishlistsScreen: Loaded ${personalWishlists.length} guest wishlists');
+    } catch (e) {
+      debugPrint('❌ MyWishlistsScreen: Error loading guest wishlists: $e');
+      setState(() {
+        _errorMessage = 'Failed to load wishlists';
+        _isLoading = false;
+      });
+    }
+  }
+
   Future<void> _loadWishlists() async {
+    // Check if user is guest
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    
+    if (authService.isGuest) {
+      await _loadGuestWishlists();
+      return;
+    }
+    
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -817,6 +956,27 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
   Future<void> _refreshWishlists() async {
     await _loadWishlists();
+  }
+
+  /// Handle search query change (works for both guest and authenticated users)
+  /// Performs local search on wishlists stored in memory
+  void _onSearchChanged(String query) {
+    if (query.isEmpty) {
+      // Reset to all wishlists (respecting category filter)
+      _applyCategoryFilter();
+      return;
+    }
+    
+    // Filter wishlists based on search query (local search)
+    final filtered = _allPersonalWishlists.where((wishlist) {
+      final searchLower = query.toLowerCase();
+      return wishlist.name.toLowerCase().contains(searchLower) ||
+          (wishlist.category?.toLowerCase().contains(searchLower) ?? false);
+    }).toList();
+    
+    setState(() {
+      _personalWishlists = filtered;
+    });
   }
 
   /// Apply category filter to personal wishlists

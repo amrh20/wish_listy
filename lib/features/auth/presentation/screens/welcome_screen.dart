@@ -320,9 +320,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   Widget _buildActionButtons(LocalizationService localization) {
     return Column(
       children: [
-        // Get Started Button (Guest Mode)
+        // Try Without Account Button (Guest Mode)
         CustomButton(
-          text: localization.translate('welcome.getStarted'),
+          text: 'Try Without an Account',
           onPressed: () async {
             // Set user as guest
             final authService = Provider.of<AuthRepository>(
@@ -340,7 +340,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
           },
           variant: ButtonVariant.gradient,
           gradientColors: [AppColors.primary, AppColors.secondary],
-          icon: Icons.rocket_launch_rounded,
+          size: ButtonSize.large,
         ),
 
         const SizedBox(height: 16),

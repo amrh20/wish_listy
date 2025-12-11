@@ -58,7 +58,7 @@ class GuestRestrictionDialog extends StatelessWidget {
                 // Title
                 Text(
                   localization.translate('guest.restrictions.title'),
-                  style: AppStyles.heading4.copyWith(
+                  style: AppStyles.heading4WithContext(context).copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.bold,
                   ),
@@ -71,7 +71,7 @@ class GuestRestrictionDialog extends StatelessWidget {
                 Text(
                   customMessage ??
                       localization.translate('guest.restrictions.message'),
-                  style: AppStyles.bodyMedium.copyWith(
+                  style: AppStyles.bodyMediumWithContext(context).copyWith(
                     color: AppColors.textSecondary,
                     height: 1.5,
                   ),

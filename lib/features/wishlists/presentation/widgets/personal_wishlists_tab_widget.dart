@@ -62,8 +62,8 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 100,
-              height: 100,
+              width: 75,
+              height: 75,
               decoration: BoxDecoration(
                 gradient: AppColors.primaryGradient,
                 shape: BoxShape.circle,
@@ -77,11 +77,11 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
               ),
               child: Icon(
                 Icons.favorite_border_rounded,
-                size: 48,
+                size: 36,
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Text(
               localization.translate('wishlists.noWishlistsYet'),
               style: AppStyles.headingMedium.copyWith(

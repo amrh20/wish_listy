@@ -22,29 +22,13 @@ class GuestEventsView extends StatefulWidget {
 }
 
 class _GuestEventsViewState extends State<GuestEventsView> {
-  final TextEditingController _searchController = TextEditingController();
-  List<EventSummary> _searchResults = [];
-  bool _isSearching = false;
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_isSearching &&
-        _searchResults.isEmpty &&
-        _searchController.text.isNotEmpty) {
-      return _buildEmptySearch();
+    if (widget.publicEvents.isEmpty) {
+      return _buildEmptyState();
     }
 
-    if (_isSearching && _searchResults.isNotEmpty) {
-      return _buildSearchResults();
-    }
-
-    return _buildEmptyState();
+    return _buildEventsList();
   }
 
   Widget _buildEmptyState() {
@@ -53,20 +37,31 @@ class _GuestEventsViewState extends State<GuestEventsView> {
       child: Column(
         children: [
           const SizedBox(height: 60),
-          Icon(Icons.event_outlined, size: 80, color: AppColors.textTertiary),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.event_outlined,
+              size: 64,
+              color: AppColors.primary,
+            ),
+          ),
           const SizedBox(height: 24),
           Text(
-            widget.localization.translate('guest.events.empty.title'),
-            style: AppStyles.heading4.copyWith(
-              color: AppColors.textPrimary,
+            'No Public Events Yet',
+            style: AppStyles.headingMediumWithContext(context).copyWith(
               fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
           Text(
-            widget.localization.translate('guest.events.empty.description'),
-            style: AppStyles.bodyMedium.copyWith(
+            'Be the first to create an event! Sign up to organize events and invite friends.',
+            style: AppStyles.bodyMediumWithContext(context).copyWith(
               color: AppColors.textSecondary,
               height: 1.5,
             ),
@@ -74,59 +69,25 @@ class _GuestEventsViewState extends State<GuestEventsView> {
           ),
           const SizedBox(height: 32),
           CustomButton(
-            text: widget.localization.translate(
-              'guest.events.empty.searchPlaceholder',
-            ),
-            onPressed: () => _showSearch(),
-            variant: ButtonVariant.gradient,
-            icon: Icons.search,
-          ),
-          const SizedBox(height: 20),
-          CustomButton(
-            text: widget.localization.translate(
-              'guest.quickActions.loginForMore',
-            ),
+            text: 'Sign Up to Create Events',
             onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.login);
+              Navigator.pushNamed(context, AppRoutes.signup);
             },
-            variant: ButtonVariant.outline,
-            icon: Icons.login,
+            variant: ButtonVariant.gradient,
+            gradientColors: [AppColors.primary, AppColors.secondary],
+            size: ButtonSize.large,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptySearch() {
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off, size: 64, color: AppColors.textTertiary),
-          const SizedBox(height: 16),
-          Text(
-            widget.localization.translate('guest.events.search.noResults'),
-            style: AppStyles.heading4.copyWith(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            widget.localization.translate(
-              'guest.events.search.noResultsDescription',
-            ),
-            style: AppStyles.bodyMedium.copyWith(color: AppColors.textTertiary),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchResults() {
+  Widget _buildEventsList() {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _searchResults.length,
+      itemCount: widget.publicEvents.length,
       itemBuilder: (context, index) {
-        return _buildGuestEventCard(_searchResults[index]);
+        return _buildGuestEventCard(widget.publicEvents[index]);
       },
     );
   }
@@ -171,7 +132,7 @@ class _GuestEventsViewState extends State<GuestEventsView> {
                   children: [
                     Text(
                       event.name,
-                      style: AppStyles.bodyLarge.copyWith(
+                      style: AppStyles.bodyLargeWithContext(context).copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -179,7 +140,7 @@ class _GuestEventsViewState extends State<GuestEventsView> {
                       const SizedBox(height: 4),
                       Text(
                         '${widget.localization.translate('common.by')} ${event.hostName}',
-                        style: AppStyles.bodySmall.copyWith(
+                        style: AppStyles.bodySmallWithContext(context).copyWith(
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -191,14 +152,14 @@ class _GuestEventsViewState extends State<GuestEventsView> {
                 children: [
                   Text(
                     '${event.date.day}',
-                    style: AppStyles.heading4.copyWith(
+                    style: AppStyles.heading4WithContext(context).copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
                     _getMonthName(event.date.month),
-                    style: AppStyles.caption.copyWith(
+                    style: AppStyles.captionWithContext(context).copyWith(
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -210,7 +171,7 @@ class _GuestEventsViewState extends State<GuestEventsView> {
           if (event.description != null) ...[
             Text(
               event.description!,
-              style: AppStyles.bodyMedium.copyWith(
+              style: AppStyles.bodyMediumWithContext(context).copyWith(
                 color: AppColors.textSecondary,
                 height: 1.4,
               ),
@@ -230,7 +191,7 @@ class _GuestEventsViewState extends State<GuestEventsView> {
                 const SizedBox(width: 4),
                 Text(
                   event.location!,
-                  style: AppStyles.bodySmall.copyWith(
+                  style: AppStyles.bodySmallWithContext(context).copyWith(
                     color: AppColors.textTertiary,
                   ),
                 ),
@@ -283,11 +244,15 @@ class _GuestEventsViewState extends State<GuestEventsView> {
           children: [
             Text(
               value,
-              style: AppStyles.bodySmall.copyWith(fontWeight: FontWeight.w600),
+              style: AppStyles.bodySmallWithContext(context).copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             Text(
               label,
-              style: AppStyles.caption.copyWith(color: AppColors.textTertiary),
+              style: AppStyles.captionWithContext(context).copyWith(
+                color: AppColors.textTertiary,
+              ),
             ),
           ],
         ),
@@ -295,149 +260,6 @@ class _GuestEventsViewState extends State<GuestEventsView> {
     );
   }
 
-  void _showSearch() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7,
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        child: Column(
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.localization.translate('guest.events.search.title'),
-                    style: AppStyles.heading4.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: widget.localization.translate(
-                        'guest.events.empty.searchPlaceholder',
-                      ),
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onChanged: _performSearch,
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: _isSearching && _searchResults.isNotEmpty
-                  ? ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: _searchResults.length,
-                      itemBuilder: (context, index) {
-                        return _buildGuestEventCard(_searchResults[index]);
-                      },
-                    )
-                  : _searchController.text.isEmpty
-                  ? _buildSearchSuggestions()
-                  : _buildEmptySearch(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchSuggestions() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            widget.localization.translate('guest.events.search.popular'),
-            style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildSearchChip(
-                widget.localization.translate('events.birthday'),
-              ),
-              _buildSearchChip(widget.localization.translate('events.wedding')),
-              _buildSearchChip(
-                widget.localization.translate('events.graduation'),
-              ),
-              _buildSearchChip(widget.localization.translate('events.other')),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSearchChip(String text) {
-    return GestureDetector(
-      onTap: () {
-        _searchController.text = text;
-        _performSearch(text);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-        ),
-        child: Text(
-          text,
-          style: AppStyles.bodySmall.copyWith(color: AppColors.primary),
-        ),
-      ),
-    );
-  }
-
-  void _performSearch(String query) {
-    setState(() {
-      _isSearching = query.isNotEmpty;
-      if (query.isEmpty) {
-        _searchResults.clear();
-      } else {
-        // Simple search simulation
-        _searchResults = widget.publicEvents
-            .where(
-              (event) =>
-                  event.name.toLowerCase().contains(query.toLowerCase()) ||
-                  (event.description?.toLowerCase().contains(
-                        query.toLowerCase(),
-                      ) ??
-                      false),
-            )
-            .toList();
-      }
-    });
-  }
 
   void _showGuestEventDetails(EventSummary event) {
     GuestRestrictionDialog.show(context, 'Event Details');

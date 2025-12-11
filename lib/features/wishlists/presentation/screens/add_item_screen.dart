@@ -11,6 +11,9 @@ import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
+import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
+import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 
 class AddItemScreen extends StatefulWidget {
   final String? wishlistId;
@@ -112,8 +115,7 @@ class _AddItemScreenState extends State<AddItemScreen>
     }
   }
 
-  /// Load existing wish data for editing using:
-  /// GET /api/items/wishlist/:wishlistId
+  /// Load existing wish data for editing
   Future<void> _loadItemForEditing() async {
     setState(() {
       _isLoading = true;
@@ -125,15 +127,89 @@ class _AddItemScreenState extends State<AddItemScreen>
         'wishlistId=$_selectedWishlist, itemId=$_editingItemId',
       );
 
-      final itemsData = await _wishlistRepository.getItemsForWishlist(
-        _selectedWishlist,
-      );
+      // Check if user is guest
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      Map<String, dynamic> itemData = {};
+      
+      if (authService.isGuest) {
+        // Load from local storage for guests
+        debugPrint('👤 AddItemScreen: Loading guest item from Hive');
+        debugPrint('   WishlistId: $_selectedWishlist');
+        debugPrint('   ItemId: $_editingItemId');
+        
+        final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+        final items = await guestDataRepo.getWishlistItems(_selectedWishlist);
+        
+        debugPrint('   Found ${items.length} items in wishlist');
+        
+        // Find the specific item by ID
+        final item = items.firstWhere(
+          (item) => item.id == _editingItemId,
+          orElse: () {
+            debugPrint('❌ AddItemScreen: Item $_editingItemId not found in wishlist $_selectedWishlist');
+            throw Exception('Item not found in local storage');
+          },
+        );
+        
+        debugPrint('✅ AddItemScreen: Found item: ${item.name}');
+        
+        // Convert WishlistItem to Map format
+        // Parse description to extract storeName, storeLocation, and notes if they were stored there
+        String? description = item.description;
+        String? storeName;
+        String? storeLocation;
+        String? notes;
+        
+        // Try to parse extra info from description (format: "description | storeName: value | storeLocation: value | notes: value")
+        if (description != null && description.contains(' | ')) {
+          final parts = description.split(' | ');
+          final mainDescriptionParts = <String>[];
+          
+          for (final part in parts) {
+            if (part.startsWith('storeName:')) {
+              storeName = part.substring('storeName:'.length).trim();
+            } else if (part.startsWith('storeLocation:')) {
+              storeLocation = part.substring('storeLocation:'.length).trim();
+            } else if (part.startsWith('notes:')) {
+              notes = part.substring('notes:'.length).trim();
+            } else {
+              mainDescriptionParts.add(part);
+            }
+          }
+          
+          // Reconstruct description without the extra info
+          description = mainDescriptionParts.isEmpty ? null : mainDescriptionParts.join(' | ');
+        }
+        
+        itemData = {
+          'id': item.id,
+          'name': item.name,
+          'description': description,
+          'url': item.link,
+          'link': item.link,
+          'image_url': item.imageUrl,
+          'priority': item.priority.toString().split('.').last,
+          'status': item.status.toString().split('.').last,
+          'storeName': storeName,
+          'storeLocation': storeLocation,
+          'notes': notes,
+        };
+      } else {
+        // Load from API for authenticated users
+        final List<Map<String, dynamic>> itemsData = await _wishlistRepository.getItemsForWishlist(
+          _selectedWishlist,
+        );
 
-      // Find the specific wish by ID
-      final itemData = itemsData.firstWhere((item) {
-        final id = item['id']?.toString() ?? item['_id']?.toString() ?? '';
-        return id == _editingItemId;
-      }, orElse: () => <String, dynamic>{});
+        // Find the specific wish by ID
+        final foundItem = itemsData.firstWhere(
+          (item) {
+            final id = item['id']?.toString() ?? item['_id']?.toString() ?? '';
+            return id == _editingItemId;
+          },
+          orElse: () => <String, dynamic>{},
+        );
+        itemData = foundItem;
+      }
 
       if (itemData.isEmpty) {
         debugPrint(
@@ -183,6 +259,13 @@ class _AddItemScreenState extends State<AddItemScreen>
       }
 
       debugPrint('✅ AddItemScreen: Loaded wish data for editing');
+      
+      // Ensure setState is called to update UI after loading
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     } on ApiException catch (e) {
       debugPrint(
         '❌ AddItemScreen: Error loading wish for editing: ${e.message}',
@@ -224,6 +307,44 @@ class _AddItemScreenState extends State<AddItemScreen>
       debugPrint(
         '❌ AddItemScreen: Unexpected error loading wish for editing: $e',
       );
+      debugPrint('   Error type: ${e.runtimeType}');
+      debugPrint('   Stack trace: ${StackTrace.current}');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    e.toString().contains('Exception')
+                        ? e.toString().replaceFirst('Exception: ', '')
+                        : 'Failed to load item details. Please try again.',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -233,18 +354,44 @@ class _AddItemScreenState extends State<AddItemScreen>
     }
   }
 
-  /// Load wishlists from API
+  /// Load wishlists from API or local storage
   Future<void> _loadWishlists() async {
     setState(() {
       _isLoadingWishlists = true;
     });
 
     try {
-      debugPrint('📡 AddItemScreen: Loading wishlists...');
-      final wishlistsData = await _wishlistRepository.getWishlists();
-      debugPrint(
-        '📡 AddItemScreen: Received ${wishlistsData.length} wishlists',
-      );
+      // Check if user is guest
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      List<Map<String, dynamic>> wishlistsData;
+      
+      if (authService.isGuest) {
+        // Load from local storage for guests
+        debugPrint('👤 AddItemScreen: Loading guest wishlists from local storage...');
+        final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+        final wishlists = await guestDataRepo.getAllWishlists();
+        
+        // Convert Wishlist models to Map format for consistency
+        wishlistsData = wishlists.map((wishlist) {
+          return {
+            'id': wishlist.id,
+            '_id': wishlist.id,
+            'name': wishlist.name,
+            'description': wishlist.description,
+            'privacy': wishlist.visibility.toString().split('.').last,
+            'category': 'general',
+          };
+        }).toList();
+        
+        debugPrint('✅ AddItemScreen: Loaded ${wishlistsData.length} guest wishlists');
+      } else {
+        // Load from API for authenticated users
+        debugPrint('📡 AddItemScreen: Loading wishlists from API...');
+        wishlistsData = await _wishlistRepository.getWishlists();
+        debugPrint(
+          '📡 AddItemScreen: Received ${wishlistsData.length} wishlists',
+        );
+      }
 
       setState(() {
         _wishlists = wishlistsData;
@@ -1198,38 +1345,188 @@ class _AddItemScreenState extends State<AddItemScreen>
       debugPrint('   Priority: $_selectedPriority');
       debugPrint('   WishlistId: $_selectedWishlist');
 
-      if (_isEditing && _editingItemId != null) {
-        // Call API to update existing wish
-        final updateResponse = await _wishlistRepository.updateItem(
-          itemId: _editingItemId!,
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim().isEmpty
+      // Check if user is guest
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      
+      if (authService.isGuest) {
+        // Save to local storage for guests
+        final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+        
+        // Parse priority
+        ItemPriority priority = ItemPriority.medium;
+        switch (_selectedPriority) {
+          case 'low':
+            priority = ItemPriority.low;
+            break;
+          case 'high':
+            priority = ItemPriority.high;
+            break;
+          case 'urgent':
+            priority = ItemPriority.urgent;
+            break;
+          default:
+            priority = ItemPriority.medium;
+        }
+        
+        if (_isEditing && _editingItemId != null) {
+          // Update existing item
+          debugPrint('👤 AddItemScreen: Updating guest item in Hive');
+          debugPrint('   WishlistId: $_selectedWishlist');
+          debugPrint('   ItemId: $_editingItemId');
+          
+          try {
+            final existingItems = await guestDataRepo.getWishlistItems(_selectedWishlist);
+            debugPrint('   Found ${existingItems.length} items in wishlist');
+            
+            final existingItem = existingItems.firstWhere(
+              (item) => item.id == _editingItemId,
+              orElse: () {
+                debugPrint('❌ AddItemScreen: Item $_editingItemId not found for update');
+                throw Exception('Item not found in local storage');
+              },
+            );
+            
+            debugPrint('✅ AddItemScreen: Found existing item: ${existingItem.name}');
+            
+            // Build description that includes storeName, storeLocation, and notes if needed
+            // For guest users, we'll store additional info in description as JSON-like string
+            String? finalDescription = _descriptionController.text.trim().isEmpty
+                ? null
+                : _descriptionController.text.trim();
+            
+            // If we have storeName, storeLocation, or notes, append them to description
+            // This is a workaround since WishlistItem model doesn't have these fields
+            // In the future, we should extend the model to include them
+            if (storeName != null || storeLocation != null || notes != null) {
+              final extraInfo = <String, String?>{};
+              if (storeName != null && storeName.isNotEmpty) extraInfo['storeName'] = storeName;
+              if (storeLocation != null && storeLocation.isNotEmpty) extraInfo['storeLocation'] = storeLocation;
+              if (notes != null && notes.isNotEmpty) extraInfo['notes'] = notes;
+              
+              // Append extra info to description (simple format for now)
+              if (finalDescription == null || finalDescription.isEmpty) {
+                finalDescription = extraInfo.entries
+                    .where((e) => e.value != null && e.value!.isNotEmpty)
+                    .map((e) => '${e.key}: ${e.value}')
+                    .join(' | ');
+              } else {
+                finalDescription = '$finalDescription | ${extraInfo.entries
+                    .where((e) => e.value != null && e.value!.isNotEmpty)
+                    .map((e) => '${e.key}: ${e.value}')
+                    .join(' | ')}';
+              }
+            }
+            
+            // Ensure name is not empty
+            final itemName = _nameController.text.trim();
+            if (itemName.isEmpty) {
+              throw Exception('Item name cannot be empty');
+            }
+            
+            // Preserve existing item's status and createdAt
+            final updatedItem = existingItem.copyWith(
+              name: itemName,
+              description: finalDescription,
+              link: url,
+              priority: priority,
+              status: existingItem.status, // Preserve status
+              createdAt: existingItem.createdAt, // Preserve createdAt
+              updatedAt: DateTime.now(),
+            );
+            
+            debugPrint('   Updated item name: ${updatedItem.name}');
+            debugPrint('   Updated item link: ${updatedItem.link}');
+            debugPrint('   Updated item priority: ${updatedItem.priority}');
+            debugPrint('   Preserved status: ${updatedItem.status}');
+            debugPrint('   Preserved createdAt: ${updatedItem.createdAt}');
+            
+            await guestDataRepo.updateWishlistItem(updatedItem);
+            debugPrint('✅ AddItemScreen: Guest wish updated successfully in Hive');
+            debugPrint('   Updated description: $finalDescription');
+          } catch (e) {
+            debugPrint('❌ AddItemScreen: Error updating guest item: $e');
+            debugPrint('   Error type: ${e.runtimeType}');
+            rethrow; // Re-throw to be caught by outer catch block
+          }
+        } else {
+          // Add new item
+          // Build description that includes storeName, storeLocation, and notes if needed
+          String? finalDescription = _descriptionController.text.trim().isEmpty
               ? null
-              : _descriptionController.text.trim(),
-          url: url,
-          storeName: storeName,
-          storeLocation: storeLocation,
-          notes: notes,
-          priority: _selectedPriority,
-          wishlistId: _selectedWishlist,
-        );
-        debugPrint('✅ AddItemScreen: Wish updated successfully');
-        debugPrint('   Response: $updateResponse');
+              : _descriptionController.text.trim();
+          
+          // If we have storeName, storeLocation, or notes, append them to description
+          if (storeName != null || storeLocation != null || notes != null) {
+            final extraInfo = <String, String?>{};
+            if (storeName != null && storeName.isNotEmpty) extraInfo['storeName'] = storeName;
+            if (storeLocation != null && storeLocation.isNotEmpty) extraInfo['storeLocation'] = storeLocation;
+            if (notes != null && notes.isNotEmpty) extraInfo['notes'] = notes;
+            
+            // Append extra info to description
+            if (finalDescription == null || finalDescription.isEmpty) {
+              finalDescription = extraInfo.entries
+                  .where((e) => e.value != null && e.value!.isNotEmpty)
+                  .map((e) => '${e.key}: ${e.value}')
+                  .join(' | ');
+            } else {
+              finalDescription = '$finalDescription | ${extraInfo.entries
+                  .where((e) => e.value != null && e.value!.isNotEmpty)
+                  .map((e) => '${e.key}: ${e.value}')
+                  .join(' | ')}';
+            }
+          }
+          
+          final newItem = WishlistItem(
+            id: '', // Will be generated by repository
+            wishlistId: _selectedWishlist,
+            name: _nameController.text.trim(),
+            description: finalDescription,
+            link: url,
+            priority: priority,
+            status: ItemStatus.desired,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+          
+          await guestDataRepo.addWishlistItem(_selectedWishlist, newItem);
+          debugPrint('✅ AddItemScreen: Guest wish added successfully');
+          debugPrint('   Description with extra info: $finalDescription');
+        }
       } else {
-        // Call API to add wish
-        await _wishlistRepository.addItemToWishlist(
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim().isEmpty
-              ? null
-              : _descriptionController.text.trim(),
-          url: url,
-          storeName: storeName,
-          storeLocation: storeLocation,
-          notes: notes,
-          priority: _selectedPriority,
-          wishlistId: _selectedWishlist,
-        );
-        debugPrint('✅ AddItemScreen: Wish added successfully');
+        // Save via API for authenticated users
+        if (_isEditing && _editingItemId != null) {
+          // Call API to update existing wish
+          final updateResponse = await _wishlistRepository.updateItem(
+            itemId: _editingItemId!,
+            name: _nameController.text.trim(),
+            description: _descriptionController.text.trim().isEmpty
+                ? null
+                : _descriptionController.text.trim(),
+            url: url,
+            storeName: storeName,
+            storeLocation: storeLocation,
+            notes: notes,
+            priority: _selectedPriority,
+            wishlistId: _selectedWishlist,
+          );
+          debugPrint('✅ AddItemScreen: Wish updated successfully');
+          debugPrint('   Response: $updateResponse');
+        } else {
+          // Call API to add wish
+          await _wishlistRepository.addItemToWishlist(
+            name: _nameController.text.trim(),
+            description: _descriptionController.text.trim().isEmpty
+                ? null
+                : _descriptionController.text.trim(),
+            url: url,
+            storeName: storeName,
+            storeLocation: storeLocation,
+            notes: notes,
+            priority: _selectedPriority,
+            wishlistId: _selectedWishlist,
+          );
+          debugPrint('✅ AddItemScreen: Wish added successfully');
+        }
       }
 
       if (mounted) {
@@ -1281,8 +1578,12 @@ class _AddItemScreenState extends State<AddItemScreen>
       // Handle unexpected errors
       debugPrint('❌ AddItemScreen: Unexpected error: $e');
       debugPrint('   Stack trace: $stackTrace');
+      debugPrint('   Error type: ${e.runtimeType}');
+      
       if (mounted) {
         setState(() => _isLoading = false);
+        
+        // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -1291,7 +1592,9 @@ class _AddItemScreenState extends State<AddItemScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'An unexpected error occurred. Please try again.',
+                    e.toString().contains('Exception')
+                        ? e.toString().replaceFirst('Exception: ', '')
+                        : 'Failed to save item. Please try again.',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
@@ -1303,8 +1606,12 @@ class _AddItemScreenState extends State<AddItemScreen>
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
-            width: 320,
-            margin: const EdgeInsets.only(top: 60, right: 16),
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -1367,7 +1674,7 @@ class _AddItemScreenState extends State<AddItemScreen>
 
   /// Show success message for editing wish (with SnackBar and redirect)
   void _showEditSuccessMessage(LocalizationService localization) {
-    // Show success SnackBar at top right
+    // Show success SnackBar
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -1392,8 +1699,7 @@ class _AddItemScreenState extends State<AddItemScreen>
         backgroundColor: AppColors.success,
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
-        width: 320,
-        margin: const EdgeInsets.only(top: 60, right: 16),
+        margin: const EdgeInsets.only(top: 60, left: 16, right: 16, bottom: 0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );

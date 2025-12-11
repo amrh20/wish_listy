@@ -4,6 +4,7 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/core/widgets/custom_button.dart';
 
 /// Model for public wishlist
 class PublicWishlist {
@@ -120,7 +121,7 @@ class _GuestWishlistsViewWidgetState extends State<GuestWishlistsViewWidget> {
                 Expanded(
                   child: Text(
                     localization.translate('auth.signInToCreateWishlists'),
-                    style: AppStyles.bodyMedium.copyWith(
+                    style: AppStyles.bodyMediumWithContext(context).copyWith(
                       color: AppColors.primary,
                     ),
                   ),
@@ -154,7 +155,7 @@ class _GuestWishlistsViewWidgetState extends State<GuestWishlistsViewWidget> {
           if (_isSearching && _searchResults.isNotEmpty) ...[
             Text(
               localization.translate('wishlists.searchResults'),
-              style: AppStyles.headingSmall.copyWith(
+              style: AppStyles.headingSmallWithContext(context).copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -165,7 +166,7 @@ class _GuestWishlistsViewWidgetState extends State<GuestWishlistsViewWidget> {
           ] else if (!_isSearching && widget.publicWishlists.isNotEmpty) ...[
             Text(
               localization.translate('wishlists.publicWishlists'),
-              style: AppStyles.headingSmall.copyWith(
+              style: AppStyles.headingSmallWithContext(context).copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -174,22 +175,51 @@ class _GuestWishlistsViewWidgetState extends State<GuestWishlistsViewWidget> {
                 .map((wishlist) => _buildWishlistCard(wishlist, localization))
                 .toList(),
           ] else ...[
+            // Improved empty state with suggestions
             Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Column(
                   children: [
-                    Icon(
-                      Icons.search_off_rounded,
-                      size: 64,
-                      color: AppColors.textTertiary,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      localization.translate('wishlists.noResultsFound'),
-                      style: AppStyles.bodyLarge.copyWith(
-                        color: AppColors.textSecondary,
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
                       ),
+                      child: Icon(
+                        Icons.favorite_border_rounded,
+                        size: 64,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'No Public Wishlists Yet',
+                      style: AppStyles.headingMediumWithContext(context).copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Be the first to share your wishlist! Sign up to create and share your wishlists with friends.',
+                      style: AppStyles.bodyMediumWithContext(context).copyWith(
+                        color: AppColors.textSecondary,
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    CustomButton(
+                      text: 'Sign Up to Create Wishlists',
+                      onPressed: () {
+                        Navigator.pushNamed(context, AppRoutes.signup);
+                      },
+                      variant: ButtonVariant.gradient,
+                      gradientColors: [AppColors.primary, AppColors.secondary],
+                      size: ButtonSize.large,
                     ),
                   ],
                 ),
@@ -231,21 +261,23 @@ class _GuestWishlistsViewWidgetState extends State<GuestWishlistsViewWidget> {
         ),
         title: Text(
           wishlist.name,
-          style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
+          style: AppStyles.bodyLargeWithContext(context).copyWith(
+            fontWeight: FontWeight.bold,
+          ),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               '${localization.translate("wishlists.by")} ${wishlist.ownerName}',
-              style: AppStyles.bodySmall.copyWith(
+              style: AppStyles.bodySmallWithContext(context).copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               '${wishlist.itemCount} ${wishlist.itemCount == 1 ? "Wish" : "Wishes"} • ${localization.translate("wishlists.updated")} ${_formatDate(wishlist.lastUpdated)}',
-              style: AppStyles.bodySmall.copyWith(
+              style: AppStyles.bodySmallWithContext(context).copyWith(
                 color: AppColors.textTertiary,
               ),
             ),

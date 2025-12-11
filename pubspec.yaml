@@ -32,6 +32,8 @@ dependencies:
   
   # Local storage
   shared_preferences: ^2.2.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
   
   # Google Fonts for Cairo font
   google_fonts: ^6.1.0
@@ -58,6 +60,7 @@ dev_dependencies:
   # Testing utilities
   mockito: ^5.4.4
   build_runner: ^2.4.7
+  hive_generator: ^2.0.1
   
   # Code generation
   json_annotation: ^4.8.1
