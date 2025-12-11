@@ -131,10 +131,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         // For authenticated users - show full interface with API data
         return Scaffold(
           backgroundColor: AppColors.background,
-          floatingActionButton: WishlistFabWidget(
-            onCreatePersonalWishlist: () =>
-                _navigateToCreateWishlist(isEvent: false),
-          ),
           body: UnifiedPageBackground(
             child: DecorativeBackground(
               showGifts: true,
@@ -151,6 +147,20 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                     onSearchChanged: (query) {
                       _onSearchChanged(query);
                     },
+                    actions: authService.isGuest
+                        ? null
+                        : [
+                            HeaderAction(
+                              icon: Icons.add_rounded,
+                              iconColor: AppColors.primary,
+                              onTap: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.createWishlist,
+                                );
+                              },
+                            ),
+                          ],
                     // Hide tabs completely for guest users
                     tabs: authService.isGuest
                         ? null

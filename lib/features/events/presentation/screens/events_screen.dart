@@ -423,6 +423,18 @@ class EventsScreenState extends State<EventsScreen>
                     onSearchChanged: (query) {
                       // Search is handled by listener
                     },
+                    actions: [
+                      HeaderAction(
+                        icon: Icons.add_rounded,
+                        iconColor: AppColors.primary,
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.createEvent,
+                          );
+                        },
+                      ),
+                    ],
                     tabs: [
                       UnifiedTab(
                         label: localization.translate('events.myEvents'),
@@ -467,15 +479,6 @@ class EventsScreenState extends State<EventsScreen>
                 ],
               ),
             ),
-          ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.createEvent);
-            },
-            backgroundColor: AppColors.accent,
-            foregroundColor: Colors.white,
-            heroTag: 'events_fab',
-            child: Icon(Icons.add_rounded),
           ),
         );
       },

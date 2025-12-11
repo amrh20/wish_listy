@@ -81,7 +81,7 @@ class UnifiedPageHeader extends StatelessWidget {
       margin: EdgeInsets.only(
         left: 8,
         right: 8,
-        top: 16,
+        top: 12,
         bottom: calculatedBottomMargin,
       ),
       decoration: BoxDecoration(
@@ -110,7 +110,7 @@ class UnifiedPageHeader extends StatelessWidget {
                   const EdgeInsets.only(
                     left: 20,
                     right: 20,
-                    top: 24,
+                    top: 16,
                     bottom: 24,
                   ),
               child: SafeArea(
@@ -141,7 +141,7 @@ class UnifiedPageHeader extends StatelessWidget {
                                 style: AppStyles.headingLarge.copyWith(
                                   color: AppColors.textPrimary,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 28,
+                                  fontSize: 24,
                                 ),
                               ),
                               if (subtitle != null) ...[
@@ -169,13 +169,13 @@ class UnifiedPageHeader extends StatelessWidget {
 
                     // Search Bar
                     if (showSearch) ...[
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 12),
                       _buildSearchBar(),
                     ],
 
                     // Integrated Tabs
                     if (tabs != null && tabs!.isNotEmpty) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       _buildIntegratedTabs(),
                     ],
 
@@ -276,24 +276,38 @@ class UnifiedPageHeader extends StatelessWidget {
   }
 
   Widget _buildActionButton(HeaderAction action) {
+    final iconColor = action.iconColor ?? AppColors.textPrimary;
+    
     return Padding(
       padding: const EdgeInsets.only(left: 8),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: action.onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: Container(
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                colors: [
+                  iconColor,
+                  iconColor.withOpacity(0.7),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: iconColor.withOpacity(0.3),
+                width: 1.5,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.textTertiary.withOpacity(0.1),
+                  color: iconColor.withOpacity(0.25),
                   offset: const Offset(0, 2),
                   blurRadius: 8,
+                  spreadRadius: 0,
                 ),
               ],
             ),
@@ -302,7 +316,7 @@ class UnifiedPageHeader extends StatelessWidget {
                 Center(
                   child: Icon(
                     action.icon,
-                    color: action.iconColor ?? AppColors.textPrimary,
+                    color: Colors.white,
                     size: 22,
                   ),
                 ),

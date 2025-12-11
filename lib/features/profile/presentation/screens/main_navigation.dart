@@ -172,146 +172,25 @@ class _MainNavigationState extends State<MainNavigation>
               ),
             ),
             body: IndexedStack(index: _currentIndex, children: _screens),
-            floatingActionButton: _buildFloatingActionButton(),
-            floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           );
         } else {
           return Scaffold(
+            backgroundColor: Colors.white,
+            extendBody: true,
             body: IndexedStack(index: _currentIndex, children: _screens),
-            bottomNavigationBar: CustomBottomNavigation(
-              currentIndex: _currentIndex,
-              onTap: _onTabTapped,
+            bottomNavigationBar: Container(
+              color: Colors.transparent,
+              child: CustomBottomNavigation(
+                currentIndex: _currentIndex,
+                onTap: _onTabTapped,
+              ),
             ),
-            floatingActionButton: _buildFloatingActionButton(),
-            floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
           );
         }
       },
     );
   }
 
-  Widget? _buildFloatingActionButton() {
-    final authService = Provider.of<AuthRepository>(context, listen: false);
-
-    switch (_currentIndex) {
-      case 0: // Home
-        return null; // No FAB for Home screen
-      case 1: // Wishlists
-        return authService.isGuest ? null : _buildWishlistFAB();
-      case 2: // Events
-        return authService.isGuest ? null : _buildEventFAB();
-      case 3: // Friends
-        return authService.isGuest ? null : _buildFriendFAB();
-      case 4: // Profile
-        return authService.isGuest ? null : _buildProfileFAB();
-      default:
-        return null;
-    }
-  }
-
-  Widget _buildWishlistFAB() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppColors.accentGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: FloatingActionButton(
-        onPressed: () {
-          // Navigate to create wishlist
-          Navigator.pushNamed(context, '/create-wishlist');
-        },
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        heroTag: 'wishlist_fab_nav',
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
-      ),
-    );
-  }
-
-  Widget _buildEventFAB() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppColors.accentGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: FloatingActionButton(
-        onPressed: () {
-          // Navigate to create event
-          Navigator.pushNamed(context, '/create-event');
-        },
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        heroTag: 'event_fab',
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
-      ),
-    );
-  }
-
-  Widget _buildFriendFAB() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppColors.accentGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: FloatingActionButton(
-        onPressed: () {
-          // Navigate to add friend
-          Navigator.pushNamed(context, '/add-friend');
-        },
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        heroTag: 'friend_fab',
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
-      ),
-    );
-  }
-
-  Widget _buildProfileFAB() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppColors.accentGradient,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accent.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: FloatingActionButton(
-        onPressed: () {
-          // Navigate to edit profile
-          Navigator.pushNamed(context, '/edit-profile');
-        },
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        heroTag: 'profile_fab',
-        child: const Icon(Icons.edit, color: Colors.white, size: 28),
-      ),
-    );
-  }
 
   void _showLockedFeatureBottomSheet(
     BuildContext context,

@@ -174,26 +174,6 @@ class _ProfileScreenState extends State<ProfileScreen>
               ],
             ),
           ),
-          floatingActionButton: Container(
-            decoration: BoxDecoration(
-              color: AppColors.accent, // Hot Pink for FAB
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.accent.withOpacity(0.3),
-                  offset: const Offset(0, 6),
-                  blurRadius: 15,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: FloatingActionButton(
-              onPressed: _editProfile,
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              child: Icon(Icons.edit_outlined, color: Colors.white, size: 24),
-            ),
-          ),
         );
       },
     );
@@ -678,14 +658,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  void _editProfile() {
-    // Navigate to edit profile screen
-    Navigator.pushNamed(
-      context,
-      AppRoutes.profile,
-      arguments: {'userProfile': _userProfile},
-    );
-  }
 
   void _editPersonalInfo() {
     Navigator.pushNamed(

@@ -55,12 +55,17 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
   }
 
   Widget _buildEmptyState(LocalizationService localization) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          height: constraints.maxHeight,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
             Container(
               width: 75,
               height: 75,
@@ -81,7 +86,7 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
               localization.translate('wishlists.noWishlistsYet'),
               style: AppStyles.headingMedium.copyWith(
@@ -100,17 +105,20 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            if (onCreateWishlist != null)
-              CustomButton(
-                text: localization.translate('wishlists.createWishlist'),
-                onPressed: onCreateWishlist,
-                customColor: AppColors.primary,
-                icon: Icons.add_rounded,
+                  const SizedBox(height: 32),
+                  if (onCreateWishlist != null)
+                    CustomButton(
+                      text: localization.translate('wishlists.createWishlist'),
+                      onPressed: onCreateWishlist,
+                      customColor: AppColors.primary,
+                      icon: Icons.add_rounded,
+                    ),
+                ],
               ),
-          ],
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

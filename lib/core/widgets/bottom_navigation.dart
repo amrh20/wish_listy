@@ -57,7 +57,7 @@ class CustomBottomNavigation extends StatelessWidget {
             'isRestricted': true,
           },
         ];
-        
+
         // Map currentIndex directly (now we have 5 tabs matching 5 screens)
         final gNavIndex = currentIndex;
 
@@ -81,19 +81,25 @@ class CustomBottomNavigation extends StatelessWidget {
               child: GNav(
                 gap: 4,
                 color: AppColors.textTertiary, // Inactive icon/text color
-                activeColor: tabs[gNavIndex]['color'] as Color, // Active icon/text color
+                activeColor:
+                    tabs[gNavIndex]['color'] as Color, // Active icon/text color
                 iconSize: 22,
                 textStyle: AppStyles.bodySmall.copyWith(
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 duration: const Duration(milliseconds: 300),
-                tabBackgroundColor: (tabs[gNavIndex]['color'] as Color).withOpacity(0.15),
+                tabBackgroundColor: (tabs[gNavIndex]['color'] as Color)
+                    .withOpacity(0.15),
                 tabBorderRadius: 24,
                 curve: Curves.easeInOutCubic,
                 selectedIndex: gNavIndex,
                 haptic: true,
+                backgroundColor: Colors.transparent,
                 onTabChange: (index) {
                   // GNav indices now match screen indices directly (0-4)
                   // Always call onTap - main_navigation will handle restrictions and show lock sheet

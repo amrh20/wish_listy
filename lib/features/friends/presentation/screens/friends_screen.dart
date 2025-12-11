@@ -3,12 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
-import 'package:wish_listy/core/constants/bottom_sheet_vectors.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
-import 'package:wish_listy/core/widgets/decorated_bottom_sheet.dart';
 import 'package:wish_listy/core/widgets/unified_page_header.dart';
 import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
 import 'package:wish_listy/core/widgets/unified_page_container.dart';
@@ -157,13 +155,13 @@ class _FriendsScreenState extends State<FriendsScreen>
                     },
                     actions: [
                       HeaderAction(
-                        icon: Icons.sync_rounded,
-                        onTap: _syncContacts,
-                      ),
-                      HeaderAction(
-                        icon: Icons.more_vert_rounded,
+                        icon: Icons.add_rounded,
+                        iconColor: AppColors.primary,
                         onTap: () {
-                          _showOptionsMenu(context);
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.addFriend,
+                          );
                         },
                       ),
                     ],
@@ -211,54 +209,11 @@ class _FriendsScreenState extends State<FriendsScreen>
               ),
             ),
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: _showAddFriendDialog,
-            backgroundColor: AppColors.accent,
-            heroTag: 'friends_fab',
-            child: Icon(Icons.person_add_rounded, color: Colors.white),
-          ),
         );
       },
     );
   }
 
-  void _showOptionsMenu(BuildContext context) {
-    DecoratedBottomSheet.show(
-      context: context,
-      vectorType: BottomSheetVectorType.settings,
-      children: [
-        ListTile(
-          leading: Icon(
-            Icons.contact_page_outlined,
-            color: AppColors.textPrimary,
-          ),
-          title: Text(
-            'Import Contacts',
-            style: TextStyle(color: AppColors.textPrimary),
-          ),
-          onTap: () {
-            Navigator.pop(context);
-            _importContacts();
-          },
-        ),
-        ListTile(
-          leading: Icon(
-            Icons.privacy_tip_outlined,
-            color: AppColors.textPrimary,
-          ),
-          title: Text(
-            'Privacy Settings',
-            style: TextStyle(color: AppColors.textPrimary),
-          ),
-          onTap: () {
-            Navigator.pop(context);
-            _openPrivacySettings();
-          },
-        ),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
 
   Widget _buildMyFriendsTab(LocalizationService localization) {
     final filteredFriends = _getFilteredFriends();
@@ -840,23 +795,7 @@ class _FriendsScreenState extends State<FriendsScreen>
     );
   }
 
-  void _syncContacts() {
-    // Sync contacts functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Contacts synced successfully!'),
-        backgroundColor: AppColors.success,
-      ),
-    );
-  }
 
-  void _importContacts() {
-    // Import contacts functionality
-  }
-
-  void _openPrivacySettings() {
-    // Open privacy settings
-  }
 
   Future<void> _refreshFriends() async {
     // Refresh friends data
