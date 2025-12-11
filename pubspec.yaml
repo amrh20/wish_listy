@@ -49,6 +49,9 @@ dependencies:
   
   # Swipeable actions for list items
   flutter_slidable: ^3.1.1
+  
+  # Google Nav Bar for modern bottom navigation
+  google_nav_bar: ^5.0.7
 
 dev_dependencies:
   flutter_test:

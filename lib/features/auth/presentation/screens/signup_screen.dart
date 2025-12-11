@@ -278,496 +278,538 @@ class _SignupScreenState extends State<SignupScreen>
     );
   }
 
+  void _handleBackNavigation() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      // If no route to pop, navigate to login screen
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.login,
+        (route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
-        return Scaffold(
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppColors.authBackground, AppColors.surface],
+        return PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) async {
+            if (!didPop) {
+              _handleBackNavigation();
+            }
+          },
+          child: Scaffold(
+            body: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.authBackground, AppColors.surface],
+                ),
               ),
-            ),
-            child: Stack(
-              children: [
-                // Decorative Circles
-                ..._buildDecorativeCircles(),
-                // Content
-                SafeArea(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24.0),
-                    child: AnimatedBuilder(
-                      animation: _animationController,
-                      builder: (context, child) {
-                        return FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: SlideTransition(
-                            position: _slideAnimation,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                const SizedBox(height: 40),
+              child: Stack(
+                children: [
+                  // Decorative Circles
+                  ..._buildDecorativeCircles(),
+                  // Content
+                  SafeArea(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24.0),
+                      child: AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          return FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: SlideTransition(
+                              position: _slideAnimation,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const SizedBox(height: 40),
 
-                                // Top Row: Back Button and Language Toggle
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    // Back Button
-                                    IconButton(
-                                      onPressed: () {
-                                        AppRoutes.pushReplacementNamed(
-                                          context,
-                                          AppRoutes.login,
-                                        );
-                                      },
-                                      icon: const Icon(
-                                        Icons.arrow_back_ios,
-                                        color: Colors.black,
-                                      ),
-                                      style: IconButton.styleFrom(
-                                        backgroundColor: AppColors.surface,
-                                        padding: const EdgeInsets.all(12),
-                                      ),
-                                    ),
-
-                                    // Language Selection Dropdown
-                                    PopupMenuButton<String>(
-                                      onSelected: (languageCode) async {
-                                        await localization.changeLanguage(
-                                          languageCode,
-                                        );
-                                      },
-                                      color: Colors.white,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      itemBuilder: (context) => localization
-                                          .supportedLanguages
-                                          .map((language) {
-                                            final isSelected =
-                                                localization.currentLanguage ==
-                                                language['code'];
-                                            final languageCode =
-                                                language['code']!;
-                                            final displayCode =
-                                                languageCode == 'en'
-                                                ? 'en'
-                                                : 'ع';
-                                            return PopupMenuItem<String>(
-                                              value: languageCode,
-                                              child: Row(
-                                                children: [
-                                                  Text(
-                                                    displayCode,
-                                                    style: AppStyles.bodyMedium
-                                                        .copyWith(
-                                                          fontWeight: isSelected
-                                                              ? FontWeight.w600
-                                                              : FontWeight
-                                                                    .normal,
-                                                          color: Colors.black,
-                                                          fontSize: 16,
-                                                        ),
-                                                  ),
-                                                  const SizedBox(width: 12),
-                                                  Text(
-                                                    language['nativeName']!,
-                                                    style: AppStyles.bodyMedium
-                                                        .copyWith(
-                                                          fontWeight: isSelected
-                                                              ? FontWeight.w600
-                                                              : FontWeight
-                                                                    .normal,
-                                                          color: Colors.black,
-                                                        ),
-                                                  ),
-                                                  if (isSelected) ...[
-                                                    const Spacer(),
-                                                    Icon(
-                                                      Icons.check,
-                                                      color: AppColors.primary,
-                                                      size: 18,
-                                                    ),
-                                                  ],
-                                                ],
-                                              ),
-                                            );
-                                          })
-                                          .toList(),
-                                      child: AnimatedContainer(
-                                        duration: const Duration(
-                                          milliseconds: 200,
+                                  // Top Row: Back Button and Language Toggle
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      // Back Button
+                                      IconButton(
+                                        onPressed: _handleBackNavigation,
+                                        icon: const Icon(
+                                          Icons.arrow_back_ios,
+                                          color: Colors.black,
                                         ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
+                                        style: IconButton.styleFrom(
+                                          backgroundColor: AppColors.surface,
+                                          padding: const EdgeInsets.all(12),
+                                        ),
+                                      ),
+
+                                      // Language Selection Dropdown
+                                      PopupMenuButton<String>(
+                                        onSelected: (languageCode) async {
+                                          await localization.changeLanguage(
+                                            languageCode,
+                                          );
+                                        },
+                                        color: Colors.white,
+                                        shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
-                                          border: Border.all(
-                                            color: AppColors.border.withOpacity(
-                                              0.2,
-                                            ),
-                                            width: 1,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(
-                                                0.05,
-                                              ),
-                                              blurRadius: 10,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
                                         ),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(12),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                localization.currentLanguage ==
-                                                        'en'
-                                                    ? 'en'
-                                                    : 'ع',
-                                                style: AppStyles.bodyMedium
-                                                    .copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: Colors.black,
-                                                      fontSize: 16,
+                                        itemBuilder: (context) => localization
+                                            .supportedLanguages
+                                            .map((language) {
+                                              final isSelected =
+                                                  localization
+                                                      .currentLanguage ==
+                                                  language['code'];
+                                              final languageCode =
+                                                  language['code']!;
+                                              final displayCode =
+                                                  languageCode == 'en'
+                                                  ? 'en'
+                                                  : 'ع';
+                                              return PopupMenuItem<String>(
+                                                value: languageCode,
+                                                child: Row(
+                                                  children: [
+                                                    Text(
+                                                      displayCode,
+                                                      style: AppStyles
+                                                          .bodyMedium
+                                                          .copyWith(
+                                                            fontWeight:
+                                                                isSelected
+                                                                ? FontWeight
+                                                                      .w600
+                                                                : FontWeight
+                                                                      .normal,
+                                                            color: Colors.black,
+                                                            fontSize: 16,
+                                                          ),
                                                     ),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.language,
-                                                size: 20,
-                                                color: AppColors.primary,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Icon(
-                                                Icons.keyboard_arrow_down,
-                                                size: 16,
-                                                color: AppColors.textSecondary,
+                                                    const SizedBox(width: 12),
+                                                    Text(
+                                                      language['nativeName']!,
+                                                      style: AppStyles
+                                                          .bodyMedium
+                                                          .copyWith(
+                                                            fontWeight:
+                                                                isSelected
+                                                                ? FontWeight
+                                                                      .w600
+                                                                : FontWeight
+                                                                      .normal,
+                                                            color: Colors.black,
+                                                          ),
+                                                    ),
+                                                    if (isSelected) ...[
+                                                      const Spacer(),
+                                                      Icon(
+                                                        Icons.check,
+                                                        color:
+                                                            AppColors.primary,
+                                                        size: 18,
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                              );
+                                            })
+                                            .toList(),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            border: Border.all(
+                                              color: AppColors.border
+                                                  .withOpacity(0.2),
+                                              width: 1,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(
+                                                  0.05,
+                                                ),
+                                                blurRadius: 10,
+                                                offset: const Offset(0, 2),
                                               ),
                                             ],
                                           ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-
-                                const SizedBox(height: 40),
-
-                                // Header
-                                FadeTransition(
-                                  opacity: _welcomeFade,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      ShaderMask(
-                                        shaderCallback: (bounds) =>
-                                            LinearGradient(
-                                              colors: [
-                                                AppColors.primary,
-                                                AppColors.secondary,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(12),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  localization.currentLanguage ==
+                                                          'en'
+                                                      ? 'en'
+                                                      : 'ع',
+                                                  style: AppStyles.bodyMedium
+                                                      .copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: Colors.black,
+                                                        fontSize: 16,
+                                                      ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.language,
+                                                  size: 20,
+                                                  color: AppColors.primary,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.keyboard_arrow_down,
+                                                  size: 16,
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                ),
                                               ],
-                                            ).createShader(bounds),
-                                        child: Text(
-                                          'Create new account',
-                                          style: AppStyles.headingLarge
-                                              .copyWith(
-                                                fontSize: 30,
-                                                fontWeight: FontWeight.w800,
-                                                letterSpacing: -0.5,
-                                                color: Colors.white,
-                                                height: 1.2,
-                                              ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      FadeTransition(
-                                        opacity: _subtitleFade,
-                                        child: Text(
-                                          'Create and share your wishlists with friends and family',
-                                          style: AppStyles.bodyLarge.copyWith(
-                                            color: AppColors.textSecondary
-                                                .withOpacity(0.7),
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
 
-                                const SizedBox(height: 24),
+                                  const SizedBox(height: 40),
 
-                                // Signup Form
-                                FadeTransition(
-                                  opacity: _formFade,
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(24),
-                                    child: BackdropFilter(
-                                      filter: ImageFilter.blur(
-                                        sigmaX: 15,
-                                        sigmaY: 15,
-                                      ),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 24,
-                                          vertical: 32,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.5),
-                                          borderRadius: BorderRadius.circular(
-                                            24,
+                                  // Header
+                                  FadeTransition(
+                                    opacity: _welcomeFade,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        ShaderMask(
+                                          shaderCallback: (bounds) =>
+                                              LinearGradient(
+                                                colors: [
+                                                  AppColors.primary,
+                                                  AppColors.secondary,
+                                                ],
+                                              ).createShader(bounds),
+                                          child: Text(
+                                            'Create new account',
+                                            style: AppStyles.headingLarge
+                                                .copyWith(
+                                                  fontSize: 30,
+                                                  fontWeight: FontWeight.w800,
+                                                  letterSpacing: -0.5,
+                                                  color: Colors.white,
+                                                  height: 1.2,
+                                                ),
                                           ),
-                                          border: Border.all(
+                                        ),
+                                        const SizedBox(height: 8),
+                                        FadeTransition(
+                                          opacity: _subtitleFade,
+                                          child: Text(
+                                            'Create and share your wishlists with friends and family',
+                                            style: AppStyles.bodyLarge.copyWith(
+                                              color: AppColors.textSecondary
+                                                  .withOpacity(0.7),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 24),
+
+                                  // Signup Form
+                                  FadeTransition(
+                                    opacity: _formFade,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(24),
+                                      child: BackdropFilter(
+                                        filter: ImageFilter.blur(
+                                          sigmaX: 15,
+                                          sigmaY: 15,
+                                        ),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 24,
+                                            vertical: 32,
+                                          ),
+                                          decoration: BoxDecoration(
                                             color: Colors.white.withOpacity(
-                                              0.7,
+                                              0.5,
                                             ),
-                                            width: 1.5,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: AppColors.primary
-                                                  .withOpacity(0.08),
-                                              offset: const Offset(0, 8),
-                                              blurRadius: 24,
-                                              spreadRadius: 0,
+                                            borderRadius: BorderRadius.circular(
+                                              24,
                                             ),
-                                          ],
-                                        ),
-                                        child: Form(
-                                          key: _formKey,
-                                          child: Column(
-                                            children: [
-                                              // Full Name Field
-                                              _buildGlassInputField(
-                                                controller: _fullNameController,
-                                                label: 'Full Name',
-                                                hint: 'Full Name',
-                                                keyboardType:
-                                                    TextInputType.name,
-                                                prefixIcon:
-                                                    Icons.person_outline,
-                                                validator: (value) {
-                                                  if (value?.isEmpty ?? true) {
-                                                    return 'Please enter your full name';
-                                                  }
-                                                  if (value!.trim().length <
-                                                      2) {
-                                                    return 'Name must be at least 2 characters';
-                                                  }
-                                                  return null;
-                                                },
+                                            border: Border.all(
+                                              color: Colors.white.withOpacity(
+                                                0.7,
                                               ),
-
-                                              const SizedBox(height: 20),
-
-                                              // Email or Phone Field
-                                              _buildGlassInputField(
-                                                controller: _usernameController,
-                                                label: 'Email or Phone',
-                                                hint: 'Email or Phone',
-                                                keyboardType:
-                                                    TextInputType.text,
-                                                prefixIcon:
-                                                    Icons.person_outline,
-                                                validator: (value) {
-                                                  if (value?.isEmpty ?? true) {
-                                                    return 'Please enter email or phone';
-                                                  }
-                                                  final authRepository =
-                                                      Provider.of<
-                                                        AuthRepository
-                                                      >(context, listen: false);
-                                                  if (!authRepository
-                                                      .isValidUsername(
-                                                        value!,
-                                                      )) {
-                                                    return 'Invalid email or phone number';
-                                                  }
-                                                  return null;
-                                                },
-                                              ),
-
-                                              const SizedBox(height: 20),
-
-                                              // Password Field
-                                              _buildGlassInputField(
-                                                controller: _passwordController,
-                                                label: localization.translate(
-                                                  'auth.password',
-                                                ),
-                                                hint: localization.translate(
-                                                  'auth.enterPassword',
-                                                ),
-                                                obscureText: _obscurePassword,
-                                                prefixIcon: Icons.lock_outlined,
-                                                suffixIcon: IconButton(
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      _obscurePassword =
-                                                          !_obscurePassword;
-                                                    });
-                                                  },
-                                                  icon: Icon(
-                                                    _obscurePassword
-                                                        ? Icons
-                                                              .visibility_outlined
-                                                        : Icons
-                                                              .visibility_off_outlined,
-                                                    color:
-                                                        AppColors.textTertiary,
-                                                    size: 20,
-                                                  ),
-                                                ),
-                                                validator: (value) {
-                                                  if (value?.isEmpty ?? true) {
-                                                    return localization.translate(
-                                                      'auth.pleaseEnterPassword',
-                                                    );
-                                                  }
-                                                  if (value!.length < 6) {
-                                                    return localization.translate(
-                                                      'auth.passwordMinLength',
-                                                    );
-                                                  }
-                                                  return null;
-                                                },
-                                              ),
-
-                                              const SizedBox(height: 20),
-
-                                              // Confirm Password Field
-                                              _buildGlassInputField(
-                                                controller:
-                                                    _confirmPasswordController,
-                                                label: 'Confirm Password',
-                                                hint: 'Confirm Password',
-                                                obscureText:
-                                                    _obscureConfirmPassword,
-                                                prefixIcon: Icons.lock_outlined,
-                                                suffixIcon: IconButton(
-                                                  onPressed: () {
-                                                    setState(() {
-                                                      _obscureConfirmPassword =
-                                                          !_obscureConfirmPassword;
-                                                    });
-                                                  },
-                                                  icon: Icon(
-                                                    _obscureConfirmPassword
-                                                        ? Icons
-                                                              .visibility_outlined
-                                                        : Icons
-                                                              .visibility_off_outlined,
-                                                    color:
-                                                        AppColors.textTertiary,
-                                                    size: 20,
-                                                  ),
-                                                ),
-                                                validator: (value) {
-                                                  if (value?.isEmpty ?? true) {
-                                                    return 'Please confirm your password';
-                                                  }
-                                                  if (value !=
-                                                      _passwordController
-                                                          .text) {
-                                                    return 'Passwords do not match';
-                                                  }
-                                                  return null;
-                                                },
-                                              ),
-
-                                              const SizedBox(height: 32),
-
-                                              // Sign Up Button
-                                              FadeTransition(
-                                                opacity: _buttonFade,
-                                                child: CustomButton(
-                                                  text: 'Sign Up',
-                                                  onPressed:
-                                                      _isFormValid &&
-                                                          !_isLoading
-                                                      ? _handleSignup
-                                                      : null,
-                                                  isLoading: _isLoading,
-                                                  variant:
-                                                      ButtonVariant.gradient,
-                                                  gradientColors: [
-                                                    AppColors.primary,
-                                                    AppColors.info,
-                                                    AppColors.secondary,
-                                                  ],
-                                                ),
+                                              width: 1.5,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: AppColors.primary
+                                                    .withOpacity(0.08),
+                                                offset: const Offset(0, 8),
+                                                blurRadius: 24,
+                                                spreadRadius: 0,
                                               ),
                                             ],
+                                          ),
+                                          child: Form(
+                                            key: _formKey,
+                                            child: Column(
+                                              children: [
+                                                // Full Name Field
+                                                _buildGlassInputField(
+                                                  controller:
+                                                      _fullNameController,
+                                                  label: 'Full Name',
+                                                  hint: 'Full Name',
+                                                  keyboardType:
+                                                      TextInputType.name,
+                                                  prefixIcon:
+                                                      Icons.person_outline,
+                                                  validator: (value) {
+                                                    if (value?.isEmpty ??
+                                                        true) {
+                                                      return 'Please enter your full name';
+                                                    }
+                                                    if (value!.trim().length <
+                                                        2) {
+                                                      return 'Name must be at least 2 characters';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+
+                                                const SizedBox(height: 20),
+
+                                                // Email or Phone Field
+                                                _buildGlassInputField(
+                                                  controller:
+                                                      _usernameController,
+                                                  label: 'Email or Phone',
+                                                  hint: 'Email or Phone',
+                                                  keyboardType:
+                                                      TextInputType.text,
+                                                  prefixIcon:
+                                                      Icons.person_outline,
+                                                  validator: (value) {
+                                                    if (value?.isEmpty ??
+                                                        true) {
+                                                      return 'Please enter email or phone';
+                                                    }
+                                                    final authRepository =
+                                                        Provider.of<
+                                                          AuthRepository
+                                                        >(
+                                                          context,
+                                                          listen: false,
+                                                        );
+                                                    if (!authRepository
+                                                        .isValidUsername(
+                                                          value!,
+                                                        )) {
+                                                      return 'Invalid email or phone number';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+
+                                                const SizedBox(height: 20),
+
+                                                // Password Field
+                                                _buildGlassInputField(
+                                                  controller:
+                                                      _passwordController,
+                                                  label: localization.translate(
+                                                    'auth.password',
+                                                  ),
+                                                  hint: localization.translate(
+                                                    'auth.enterPassword',
+                                                  ),
+                                                  obscureText: _obscurePassword,
+                                                  prefixIcon:
+                                                      Icons.lock_outlined,
+                                                  suffixIcon: IconButton(
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        _obscurePassword =
+                                                            !_obscurePassword;
+                                                      });
+                                                    },
+                                                    icon: Icon(
+                                                      _obscurePassword
+                                                          ? Icons
+                                                                .visibility_outlined
+                                                          : Icons
+                                                                .visibility_off_outlined,
+                                                      color: AppColors
+                                                          .textTertiary,
+                                                      size: 20,
+                                                    ),
+                                                  ),
+                                                  validator: (value) {
+                                                    if (value?.isEmpty ??
+                                                        true) {
+                                                      return localization.translate(
+                                                        'auth.pleaseEnterPassword',
+                                                      );
+                                                    }
+                                                    if (value!.length < 6) {
+                                                      return localization.translate(
+                                                        'auth.passwordMinLength',
+                                                      );
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+
+                                                const SizedBox(height: 20),
+
+                                                // Confirm Password Field
+                                                _buildGlassInputField(
+                                                  controller:
+                                                      _confirmPasswordController,
+                                                  label: 'Confirm Password',
+                                                  hint: 'Confirm Password',
+                                                  obscureText:
+                                                      _obscureConfirmPassword,
+                                                  prefixIcon:
+                                                      Icons.lock_outlined,
+                                                  suffixIcon: IconButton(
+                                                    onPressed: () {
+                                                      setState(() {
+                                                        _obscureConfirmPassword =
+                                                            !_obscureConfirmPassword;
+                                                      });
+                                                    },
+                                                    icon: Icon(
+                                                      _obscureConfirmPassword
+                                                          ? Icons
+                                                                .visibility_outlined
+                                                          : Icons
+                                                                .visibility_off_outlined,
+                                                      color: AppColors
+                                                          .textTertiary,
+                                                      size: 20,
+                                                    ),
+                                                  ),
+                                                  validator: (value) {
+                                                    if (value?.isEmpty ??
+                                                        true) {
+                                                      return 'Please confirm your password';
+                                                    }
+                                                    if (value !=
+                                                        _passwordController
+                                                            .text) {
+                                                      return 'Passwords do not match';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+
+                                                const SizedBox(height: 32),
+
+                                                // Sign Up Button
+                                                FadeTransition(
+                                                  opacity: _buttonFade,
+                                                  child: CustomButton(
+                                                    text: 'Sign Up',
+                                                    onPressed:
+                                                        _isFormValid &&
+                                                            !_isLoading
+                                                        ? _handleSignup
+                                                        : null,
+                                                    isLoading: _isLoading,
+                                                    variant:
+                                                        ButtonVariant.gradient,
+                                                    gradientColors: [
+                                                      AppColors.primary,
+                                                      AppColors.info,
+                                                      AppColors.secondary,
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
 
-                                const SizedBox(height: 32),
+                                  const SizedBox(height: 32),
 
-                                // Sign In Link
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Already have an account?',
-                                      style: AppStyles.bodyMedium.copyWith(
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                    AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 200,
-                                      ),
-                                      child: TextButton(
-                                        onPressed: () {
-                                          AppRoutes.pushReplacementNamed(
-                                            context,
-                                            AppRoutes.login,
-                                          );
-                                        },
-                                        style: TextButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'Sign In',
-                                          style: AppStyles.bodyMedium.copyWith(
-                                            color: AppColors.primary,
-                                            fontWeight: FontWeight.w600,
-                                            decoration:
-                                                TextDecoration.underline,
-                                            decorationColor: AppColors.primary
-                                                .withOpacity(0.3),
-                                          ),
+                                  // Sign In Link
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'Already have an account?',
+                                        style: AppStyles.bodyMedium.copyWith(
+                                          color: AppColors.textSecondary,
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                      AnimatedContainer(
+                                        duration: const Duration(
+                                          milliseconds: 200,
+                                        ),
+                                        child: TextButton(
+                                          onPressed: () {
+                                            AppRoutes.pushReplacementNamed(
+                                              context,
+                                              AppRoutes.login,
+                                            );
+                                          },
+                                          style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Sign In',
+                                            style: AppStyles.bodyMedium
+                                                .copyWith(
+                                                  color: AppColors.primary,
+                                                  fontWeight: FontWeight.w600,
+                                                  decoration:
+                                                      TextDecoration.underline,
+                                                  decorationColor: AppColors
+                                                      .primary
+                                                      .withOpacity(0.3),
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );

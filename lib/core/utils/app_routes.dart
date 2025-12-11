@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wish_listy/core/widgets/splash_screen.dart';
-import '../../features/auth/presentation/screens/welcome_screen.dart';
+import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/signup_screen.dart';
 import '../../features/auth/presentation/screens/forgot_password_screen.dart';
@@ -35,6 +35,7 @@ class AppRoutes {
   // Route Names
   static const String splash = '/';
   static const String welcome = '/welcome';
+  static const String onboarding = '/welcome'; // Alias for welcome (OnboardingScreen)
   static const String login = '/login';
   static const String signup = '/signup';
   static const String forgotPassword = '/forgot-password';
@@ -66,7 +67,7 @@ class AppRoutes {
   // Routes Map
   static Map<String, WidgetBuilder> routes = {
     splash: (context) => SplashScreen(),
-    welcome: (context) => WelcomeScreen(),
+    welcome: (context) => OnboardingScreen(),
     login: (context) => LoginScreen(),
     signup: (context) => SignupScreen(),
     forgotPassword: (context) => ForgotPasswordScreen(),
@@ -220,6 +221,31 @@ class AppRoutes {
 
   static void pop(BuildContext context, [Object? result]) {
     Navigator.pop(context, result);
+  }
+
+  /// Safely pops the current route if possible, otherwise navigates to fallback route
+  /// Returns true if popped, false if navigated to fallback
+  static Future<bool> safePop(
+    BuildContext context, {
+    String? fallbackRoute,
+  }) async {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+      return true;
+    } else if (fallbackRoute != null) {
+      pushNamedAndRemoveUntil(context, fallbackRoute);
+      return false;
+    }
+    return false;
+  }
+
+  /// Safely pops with a specific fallback route
+  /// Useful for screens that need to navigate to a specific screen when back is pressed
+  static Future<bool> safePopWithFallback(
+    BuildContext context,
+    String fallbackRoute,
+  ) async {
+    return safePop(context, fallbackRoute: fallbackRoute);
   }
 
   // Custom page transitions

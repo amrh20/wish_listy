@@ -284,13 +284,33 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  void _handleBackNavigation() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      // If no route to pop, navigate to onboarding screen
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.onboarding,
+        (route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
-        return Scaffold(
-          resizeToAvoidBottomInset: true,
-          body: Container(
+        return PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) async {
+            if (!didPop) {
+              _handleBackNavigation();
+            }
+          },
+          child: Scaffold(
+            resizeToAvoidBottomInset: true,
+            body: Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -325,7 +345,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   children: [
                                     // Back Button
                                     IconButton(
-                                      onPressed: () => Navigator.pop(context),
+                                      onPressed: _handleBackNavigation,
                                       icon: const Icon(
                                         Icons.arrow_back_ios,
                                         color: Colors.black,
@@ -762,6 +782,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ],
             ),
+          ),
           ),
         );
       },

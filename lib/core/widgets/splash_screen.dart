@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/widgets/app_logo.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
-import 'package:wish_listy/features/auth/presentation/screens/welcome_screen.dart';
+import 'package:wish_listy/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -77,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen>
           // Get the appropriate screen widget based on authentication
           return isAuthenticated
               ? const MainNavigation()
-              : const WelcomeScreen();
+              : const OnboardingScreen();
         },
         transitionDuration: const Duration(milliseconds: 300),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {

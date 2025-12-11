@@ -170,7 +170,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   Icons.arrow_back_ios,
                   color: AppColors.textPrimary,
                 ),
-                onPressed: () => Navigator.pop(context),
+                onPressed: _handleBackNavigation,
               ),
             ),
             body: Center(

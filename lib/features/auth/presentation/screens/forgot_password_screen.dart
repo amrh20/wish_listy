@@ -116,11 +116,31 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     );
   }
 
+  void _handleBackNavigation() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      // If no route to pop, navigate to login screen
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.login,
+        (route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      body: Stack(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (!didPop) {
+          _handleBackNavigation();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        body: Stack(
         children: [
           // Content
           SafeArea(
@@ -142,7 +162,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                           Align(
                             alignment: Alignment.centerLeft,
                             child: IconButton(
-                              onPressed: () => Navigator.pop(context),
+                              onPressed: _handleBackNavigation,
                               icon: const Icon(Icons.arrow_back_ios),
                               style: IconButton.styleFrom(
                                 backgroundColor: AppColors.surface,
@@ -190,6 +210,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ),
           ),
         ],
+      ),
       ),
     );
   }
