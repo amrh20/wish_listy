@@ -187,17 +187,44 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     // Set meeting link
     _meetingLinkController.text = event.meetingLink ?? '';
 
-    // Parse date and time from event.date
+    // Parse date and time separately from event
     final eventDateTime = event.date;
     _selectedDate = DateTime(
       eventDateTime.year,
       eventDateTime.month,
       eventDateTime.day,
     );
-    _selectedTime = TimeOfDay(
-      hour: eventDateTime.hour,
-      minute: eventDateTime.minute,
-    );
+
+    // Use event.time if available, otherwise extract from event.date
+    if (event.time != null && event.time!.isNotEmpty) {
+      try {
+        final timeParts = event.time!.split(':');
+        if (timeParts.length == 2) {
+          _selectedTime = TimeOfDay(
+            hour: int.parse(timeParts[0]),
+            minute: int.parse(timeParts[1]),
+          );
+        } else {
+          // Fallback to event.date time
+          _selectedTime = TimeOfDay(
+            hour: eventDateTime.hour,
+            minute: eventDateTime.minute,
+          );
+        }
+      } catch (e) {
+        // Fallback to event.date time
+        _selectedTime = TimeOfDay(
+          hour: eventDateTime.hour,
+          minute: eventDateTime.minute,
+        );
+      }
+    } else {
+      // Fallback to event.date time
+      _selectedTime = TimeOfDay(
+        hour: eventDateTime.hour,
+        minute: eventDateTime.minute,
+      );
+    }
 
     // Set wishlist option
     if (event.wishlistId != null && event.wishlistId!.isNotEmpty) {
@@ -912,17 +939,24 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     return selectedEventType.color;
   }
 
-  /// Combine selected date and time into ISO 8601 format string
-  String _combineDateAndTime() {
-    if (_selectedDate == null || _selectedTime == null) return '';
-    final combined = DateTime(
+  /// Format selected date as ISO 8601 UTC format string
+  String _formatDateForAPI() {
+    if (_selectedDate == null) return '';
+    // Create UTC date directly (at midnight UTC) to preserve the selected day
+    // This ensures the date doesn't change when converting from local timezone
+    final utcDate = DateTime.utc(
       _selectedDate!.year,
       _selectedDate!.month,
       _selectedDate!.day,
-      _selectedTime!.hour,
-      _selectedTime!.minute,
     );
-    return combined.toUtc().toIso8601String();
+    return utcDate.toIso8601String();
+  }
+
+  /// Format selected time as HH:mm format string
+  String _formatTimeForAPI() {
+    if (_selectedTime == null) return '';
+    // Format as HH:mm (local time)
+    return '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}';
   }
 
   String _formatDate(DateTime date) {
@@ -1083,8 +1117,9 @@ class _CreateEventScreenState extends State<CreateEventScreen>
       }
 
       // Prepare event data
-      final eventDate = _combineDateAndTime();
-      if (eventDate.isEmpty) {
+      final eventDate = _formatDateForAPI();
+      final eventTime = _formatTimeForAPI();
+      if (eventDate.isEmpty || eventTime.isEmpty) {
         throw Exception('Invalid date/time combination');
       }
 
@@ -1107,6 +1142,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),
           date: eventDate,
+          time: eventTime,
           type: _selectedEventType,
           privacy: _selectedPrivacy,
           mode: _selectedEventMode,
@@ -1126,6 +1162,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),
           date: eventDate,
+          time: eventTime,
           type: _selectedEventType,
           privacy: _selectedPrivacy,
           mode: _selectedEventMode,

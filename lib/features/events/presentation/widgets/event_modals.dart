@@ -3,8 +3,10 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
-import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
+import 'package:wish_listy/features/events/data/repository/event_repository.dart';
+import 'package:wish_listy/features/events/presentation/widgets/wishlist_options_bottom_sheet.dart';
+import 'package:wish_listy/features/events/presentation/widgets/link_wishlist_bottom_sheet.dart';
 import 'calendar_view.dart';
 import 'filter_options.dart';
 
@@ -200,105 +202,38 @@ class EventModals {
   ) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textTertiary.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Title
-            Text(
-              localization.translate('ui.addWishlistToEvent'),
-              style: AppStyles.headingSmall.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              localization
-                  .translate('ui.addWishlistToEventDescription')
-                  .replaceAll('{eventName}', event.name),
-              style: AppStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-
-            // Options
-            Column(
-              children: [
-                // Create New Wishlist
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: CustomButton(
-                    text: localization.translate('ui.createNewWishlist'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(
-                        context,
-                        AppRoutes.createWishlist,
-                        arguments: {
-                          'eventId': event.id,
-                          'eventName': event.name,
-                        },
-                      );
-                    },
-                    variant: ButtonVariant.gradient,
-                    gradientColors: [AppColors.primary, AppColors.secondary],
-                    icon: Icons.add_circle_outline,
-                  ),
+      backgroundColor: Colors.transparent,
+      builder: (context) => WishlistOptionsBottomSheet(
+        onCreateNew: () {
+          Navigator.pop(context);
+          Navigator.pushNamed(
+            context,
+            AppRoutes.createWishlist,
+            arguments: {
+              'eventId': event.id,
+              'isForEvent': true,
+              'previousRoute': AppRoutes.events,
+            },
+          ).then((result) {
+            // Refresh events list if wishlist was created and linked
+            if (result == true && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Wishlist created and linked successfully'),
+                  backgroundColor: AppColors.success,
                 ),
-
-                // Link Existing Wishlist
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: CustomButton(
-                    text: localization.translate('ui.linkExistingWishlist'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _showLinkExistingWishlistModal(
-                        context,
-                        event,
-                        localization,
-                      );
-                    },
-                    variant: ButtonVariant.outline,
-                    icon: Icons.link,
-                  ),
-                ),
-
-                // Cancel
-                Container(
-                  width: double.infinity,
-                  child: CustomButton(
-                    text: localization.translate('common.cancel'),
-                    onPressed: () => Navigator.pop(context),
-                    variant: ButtonVariant.text,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-          ],
-        ),
+              );
+            }
+          });
+        },
+        onLinkExisting: () {
+          Navigator.pop(context);
+          _showLinkExistingWishlistModal(
+            context,
+            event,
+            localization,
+          );
+        },
       ),
     );
   }
@@ -308,105 +243,42 @@ class EventModals {
     EventSummary event,
     LocalizationService localization,
   ) {
-    // Mock existing wishlists
-    final List<Map<String, dynamic>> existingWishlists = [
-      {'id': 'wishlist_1', 'name': 'My General Wishlist', 'itemCount': 5},
-      {'id': 'wishlist_2', 'name': 'Birthday Gifts', 'itemCount': 8},
-      {'id': 'wishlist_3', 'name': 'Holiday Wishlist', 'itemCount': 12},
-    ];
-
+    final eventRepository = EventRepository();
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.6,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            // Handle
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textTertiary.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 20),
+      backgroundColor: Colors.transparent,
+      builder: (context) => LinkWishlistBottomSheet(
+        eventId: event.id,
+        onLink: (wishlistId) async {
+          try {
+            // Link wishlist to event
+            await eventRepository.linkWishlistToEvent(
+              eventId: event.id,
+              wishlistId: wishlistId,
+            );
 
-            // Title
-            Text(
-              localization.translate('ui.selectWishlistToLink'),
-              style: AppStyles.headingSmall.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 24),
+            if (!context.mounted) return;
 
-            // Wishlist List
-            Expanded(
-              child: ListView.builder(
-                itemCount: existingWishlists.length,
-                itemBuilder: (context, index) {
-                  final wishlist = existingWishlists[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      onTap: () {
-                        Navigator.pop(context);
-                        // Link wishlist to event
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              localization.translate(
-                                'ui.wishlistLinkedSuccessfully',
-                              ),
-                            ),
-                            backgroundColor: AppColors.success,
-                          ),
-                        );
-                      },
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      tileColor: AppColors.surface,
-                      leading: CircleAvatar(
-                        backgroundColor: AppColors.primary.withOpacity(0.1),
-                        child: Icon(
-                          Icons.favorite_rounded,
-                          color: AppColors.primary,
-                          size: 20,
-                        ),
-                      ),
-                      title: Text(
-                        wishlist['name'],
-                        style: AppStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: Text(
-                        '${wishlist['itemCount']} ${wishlist['itemCount'] == 1 ? "Wish" : "Wishes"}',
-                        style: AppStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      trailing: Icon(
-                        Icons.arrow_forward_ios,
-                        size: 16,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                  );
-                },
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Wishlist linked successfully'),
+                backgroundColor: AppColors.success,
               ),
-            ),
-
-            const SizedBox(height: 20),
-          ],
-        ),
+            );
+          } catch (e) {
+            if (!context.mounted) return;
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to link wishlist: ${e.toString()}'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+        },
       ),
     );
   }

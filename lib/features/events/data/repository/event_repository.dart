@@ -11,7 +11,8 @@ class EventRepository {
   ///
   /// [name] - Event name (required)
   /// [description] - Event description (optional)
-  /// [date] - Event date and time in ISO 8601 format (required)
+  /// [date] - Event date in ISO 8601 UTC format (required)
+  /// [time] - Event time in HH:mm format (required)
   /// [type] - Event type: 'birthday', 'wedding', 'anniversary', etc. (required)
   /// [privacy] - Privacy setting: 'public', 'private', or 'friends_only' (required)
   /// [mode] - Event mode: 'in_person', 'online', or 'hybrid' (required)
@@ -24,7 +25,8 @@ class EventRepository {
   Future<Event> createEvent({
     required String name,
     String? description,
-    required String date, // ISO 8601 format
+    required String date, // ISO 8601 UTC format
+    required String time, // HH:mm format
     required String type,
     required String privacy,
     required String mode,
@@ -38,6 +40,7 @@ class EventRepository {
       final requestData = <String, dynamic>{
         'name': name,
         'date': date,
+        'time': time,
         'type': type,
         'privacy': privacy,
         'mode': mode,
@@ -91,7 +94,8 @@ class EventRepository {
   /// [eventId] - Event ID to update (required)
   /// [name] - Event name (required)
   /// [description] - Event description (optional)
-  /// [date] - Event date and time in ISO 8601 format (required)
+  /// [date] - Event date in ISO 8601 UTC format (required)
+  /// [time] - Event time in HH:mm format (required)
   /// [type] - Event type: 'birthday', 'wedding', 'anniversary', etc. (required)
   /// [privacy] - Privacy setting: 'public', 'private', or 'friends_only' (required)
   /// [mode] - Event mode: 'in_person', 'online', or 'hybrid' (required)
@@ -105,7 +109,8 @@ class EventRepository {
     required String eventId,
     required String name,
     String? description,
-    required String date, // ISO 8601 format
+    required String date, // ISO 8601 UTC format
+    required String time, // HH:mm format
     required String type,
     required String privacy,
     required String mode,
@@ -119,6 +124,7 @@ class EventRepository {
       final requestData = <String, dynamic>{
         'name': name,
         'date': date,
+        'time': time,
         'type': type,
         'privacy': privacy,
         'mode': mode,
@@ -138,7 +144,10 @@ class EventRepository {
 
       // Make API call to update event
       // Endpoint: PUT /api/events/:id
-      final response = await _apiService.put('/events/$eventId', data: requestData);
+      final response = await _apiService.put(
+        '/events/$eventId',
+        data: requestData,
+      );
 
       debugPrint('📥 EventRepository: Response received');
       debugPrint('   Response: $response');
@@ -324,6 +333,115 @@ class EventRepository {
       // Handle any unexpected errors
       debugPrint('❌ Unexpected delete event error: $e');
       throw Exception('Failed to delete event. Please try again.');
+    }
+  }
+
+  /// Link a wishlist to an event
+  ///
+  /// [eventId] - Event ID to link wishlist to (required)
+  /// [wishlistId] - Wishlist ID to link (required)
+  ///
+  /// Returns the updated event data
+  Future<Event> linkWishlistToEvent({
+    required String eventId,
+    required String wishlistId,
+  }) async {
+    try {
+      debugPrint('🔗 EventRepository: Linking wishlist to event');
+      debugPrint('   Event ID: $eventId');
+      debugPrint('   Wishlist ID: $wishlistId');
+      debugPrint('   Endpoint: PUT /api/events/$eventId/wishlist');
+
+      // Prepare request body
+      final requestData = <String, dynamic>{'wishlist_id': wishlistId};
+
+      // Make API call to link wishlist
+      // Endpoint: PUT /api/events/:id/wishlist
+      final response = await _apiService.put(
+        '/events/$eventId/wishlist',
+        data: requestData,
+      );
+
+      debugPrint('📥 EventRepository: Response received');
+      debugPrint('   Response: $response');
+
+      // Parse response and create Event object
+      // API response structure: {success: true, data: {...}} or {id, name, ...}
+      final eventData = response['data'] ?? response;
+
+      if (eventData is! Map<String, dynamic>) {
+        throw Exception('Invalid response format from server');
+      }
+
+      // Create Event object from response
+      final event = Event.fromJson(eventData);
+
+      debugPrint('✅ EventRepository: Wishlist linked successfully');
+      debugPrint('   Event ID: ${event.id}');
+      debugPrint('   Wishlist ID: ${event.wishlistId}');
+
+      return event;
+    } on ApiException catch (e) {
+      // Re-throw ApiException to preserve error details
+      debugPrint('❌ API Error linking wishlist: ${e.message}');
+      rethrow;
+    } catch (e) {
+      // Handle any unexpected errors
+      debugPrint('❌ Unexpected link wishlist error: $e');
+      throw Exception('Failed to link wishlist to event. Please try again.');
+    }
+  }
+
+  /// Unlink a wishlist from an event
+  ///
+  /// [eventId] - Event ID to unlink wishlist from (required)
+  ///
+  /// Returns the updated event data
+  Future<Event> unlinkWishlistFromEvent({
+    required String eventId,
+  }) async {
+    try {
+      debugPrint('🔓 EventRepository: Unlinking wishlist from event');
+      debugPrint('   Event ID: $eventId');
+      debugPrint('   Endpoint: PUT /api/events/$eventId/wishlist');
+
+      // Prepare request body with null wishlist_id to unlink
+      final requestData = <String, dynamic>{'wishlist_id': null};
+
+      // Make API call to unlink wishlist
+      // Endpoint: PUT /api/events/:id/wishlist
+      final response = await _apiService.put(
+        '/events/$eventId/wishlist',
+        data: requestData,
+      );
+
+      debugPrint('📥 EventRepository: Response received');
+      debugPrint('   Response: $response');
+
+      // Parse response and create Event object
+      // API response structure: {success: true, data: {...}} or {id, name, ...}
+      final eventData = response['data'] ?? response;
+
+      if (eventData is! Map<String, dynamic>) {
+        throw Exception('Invalid response format from server');
+      }
+
+      // Create Event object from response
+      final event = Event.fromJson(eventData);
+
+      debugPrint('✅ EventRepository: Wishlist unlinked successfully');
+      debugPrint('   Event ID: ${event.id}');
+      debugPrint('   Wishlist ID: ${event.wishlistId}');
+
+      return event;
+    } on ApiException catch (e) {
+      // Re-throw ApiException to preserve error details
+      debugPrint('❌ API Error unlinking wishlist: ${e.message}');
+      rethrow;
+    } catch (e) {
+      // Handle any unexpected errors
+      debugPrint('❌ Unexpected unlink wishlist error: $e');
+      throw Exception('Failed to unlink wishlist from event. Please try again.');
     }
   }
 }

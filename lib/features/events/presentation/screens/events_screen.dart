@@ -196,9 +196,10 @@ class EventsScreenState extends State<EventsScreen>
     // Reload data when screen becomes visible after returning from another screen
     final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
 
-    if (isCurrent && _hasLoadedOnce) {
-      // Screen is now visible and we've loaded before, reload data
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (isCurrent) {
+      // Always reload data when screen becomes current
+      // Use a small delay to ensure navigation is complete
+      Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted) {
           _loadEvents();
         }
@@ -427,11 +428,18 @@ class EventsScreenState extends State<EventsScreen>
                       HeaderAction(
                         icon: Icons.add_rounded,
                         iconColor: AppColors.primary,
-                        onTap: () {
-                          Navigator.pushNamed(
+                        onTap: () async {
+                          // Navigate to create event
+                          await Navigator.pushNamed(
                             context,
                             AppRoutes.createEvent,
                           );
+                          // Refresh events list when returning from create event
+                          // This handles the case where user creates event and navigates to details,
+                          // then comes back to events list
+                          if (mounted) {
+                            _loadEvents();
+                          }
                         },
                       ),
                     ],
@@ -608,7 +616,7 @@ class EventsScreenState extends State<EventsScreen>
       AppRoutes.eventDetails,
       arguments: {'eventId': event.id},
     );
-    
+
     // Always refresh events list when returning from event details
     // This ensures data is updated after create/edit/delete operations
     if (mounted) {
@@ -719,15 +727,12 @@ class EventsScreenState extends State<EventsScreen>
     try {
       // Fetch full event data for editing
       final event = await _eventRepository.getEventById(eventSummary.id);
-      
+
       // Navigate to create event screen with edit mode
       Navigator.pushNamed(
         context,
         AppRoutes.createEvent,
-        arguments: {
-          'eventId': event.id,
-          'event': event,
-        },
+        arguments: {'eventId': event.id, 'event': event},
       );
     } catch (e) {
       if (mounted) {

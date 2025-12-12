@@ -9,6 +9,9 @@ import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'package:wish_listy/features/events/data/repository/event_repository.dart';
+import 'package:wish_listy/features/events/presentation/widgets/invite_friends_bottom_sheet.dart';
+import 'package:wish_listy/features/events/presentation/widgets/wishlist_options_bottom_sheet.dart';
+import 'package:wish_listy/features/events/presentation/widgets/link_wishlist_bottom_sheet.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final String eventId;
@@ -43,14 +46,39 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   /// Handles back navigation - returns to events list
   void _handleBackNavigation() {
-    // Check if we can pop normally (if there's a route in the stack)
-    if (Navigator.of(context).canPop()) {
-      // Pop and return true to trigger refresh in EventsScreen
-      Navigator.of(context).pop(true);
-    } else {
-      // If no route to pop, navigate to events list directly
-      Navigator.of(context).pushReplacementNamed(AppRoutes.events);
-    }
+    if (!mounted) return;
+
+    // Use post-frame callback to ensure Navigator is not locked
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      final navigator = Navigator.of(context);
+
+      // Simple approach: just pop if possible, otherwise navigate
+      // Return true to indicate that events list should be refreshed
+      if (navigator.canPop()) {
+        try {
+          navigator.pop(true); // Return true to trigger refresh
+        } catch (e) {
+          debugPrint('⚠️ Error during pop: $e');
+          // If pop fails, navigate to events screen
+          if (mounted) {
+            try {
+              navigator.pushReplacementNamed(AppRoutes.events);
+            } catch (e2) {
+              debugPrint('⚠️ Error navigating to events: $e2');
+            }
+          }
+        }
+      } else {
+        // If no route to pop, navigate to events list directly
+        try {
+          navigator.pushReplacementNamed(AppRoutes.events);
+        } catch (e) {
+          debugPrint('⚠️ Error navigating to events: $e');
+        }
+      }
+    });
   }
 
   Future<void> _loadEventDetails() async {
@@ -136,7 +164,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
-  String _formatDateTime(DateTime date) {
+  String _formatDate(DateTime date) {
     final months = [
       'January',
       'February',
@@ -151,7 +179,20 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       'November',
       'December',
     ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year} at ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}';
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
+  String _formatTime(String? time) {
+    if (time != null && time.isNotEmpty) {
+      return time; // Already in HH:mm format
+    }
+    // Fallback: extract time from event.date
+    if (_event != null) {
+      final hour = _event!.date.hour.toString().padLeft(2, '0');
+      final minute = _event!.date.minute.toString().padLeft(2, '0');
+      return '$hour:$minute';
+    }
+    return '';
   }
 
   @override
@@ -228,39 +269,47 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 .length -
             acceptedGuests.length;
 
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          body: CustomScrollView(
-            slivers: [
-              // SliverAppBar (The Header)
-              _buildSliverAppBar(eventColor, localization),
+        return PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) {
+            if (!didPop) {
+              _handleBackNavigation();
+            }
+          },
+          child: Scaffold(
+            backgroundColor: AppColors.background,
+            body: CustomScrollView(
+              slivers: [
+                // SliverAppBar (The Header)
+                _buildSliverAppBar(eventColor, localization),
 
-              // Content Body
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Unified Info Sheet (Merged Date, Location, Description, Guests)
-                      _buildUnifiedInfoSheet(acceptedGuests, remainingCount),
+                // Content Body
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Unified Info Sheet (Merged Date, Location, Description, Guests)
+                        _buildUnifiedInfoSheet(acceptedGuests, remainingCount),
 
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                      // Linked Wishlist (Kept Separate)
-                      if (widget.isOwner || _event!.wishlistId != null)
-                        _buildWishlistCard(localization),
+                        // Linked Wishlist (Kept Separate)
+                        if (widget.isOwner || _event!.wishlistId != null)
+                          _buildWishlistCard(localization),
 
-                      SizedBox(
-                        height: 20 + MediaQuery.of(context).padding.bottom,
-                      ), // Bottom padding
-                    ],
+                        SizedBox(
+                          height: 20 + MediaQuery.of(context).padding.bottom,
+                        ), // Bottom padding
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
+            // Bottom Navigation Bar removed - actions moved to More Options menu
           ),
-          // Bottom Navigation Bar removed - actions moved to More Options menu
         );
       },
     );
@@ -405,51 +454,55 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           // Meta-Tags Row (Type, Privacy, Status)
           _buildMetaTagsRow(),
           const SizedBox(height: 16),
-          // Row 1: Meta Info (Date & Location)
+          // Date & Time Row
           Row(
             children: [
-              // Date
+              Icon(
+                Icons.calendar_today_outlined,
+                color: AppColors.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.calendar_today_outlined,
-                      color: AppColors.primary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _formatDateTime(_event!.date),
-                        style: AppStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
+                    Text(
+                      _formatDate(_event!.date),
+                      style: AppStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
                     ),
+                    if (_event!.time != null && _event!.time!.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        _formatTime(_event!.time),
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
-              // Location
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Location Row
+          Row(
+            children: [
+              Icon(
+                Icons.location_on_outlined,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
               Expanded(
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      color: AppColors.textSecondary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _event!.location ?? 'Location TBD',
-                        style: AppStyles.bodyMedium.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  _event!.location ?? 'Location TBD',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -826,14 +879,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          // Trigger same action as "Manage Guests"
           if (widget.isOwner) {
-            // TODO: Navigate to guest management
+            _showInviteFriendsBottomSheet();
           }
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: AppColors.primary.withOpacity(0.04),
             borderRadius: BorderRadius.circular(16),
@@ -845,19 +897,238 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.person_add_alt_1, color: AppColors.primary, size: 28),
-              const SizedBox(width: 12),
+              Icon(Icons.person_add_alt_1, color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
               Text(
-                'Invite Friends to this Event',
-                style: AppStyles.bodyLarge.copyWith(
-                  fontWeight: FontWeight.bold,
+                'Invite Friends',
+                style: AppStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
                   color: AppColors.primary,
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Shows bottom sheet for inviting friends
+  void _showInviteFriendsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => InviteFriendsBottomSheet(
+        eventId: widget.eventId,
+        onInvite: (friendIds) {
+          // TODO: Implement invite API call
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Invited ${friendIds.length} friend(s)'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Shows bottom sheet for wishlist options (Create New or Link Existing)
+  void _showWishlistOptionsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => WishlistOptionsBottomSheet(
+        onCreateNew: () {
+          Navigator.pushNamed(
+            context,
+            AppRoutes.createWishlist,
+            arguments: {
+              'eventId': widget.eventId,
+              'isForEvent': true,
+              'previousRoute': AppRoutes.eventDetails,
+            },
+          ).then((result) {
+            // Refresh event details if wishlist was created and linked
+            if (result == true) {
+              _loadEventDetails();
+            }
+          });
+        },
+        onLinkExisting: () {
+          _showLinkExistingWishlistBottomSheet();
+        },
+      ),
+    );
+  }
+
+  /// Shows wishlist menu with unlink option
+  void _showWishlistMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Unlink option
+              ListTile(
+                leading: Icon(Icons.link_off_rounded, color: AppColors.error),
+                title: Text(
+                  'Unlink Wishlist',
+                  style: AppStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.error,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _handleUnlinkWishlist();
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Handles unlinking wishlist from event
+  Future<void> _handleUnlinkWishlist() async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Unlink Wishlist',
+          style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Are you sure you want to unlink this wishlist from the event? The wishlist will not be deleted, but it will no longer be associated with this event.',
+          style: AppStyles.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'Unlink',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      // Show loading indicator
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
+
+      // Unlink wishlist from event
+      await _eventRepository.unlinkWishlistFromEvent(eventId: widget.eventId);
+
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Wishlist unlinked successfully'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+
+      // Refresh event details
+      _loadEventDetails();
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to unlink wishlist: ${e.toString()}'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  /// Shows bottom sheet for linking existing wishlist
+  void _showLinkExistingWishlistBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => LinkWishlistBottomSheet(
+        eventId: widget.eventId,
+        onLink: (wishlistId) async {
+          try {
+            // Link wishlist to event
+            await _eventRepository.linkWishlistToEvent(
+              eventId: widget.eventId,
+              wishlistId: wishlistId,
+            );
+
+            if (!mounted) return;
+
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Wishlist linked successfully'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+
+            // Refresh event details
+            _loadEventDetails();
+          } catch (e) {
+            if (!mounted) return;
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to link wishlist: ${e.toString()}'),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+        },
       ),
     );
   }
@@ -1048,7 +1319,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // TODO: Navigate to create wishlist for event
+                  _showWishlistOptionsBottomSheet();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.secondary, // Teal background
@@ -1097,6 +1368,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           onAddItem: () {
             // TODO: Navigate to add item
           },
+          onMenu: widget.isOwner ? _showWishlistMenu : null,
         ),
       );
     }

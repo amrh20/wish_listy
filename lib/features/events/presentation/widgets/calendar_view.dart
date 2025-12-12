@@ -175,7 +175,9 @@ class _CalendarViewState extends State<CalendarView> {
                 ),
               ),
               Text(
-                _formatTime(event.date),
+                event.time != null && event.time!.isNotEmpty
+                    ? event.time!
+                    : _formatTime(event.date),
                 style: AppStyles.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),

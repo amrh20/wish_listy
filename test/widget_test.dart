@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:wish_listy/main.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
+import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
 
 void main() {
   testWidgets('App loads successfully', (WidgetTester tester) async {
@@ -23,6 +24,7 @@ void main() {
       MyApp(
         localizationService: localizationService,
         authRepository: AuthRepository(),
+        guestDataRepository: GuestDataRepository(),
       ),
     );
 

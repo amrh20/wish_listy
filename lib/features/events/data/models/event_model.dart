@@ -5,6 +5,7 @@ class Event {
   final String creatorId;
   final String name;
   final DateTime date;
+  final String? time; // HH:mm format (e.g., "18:00")
   final String? description;
   final String? location;
   final EventType type;
@@ -22,6 +23,7 @@ class Event {
     required this.creatorId,
     required this.name,
     required this.date,
+    this.time,
     this.description,
     this.location,
     required this.type,
@@ -67,8 +69,11 @@ class Event {
     wishlistId ??=
         json['wishlist_id']?.toString() ?? json['wishlistId']?.toString();
 
-    // Parse date field
+    // Parse date and time fields separately
     DateTime? eventDate;
+    String? eventTime;
+
+    // Parse date field (ISO 8601 UTC format)
     if (json['date'] != null) {
       try {
         eventDate = DateTime.parse(json['date'].toString());
@@ -77,6 +82,35 @@ class Event {
       }
     }
     eventDate ??= DateTime.now();
+
+    // Parse time field (HH:mm format)
+    if (json['time'] != null) {
+      eventTime = json['time'].toString();
+    }
+
+    // If time is provided, combine with date to create full DateTime
+    // This maintains backward compatibility with existing code that uses event.date
+    if (eventTime != null && eventTime.isNotEmpty) {
+      try {
+        final timeParts = eventTime.split(':');
+        if (timeParts.length == 2) {
+          final hour = int.parse(timeParts[0]);
+          final minute = int.parse(timeParts[1]);
+          eventDate = DateTime(
+            eventDate.year,
+            eventDate.month,
+            eventDate.day,
+            hour,
+            minute,
+          );
+        }
+      } catch (e) {
+        debugPrint('⚠️ Failed to parse time: ${json['time']}');
+      }
+    }
+
+    // Ensure eventDate is not null
+    final finalEventDate = eventDate ?? DateTime.now();
 
     // Parse createdAt
     DateTime? createdAt;
@@ -118,7 +152,8 @@ class Event {
       id: id,
       creatorId: creatorId,
       name: json['name']?.toString() ?? '',
-      date: eventDate,
+      date: finalEventDate,
+      time: eventTime,
       description: json['description']?.toString(),
       location: json['location']?.toString(),
       type: EventType.values.firstWhere(
@@ -160,6 +195,7 @@ class Event {
       'creator_id': creatorId,
       'name': name,
       'date': date.toIso8601String(),
+      if (time != null) 'time': time,
       'description': description,
       'location': location,
       'type': type.toString().split('.').last,
@@ -181,6 +217,7 @@ class Event {
     String? creatorId,
     String? name,
     DateTime? date,
+    String? time,
     String? description,
     String? location,
     EventType? type,
@@ -198,6 +235,7 @@ class Event {
       creatorId: creatorId ?? this.creatorId,
       name: name ?? this.name,
       date: date ?? this.date,
+      time: time ?? this.time,
       description: description ?? this.description,
       location: location ?? this.location,
       type: type ?? this.type,
@@ -418,6 +456,7 @@ class EventSummary {
   final String id;
   final String name;
   final DateTime date;
+  final String? time; // HH:mm format
   final EventType type;
   final String? location;
   final String? description;
@@ -433,6 +472,7 @@ class EventSummary {
     required this.id,
     required this.name,
     required this.date,
+    this.time,
     required this.type,
     this.location,
     this.description,
@@ -454,6 +494,7 @@ class EventSummary {
       id: event.id,
       name: event.name,
       date: event.date,
+      time: event.time,
       type: event.type,
       location: event.location,
       description: event.description,

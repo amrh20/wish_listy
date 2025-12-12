@@ -576,7 +576,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
               Navigator.pushNamed(
                 context,
                 AppRoutes.createWishlist,
-                arguments: {'isEvent': false},
+                arguments: {
+                  'isEvent': false,
+                  'previousRoute': AppRoutes.mainNavigation,
+                },
               );
             },
             variant: ButtonVariant.secondary,
@@ -922,7 +925,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                     ),
                     color: AppColors.primary,
                     onTap: () {
-                      AppRoutes.pushNamed(context, AppRoutes.createWishlist);
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.createWishlist,
+                        arguments: {
+                          'previousRoute': AppRoutes.mainNavigation,
+                        },
+                      );
                     },
                   ),
                 ),
@@ -1480,7 +1489,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
           CustomButton(
             text: 'Create Your First Wishlist',
             onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.createWishlist);
+              Navigator.pushNamed(
+                context,
+                AppRoutes.createWishlist,
+                arguments: {
+                  'previousRoute': AppRoutes.mainNavigation,
+                },
+              );
             },
             variant: ButtonVariant.gradient,
             gradientColors: [AppColors.primary, AppColors.secondary],
@@ -1538,7 +1553,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () {
-                      Navigator.pushNamed(context, AppRoutes.createWishlist);
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.createWishlist,
+                        arguments: {
+                          'previousRoute': AppRoutes.mainNavigation,
+                        },
+                      );
                     },
                     borderRadius: BorderRadius.circular(16),
                     child: Padding(

@@ -87,15 +87,26 @@ class AppRoutes {
 
   // Route Generator for dynamic routes
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
-    // Handle createWishlist route with optional wishlistId for editing
+    // Handle createWishlist route with optional wishlistId for editing and eventId for event context
     if (settings.name == createWishlist) {
       final args = settings.arguments as Map<String, dynamic>?;
       final wishlistId = args?['wishlistId'] as String?;
+      final eventId = args?['eventId'] as String?;
+      final isForEvent = args?['isForEvent'] as bool? ?? false;
+      final previousRoute = args?['previousRoute'] as String?;
       debugPrint('🔍 AppRoutes: createWishlist route');
       debugPrint('   Arguments: $args');
       debugPrint('   WishlistId: $wishlistId');
+      debugPrint('   EventId: $eventId');
+      debugPrint('   IsForEvent: $isForEvent');
+      debugPrint('   PreviousRoute: $previousRoute');
       return MaterialPageRoute(
-        builder: (context) => CreateWishlistScreen(wishlistId: wishlistId),
+        builder: (context) => CreateWishlistScreen(
+          wishlistId: wishlistId,
+          eventId: eventId,
+          isForEvent: isForEvent,
+          previousRoute: previousRoute,
+        ),
       );
     } else if (settings.name == wishlistItems) {
       final args = settings.arguments as Map<String, dynamic>;

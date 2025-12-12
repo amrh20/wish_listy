@@ -104,6 +104,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
+  void _goToNextPage() {
+    if (_currentPage < _slides.length - 1) {
+      _pageController.animateToPage(
+        _currentPage + 1,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
 
   @override
   void dispose() {
@@ -142,14 +152,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       ),
                     ),
 
-                    // Page Indicator
-                    _buildPageIndicator(),
-
-                    // Action Buttons (only on last slide)
-                    if (_currentPage == _slides.length - 1)
-                      _buildActionButtons(localization)
-                    else
-                      const SizedBox(height: 100), // Spacing when buttons are hidden
+                    // Footer with Skip, PageIndicator, and Next button
+                    _buildFooter(localization),
                   ],
                 ),
               ),
@@ -230,36 +234,20 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           else
             const SizedBox.shrink(),
 
-          // Skip Button and Language Switcher
-          Row(
-            children: [
-              if (_currentPage < _slides.length - 1)
-                TextButton(
-                  onPressed: _skipToLast,
-                  child: Text(
-                    'Skip',
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+          // Language Switcher only
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.textTertiary.withOpacity(0.05),
+                  offset: const Offset(0, 4),
+                  blurRadius: 12,
                 ),
-              const SizedBox(width: 12),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(25),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.textTertiary.withOpacity(0.05),
-                      offset: const Offset(0, 4),
-                      blurRadius: 12,
-                    ),
-                  ],
-                ),
-                child: const LanguageSwitcher(),
-              ),
-            ],
+              ],
+            ),
+            child: const LanguageSwitcher(),
           ),
         ],
       ),
@@ -360,24 +348,102 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  Widget _buildPageIndicator() {
+  Widget _buildFooter(LocalizationService localization) {
+    final isLastPage = _currentPage == _slides.length - 1;
+    
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(
-          _slides.length,
-          (index) => AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            width: _currentPage == index ? 24 : 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: _currentPage == index
-                  ? _slides[index].color
-                  : AppColors.textTertiary.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(4),
-            ),
+      padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 32.0),
+      child: Column(
+        children: [
+          // Footer Row: Skip | PageIndicator | Next/Get Started
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Skip Button (left) - only show if not on last page
+              if (!isLastPage)
+                TextButton(
+                  onPressed: _skipToLast,
+                  child: Text(
+                    'Skip',
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )
+              else
+                const SizedBox(width: 56), // Match Next button width for balance
+
+              // Page Indicator (center)
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    _slides.length,
+                    (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: _currentPage == index ? 24 : 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: _currentPage == index
+                            ? _slides[index].color
+                            : AppColors.textTertiary.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Next Button (right) - circular button with arrow
+              if (!isLastPage)
+                _buildNextButton()
+              else
+                const SizedBox(width: 56), // Match Skip button width for balance
+            ],
+          ),
+
+          // Action Buttons (only on last slide)
+          if (isLastPage) ...[
+            const SizedBox(height: 24),
+            _buildActionButtons(localization),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNextButton() {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            _slides[_currentPage].color,
+            _slides[_currentPage].gradientColors[1],
+          ],
+        ),
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: _slides[_currentPage].color.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _goToNextPage,
+          borderRadius: BorderRadius.circular(28),
+          child: const Icon(
+            Icons.arrow_forward_rounded,
+            color: Colors.white,
+            size: 28,
           ),
         ),
       ),

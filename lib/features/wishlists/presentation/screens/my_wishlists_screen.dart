@@ -157,6 +157,9 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                                 Navigator.pushNamed(
                                   context,
                                   AppRoutes.createWishlist,
+                                  arguments: {
+                                    'previousRoute': AppRoutes.myWishlists,
+                                  },
                                 );
                               },
                             ),
@@ -166,7 +169,9 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                         ? null
                         : [
                             UnifiedTab(
-                              label: localization.translate('wishlists.myWishlists'),
+                              label: localization.translate(
+                                'wishlists.myWishlists',
+                              ),
                               icon: Icons.favorite_rounded,
                               badgeCount: _personalWishlists.length,
                             ),
@@ -200,7 +205,8 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                         children: [
                           // Category Filter Tabs (only show if there are categories and on Personal tab)
                           // For guests, always show (no tabs), for authenticated users only on first tab
-                          if ((authService.isGuest || _mainTabController.index == 0) &&
+                          if ((authService.isGuest ||
+                                  _mainTabController.index == 0) &&
                               _availableCategories.isNotEmpty) ...[
                             Padding(
                               padding: const EdgeInsets.only(
@@ -246,8 +252,23 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                                     ),
                                   )
                                 : authService.isGuest
-                                    // For guest users: show only personal wishlists (no tabs)
-                                    ? PersonalWishlistsTabWidget(
+                                // For guest users: show only personal wishlists (no tabs)
+                                ? PersonalWishlistsTabWidget(
+                                    personalWishlists: _personalWishlists,
+                                    onWishlistTap: _navigateToWishlistItems,
+                                    onAddItem: _navigateToAddItem,
+                                    onMenuAction: _handleWishlistAction,
+                                    onCreateWishlist: () =>
+                                        _navigateToCreateWishlist(
+                                          isEvent: false,
+                                        ),
+                                    onRefresh: _refreshWishlists,
+                                  )
+                                // For authenticated users: show TabBarView with both tabs
+                                : TabBarView(
+                                    controller: _mainTabController,
+                                    children: [
+                                      PersonalWishlistsTabWidget(
                                         personalWishlists: _personalWishlists,
                                         onWishlistTap: _navigateToWishlistItems,
                                         onAddItem: _navigateToAddItem,
@@ -257,25 +278,10 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                                               isEvent: false,
                                             ),
                                         onRefresh: _refreshWishlists,
-                                      )
-                                    // For authenticated users: show TabBarView with both tabs
-                                    : TabBarView(
-                                        controller: _mainTabController,
-                                        children: [
-                                          PersonalWishlistsTabWidget(
-                                            personalWishlists: _personalWishlists,
-                                            onWishlistTap: _navigateToWishlistItems,
-                                            onAddItem: _navigateToAddItem,
-                                            onMenuAction: _handleWishlistAction,
-                                            onCreateWishlist: () =>
-                                                _navigateToCreateWishlist(
-                                                  isEvent: false,
-                                                ),
-                                            onRefresh: _refreshWishlists,
-                                          ),
-                                          FriendsWishlistsTabWidget(),
-                                        ],
                                       ),
+                                      FriendsWishlistsTabWidget(),
+                                    ],
+                                  ),
                           ),
                         ],
                       ),
@@ -314,7 +320,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     Navigator.pushNamed(
       context,
       AppRoutes.createWishlist,
-      arguments: {'isEvent': isEvent},
+      arguments: {'isEvent': isEvent, 'previousRoute': AppRoutes.myWishlists},
     );
   }
 
@@ -341,7 +347,10 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     Navigator.pushNamed(
       context,
       AppRoutes.createWishlist,
-      arguments: {'wishlistId': wishlist.id},
+      arguments: {
+        'wishlistId': wishlist.id,
+        'previousRoute': AppRoutes.myWishlists,
+      },
     ).then((result) {
       // Refresh wishlists if the edit was successful
       if (result == true) {
@@ -353,13 +362,13 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   void _shareWishlist(WishlistSummary wishlist) {
     // Check if user is guest
     final authService = Provider.of<AuthRepository>(context, listen: false);
-    
+
     if (authService.isGuest) {
       // Show guest conversion dialog for sharing
       _showGuestShareDialog();
       return;
     }
-    
+
     // TODO: Implement share functionality for authenticated users
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -373,9 +382,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -385,27 +392,22 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                 gradient: AppColors.primaryGradient,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.share,
-                color: Colors.white,
-                size: 40,
-              ),
+              child: const Icon(Icons.share, color: Colors.white, size: 40),
             ),
             const SizedBox(height: 20),
             Text(
               'Save Your Wishlist & Share it!',
-              style: AppStyles.headingMediumWithContext(context).copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppStyles.headingMediumWithContext(
+                context,
+              ).copyWith(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
               'To get a unique shareable link and ensure your wishlist is saved permanently, please create a quick, free account.',
-              style: AppStyles.bodyMediumWithContext(context).copyWith(
-                color: AppColors.textSecondary,
-                height: 1.5,
-              ),
+              style: AppStyles.bodyMediumWithContext(
+                context,
+              ).copyWith(color: AppColors.textSecondary, height: 1.5),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -424,9 +426,9 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
               onPressed: () => Navigator.pop(context),
               child: Text(
                 'Not Now',
-                style: AppStyles.bodyMediumWithContext(context).copyWith(
-                  color: AppColors.textSecondary,
-                ),
+                style: AppStyles.bodyMediumWithContext(
+                  context,
+                ).copyWith(color: AppColors.textSecondary),
               ),
             ),
           ],
@@ -535,10 +537,13 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
       // Check if user is guest
       final authService = Provider.of<AuthRepository>(context, listen: false);
-      
+
       if (authService.isGuest) {
         // Delete from local storage
-        final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+        final guestDataRepo = Provider.of<GuestDataRepository>(
+          context,
+          listen: false,
+        );
         await guestDataRepo.deleteWishlist(wishlist.id);
       } else {
         // Call API to delete wishlist
@@ -654,48 +659,55 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     });
 
     try {
-      final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+      final guestDataRepo = Provider.of<GuestDataRepository>(
+        context,
+        listen: false,
+      );
       final wishlists = await guestDataRepo.getAllWishlists();
-      
+
       // Convert to WishlistSummary format
       // For guest users, we need to load items separately to get accurate counts
       final personalWishlists = <WishlistSummary>[];
-      
+
       for (final wishlist in wishlists) {
         // Load items for this wishlist to get accurate count
         final items = await guestDataRepo.getWishlistItems(wishlist.id);
-        final purchasedCount = items.where((item) => item.status == ItemStatus.purchased).length;
-        
+        final purchasedCount = items
+            .where((item) => item.status == ItemStatus.purchased)
+            .length;
+
         // Extract category if available (default to 'general')
-        final category = 'general'; // Can be extended if category is stored in Wishlist model
-        
+        final category =
+            'general'; // Can be extended if category is stored in Wishlist model
+
         personalWishlists.add(
           WishlistSummary(
             id: wishlist.id,
             name: wishlist.name,
             itemCount: items.length, // Use actual items count from Hive
-            purchasedCount: purchasedCount, // Use actual purchased count from Hive
+            purchasedCount:
+                purchasedCount, // Use actual purchased count from Hive
             lastUpdated: wishlist.updatedAt,
             privacy: wishlist.visibility == WishlistVisibility.public
                 ? WishlistPrivacy.public
                 : wishlist.visibility == WishlistVisibility.private
-                    ? WishlistPrivacy.private
-                    : WishlistPrivacy.onlyInvited,
+                ? WishlistPrivacy.private
+                : WishlistPrivacy.onlyInvited,
             category: category,
           ),
         );
       }
-      
+
       // Build category map for filtering
       final categoryMap = <String, String>{};
       final categorySet = <String>{};
-      
+
       for (final wishlist in personalWishlists) {
         final cat = wishlist.category ?? 'general';
         categoryMap[wishlist.id] = cat;
         categorySet.add(cat);
       }
-      
+
       setState(() {
         _personalWishlists = personalWishlists;
         _allPersonalWishlists = List.from(personalWishlists);
@@ -704,8 +716,10 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         _isLoading = false;
         _hasLoadedOnce = true;
       });
-      
-      debugPrint('✅ MyWishlistsScreen: Loaded ${personalWishlists.length} guest wishlists');
+
+      debugPrint(
+        '✅ MyWishlistsScreen: Loaded ${personalWishlists.length} guest wishlists',
+      );
     } catch (e) {
       debugPrint('❌ MyWishlistsScreen: Error loading guest wishlists: $e');
       setState(() {
@@ -718,12 +732,12 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   Future<void> _loadWishlists() async {
     // Check if user is guest
     final authService = Provider.of<AuthRepository>(context, listen: false);
-    
+
     if (authService.isGuest) {
       await _loadGuestWishlists();
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -976,14 +990,14 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
       _applyCategoryFilter();
       return;
     }
-    
+
     // Filter wishlists based on search query (local search)
     final filtered = _allPersonalWishlists.where((wishlist) {
       final searchLower = query.toLowerCase();
       return wishlist.name.toLowerCase().contains(searchLower) ||
           (wishlist.category?.toLowerCase().contains(searchLower) ?? false);
     }).toList();
-    
+
     setState(() {
       _personalWishlists = filtered;
     });
@@ -1182,7 +1196,8 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
       animation: _animationController,
       builder: (context, child) {
         // Create pulsing effect using sine wave - lighter and smoother
-        final pulseValue = (0.15 +
+        final pulseValue =
+            (0.15 +
             (0.2 *
                 (0.5 +
                     0.5 * (1 + (2 * _animationController.value - 1).abs()))));
@@ -1244,8 +1259,12 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          AppColors.primary.withOpacity(0.08 + pulseValue * 0.05),
-                          AppColors.primary.withOpacity(0.12 + pulseValue * 0.05),
+                          AppColors.primary.withOpacity(
+                            0.08 + pulseValue * 0.05,
+                          ),
+                          AppColors.primary.withOpacity(
+                            0.12 + pulseValue * 0.05,
+                          ),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(20),
@@ -1298,9 +1317,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
             // Body Section (White Background)
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-              ),
+              decoration: const BoxDecoration(color: Colors.white),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1370,9 +1387,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(
-              0.06 + pulseValue * 0.03,
-            ),
+            color: AppColors.primary.withOpacity(0.06 + pulseValue * 0.03),
             borderRadius: BorderRadius.circular(12),
           ),
         ),
@@ -1381,9 +1396,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
           width: 30,
           height: 16,
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(
-              0.1 + pulseValue * 0.05,
-            ),
+            color: AppColors.primary.withOpacity(0.1 + pulseValue * 0.05),
             borderRadius: BorderRadius.circular(8),
           ),
         ),
@@ -1392,9 +1405,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
           width: 50,
           height: 12,
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(
-              0.08 + pulseValue * 0.03,
-            ),
+            color: AppColors.primary.withOpacity(0.08 + pulseValue * 0.03),
             borderRadius: BorderRadius.circular(6),
           ),
         ),

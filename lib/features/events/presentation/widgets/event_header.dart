@@ -116,9 +116,11 @@ class EventHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  '${event.date.day}',
+                  '${event.date.day} ${_getMonthName(event.date.month)}',
                   style: AppStyles.headingSmall.copyWith(
                     color: isPast
                         ? AppColors.textTertiary
@@ -128,17 +130,21 @@ class EventHeader extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
-                  _getMonthName(event.date.month),
-                  style: AppStyles.caption.copyWith(
-                    color: isPast
-                        ? AppColors.textTertiary
-                        : daysUntil <= 7
-                        ? AppColors.warning
-                        : AppColors.info,
-                    fontWeight: FontWeight.w600,
+                if (event.time != null && event.time!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    event.time!,
+                    style: AppStyles.caption.copyWith(
+                      color: isPast
+                          ? AppColors.textTertiary
+                          : daysUntil <= 7
+                          ? AppColors.warning
+                          : AppColors.info,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

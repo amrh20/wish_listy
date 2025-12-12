@@ -161,22 +161,25 @@ class EventCard extends StatelessWidget {
             ),
           ),
 
-          // Date Badge - Pill-shaped
+          // Date Badge - Rounded rectangle
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: isPast
                   ? AppColors.textTertiary.withOpacity(0.15)
                   : daysUntil <= 7
                   ? AppColors.warning.withOpacity(0.15)
                   : AppColors.info.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(30), // Pill-shaped
+              borderRadius: BorderRadius.circular(
+                12,
+              ), // Rounded rectangle instead of pill
             ),
-            child: Row(
+            child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  '${event.date.day}',
+                  '${event.date.day} ${_getMonthName(event.date.month)}',
                   style: AppStyles.headingSmall.copyWith(
                     color: isPast
                         ? AppColors.textTertiary
@@ -186,18 +189,21 @@ class EventCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  _getMonthName(event.date.month),
-                  style: AppStyles.caption.copyWith(
-                    color: isPast
-                        ? AppColors.textTertiary
-                        : daysUntil <= 7
-                        ? AppColors.warning
-                        : AppColors.info,
-                    fontWeight: FontWeight.w600,
+                if (event.time != null && event.time!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    event.time!,
+                    style: AppStyles.caption.copyWith(
+                      color: isPast
+                          ? AppColors.textTertiary
+                          : daysUntil <= 7
+                          ? AppColors.warning
+                          : AppColors.info,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -267,7 +273,8 @@ class EventCard extends StatelessWidget {
                 _buildEventStatColumn(
                   icon: Icons.card_giftcard_outlined,
                   label: 'Wishlist',
-                  value: '${event.wishlistItemCount}',
+                  value:
+                      '1', // Show 1 if wishlist exists (one wishlist linked to event)
                   color: AppColors.secondary, // Match header theme (Teal)
                 )
               else

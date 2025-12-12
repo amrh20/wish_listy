@@ -13,6 +13,7 @@ import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
+import 'package:wish_listy/features/events/data/repository/event_repository.dart';
 import '../widgets/create_wishlist_header_widget.dart';
 import '../widgets/privacy_selection_widget.dart';
 import '../widgets/category_selection_widget.dart';
@@ -22,8 +23,17 @@ import '../widgets/wishlist_success_dialog_helper.dart';
 
 class CreateWishlistScreen extends StatefulWidget {
   final String? wishlistId;
+  final String? eventId;
+  final bool isForEvent;
+  final String? previousRoute;
 
-  const CreateWishlistScreen({super.key, this.wishlistId});
+  const CreateWishlistScreen({
+    super.key,
+    this.wishlistId,
+    this.eventId,
+    this.isForEvent = false,
+    this.previousRoute,
+  });
 
   @override
   State<CreateWishlistScreen> createState() => _CreateWishlistScreenState();
@@ -46,6 +56,8 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   String _selectedCategory = 'birthday';
   bool _isCustomCategory = false;
   final WishlistRepository _wishlistRepository = WishlistRepository();
+  final EventRepository _eventRepository = EventRepository();
+  String? _eventName; // Store event name for banner display
 
   final List<String> _privacyOptions = ['public', 'private', 'friends'];
   final List<String> _categoryOptions = [
@@ -70,6 +82,89 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     if (widget.wishlistId != null) {
       _loadWishlistData();
     }
+    // Load event name if creating for event
+    if (widget.isForEvent && widget.eventId != null) {
+      _loadEventName();
+    }
+  }
+
+  /// Handles back navigation - returns to the correct previous screen
+  void _handleBackNavigation() {
+    if (!mounted) return;
+
+    final previousRoute = widget.previousRoute;
+    debugPrint('🔙 CreateWishlistScreen: Back navigation requested');
+    debugPrint('   PreviousRoute: $previousRoute');
+
+    // Use post-frame callback to ensure Navigator is not locked
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      // Routes that are inside MainNavigation (IndexedStack)
+      // These screens don't exist as separate routes, so we just pop to MainNavigation
+      final mainNavigationRoutes = [
+        AppRoutes.myWishlists,
+        AppRoutes.events,
+        AppRoutes.friends,
+        AppRoutes.profile,
+        AppRoutes.home,
+        AppRoutes.mainNavigation,
+      ];
+
+      // If previousRoute is null or is a MainNavigation route, just pop
+      if (previousRoute == null ||
+          mainNavigationRoutes.contains(previousRoute)) {
+        debugPrint('   MainNavigation route or null, using simple pop');
+        if (Navigator.of(context).canPop()) {
+          try {
+            Navigator.of(context).pop();
+            debugPrint('   ✅ Popped to MainNavigation');
+          } catch (e) {
+            debugPrint('⚠️ Error during pop: $e');
+          }
+        }
+        return;
+      }
+
+      // For other routes (like eventDetails), try to find them in the stack
+      bool routeFound = false;
+      try {
+        debugPrint('   Searching for route: $previousRoute');
+        Navigator.of(context).popUntil((route) {
+          final routeName = route.settings.name;
+          debugPrint('   Checking route: $routeName');
+          if (routeName == previousRoute) {
+            routeFound = true;
+            debugPrint('   ✅ Found target route: $routeName');
+            return true; // Stop popping
+          }
+          // Also stop if we reach MainNavigation (to preserve bottom nav)
+          if (routeName == AppRoutes.mainNavigation) {
+            debugPrint('   Reached MainNavigation, stopping');
+            return true;
+          }
+          return false; // Continue popping
+        });
+      } catch (e) {
+        debugPrint('⚠️ Error during popUntil: $e');
+        routeFound = false;
+      }
+
+      // If route not found, just pop (will return to MainNavigation)
+      if (!routeFound && mounted) {
+        debugPrint('   Route not found, using simple pop');
+        if (Navigator.of(context).canPop()) {
+          try {
+            Navigator.of(context).pop();
+            debugPrint('   ✅ Popped to previous screen');
+          } catch (e) {
+            debugPrint('⚠️ Error during pop: $e');
+          }
+        }
+      } else if (routeFound) {
+        debugPrint('   ✅ Successfully returned to: $previousRoute');
+      }
+    });
   }
 
   /// Validate form and update _isFormValid state
@@ -139,7 +234,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                 children: [
                   CreateWishlistHeaderWidget(
                     isEditing: widget.wishlistId != null,
-                    onBack: () => Navigator.pop(context),
+                    onBack: _handleBackNavigation,
                     getTitle: () => widget.wishlistId != null
                         ? 'Edit Wishlist'
                         : localization.translate('wishlists.createWishlist'),
@@ -160,6 +255,13 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 const SizedBox(height: 20),
+
+                                // Event Context Banner
+                                if (widget.isForEvent && widget.eventId != null)
+                                  _buildEventContextBanner(),
+
+                                if (widget.isForEvent && widget.eventId != null)
+                                  const SizedBox(height: 20),
 
                                 // Wishlist Name
                                 CustomTextField(
@@ -332,11 +434,16 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       // Check if user is guest
       final authService = Provider.of<AuthRepository>(context, listen: false);
       Map<String, dynamic> wishlistData;
-      
+
       if (authService.isGuest) {
         // Load from local storage for guests
-        final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
-        final wishlist = await guestDataRepo.getWishlistById(widget.wishlistId!);
+        final guestDataRepo = Provider.of<GuestDataRepository>(
+          context,
+          listen: false,
+        );
+        final wishlist = await guestDataRepo.getWishlistById(
+          widget.wishlistId!,
+        );
         if (wishlist == null) {
           throw Exception('Wishlist not found');
         }
@@ -437,13 +544,13 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   ) async {
     // Check if user is guest
     final authService = Provider.of<AuthRepository>(context, listen: false);
-    
+
     if (authService.isGuest) {
       // Update wishlist locally for guest
       await _handleUpdateGuestWishlist(finalCategory);
       return;
     }
-    
+
     // Update wishlist via API for authenticated users
     final response = await _wishlistRepository.updateWishlist(
       wishlistId: widget.wishlistId!,
@@ -474,14 +581,19 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   /// Update wishlist locally for guest users
   Future<void> _handleUpdateGuestWishlist(String finalCategory) async {
     try {
-      final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
-      
+      final guestDataRepo = Provider.of<GuestDataRepository>(
+        context,
+        listen: false,
+      );
+
       // Get existing wishlist
-      final existingWishlist = await guestDataRepo.getWishlistById(widget.wishlistId!);
+      final existingWishlist = await guestDataRepo.getWishlistById(
+        widget.wishlistId!,
+      );
       if (existingWishlist == null) {
         throw Exception('Wishlist not found');
       }
-      
+
       // Update wishlist with new data
       // Note: Guest wishlists keep 'private' visibility (local-only)
       final updatedWishlist = existingWishlist.copyWith(
@@ -491,11 +603,11 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
             : _descriptionController.text.trim(),
         updatedAt: DateTime.now(),
       );
-      
+
       await guestDataRepo.updateWishlist(updatedWishlist);
-      
+
       setState(() => _isLoading = false);
-      
+
       if (mounted) {
         WishlistSuccessDialogHelper.showEditSuccessDialog(context);
       }
@@ -513,13 +625,13 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   ) async {
     // Check if user is guest
     final authService = Provider.of<AuthRepository>(context, listen: false);
-    
+
     if (authService.isGuest) {
       // Create wishlist locally for guest
       await _handleCreateGuestWishlist(finalCategory);
       return;
     }
-    
+
     // Create wishlist via API for authenticated users
     final response = await _wishlistRepository.createWishlist(
       name: _nameController.text.trim(),
@@ -543,6 +655,60 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         return;
       }
 
+      // If creating for event, link wishlist to event automatically
+      if (widget.isForEvent && widget.eventId != null) {
+        try {
+          await _eventRepository.linkWishlistToEvent(
+            eventId: widget.eventId!,
+            wishlistId: wishlistId,
+          );
+
+          if (mounted) {
+            // Navigate back to events screen
+            // Use a post-frame callback to ensure navigation is safe
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+
+              // Pop current screen first
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              }
+
+              // Then check if we need to navigate to events screen
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (!mounted) return;
+
+                final currentRoute = ModalRoute.of(context)?.settings.name;
+                if (currentRoute != AppRoutes.events) {
+                  // Navigate to events screen
+                  Navigator.pushReplacementNamed(context, AppRoutes.events);
+                }
+
+                // Show success message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text(
+                      'Wishlist created and linked to event successfully',
+                    ),
+                    backgroundColor: AppColors.success,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              });
+            });
+          }
+          return;
+        } catch (e) {
+          if (mounted) {
+            _showErrorSnackBar(
+              'Wishlist created but failed to link to event: ${e.toString()}',
+            );
+          }
+          return;
+        }
+      }
+
+      // Normal flow for regular wishlist creation
       if (mounted) {
         WishlistSuccessDialogHelper.showCreateSuccessDialog(
           context: context,
@@ -587,8 +753,11 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   /// Show error message as a dialog with Lottie animation
   Future<void> _handleCreateGuestWishlist(String finalCategory) async {
     try {
-      final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
-      
+      final guestDataRepo = Provider.of<GuestDataRepository>(
+        context,
+        listen: false,
+      );
+
       // Create Wishlist model
       // For guest users, use 'private' visibility as default (local-only data)
       // This helps identify guest wishlists during migration after signup
@@ -606,12 +775,12 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      
+
       // Save to local storage
       final wishlistId = await guestDataRepo.createWishlist(wishlist);
-      
+
       setState(() => _isLoading = false);
-      
+
       if (mounted) {
         // Show success dialog
         showDialog(
@@ -630,26 +799,22 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                     gradient: AppColors.primaryGradient,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.check,
-                    color: Colors.white,
-                    size: 48,
-                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 48),
                 ),
                 const SizedBox(height: 20),
                 Text(
                   'Wishlist Created!',
-                  style: AppStyles.headingMediumWithContext(context).copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppStyles.headingMediumWithContext(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Your wishlist has been saved locally. Start adding wishes!',
-                  style: AppStyles.bodyMediumWithContext(context).copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+                  style: AppStyles.bodyMediumWithContext(
+                    context,
+                  ).copyWith(color: AppColors.textSecondary),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -699,6 +864,64 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       secondaryActionLabel: 'Close',
       onSecondaryAction: () {},
       barrierDismissible: true,
+    );
+  }
+
+  /// Load event name from API
+  Future<void> _loadEventName() async {
+    if (widget.eventId == null) return;
+
+    try {
+      final event = await _eventRepository.getEventById(widget.eventId!);
+      if (mounted) {
+        setState(() {
+          _eventName = event.name;
+        });
+      }
+    } catch (e) {
+      debugPrint('⚠️ Failed to load event name: $e');
+      // Continue without event name - banner will show generic message
+    }
+  }
+
+  /// Builds event context banner widget
+  Widget _buildEventContextBanner() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.event, color: AppColors.primary, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _eventName != null
+                      ? 'Creating wishlist for: $_eventName'
+                      : 'Creating wishlist for this event',
+                  style: AppStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'This wishlist will be automatically linked to the event',
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
