@@ -10,7 +10,9 @@ class GuestDataRepository {
   /// Get all wishlists for guest user
   Future<List<Wishlist>> getAllWishlists() async {
     try {
-      final box = await Hive.openBox<Wishlist>(_wishlistsBoxName);
+      // Use Hive.box() instead of Hive.openBox() for better performance
+      // Box is already opened in main.dart
+      final box = Hive.box<Wishlist>(_wishlistsBoxName);
       return box.values.toList();
     } catch (e) {
       debugPrint('❌ GuestDataRepository: Error getting wishlists: $e');
@@ -21,7 +23,7 @@ class GuestDataRepository {
   /// Get a single wishlist by ID
   Future<Wishlist?> getWishlistById(String id) async {
     try {
-      final box = await Hive.openBox<Wishlist>(_wishlistsBoxName);
+      final box = Hive.box<Wishlist>(_wishlistsBoxName);
       return box.get(id);
     } catch (e) {
       debugPrint('❌ GuestDataRepository: Error getting wishlist $id: $e');
@@ -32,11 +34,11 @@ class GuestDataRepository {
   /// Create a new wishlist and return its ID
   Future<String> createWishlist(Wishlist wishlist) async {
     try {
-      final box = await Hive.openBox<Wishlist>(_wishlistsBoxName);
-      
+      final box = Hive.box<Wishlist>(_wishlistsBoxName);
+
       // Generate unique ID for guest wishlist
       final id = 'guest_${DateTime.now().millisecondsSinceEpoch}';
-      
+
       // Create wishlist with generated ID
       final newWishlist = wishlist.copyWith(
         id: id,
@@ -44,10 +46,10 @@ class GuestDataRepository {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      
+
       await box.put(id, newWishlist);
       debugPrint('✅ GuestDataRepository: Created wishlist $id');
-      
+
       return id;
     } catch (e) {
       debugPrint('❌ GuestDataRepository: Error creating wishlist: $e');
@@ -58,12 +60,10 @@ class GuestDataRepository {
   /// Update an existing wishlist
   Future<void> updateWishlist(Wishlist wishlist) async {
     try {
-      final box = await Hive.openBox<Wishlist>(_wishlistsBoxName);
-      
-      final updatedWishlist = wishlist.copyWith(
-        updatedAt: DateTime.now(),
-      );
-      
+      final box = Hive.box<Wishlist>(_wishlistsBoxName);
+
+      final updatedWishlist = wishlist.copyWith(updatedAt: DateTime.now());
+
       await box.put(wishlist.id, updatedWishlist);
       debugPrint('✅ GuestDataRepository: Updated wishlist ${wishlist.id}');
     } catch (e) {
@@ -75,22 +75,24 @@ class GuestDataRepository {
   /// Delete a wishlist and all its items
   Future<void> deleteWishlist(String id) async {
     try {
-      final wishlistBox = await Hive.openBox<Wishlist>(_wishlistsBoxName);
-      final itemsBox = await Hive.openBox<WishlistItem>(_itemsBoxName);
-      
+      final wishlistBox = Hive.box<Wishlist>(_wishlistsBoxName);
+      final itemsBox = Hive.box<WishlistItem>(_itemsBoxName);
+
       // Delete all items belonging to this wishlist
       final itemsToDelete = itemsBox.values
           .where((item) => item.wishlistId == id)
           .map((item) => item.id)
           .toList();
-      
+
       for (final itemId in itemsToDelete) {
         await itemsBox.delete(itemId);
       }
-      
+
       // Delete the wishlist
       await wishlistBox.delete(id);
-      debugPrint('✅ GuestDataRepository: Deleted wishlist $id and ${itemsToDelete.length} items');
+      debugPrint(
+        '✅ GuestDataRepository: Deleted wishlist $id and ${itemsToDelete.length} items',
+      );
     } catch (e) {
       debugPrint('❌ GuestDataRepository: Error deleting wishlist: $e');
       rethrow;
@@ -100,12 +102,14 @@ class GuestDataRepository {
   /// Get all items for a specific wishlist
   Future<List<WishlistItem>> getWishlistItems(String wishlistId) async {
     try {
-      final box = await Hive.openBox<WishlistItem>(_itemsBoxName);
+      final box = Hive.box<WishlistItem>(_itemsBoxName);
       final items = box.values
           .where((item) => item.wishlistId == wishlistId)
           .toList();
-      
-      debugPrint('📦 GuestDataRepository: Found ${items.length} items for wishlist $wishlistId');
+
+      debugPrint(
+        '📦 GuestDataRepository: Found ${items.length} items for wishlist $wishlistId',
+      );
       return items;
     } catch (e) {
       debugPrint('❌ GuestDataRepository: Error getting items: $e');
@@ -116,11 +120,11 @@ class GuestDataRepository {
   /// Add a new item to a wishlist and return its ID
   Future<String> addWishlistItem(String wishlistId, WishlistItem item) async {
     try {
-      final itemsBox = await Hive.openBox<WishlistItem>(_itemsBoxName);
-      
+      final itemsBox = Hive.box<WishlistItem>(_itemsBoxName);
+
       // Generate unique ID for the item
       final id = 'guest_item_${DateTime.now().millisecondsSinceEpoch}';
-      
+
       // Create item with generated ID
       final newItem = item.copyWith(
         id: id,
@@ -128,16 +132,18 @@ class GuestDataRepository {
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
-      
+
       await itemsBox.put(id, newItem);
-      
+
       // Update wishlist's updatedAt timestamp
       final wishlist = await getWishlistById(wishlistId);
       if (wishlist != null) {
         await updateWishlist(wishlist);
       }
-      
-      debugPrint('✅ GuestDataRepository: Added item $id to wishlist $wishlistId');
+
+      debugPrint(
+        '✅ GuestDataRepository: Added item $id to wishlist $wishlistId',
+      );
       return id;
     } catch (e) {
       debugPrint('❌ GuestDataRepository: Error adding item: $e');
@@ -148,21 +154,19 @@ class GuestDataRepository {
   /// Update an existing wishlist item
   Future<void> updateWishlistItem(WishlistItem item) async {
     try {
-      final box = await Hive.openBox<WishlistItem>(_itemsBoxName);
-      
-      final updatedItem = item.copyWith(
-        updatedAt: DateTime.now(),
-      );
-      
+      final box = Hive.box<WishlistItem>(_itemsBoxName);
+
+      final updatedItem = item.copyWith(updatedAt: DateTime.now());
+
       await box.put(item.id, updatedItem);
-      
+
       // Update parent wishlist's timestamp
-      final wishlistBox = await Hive.openBox<Wishlist>(_wishlistsBoxName);
+      final wishlistBox = Hive.box<Wishlist>(_wishlistsBoxName);
       final wishlist = wishlistBox.get(item.wishlistId);
       if (wishlist != null) {
         await updateWishlist(wishlist);
       }
-      
+
       debugPrint('✅ GuestDataRepository: Updated item ${item.id}');
     } catch (e) {
       debugPrint('❌ GuestDataRepository: Error updating item: $e');
@@ -173,22 +177,24 @@ class GuestDataRepository {
   /// Delete a wishlist item
   Future<void> deleteWishlistItem(String itemId) async {
     try {
-      final itemsBox = await Hive.openBox<WishlistItem>(_itemsBoxName);
-      final wishlistBox = await Hive.openBox<Wishlist>(_wishlistsBoxName);
-      
+      final itemsBox = Hive.box<WishlistItem>(_itemsBoxName);
+      final wishlistBox = Hive.box<Wishlist>(_wishlistsBoxName);
+
       // Get the item to find its wishlistId before deleting
       final item = itemsBox.get(itemId);
       if (item != null) {
         // Delete the item
         await itemsBox.delete(itemId);
-        
+
         // Update parent wishlist's timestamp
         final wishlist = wishlistBox.get(item.wishlistId);
         if (wishlist != null) {
           await updateWishlist(wishlist);
         }
-        
-        debugPrint('✅ GuestDataRepository: Deleted item $itemId and updated wishlist ${item.wishlistId}');
+
+        debugPrint(
+          '✅ GuestDataRepository: Deleted item $itemId and updated wishlist ${item.wishlistId}',
+        );
       } else {
         debugPrint('⚠️ GuestDataRepository: Item $itemId not found');
       }
@@ -201,12 +207,12 @@ class GuestDataRepository {
   /// Clear all guest data (used after migration to account)
   Future<void> clearAllGuestData() async {
     try {
-      final wishlistBox = await Hive.openBox<Wishlist>(_wishlistsBoxName);
-      final itemsBox = await Hive.openBox<WishlistItem>(_itemsBoxName);
-      
+      final wishlistBox = Hive.box<Wishlist>(_wishlistsBoxName);
+      final itemsBox = Hive.box<WishlistItem>(_itemsBoxName);
+
       await wishlistBox.clear();
       await itemsBox.clear();
-      
+
       debugPrint('✅ GuestDataRepository: Cleared all guest data');
     } catch (e) {
       debugPrint('❌ GuestDataRepository: Error clearing data: $e');
@@ -217,7 +223,7 @@ class GuestDataRepository {
   /// Check if guest has any data
   Future<bool> hasGuestData() async {
     try {
-      final box = await Hive.openBox<Wishlist>(_wishlistsBoxName);
+      final box = Hive.box<Wishlist>(_wishlistsBoxName);
       return box.isNotEmpty;
     } catch (e) {
       debugPrint('❌ GuestDataRepository: Error checking guest data: $e');
@@ -228,7 +234,7 @@ class GuestDataRepository {
   /// Get count of guest wishlists
   Future<int> getWishlistCount() async {
     try {
-      final box = await Hive.openBox<Wishlist>(_wishlistsBoxName);
+      final box = Hive.box<Wishlist>(_wishlistsBoxName);
       return box.length;
     } catch (e) {
       debugPrint('❌ GuestDataRepository: Error getting wishlist count: $e');
@@ -236,4 +242,3 @@ class GuestDataRepository {
     }
   }
 }
-

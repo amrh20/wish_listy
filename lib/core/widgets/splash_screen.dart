@@ -6,6 +6,7 @@ import 'package:wish_listy/core/widgets/app_logo.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
+import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -70,14 +71,40 @@ class _SplashScreenState extends State<SplashScreen>
       );
     }
 
+    // Determine which screen to show
+    Widget targetScreen;
+
+    if (isAuthenticated) {
+      // Authenticated users always go to MainNavigation
+      targetScreen = const MainNavigation();
+    } else {
+      // For guest users, check if they have existing wishlists
+      final guestDataRepo = Provider.of<GuestDataRepository>(
+        context,
+        listen: false,
+      );
+      final hasGuestData = await guestDataRepo.hasGuestData();
+
+      if (kDebugMode) {
+        debugPrint(
+          'Splash screen: Guest user has data: $hasGuestData',
+        );
+      }
+
+      if (!mounted) return;
+
+      // If guest has wishlists, skip onboarding and go directly to MainNavigation
+      // Otherwise, show onboarding screen
+      targetScreen = hasGuestData
+          ? const MainNavigation()
+          : const OnboardingScreen();
+    }
+
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) {
-          // Get the appropriate screen widget based on authentication
-          return isAuthenticated
-              ? const MainNavigation()
-              : const OnboardingScreen();
+          return targetScreen;
         },
         transitionDuration: const Duration(milliseconds: 300),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {

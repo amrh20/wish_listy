@@ -49,13 +49,19 @@ class WishlistSuccessDialogHelper {
         DialogAction(
           label: localization.translate('wishlists.viewWishlists'),
           onPressed: () {
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(); // Close dialog
             if (context.mounted) {
-              Navigator.of(context).popUntil(
-                (route) =>
-                    route.settings.name == AppRoutes.myWishlists ||
-                    route.isFirst,
-              );
+              // Close create wishlist screen
+              Navigator.of(context).pop(); // Close create wishlist screen
+              
+              // Navigate to MainNavigation which includes the bottom nav
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  AppRoutes.mainNavigation,
+                  (route) => route.isFirst, // Keep only the initial route (splash/home)
+                );
+              }
             }
           },
           variant: ButtonVariant.outline,

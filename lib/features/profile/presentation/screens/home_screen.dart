@@ -16,13 +16,15 @@ import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final GlobalKey<HomeScreenState>? key;
+
+  const HomeScreen({this.key}) : super(key: key);
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  HomeScreenState createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver {
+class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -226,7 +228,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
 
 
   @override
+  bool get wantKeepAlive => true;
+
+  /// Refresh guest wishlists data - called from MainNavigation
+  void refreshGuestWishlists() {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest) {
+      _loadGuestWishlists();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Consumer2<LocalizationService, AuthRepository>(
       builder: (context, localization, authService, child) {
         // For guest users, use custom hero header layout
@@ -1419,16 +1433,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, 
     
     try {
       final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+      // getAllWishlists now uses Hive.box() instead of Hive.openBox() for better performance
       final wishlists = await guestDataRepo.getAllWishlists();
       
+      // Load items for each wishlist to get accurate counts
+      final updatedWishlists = <Wishlist>[];
+      for (final wishlist in wishlists) {
+        final items = await guestDataRepo.getWishlistItems(wishlist.id);
+        // Update wishlist with loaded items for accurate count
+        updatedWishlists.add(wishlist.copyWith(items: items));
+      }
+      
+      if (!mounted) return;
+      
       setState(() {
-        _guestWishlists = wishlists;
+        _guestWishlists = updatedWishlists;
         _isLoadingGuestData = false;
       });
       
-      debugPrint('✅ HomeScreen: Loaded ${wishlists.length} guest wishlists');
+      debugPrint('✅ HomeScreen: Loaded ${updatedWishlists.length} guest wishlists with items');
     } catch (e) {
       debugPrint('❌ HomeScreen: Error loading guest wishlists: $e');
+      if (!mounted) return;
       setState(() {
         _isLoadingGuestData = false;
       });

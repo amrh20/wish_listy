@@ -12,6 +12,14 @@ class WishlistAdapter extends TypeAdapter<Wishlist> {
       for (int i = 0; i < fieldsCount; i++) reader.readByte(): reader.read(),
     };
     
+    // Handle backward compatibility: old wishlists may not have category field (index 10)
+    // If fieldsCount is 10, it's an old format without category
+    // If fieldsCount is 11, it has category
+    String? category;
+    if (fieldsCount >= 11 && fields.containsKey(10)) {
+      category = fields[10] as String?;
+    }
+    
     return Wishlist(
       id: fields[0] as String,
       userId: fields[1] as String,
@@ -20,6 +28,7 @@ class WishlistAdapter extends TypeAdapter<Wishlist> {
       name: fields[4] as String,
       description: fields[5] as String?,
       visibility: fields[6] as WishlistVisibility,
+      category: category, // Category field (null for old wishlists)
       items: (fields[7] as List?)?.cast<WishlistItem>() ?? [],
       createdAt: fields[8] as DateTime,
       updatedAt: fields[9] as DateTime,
@@ -29,7 +38,7 @@ class WishlistAdapter extends TypeAdapter<Wishlist> {
   @override
   void write(BinaryWriter writer, Wishlist obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11) // Updated field count to 11 (was 10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -49,7 +58,9 @@ class WishlistAdapter extends TypeAdapter<Wishlist> {
       ..writeByte(8)
       ..write(obj.createdAt)
       ..writeByte(9)
-      ..write(obj.updatedAt);
+      ..write(obj.updatedAt)
+      ..writeByte(10)
+      ..write(obj.category); // Added category field
   }
 
   @override

@@ -12,7 +12,6 @@ import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
-import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/features/events/data/repository/event_repository.dart';
 import '../widgets/create_wishlist_header_widget.dart';
 import '../widgets/privacy_selection_widget.dart';
@@ -453,7 +452,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
           'name': wishlist.name,
           'description': wishlist.description,
           'privacy': wishlist.visibility.toString().split('.').last,
-          'category': 'general', // Default category for guest wishlists
+          'category': wishlist.category ?? 'general', // Load category from model
         };
       } else {
         // Load from API for authenticated users
@@ -601,6 +600,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         description: _descriptionController.text.trim().isEmpty
             ? null
             : _descriptionController.text.trim(),
+        category: finalCategory, // Save category
         updatedAt: DateTime.now(),
       );
 
@@ -772,6 +772,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         // Guest wishlists are always private (local-only)
         // This serves as an identifier for guest-created wishlists
         visibility: WishlistVisibility.private,
+        category: finalCategory, // Save category
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -782,64 +783,14 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       setState(() => _isLoading = false);
 
       if (mounted) {
-        // Show success dialog
-        showDialog(
+        // Use the same success dialog helper as authenticated users
+        final localization = Provider.of<LocalizationService>(context, listen: false);
+        WishlistSuccessDialogHelper.showCreateSuccessDialog(
           context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.check, color: Colors.white, size: 48),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Wishlist Created!',
-                  style: AppStyles.headingMediumWithContext(
-                    context,
-                  ).copyWith(fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Your wishlist has been saved locally. Start adding wishes!',
-                  style: AppStyles.bodyMediumWithContext(
-                    context,
-                  ).copyWith(color: AppColors.textSecondary),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                CustomButton(
-                  text: 'Start Adding Wishes',
-                  onPressed: () {
-                    Navigator.pop(context); // Close dialog
-                    Navigator.pop(context); // Go back to home
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.wishlistItems,
-                      arguments: {
-                        'wishlistId': wishlistId,
-                        'wishlistName': _nameController.text.trim(),
-                        'totalItems': 0,
-                        'purchasedItems': 0,
-                      },
-                    );
-                  },
-                  variant: ButtonVariant.gradient,
-                  gradientColors: [AppColors.primary, AppColors.secondary],
-                ),
-              ],
-            ),
-          ),
+          localization: localization,
+          wishlistId: wishlistId,
+          wishlistName: _nameController.text.trim(),
+          onResetForm: _resetForm,
         );
       }
     } catch (e) {

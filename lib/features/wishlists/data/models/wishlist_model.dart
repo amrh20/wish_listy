@@ -6,6 +6,7 @@ class Wishlist {
   final String name;
   final String? description;
   final WishlistVisibility visibility;
+  final String? category; // Added category field
   final List<WishlistItem> items;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -18,6 +19,7 @@ class Wishlist {
     required this.name,
     this.description,
     required this.visibility,
+    this.category,
     this.items = const [],
     required this.createdAt,
     required this.updatedAt,
@@ -38,6 +40,7 @@ class Wishlist {
         (e) => e.toString().split('.').last == json['visibility'],
         orElse: () => WishlistVisibility.friends,
       ),
+      category: json['category'],
       items:
           (json['items'] as List<dynamic>?)
               ?.map((item) => WishlistItem.fromJson(item))
@@ -57,6 +60,7 @@ class Wishlist {
       'name': name,
       'description': description,
       'visibility': visibility.toString().split('.').last,
+      'category': category,
       'items': items.map((item) => item.toJson()).toList(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
@@ -71,6 +75,7 @@ class Wishlist {
     String? name,
     String? description,
     WishlistVisibility? visibility,
+    String? category,
     List<WishlistItem>? items,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -83,6 +88,7 @@ class Wishlist {
       name: name ?? this.name,
       description: description ?? this.description,
       visibility: visibility ?? this.visibility,
+      category: category ?? this.category,
       items: items ?? this.items,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

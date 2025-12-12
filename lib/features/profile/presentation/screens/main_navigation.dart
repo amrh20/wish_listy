@@ -11,7 +11,7 @@ import 'package:wish_listy/features/auth/presentation/widgets/guest_onboarding_b
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
-import 'home_screen.dart';
+import 'home_screen.dart' show HomeScreen, HomeScreenState;
 import 'package:wish_listy/features/wishlists/presentation/screens/my_wishlists_screen.dart';
 import 'package:wish_listy/features/events/presentation/screens/events_screen.dart';
 import 'package:wish_listy/features/friends/presentation/screens/friends_screen.dart';
@@ -30,6 +30,8 @@ class _MainNavigationState extends State<MainNavigation>
   late AnimationController _fabAnimationController;
   final GlobalKey<MyWishlistsScreenState> _wishlistsKey = GlobalKey();
   final GlobalKey<EventsScreenState> _eventsKey = GlobalKey();
+  final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
+  final GlobalKey homeKey = GlobalKey();
 
   @override
   void initState() {
@@ -107,6 +109,11 @@ class _MainNavigationState extends State<MainNavigation>
       _currentIndex = index;
     });
 
+    // Refresh data when switching to home tab (for guest wishlists)
+    if (index == 0 && _homeKey.currentState != null) {
+      _homeKey.currentState!.refreshGuestWishlists();
+    }
+
     // Refresh data when switching to wishlists tab
     if (index == 1 && _wishlistsKey.currentState != null) {
       _wishlistsKey.currentState!.refreshWishlists();
@@ -126,7 +133,7 @@ class _MainNavigationState extends State<MainNavigation>
   }
 
   List<Widget> get _screens => [
-    const HomeScreen(),
+    HomeScreen(key: _homeKey),
     MyWishlistsScreen(key: _wishlistsKey),
     EventsScreen(key: _eventsKey),
     const FriendsScreen(),

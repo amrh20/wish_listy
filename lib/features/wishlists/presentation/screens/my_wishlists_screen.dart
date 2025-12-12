@@ -147,23 +147,21 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                     onSearchChanged: (query) {
                       _onSearchChanged(query);
                     },
-                    actions: authService.isGuest
-                        ? null
-                        : [
-                            HeaderAction(
-                              icon: Icons.add_rounded,
-                              iconColor: AppColors.primary,
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  AppRoutes.createWishlist,
-                                  arguments: {
-                                    'previousRoute': AppRoutes.myWishlists,
-                                  },
-                                );
-                              },
-                            ),
-                          ],
+                    actions: [
+                      HeaderAction(
+                        icon: Icons.add_rounded,
+                        iconColor: AppColors.primary, // Purple background
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.createWishlist,
+                            arguments: {
+                              'previousRoute': AppRoutes.myWishlists,
+                            },
+                          );
+                        },
+                      ),
+                    ],
                     // Hide tabs completely for guest users
                     tabs: authService.isGuest
                         ? null
@@ -203,10 +201,11 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                     child: UnifiedPageContainer(
                       child: Column(
                         children: [
-                          // Category Filter Tabs (only show if there are categories and on Personal tab)
+                          // Category Filter Tabs (only show if there are more than 2 wishlists)
                           // For guests, always show (no tabs), for authenticated users only on first tab
                           if ((authService.isGuest ||
                                   _mainTabController.index == 0) &&
+                              _allPersonalWishlists.length > 2 &&
                               _availableCategories.isNotEmpty) ...[
                             Padding(
                               padding: const EdgeInsets.only(
@@ -669,6 +668,11 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
       // For guest users, we need to load items separately to get accurate counts
       final personalWishlists = <WishlistSummary>[];
 
+      // Store category data for filtering
+      final categoryMap = <String, String>{};
+      final categoryCounts = <String, int>{};
+      int totalCount = 0;
+
       for (final wishlist in wishlists) {
         // Load items for this wishlist to get accurate count
         final items = await guestDataRepo.getWishlistItems(wishlist.id);
@@ -676,15 +680,20 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
             .where((item) => item.status == ItemStatus.purchased)
             .length;
 
-        // Extract category if available (default to 'general')
-        final category =
-            'general'; // Can be extended if category is stored in Wishlist model
+        // Extract category from wishlist model (default to 'general' if null)
+        final category = wishlist.category ?? 'general';
+        final itemCount = items.length;
+        totalCount += itemCount;
+
+        // Store category mapping
+        categoryMap[wishlist.id] = category;
+        categoryCounts[category] = (categoryCounts[category] ?? 0) + itemCount;
 
         personalWishlists.add(
           WishlistSummary(
             id: wishlist.id,
             name: wishlist.name,
-            itemCount: items.length, // Use actual items count from Hive
+            itemCount: itemCount, // Use actual items count from Hive
             purchasedCount:
                 purchasedCount, // Use actual purchased count from Hive
             lastUpdated: wishlist.updatedAt,
@@ -693,29 +702,31 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                 : wishlist.visibility == WishlistVisibility.private
                 ? WishlistPrivacy.private
                 : WishlistPrivacy.onlyInvited,
-            category: category,
+            category: category, // Use actual category from wishlist model
           ),
         );
       }
 
-      // Build category map for filtering
-      final categoryMap = <String, String>{};
-      final categorySet = <String>{};
-
-      for (final wishlist in personalWishlists) {
-        final cat = wishlist.category ?? 'general';
-        categoryMap[wishlist.id] = cat;
-        categorySet.add(cat);
-      }
+      // Build category set from unique categories
+      final categorySet = categoryMap.values.toSet();
+      categoryCounts['all'] = totalCount; // Store total count for "All" filter
 
       setState(() {
         _personalWishlists = personalWishlists;
         _allPersonalWishlists = List.from(personalWishlists);
         _wishlistIdToCategory = categoryMap;
         _availableCategories = categorySet.toList()..sort();
+        _categoryCounts = categoryCounts; // Store category counts for filter tabs
         _isLoading = false;
         _hasLoadedOnce = true;
       });
+
+      debugPrint(
+        '📂 MyWishlistsScreen: Found ${categorySet.length} unique categories: ${categorySet.toList()..sort()}',
+      );
+      debugPrint(
+        '📊 MyWishlistsScreen: Category counts: $categoryCounts',
+      );
 
       debugPrint(
         '✅ MyWishlistsScreen: Loaded ${personalWishlists.length} guest wishlists',

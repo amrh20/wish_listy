@@ -1207,17 +1207,33 @@ class _AddItemScreenState extends State<AddItemScreen>
     String wishlistId,
     LocalizationService localization,
   ) {
-    // Find wishlist in the loaded list
-    final wishlist = _wishlists.firstWhere((w) {
-      final id = w['id']?.toString() ?? w['_id']?.toString() ?? '';
-      return id == wishlistId;
-    }, orElse: () => <String, dynamic>{});
+    try {
+      if (_wishlists.isEmpty || wishlistId.isEmpty) {
+        return 'Unnamed Wishlist';
+      }
 
-    if (wishlist.isNotEmpty) {
-      return wishlist['name']?.toString() ?? 'Unnamed Wishlist';
+      // Find wishlist in the loaded list
+      final wishlist = _wishlists.firstWhere((w) {
+        try {
+          final id = w['id']?.toString() ?? w['_id']?.toString() ?? '';
+          return id == wishlistId;
+        } catch (e) {
+          return false;
+        }
+      }, orElse: () => <String, dynamic>{});
+
+      if (wishlist.isNotEmpty) {
+        final name = wishlist['name']?.toString();
+        if (name != null && name.isNotEmpty) {
+          return name;
+        }
+      }
+
+      return 'Unnamed Wishlist'; // Fallback if not found
+    } catch (e) {
+      debugPrint('⚠️ AddItemScreen: Error in _getWishlistDisplayName: $e');
+      return 'Unnamed Wishlist'; // Safe fallback
     }
-
-    return wishlistId; // Fallback to ID if not found
   }
 
   String _getPriorityDisplayName(
@@ -1890,29 +1906,84 @@ class _AddItemScreenState extends State<AddItemScreen>
 
   /// Show success message for adding wish (with dialog)
   void _showSuccessMessage(LocalizationService localization) {
-    ConfirmationDialog.show(
-      context: context,
-      isSuccess: true,
-      title: localization.translate('wishlists.wishAdded'),
-      message: localization.translate(
-        'wishlists.wishAddedToWishlist',
-        args: {
-          'wishName': _nameController.text,
-          'wishlistName': _getWishlistDisplayName(
-            _selectedWishlist,
-            localization,
-          ),
+    try {
+      // Safely get wishlist name
+      String wishlistName;
+      try {
+        wishlistName = _getWishlistDisplayName(_selectedWishlist, localization);
+      } catch (e) {
+        debugPrint('⚠️ AddItemScreen: Error getting wishlist name: $e');
+        wishlistName = 'wishlist'; // Fallback name
+      }
+
+      ConfirmationDialog.show(
+        context: context,
+        isSuccess: true,
+        title: localization.translate('wishlists.wishAdded'),
+        message: localization.translate(
+          'wishlists.wishAddedToWishlist',
+          args: {
+            'wishName': _nameController.text,
+            'wishlistName': wishlistName,
+          },
+        ),
+        primaryActionLabel: 'Done',
+        onPrimaryAction: () {
+          Navigator.of(context).pop();
         },
-      ),
-      primaryActionLabel: 'Done',
-      onPrimaryAction: () {
-        Navigator.of(context).pop();
-      },
-      secondaryActionLabel: localization.translate('wishlists.addAnother'),
-      onSecondaryAction: () {
-        _clearForm();
-      },
-    );
+        secondaryActionLabel: localization.translate('wishlists.addAnother'),
+        onSecondaryAction: () {
+          _clearForm();
+        },
+      );
+    } catch (e, stackTrace) {
+      debugPrint('❌ AddItemScreen: Error showing success message: $e');
+      debugPrint('   Stack trace: $stackTrace');
+      // If dialog fails, show a simple snackbar instead
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Wish added successfully',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+        // Navigate back after showing snackbar
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+        });
+      }
+    }
   }
 
   /// Show success message for editing wish (with SnackBar and redirect)
