@@ -1441,17 +1441,16 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
             const SizedBox(height: 32),
             Text(
               'Create Your First Wishlist',
-              style: AppStyles.headingLargeWithContext(context).copyWith(
+              style: AppStyles.headingMediumWithContext(context).copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
-                fontSize: 28,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
             Text(
               'Start building your wishlist and organize your gift ideas',
-              style: AppStyles.bodyLargeWithContext(context).copyWith(
+              style: AppStyles.bodyMediumWithContext(context).copyWith(
                 color: AppColors.textSecondary,
                 height: 1.5,
               ),
@@ -1550,15 +1549,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
               // Add Button
               Container(
                 decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
+                  color: AppColors.primary,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
                 ),
                 child: Material(
                   color: Colors.transparent,
