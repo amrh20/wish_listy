@@ -199,6 +199,12 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                   // Tab Content in rounded container
                   Expanded(
                     child: UnifiedPageContainer(
+                      backgroundColor: (authService.isGuest && _personalWishlists.isEmpty) || 
+                                     (!authService.isGuest && _mainTabController.index == 0 && _personalWishlists.isEmpty)
+                        ? Colors.transparent
+                        : null,
+                      showShadow: !((authService.isGuest && _personalWishlists.isEmpty) || 
+                                   (!authService.isGuest && _mainTabController.index == 0 && _personalWishlists.isEmpty)),
                       child: Column(
                         children: [
                           // Category Filter Tabs (only show if there are more than 2 wishlists)

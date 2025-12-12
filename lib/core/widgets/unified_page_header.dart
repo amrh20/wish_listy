@@ -33,6 +33,12 @@ class UnifiedPageHeader extends StatelessWidget {
   // Custom bottom content (e.g., wishlist card for home screen)
   final Widget? bottomContent;
 
+  // Custom title and subtitle styling
+  final TextStyle? titleStyle;
+  final TextStyle? subtitleStyle;
+  final double? titleSubtitleSpacing;
+  final Widget? customSubtitleWidget; // Custom widget to replace subtitle
+
   const UnifiedPageHeader({
     super.key,
     required this.title,
@@ -54,6 +60,10 @@ class UnifiedPageHeader extends StatelessWidget {
     this.selectedTabColor,
     this.bottomMargin,
     this.bottomContent,
+    this.titleStyle,
+    this.subtitleStyle,
+    this.titleSubtitleSpacing,
+    this.customSubtitleWidget,
   });
 
   // Dynamic border radius based on tabs presence and bottomContent
@@ -120,47 +130,40 @@ class UnifiedPageHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Title Row
+                    // Title Row with Actions
                     Row(
                       children: [
-                        // Title with optional icon
+                        // App Logo from assets
                         if (titleIcon != null) ...[
-                          Icon(
-                            titleIcon,
-                            color: titleIconColor ?? AppColors.primary,
-                            size: 28,
+                          SizedBox(
+                            width: 40,
+                            height: 40,
+                            child: Image.asset(
+                              'assets/images/app_logo.png',
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                // Fallback to icon if image not found
+                                return Icon(
+                                  titleIcon,
+                                  color: titleIconColor ?? AppColors.primary,
+                                  size: 28,
+                                );
+                              },
+                            ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 8),
                         ],
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                title,
-                                style: AppStyles.headingLarge.copyWith(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 24,
-                                ),
-                              ),
-                              if (subtitle != null) ...[
-                                const SizedBox(height: 4),
-                                Text(
-                                  subtitle!,
-                                  style: AppStyles.bodyLarge.copyWith(
-                                    color: AppColors.textSecondary,
-                                    fontStyle: FontStyle.italic,
-                                    fontSize: 15,
-                                  ),
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ],
+                          child: Text(
+                            title,
+                            style: titleStyle ?? AppStyles.headingLarge.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 24,
+                            ),
                           ),
                         ),
-                        // Actions
+                        // Actions (in same row as title)
                         if (actions != null && actions!.isNotEmpty) ...[
                           ...actions!.map(
                             (action) => _buildActionButton(action),
@@ -169,6 +172,23 @@ class UnifiedPageHeader extends StatelessWidget {
                         if (trailing != null) trailing!,
                       ],
                     ),
+                    // Subtitle Row (below title)
+                    if (customSubtitleWidget != null) ...[
+                      SizedBox(height: titleSubtitleSpacing ?? 4),
+                      customSubtitleWidget!,
+                    ] else if (subtitle != null) ...[
+                      SizedBox(height: titleSubtitleSpacing ?? 4),
+                      Text(
+                        subtitle!,
+                        style: subtitleStyle ?? AppStyles.bodyLarge.copyWith(
+                          color: AppColors.textSecondary,
+                          fontStyle: FontStyle.italic,
+                          fontSize: 15,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
 
                     // Search Bar
                     if (showSearch) ...[
@@ -279,7 +299,8 @@ class UnifiedPageHeader extends StatelessWidget {
   }
 
   Widget _buildActionButton(HeaderAction action) {
-    final iconColor = action.iconColor ?? AppColors.textPrimary;
+    final iconColor = action.iconColor ?? AppColors.primary;
+    final useWhiteBackground = action.iconColor == AppColors.primary;
     
     return Padding(
       padding: const EdgeInsets.only(left: 8),
@@ -292,7 +313,8 @@ class UnifiedPageHeader extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
+              color: useWhiteBackground ? Colors.white : null,
+              gradient: useWhiteBackground ? null : LinearGradient(
                 colors: [
                   iconColor,
                   iconColor.withOpacity(0.7),
@@ -301,11 +323,21 @@ class UnifiedPageHeader extends StatelessWidget {
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
+              border: useWhiteBackground ? Border.all(
+                color: iconColor.withOpacity(0.2),
+                width: 1,
+              ) : Border.all(
                 color: iconColor.withOpacity(0.3),
                 width: 1.5,
               ),
-              boxShadow: [
+              boxShadow: useWhiteBackground ? [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  offset: const Offset(0, 2),
+                  blurRadius: 8,
+                  spreadRadius: 0,
+                ),
+              ] : [
                 BoxShadow(
                   color: iconColor.withOpacity(0.25),
                   offset: const Offset(0, 2),
@@ -319,7 +351,7 @@ class UnifiedPageHeader extends StatelessWidget {
                 Center(
                   child: Icon(
                     action.icon,
-                    color: Colors.white,
+                    color: useWhiteBackground ? iconColor : Colors.white,
                     size: 22,
                   ),
                 ),
