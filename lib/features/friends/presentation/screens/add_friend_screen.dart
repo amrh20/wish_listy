@@ -73,10 +73,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : IconButton(
-                                    icon: const Icon(Icons.qr_code_scanner),
-                                    onPressed: () => _scanQRCode(localization),
-                                  ),
+                                : null,
                             onChanged: (value) {
                               if (value.isNotEmpty && value.length > 2) {
                                 _performSearch(value, localization);
@@ -95,11 +92,6 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                             _buildSearchResults(localization),
                             const SizedBox(height: 32),
                           ],
-
-                          // Quick Actions
-                          _buildQuickActions(localization),
-
-                          const SizedBox(height: 32),
 
                           // Suggested Friends
                           _buildSuggestedFriends(localization),
@@ -333,76 +325,6 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
     );
   }
 
-  Widget _buildQuickActions(LocalizationService localization) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            localization.translate('home.quickActions'),
-            style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildQuickActionCard(
-                  icon: Icons.qr_code,
-                  title: localization.translate('dialogs.myQrCode'),
-                  onTap: () => _showMyQRCode(localization),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildQuickActionCard(
-                  icon: Icons.contacts,
-                  title: localization.translate('friends.friendSuggestions'),
-                  onTap: () => _showContactSuggestions(localization),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQuickActionCard({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primary.withOpacity(0.1)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: AppColors.primary, size: 24),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildSuggestedFriends(LocalizationService localization) {
     final suggestions = [
@@ -526,52 +448,4 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
     );
   }
 
-  void _scanQRCode(LocalizationService localization) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          localization.translate('wishlists.barcodeScannerComingSoon'),
-        ),
-        backgroundColor: AppColors.info,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
-  }
-
-  void _showMyQRCode(LocalizationService localization) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(localization.translate('dialogs.myQrCode')),
-        content: Container(
-          width: 200,
-          height: 200,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceVariant,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(Icons.qr_code, size: 100, color: Colors.grey),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(localization.translate('common.close')),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showContactSuggestions(LocalizationService localization) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(localization.translate('messages.comingSoon')),
-        backgroundColor: AppColors.info,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
-  }
 }

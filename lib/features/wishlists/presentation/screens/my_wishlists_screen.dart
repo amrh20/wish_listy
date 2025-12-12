@@ -1206,7 +1206,12 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
           onRefresh: _refreshWishlists,
           color: AppColors.primary,
           child: ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: 16 + MediaQuery.of(context).padding.bottom + 100, // Extra space for bottom nav bar
+            ),
             itemCount: 3, // Show 3 skeleton cards
             separatorBuilder: (context, index) => const SizedBox(height: 16),
             itemBuilder: (context, index) {

@@ -64,6 +64,12 @@ class _AddItemScreenState extends State<AddItemScreen>
     _loadWishlists();
     // Listen to name controller changes to enable/disable button
     _nameController.addListener(_onNameChanged);
+    // Listen to link controller changes to update paste/clear button icon
+    _linkController.addListener(() {
+      setState(() {
+        // Trigger rebuild to update button icon
+      });
+    });
   }
 
   void _onNameChanged() {
@@ -130,41 +136,46 @@ class _AddItemScreenState extends State<AddItemScreen>
       // Check if user is guest
       final authService = Provider.of<AuthRepository>(context, listen: false);
       Map<String, dynamic> itemData = {};
-      
+
       if (authService.isGuest) {
         // Load from local storage for guests
         debugPrint('👤 AddItemScreen: Loading guest item from Hive');
         debugPrint('   WishlistId: $_selectedWishlist');
         debugPrint('   ItemId: $_editingItemId');
-        
-        final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+
+        final guestDataRepo = Provider.of<GuestDataRepository>(
+          context,
+          listen: false,
+        );
         final items = await guestDataRepo.getWishlistItems(_selectedWishlist);
-        
+
         debugPrint('   Found ${items.length} items in wishlist');
-        
+
         // Find the specific item by ID
         final item = items.firstWhere(
           (item) => item.id == _editingItemId,
           orElse: () {
-            debugPrint('❌ AddItemScreen: Item $_editingItemId not found in wishlist $_selectedWishlist');
+            debugPrint(
+              '❌ AddItemScreen: Item $_editingItemId not found in wishlist $_selectedWishlist',
+            );
             throw Exception('Item not found in local storage');
           },
         );
-        
+
         debugPrint('✅ AddItemScreen: Found item: ${item.name}');
-        
+
         // Convert WishlistItem to Map format
         // Parse description to extract storeName, storeLocation, and notes if they were stored there
         String? description = item.description;
         String? storeName;
         String? storeLocation;
         String? notes;
-        
+
         // Try to parse extra info from description (format: "description | storeName: value | storeLocation: value | notes: value")
         if (description != null && description.contains(' | ')) {
           final parts = description.split(' | ');
           final mainDescriptionParts = <String>[];
-          
+
           for (final part in parts) {
             if (part.startsWith('storeName:')) {
               storeName = part.substring('storeName:'.length).trim();
@@ -176,11 +187,13 @@ class _AddItemScreenState extends State<AddItemScreen>
               mainDescriptionParts.add(part);
             }
           }
-          
+
           // Reconstruct description without the extra info
-          description = mainDescriptionParts.isEmpty ? null : mainDescriptionParts.join(' | ');
+          description = mainDescriptionParts.isEmpty
+              ? null
+              : mainDescriptionParts.join(' | ');
         }
-        
+
         itemData = {
           'id': item.id,
           'name': item.name,
@@ -196,18 +209,14 @@ class _AddItemScreenState extends State<AddItemScreen>
         };
       } else {
         // Load from API for authenticated users
-        final List<Map<String, dynamic>> itemsData = await _wishlistRepository.getItemsForWishlist(
-          _selectedWishlist,
-        );
+        final List<Map<String, dynamic>> itemsData = await _wishlistRepository
+            .getItemsForWishlist(_selectedWishlist);
 
         // Find the specific wish by ID
-        final foundItem = itemsData.firstWhere(
-          (item) {
-            final id = item['id']?.toString() ?? item['_id']?.toString() ?? '';
-            return id == _editingItemId;
-          },
-          orElse: () => <String, dynamic>{},
-        );
+        final foundItem = itemsData.firstWhere((item) {
+          final id = item['id']?.toString() ?? item['_id']?.toString() ?? '';
+          return id == _editingItemId;
+        }, orElse: () => <String, dynamic>{});
         itemData = foundItem;
       }
 
@@ -259,7 +268,7 @@ class _AddItemScreenState extends State<AddItemScreen>
       }
 
       debugPrint('✅ AddItemScreen: Loaded wish data for editing');
-      
+
       // Ensure setState is called to update UI after loading
       if (mounted) {
         setState(() {
@@ -309,7 +318,7 @@ class _AddItemScreenState extends State<AddItemScreen>
       );
       debugPrint('   Error type: ${e.runtimeType}');
       debugPrint('   Stack trace: ${StackTrace.current}');
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -364,13 +373,18 @@ class _AddItemScreenState extends State<AddItemScreen>
       // Check if user is guest
       final authService = Provider.of<AuthRepository>(context, listen: false);
       List<Map<String, dynamic>> wishlistsData;
-      
+
       if (authService.isGuest) {
         // Load from local storage for guests
-        debugPrint('👤 AddItemScreen: Loading guest wishlists from local storage...');
-        final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
+        debugPrint(
+          '👤 AddItemScreen: Loading guest wishlists from local storage...',
+        );
+        final guestDataRepo = Provider.of<GuestDataRepository>(
+          context,
+          listen: false,
+        );
         final wishlists = await guestDataRepo.getAllWishlists();
-        
+
         // Convert Wishlist models to Map format for consistency
         wishlistsData = wishlists.map((wishlist) {
           return {
@@ -382,8 +396,10 @@ class _AddItemScreenState extends State<AddItemScreen>
             'category': 'general',
           };
         }).toList();
-        
-        debugPrint('✅ AddItemScreen: Loaded ${wishlistsData.length} guest wishlists');
+
+        debugPrint(
+          '✅ AddItemScreen: Loaded ${wishlistsData.length} guest wishlists',
+        );
       } else {
         // Load from API for authenticated users
         debugPrint('📡 AddItemScreen: Loading wishlists from API...');
@@ -679,16 +695,6 @@ class _AddItemScreenState extends State<AddItemScreen>
               ],
             ),
           ),
-          // Quick Action Button
-          IconButton(
-            onPressed: () => _scanBarcode(localization),
-            icon: const Icon(Icons.qr_code_scanner_outlined),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.accent.withOpacity(0.1),
-              foregroundColor: AppColors.accent,
-              padding: const EdgeInsets.all(12),
-            ),
-          ),
         ],
       ),
     );
@@ -928,7 +934,7 @@ class _AddItemScreenState extends State<AddItemScreen>
                   onTap: () {
                     setState(() {
                       _selectedWhereToFind = 'physical';
-                      _productLinks.clear();
+                      // Preserve user input - do not clear controllers
                     });
                   },
                 ),
@@ -942,7 +948,7 @@ class _AddItemScreenState extends State<AddItemScreen>
                   onTap: () {
                     setState(() {
                       _selectedWhereToFind = 'anywhere';
-                      _productLinks.clear();
+                      // Preserve user input - do not clear controllers
                     });
                   },
                 ),
@@ -1101,19 +1107,31 @@ class _AddItemScreenState extends State<AddItemScreen>
               ),
             ),
             const SizedBox(width: 8),
+            // Dynamic button: Paste when empty, Clear when not empty
             IconButton(
               onPressed: () {
-                if (_linkController.text.isNotEmpty &&
-                    _isValidUrl(_linkController.text)) {
+                if (_linkController.text.isEmpty) {
+                  // Paste from clipboard
+                  _pasteFromClipboard();
+                } else {
+                  // Clear the field
                   setState(() {
-                    _productLinks.add(_linkController.text);
                     _linkController.clear();
                   });
                 }
               },
-              icon: Icon(Icons.add, color: AppColors.primary),
+              icon: Icon(
+                _linkController.text.isEmpty
+                    ? Icons.content_paste_rounded
+                    : Icons.close_rounded,
+                color: _linkController.text.isEmpty
+                    ? AppColors.primary
+                    : AppColors.textTertiary,
+              ),
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundColor: _linkController.text.isEmpty
+                    ? AppColors.primary.withOpacity(0.1)
+                    : AppColors.surfaceVariant,
                 padding: const EdgeInsets.all(12),
               ),
             ),
@@ -1303,6 +1321,8 @@ class _AddItemScreenState extends State<AddItemScreen>
 
     try {
       // Prepare data based on "Where can this gift be found?" selection
+      // IMPORTANT: Only read data from the currently active tab (_selectedWhereToFind)
+      // This ensures we don't send mixed data from different tabs to the API
       String? url;
       String? storeName;
       String? storeLocation;
@@ -1347,11 +1367,14 @@ class _AddItemScreenState extends State<AddItemScreen>
 
       // Check if user is guest
       final authService = Provider.of<AuthRepository>(context, listen: false);
-      
+
       if (authService.isGuest) {
         // Save to local storage for guests
-        final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
-        
+        final guestDataRepo = Provider.of<GuestDataRepository>(
+          context,
+          listen: false,
+        );
+
         // Parse priority
         ItemPriority priority = ItemPriority.medium;
         switch (_selectedPriority) {
@@ -1367,42 +1390,51 @@ class _AddItemScreenState extends State<AddItemScreen>
           default:
             priority = ItemPriority.medium;
         }
-        
+
         if (_isEditing && _editingItemId != null) {
           // Update existing item
           debugPrint('👤 AddItemScreen: Updating guest item in Hive');
           debugPrint('   WishlistId: $_selectedWishlist');
           debugPrint('   ItemId: $_editingItemId');
-          
+
           try {
-            final existingItems = await guestDataRepo.getWishlistItems(_selectedWishlist);
+            final existingItems = await guestDataRepo.getWishlistItems(
+              _selectedWishlist,
+            );
             debugPrint('   Found ${existingItems.length} items in wishlist');
-            
+
             final existingItem = existingItems.firstWhere(
               (item) => item.id == _editingItemId,
               orElse: () {
-                debugPrint('❌ AddItemScreen: Item $_editingItemId not found for update');
+                debugPrint(
+                  '❌ AddItemScreen: Item $_editingItemId not found for update',
+                );
                 throw Exception('Item not found in local storage');
               },
             );
-            
-            debugPrint('✅ AddItemScreen: Found existing item: ${existingItem.name}');
-            
+
+            debugPrint(
+              '✅ AddItemScreen: Found existing item: ${existingItem.name}',
+            );
+
             // Build description that includes storeName, storeLocation, and notes if needed
             // For guest users, we'll store additional info in description as JSON-like string
-            String? finalDescription = _descriptionController.text.trim().isEmpty
+            String? finalDescription =
+                _descriptionController.text.trim().isEmpty
                 ? null
                 : _descriptionController.text.trim();
-            
+
             // If we have storeName, storeLocation, or notes, append them to description
             // This is a workaround since WishlistItem model doesn't have these fields
             // In the future, we should extend the model to include them
             if (storeName != null || storeLocation != null || notes != null) {
               final extraInfo = <String, String?>{};
-              if (storeName != null && storeName.isNotEmpty) extraInfo['storeName'] = storeName;
-              if (storeLocation != null && storeLocation.isNotEmpty) extraInfo['storeLocation'] = storeLocation;
+              if (storeName != null && storeName.isNotEmpty)
+                extraInfo['storeName'] = storeName;
+              if (storeLocation != null && storeLocation.isNotEmpty)
+                extraInfo['storeLocation'] = storeLocation;
               if (notes != null && notes.isNotEmpty) extraInfo['notes'] = notes;
-              
+
               // Append extra info to description (simple format for now)
               if (finalDescription == null || finalDescription.isEmpty) {
                 finalDescription = extraInfo.entries
@@ -1410,19 +1442,17 @@ class _AddItemScreenState extends State<AddItemScreen>
                     .map((e) => '${e.key}: ${e.value}')
                     .join(' | ');
               } else {
-                finalDescription = '$finalDescription | ${extraInfo.entries
-                    .where((e) => e.value != null && e.value!.isNotEmpty)
-                    .map((e) => '${e.key}: ${e.value}')
-                    .join(' | ')}';
+                finalDescription =
+                    '$finalDescription | ${extraInfo.entries.where((e) => e.value != null && e.value!.isNotEmpty).map((e) => '${e.key}: ${e.value}').join(' | ')}';
               }
             }
-            
+
             // Ensure name is not empty
             final itemName = _nameController.text.trim();
             if (itemName.isEmpty) {
               throw Exception('Item name cannot be empty');
             }
-            
+
             // Preserve existing item's status and createdAt
             final updatedItem = existingItem.copyWith(
               name: itemName,
@@ -1433,15 +1463,17 @@ class _AddItemScreenState extends State<AddItemScreen>
               createdAt: existingItem.createdAt, // Preserve createdAt
               updatedAt: DateTime.now(),
             );
-            
+
             debugPrint('   Updated item name: ${updatedItem.name}');
             debugPrint('   Updated item link: ${updatedItem.link}');
             debugPrint('   Updated item priority: ${updatedItem.priority}');
             debugPrint('   Preserved status: ${updatedItem.status}');
             debugPrint('   Preserved createdAt: ${updatedItem.createdAt}');
-            
+
             await guestDataRepo.updateWishlistItem(updatedItem);
-            debugPrint('✅ AddItemScreen: Guest wish updated successfully in Hive');
+            debugPrint(
+              '✅ AddItemScreen: Guest wish updated successfully in Hive',
+            );
             debugPrint('   Updated description: $finalDescription');
           } catch (e) {
             debugPrint('❌ AddItemScreen: Error updating guest item: $e');
@@ -1454,14 +1486,16 @@ class _AddItemScreenState extends State<AddItemScreen>
           String? finalDescription = _descriptionController.text.trim().isEmpty
               ? null
               : _descriptionController.text.trim();
-          
+
           // If we have storeName, storeLocation, or notes, append them to description
           if (storeName != null || storeLocation != null || notes != null) {
             final extraInfo = <String, String?>{};
-            if (storeName != null && storeName.isNotEmpty) extraInfo['storeName'] = storeName;
-            if (storeLocation != null && storeLocation.isNotEmpty) extraInfo['storeLocation'] = storeLocation;
+            if (storeName != null && storeName.isNotEmpty)
+              extraInfo['storeName'] = storeName;
+            if (storeLocation != null && storeLocation.isNotEmpty)
+              extraInfo['storeLocation'] = storeLocation;
             if (notes != null && notes.isNotEmpty) extraInfo['notes'] = notes;
-            
+
             // Append extra info to description
             if (finalDescription == null || finalDescription.isEmpty) {
               finalDescription = extraInfo.entries
@@ -1469,13 +1503,11 @@ class _AddItemScreenState extends State<AddItemScreen>
                   .map((e) => '${e.key}: ${e.value}')
                   .join(' | ');
             } else {
-              finalDescription = '$finalDescription | ${extraInfo.entries
-                  .where((e) => e.value != null && e.value!.isNotEmpty)
-                  .map((e) => '${e.key}: ${e.value}')
-                  .join(' | ')}';
+              finalDescription =
+                  '$finalDescription | ${extraInfo.entries.where((e) => e.value != null && e.value!.isNotEmpty).map((e) => '${e.key}: ${e.value}').join(' | ')}';
             }
           }
-          
+
           final newItem = WishlistItem(
             id: '', // Will be generated by repository
             wishlistId: _selectedWishlist,
@@ -1487,7 +1519,7 @@ class _AddItemScreenState extends State<AddItemScreen>
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
           );
-          
+
           await guestDataRepo.addWishlistItem(_selectedWishlist, newItem);
           debugPrint('✅ AddItemScreen: Guest wish added successfully');
           debugPrint('   Description with extra info: $finalDescription');
@@ -1579,10 +1611,10 @@ class _AddItemScreenState extends State<AddItemScreen>
       debugPrint('❌ AddItemScreen: Unexpected error: $e');
       debugPrint('   Stack trace: $stackTrace');
       debugPrint('   Error type: ${e.runtimeType}');
-      
+
       if (mounted) {
         setState(() => _isLoading = false);
-        
+
         // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1621,28 +1653,239 @@ class _AddItemScreenState extends State<AddItemScreen>
     }
   }
 
-  void _scanBarcode(LocalizationService localization) {
-    // Barcode scanning functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          localization.translate('wishlists.barcodeScannerComingSoon'),
+  void _selectLocationFromMap() {
+    // Mock location picker - show dialog with dummy locations
+    final dummyLocations = [
+      'Cairo Festival City',
+      'Mall of Arabia',
+      'City Stars Mall',
+      'Nile City Towers',
+    ];
+
+    final TextEditingController customLocationController =
+        TextEditingController();
+    bool showCustomInput = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Select Location',
+            style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!showCustomInput) ...[
+                // Show location list
+                ...dummyLocations.map((location) {
+                  return ListTile(
+                    leading: Icon(
+                      Icons.location_on_outlined,
+                      color: AppColors.primary,
+                    ),
+                    title: Text(location, style: AppStyles.bodyMedium),
+                    onTap: () {
+                      setState(() {
+                        _storeLocationController.text = location;
+                      });
+                      Navigator.pop(context);
+                    },
+                  );
+                }),
+                // Other option
+                ListTile(
+                  leading: Icon(Icons.edit_outlined, color: AppColors.primary),
+                  title: Text('Other', style: AppStyles.bodyMedium),
+                  onTap: () {
+                    setDialogState(() {
+                      showCustomInput = true;
+                    });
+                  },
+                ),
+              ] else ...[
+                // Show custom input field
+                TextField(
+                  controller: customLocationController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'Enter Location',
+                    hintText: 'Type your location...',
+                    prefixIcon: Icon(
+                      Icons.location_on_outlined,
+                      color: AppColors.primary,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: AppColors.primary,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  style: AppStyles.bodyMedium,
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            if (showCustomInput) ...[
+              TextButton(
+                onPressed: () {
+                  setDialogState(() {
+                    showCustomInput = false;
+                    customLocationController.clear();
+                  });
+                },
+                child: Text(
+                  'Back',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  final customLocation = customLocationController.text.trim();
+                  if (customLocation.isNotEmpty) {
+                    setState(() {
+                      _storeLocationController.text = customLocation;
+                    });
+                    Navigator.pop(context);
+                  }
+                },
+                child: Text(
+                  'Add',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ] else
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+          ],
         ),
-        backgroundColor: AppColors.info,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
 
-  void _selectLocationFromMap() {
-    // Mock implementation - in real app, open map picker
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Map picker coming soon!'),
-        backgroundColor: AppColors.info,
-      ),
-    );
+  /// Paste URL from clipboard into link controller
+  Future<void> _pasteFromClipboard() async {
+    try {
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      if (clipboardData?.text != null && clipboardData!.text!.isNotEmpty) {
+        final url = clipboardData.text!.trim();
+        if (_isValidUrl(url)) {
+          setState(() {
+            _linkController.text = url;
+          });
+        } else {
+          // Show error if clipboard content is not a valid URL
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Clipboard does not contain a valid URL',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            );
+          }
+        }
+      } else {
+        // Show error if clipboard is empty
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Clipboard is empty',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.info,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error pasting from clipboard: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Failed to read clipboard',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   /// Show success message for adding wish (with dialog)

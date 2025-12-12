@@ -37,7 +37,12 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
       onRefresh: onRefresh,
       color: AppColors.secondary,
       child: ListView.separated(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: 16 + MediaQuery.of(context).padding.bottom + 100, // Extra space for bottom nav bar
+        ),
         itemCount: personalWishlists.length,
         separatorBuilder: (context, index) => const SizedBox(height: 16),
         itemBuilder: (context, index) {

@@ -6,7 +6,6 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 class AddItemHeaderWidget extends StatelessWidget {
   final bool isEditing;
   final VoidCallback onBack;
-  final VoidCallback? onScanBarcode;
   final String Function() getTitle;
   final String Function() getSubtitle;
 
@@ -14,7 +13,6 @@ class AddItemHeaderWidget extends StatelessWidget {
     super.key,
     required this.isEditing,
     required this.onBack,
-    this.onScanBarcode,
     required this.getTitle,
     required this.getSubtitle,
   });
@@ -63,20 +61,8 @@ class AddItemHeaderWidget extends StatelessWidget {
               ],
             ),
           ),
-          // Quick Action Button
-          if (onScanBarcode != null)
-            IconButton(
-              onPressed: onScanBarcode,
-              icon: const Icon(Icons.qr_code_scanner_outlined),
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.accent.withOpacity(0.1),
-                foregroundColor: AppColors.accent,
-                padding: const EdgeInsets.all(12),
-              ),
-            ),
         ],
       ),
     );
   }
 }
-

@@ -47,14 +47,15 @@ class EventCard extends StatelessWidget {
             color: AppColors.surface, // White background
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: AppColors.border.withOpacity(0.8),
+              color: Colors.grey.shade200,
               width: 1.0,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.12),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+                spreadRadius: 0,
               ),
             ],
           ),

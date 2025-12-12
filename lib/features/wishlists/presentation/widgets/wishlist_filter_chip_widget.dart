@@ -27,7 +27,7 @@ class WishlistFilterChipWidget extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
+          color: isSelected ? AppColors.primary : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
@@ -42,13 +42,13 @@ class WishlistFilterChipWidget extends StatelessWidget {
             Icon(
               icon,
               size: 14,
-              color: isSelected ? Colors.white : AppColors.textTertiary,
+              color: isSelected ? Colors.white : AppColors.textPrimary,
             ),
             const SizedBox(width: 6),
             Text(
               label,
               style: AppStyles.caption.copyWith(
-                color: isSelected ? Colors.white : AppColors.textTertiary,
+                color: isSelected ? Colors.white : AppColors.textPrimary,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 fontSize: 12,
               ),
@@ -59,4 +59,3 @@ class WishlistFilterChipWidget extends StatelessWidget {
     );
   }
 }
-
