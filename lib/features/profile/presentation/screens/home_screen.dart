@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
@@ -28,6 +29,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   final ScrollController _scrollController = ScrollController();
   bool _showWelcomeCard = true;
@@ -126,6 +129,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _animationController.dispose();
+    _pulseController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -220,6 +224,21 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
             curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
           ),
         );
+
+    // Pulse animation for empty state button
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(
+        parent: _pulseController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    _pulseController.repeat(reverse: true);
   }
 
   void _startAnimations() {
@@ -243,65 +262,72 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Consumer2<LocalizationService, AuthRepository>(
       builder: (context, localization, authService, child) {
-        // For guest users, use custom hero header layout
+        // For guest users, use UnifiedPageHeader like wishlist screen
         if (authService.isGuest) {
           return Scaffold(
             backgroundColor: AppColors.background,
             body: UnifiedPageBackground(
               child: DecorativeBackground(
+                showGifts: true,
                 child: Column(
                   children: [
-                    // Custom Hero Header for Guests
-                    _buildGuestHeroHeader(localization),
-
-                    // Content in rounded container (with negative margin to overlap header)
+                    // Unified Page Header with welcome message
+                    UnifiedPageHeader(
+                      title: 'WishListy',
+                      subtitle: 'Start by creating your first wishlist and organize your dreams.',
+                      showSearch: false,
+                      actions: [
+                        HeaderAction(
+                          icon: Icons.login_rounded,
+                          iconColor: AppColors.primary,
+                          onTap: () {
+                            Navigator.pushNamed(context, AppRoutes.login);
+                          },
+                        ),
+                      ],
+                    ),
+                    // Content in rounded container
                     Expanded(
-                      child: Transform.translate(
-                        offset: const Offset(0, -8), // Move up to overlap header
-                        child: UnifiedPageContainer(
-                          showTopRadius: true,
-                          child: RefreshIndicator(
-                            onRefresh: _refreshData,
-                            color: AppColors.primary,
-                            child: SingleChildScrollView(
-                              controller: _scrollController,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: AnimatedBuilder(
-                                animation: _animationController,
-                                builder: (context, child) {
-                                  return FadeTransition(
-                                    opacity: _fadeAnimation,
-                                    child: SlideTransition(
-                                      position: _slideAnimation,
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(16.0),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            // Guest Wishlist Section
-                                            if (_isLoadingGuestData) ...[
-                                              const Center(
-                                                child: Padding(
-                                                  padding: EdgeInsets.all(32.0),
-                                                  child: CircularProgressIndicator(),
-                                                ),
+                      child: UnifiedPageContainer(
+                        child: RefreshIndicator(
+                          onRefresh: _refreshData,
+                          color: AppColors.primary,
+                          child: AnimatedBuilder(
+                            animation: _animationController,
+                            builder: (context, child) {
+                              return FadeTransition(
+                                opacity: _fadeAnimation,
+                                child: SlideTransition(
+                                  position: _slideAnimation,
+                                  child: SingleChildScrollView(
+                                    controller: _scrollController,
+                                    physics: const AlwaysScrollableScrollPhysics(),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          // Guest Wishlist Section
+                                          if (_isLoadingGuestData) ...[
+                                            const Center(
+                                              child: Padding(
+                                                padding: EdgeInsets.all(32.0),
+                                                child: CircularProgressIndicator(),
                                               ),
-                                            ] else if (_guestWishlists.isEmpty) ...[
-                                              _buildCreateFirstWishlistButton(),
-                                            ] else ...[
-                                              _buildGuestWishlistList(),
-                                            ],
-
-                                            const SizedBox(height: 100), // Bottom padding
+                                            ),
+                                          ] else if (_guestWishlists.isEmpty) ...[
+                                            _buildCreateFirstWishlistButton(),
+                                          ] else ...[
+                                            _buildGuestWishlistList(),
                                           ],
-                                        ),
+                                          const SizedBox(height: 100), // Bottom padding
+                                        ],
                                       ),
                                     ),
-                                  );
-                                },
-                              ),
-                            ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -409,83 +435,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
     );
   }
 
-  /// Build custom hero header for guest users
-  Widget _buildGuestHeroHeader(LocalizationService localization) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final headerHeight = screenHeight * 0.30; // 30% of screen height
-
-    return Container(
-      height: headerHeight,
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-          child: Column(
-            children: [
-              // Top Row: Logo and Sign In button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // WishListy Logo/Text
-                  Text(
-                    'WishListy',
-                    style: AppStyles.headingLarge.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                    ),
-                  ),
-                  // Sign In Icon Button
-                  IconButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, AppRoutes.login);
-                    },
-                    icon: const Icon(
-                      Icons.login_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.white.withOpacity(0.2),
-                      padding: const EdgeInsets.all(10),
-                      minimumSize: const Size(40, 40),
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              // Center Content: Welcome Message
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Hello there! 👋',
-                    style: AppStyles.headingLarge.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 28,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Start by creating your first wishlist and organize your dreams.',
-                    style: AppStyles.bodyLarge.copyWith(
-                      color: Colors.white.withOpacity(0.9),
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildUnifiedHeader(
     LocalizationService localization,
@@ -1462,73 +1411,109 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
   }
 
   Widget _buildCreateFirstWishlistButton() {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
-          width: 2,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Empty state icon (same as wishlist screen)
+            Container(
+              width: 75,
+              height: 75,
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.favorite_border_rounded,
+                size: 36,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 32),
+            Text(
+              'Create Your First Wishlist',
+              style: AppStyles.headingLargeWithContext(context).copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+                fontSize: 28,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Start building your wishlist and organize your gift ideas',
+              style: AppStyles.bodyLargeWithContext(context).copyWith(
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 40),
+            // Pulse animated button
+            AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _pulseAnimation.value,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.createWishlist,
+                            arguments: {
+                              'previousRoute': AppRoutes.mainNavigation,
+                            },
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 16,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.add_rounded,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Create Your First Wishlist',
+                                style: AppStyles.headingSmall.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.favorite_outline,
-              size: 30,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            'Create Your First Wishlist',
-            style: AppStyles.headingMediumWithContext(context).copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Start building your wishlist and organize your gift ideas',
-            style: AppStyles.bodyMediumWithContext(context).copyWith(
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          CustomButton(
-            text: 'Create Your First Wishlist',
-            onPressed: () {
-              Navigator.pushNamed(
-                context,
-                AppRoutes.createWishlist,
-                arguments: {
-                  'previousRoute': AppRoutes.mainNavigation,
-                },
-              );
-            },
-            variant: ButtonVariant.gradient,
-            gradientColors: [AppColors.primary, AppColors.secondary],
-            size: ButtonSize.medium,
-            icon: Icons.add,
-          ),
-        ],
       ),
     );
   }
@@ -1619,33 +1604,81 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
           ),
         ),
         const SizedBox(height: 20),
-        // Wishlist Cards
-        ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _guestWishlists.length,
-          itemBuilder: (context, index) {
-            final wishlist = _guestWishlists[index];
-            return _buildGuestWishlistCard(wishlist);
-          },
+        // Wishlist Cards with staggered animations
+        AnimationLimiter(
+          child: ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _guestWishlists.length,
+            itemBuilder: (context, index) {
+              final wishlist = _guestWishlists[index];
+              return AnimationConfiguration.staggeredList(
+                position: index,
+                duration: const Duration(milliseconds: 500),
+                child: SlideAnimation(
+                  verticalOffset: 50.0,
+                  child: FadeInAnimation(
+                    child: _buildGuestWishlistCard(wishlist),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
   }
 
+  /// Get color for category visual indicator
+  Color _getCategoryColor(String? category) {
+    if (category == null || category.isEmpty) {
+      return AppColors.primary;
+    }
+    
+    switch (category.toLowerCase()) {
+      case 'birthday':
+        return const Color(0xFFFF6B9D); // Pink
+      case 'wedding':
+        return const Color(0xFFFFB84D); // Orange
+      case 'graduation':
+        return const Color(0xFF4ECDC4); // Teal
+      case 'anniversary':
+        return const Color(0xFFA78BFA); // Purple
+      case 'holiday':
+        return const Color(0xFFF87171); // Red
+      case 'babyshower':
+        return const Color(0xFF60A5FA); // Blue
+      case 'housewarming':
+        return const Color(0xFF34D399); // Green
+      case 'general':
+      default:
+        return AppColors.primary; // Default purple
+    }
+  }
+
   Widget _buildGuestWishlistCard(Wishlist wishlist) {
+    // Get category color for visual indicator
+    final categoryColor = _getCategoryColor(wishlist.category);
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.border.withOpacity(0.5),
+          color: AppColors.border.withOpacity(0.2),
           width: 1,
         ),
         boxShadow: [
+          // Softer, more spread-out shadows for floating effect
           BoxShadow(
-            color: AppColors.textTertiary.withOpacity(0.08),
+            color: AppColors.textTertiary.withOpacity(0.06),
+            blurRadius: 30,
+            offset: const Offset(0, 8),
+            spreadRadius: 2,
+          ),
+          BoxShadow(
+            color: AppColors.textTertiary.withOpacity(0.04),
             blurRadius: 20,
             offset: const Offset(0, 4),
             spreadRadius: 0,
@@ -1672,26 +1705,60 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                // Icon Container
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
+                // Icon Container with category indicator
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            categoryColor,
+                            categoryColor.withOpacity(0.7),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: categoryColor.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.favorite_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
+                      child: const Icon(
+                        Icons.favorite_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    // Category color tag
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: categoryColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.surface,
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: categoryColor.withOpacity(0.5),
+                              blurRadius: 4,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 16),
                 // Content

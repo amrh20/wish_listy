@@ -148,10 +148,13 @@ class UnifiedPageHeader extends StatelessWidget {
                                 const SizedBox(height: 4),
                                 Text(
                                   subtitle!,
-                                  style: AppStyles.bodyMedium.copyWith(
+                                  style: AppStyles.bodyLarge.copyWith(
                                     color: AppColors.textSecondary,
                                     fontStyle: FontStyle.italic,
+                                    fontSize: 15,
                                   ),
+                                  maxLines: 3,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ],
