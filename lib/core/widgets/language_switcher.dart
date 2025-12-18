@@ -15,10 +15,10 @@ class LanguageSwitcher extends StatelessWidget {
         
         return PopupMenuButton<String>(
           onSelected: (languageCode) {
-            debugPrint('LanguageSwitcher: Language selected: $languageCode');
+
             if (context.mounted) {
               localization.changeLanguage(languageCode);
-              debugPrint('LanguageSwitcher: Language change initiated for: $languageCode');
+
             }
           },
           itemBuilder: (context) => localization.supportedLanguages.map((language) {

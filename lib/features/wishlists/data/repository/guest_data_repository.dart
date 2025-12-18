@@ -15,7 +15,7 @@ class GuestDataRepository {
       final box = Hive.box<Wishlist>(_wishlistsBoxName);
       return box.values.toList();
     } catch (e) {
-      debugPrint('❌ GuestDataRepository: Error getting wishlists: $e');
+
       return [];
     }
   }
@@ -26,7 +26,7 @@ class GuestDataRepository {
       final box = Hive.box<Wishlist>(_wishlistsBoxName);
       return box.get(id);
     } catch (e) {
-      debugPrint('❌ GuestDataRepository: Error getting wishlist $id: $e');
+
       return null;
     }
   }
@@ -48,11 +48,10 @@ class GuestDataRepository {
       );
 
       await box.put(id, newWishlist);
-      debugPrint('✅ GuestDataRepository: Created wishlist $id');
 
       return id;
     } catch (e) {
-      debugPrint('❌ GuestDataRepository: Error creating wishlist: $e');
+
       rethrow;
     }
   }
@@ -65,9 +64,9 @@ class GuestDataRepository {
       final updatedWishlist = wishlist.copyWith(updatedAt: DateTime.now());
 
       await box.put(wishlist.id, updatedWishlist);
-      debugPrint('✅ GuestDataRepository: Updated wishlist ${wishlist.id}');
+
     } catch (e) {
-      debugPrint('❌ GuestDataRepository: Error updating wishlist: $e');
+
       rethrow;
     }
   }
@@ -90,11 +89,9 @@ class GuestDataRepository {
 
       // Delete the wishlist
       await wishlistBox.delete(id);
-      debugPrint(
-        '✅ GuestDataRepository: Deleted wishlist $id and ${itemsToDelete.length} items',
-      );
+
     } catch (e) {
-      debugPrint('❌ GuestDataRepository: Error deleting wishlist: $e');
+
       rethrow;
     }
   }
@@ -107,12 +104,9 @@ class GuestDataRepository {
           .where((item) => item.wishlistId == wishlistId)
           .toList();
 
-      debugPrint(
-        '📦 GuestDataRepository: Found ${items.length} items for wishlist $wishlistId',
-      );
       return items;
     } catch (e) {
-      debugPrint('❌ GuestDataRepository: Error getting items: $e');
+
       return [];
     }
   }
@@ -141,12 +135,9 @@ class GuestDataRepository {
         await updateWishlist(wishlist);
       }
 
-      debugPrint(
-        '✅ GuestDataRepository: Added item $id to wishlist $wishlistId',
-      );
       return id;
     } catch (e) {
-      debugPrint('❌ GuestDataRepository: Error adding item: $e');
+
       rethrow;
     }
   }
@@ -167,9 +158,8 @@ class GuestDataRepository {
         await updateWishlist(wishlist);
       }
 
-      debugPrint('✅ GuestDataRepository: Updated item ${item.id}');
     } catch (e) {
-      debugPrint('❌ GuestDataRepository: Error updating item: $e');
+
       rethrow;
     }
   }
@@ -192,14 +182,11 @@ class GuestDataRepository {
           await updateWishlist(wishlist);
         }
 
-        debugPrint(
-          '✅ GuestDataRepository: Deleted item $itemId and updated wishlist ${item.wishlistId}',
-        );
       } else {
-        debugPrint('⚠️ GuestDataRepository: Item $itemId not found');
+
       }
     } catch (e) {
-      debugPrint('❌ GuestDataRepository: Error deleting item: $e');
+
       rethrow;
     }
   }
@@ -213,9 +200,8 @@ class GuestDataRepository {
       await wishlistBox.clear();
       await itemsBox.clear();
 
-      debugPrint('✅ GuestDataRepository: Cleared all guest data');
     } catch (e) {
-      debugPrint('❌ GuestDataRepository: Error clearing data: $e');
+
       rethrow;
     }
   }
@@ -226,7 +212,7 @@ class GuestDataRepository {
       final box = Hive.box<Wishlist>(_wishlistsBoxName);
       return box.isNotEmpty;
     } catch (e) {
-      debugPrint('❌ GuestDataRepository: Error checking guest data: $e');
+
       return false;
     }
   }
@@ -237,7 +223,7 @@ class GuestDataRepository {
       final box = Hive.box<Wishlist>(_wishlistsBoxName);
       return box.length;
     } catch (e) {
-      debugPrint('❌ GuestDataRepository: Error getting wishlist count: $e');
+
       return 0;
     }
   }

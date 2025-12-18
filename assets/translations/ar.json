@@ -511,6 +511,9 @@
     "username": "اسم المستخدم",
     "email": "البريد الإلكتروني",
     "sendRequest": "إرسال طلب",
+    "searchButton": "ابحث",
+    "accept": "قبول",
+    "reject": "رفض",
     "acceptRequest": "قبول الطلب",
     "declineRequest": "رفض الطلب",
     "removeFriend": "إزالة صديق",
@@ -534,7 +537,11 @@
     "viewWishlist": "عرض قائمة الأمنيات",
     "viewEvents": "عرض الفعاليات",
     "viewGiftHistory": "عرض تاريخ الهدايا",
-    "viewMutualFriends": "عرض الأصدقاء المشتركين"
+    "viewMutualFriends": "عرض الأصدقاء المشتركين",
+    "requestReceived": "تم استلام طلب",
+    "requestPending": "طلب قيد الانتظار",
+    "alreadyFriends": "أصدقاء بالفعل",
+    "requestAlreadySent": "تم إرسال الطلب بالفعل"
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -665,6 +672,7 @@
     "settingsSaved": "تم حفظ الإعدادات بنجاح",
     "friendRequestSent": "تم إرسال طلب الصداقة",
     "friendRequestAccepted": "تم قبول طلب الصداقة",
+    "friendRequestRejected": "تم رفض طلب الصداقة",
     "friendRequestDeclined": "تم رفض طلب الصداقة",
     "eventCreated": "تم إنشاء الفعالية بنجاح",
     "eventUpdated": "تم تحديث الفعالية بنجاح",

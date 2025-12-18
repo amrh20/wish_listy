@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/animated_background.dart';
+import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'package:wish_listy/features/notifications/data/models/notification_model.dart';
+import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -16,66 +21,15 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // Mock notifications data
-  final List<NotificationItem> _notifications = [
-    NotificationItem(
-      id: '1',
-      type: NotificationType.friendRequest,
-      title: 'New Friend Request',
-      message: 'Sarah Johnson wants to be your friend',
-      time: DateTime.now().subtract(Duration(minutes: 30)),
-      isRead: false,
-      actionData: {'userId': 'sarah123'},
-    ),
-    NotificationItem(
-      id: '2',
-      type: NotificationType.itemPurchased,
-      title: 'Item Purchased',
-      message: 'Someone bought the "Wireless Headphones" from your wishlist',
-      time: DateTime.now().subtract(Duration(hours: 2)),
-      isRead: false,
-    ),
-    NotificationItem(
-      id: '3',
-      type: NotificationType.eventInvitation,
-      title: 'Event Invitation',
-      message: 'Ahmed invited you to his Birthday Party on Dec 15',
-      time: DateTime.now().subtract(Duration(hours: 5)),
-      isRead: true,
-      actionData: {'eventId': 'event123'},
-    ),
-    NotificationItem(
-      id: '4',
-      type: NotificationType.eventReminder,
-      title: 'Event Reminder',
-      message: 'Emma\'s Birthday is tomorrow! Don\'t forget to get a gift.',
-      time: DateTime.now().subtract(Duration(days: 1)),
-      isRead: true,
-    ),
-    NotificationItem(
-      id: '5',
-      type: NotificationType.friendRequestAccepted,
-      title: 'Friend Request Accepted',
-      message: 'Mike Thompson accepted your friend request',
-      time: DateTime.now().subtract(Duration(days: 2)),
-      isRead: true,
-    ),
-    NotificationItem(
-      id: '6',
-      type: NotificationType.wishlistShared,
-      title: 'Wishlist Shared',
-      message: 'Lisa shared her Christmas Wishlist with you',
-      time: DateTime.now().subtract(Duration(days: 3)),
-      isRead: true,
-      actionData: {'wishlistId': 'wishlist456'},
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _startAnimations();
+    // Load notifications when screen appears
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<NotificationsCubit>().loadNotifications();
+    });
   }
 
   void _initializeAnimations() {
@@ -112,9 +66,45 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount = _notifications.where((n) => !n.isRead).length;
-    final todayNotifications = _getNotificationsForToday();
-    final earlierNotifications = _getEarlierNotifications();
+    return BlocBuilder<NotificationsCubit, NotificationsState>(
+      builder: (context, state) {
+        if (state is NotificationsLoading) {
+          return Scaffold(
+            backgroundColor: Colors.grey.shade50,
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (state is NotificationsError) {
+          return Scaffold(
+            backgroundColor: Colors.grey.shade50,
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: AppColors.error),
+                  const SizedBox(height: 16),
+                  Text(state.message),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => context.read<NotificationsCubit>().loadNotifications(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final notifications = state is NotificationsLoaded
+            ? state.notifications
+            : <AppNotification>[];
+        final unreadCount = state is NotificationsLoaded
+            ? state.unreadCount
+            : 0;
+
+        final todayNotifications = _getNotificationsForToday(notifications);
+        final earlierNotifications = _getEarlierNotifications(notifications);
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -136,7 +126,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                         opacity: _fadeAnimation,
                         child: SlideTransition(
                           position: _slideAnimation,
-                          child: _notifications.isEmpty
+                              child: notifications.isEmpty
                               ? _buildEmptyState()
                               : RefreshIndicator(
                                   onRefresh: _refreshNotifications,
@@ -190,6 +180,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           ),
         ],
       ),
+    );
+      },
     );
   }
 
@@ -251,16 +243,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 ),
               ),
             ),
-
-          // Settings Button
-          IconButton(
-            onPressed: _openNotificationSettings,
-            icon: const Icon(Icons.settings_outlined),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.surfaceVariant,
-              padding: const EdgeInsets.all(12),
-            ),
-          ),
         ],
       ),
     );
@@ -279,7 +261,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
-  Widget _buildNotificationCard(NotificationItem notification) {
+  Widget _buildNotificationCard(AppNotification notification) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -371,21 +353,19 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
                       const SizedBox(height: 8),
 
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _formatNotificationTime(notification.time),
-                            style: AppStyles.caption.copyWith(
-                              color: AppColors.textTertiary,
-                            ),
-                          ),
-
-                          // Action Buttons
-                          if (_hasActions(notification.type))
-                            _buildActionButtons(notification),
-                        ],
+                      // Time ago
+                      Text(
+                        notification.timeAgo,
+                        style: AppStyles.caption.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
                       ),
+
+                      const SizedBox(height: 12),
+
+                      // Action Buttons for friend requests
+                      if (_hasActions(notification.type))
+                        _buildActionButtons(notification),
                     ],
                   ),
                 ),
@@ -397,22 +377,26 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
-  Widget _buildActionButtons(NotificationItem notification) {
+  Widget _buildActionButtons(AppNotification notification) {
     switch (notification.type) {
       case NotificationType.friendRequest:
         return Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            _buildActionButton(
-              'Decline',
-              () => _handleFriendRequestAction(notification, false),
-              isOutlined: true,
+            Expanded(
+              child: _buildActionButton(
+                'Reject',
+                () => _handleFriendRequestAction(notification, false),
+                isOutlined: true,
+                color: AppColors.error,
+              ),
             ),
-            const SizedBox(width: 8),
-            _buildActionButton(
-              'Accept',
-              () => _handleFriendRequestAction(notification, true),
-              color: AppColors.success,
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildActionButton(
+                'Accept',
+                () => _handleFriendRequestAction(notification, true),
+                color: AppColors.success,
+              ),
             ),
           ],
         );
@@ -447,27 +431,47 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     bool isOutlined = false,
   }) {
     return SizedBox(
-      height: 28,
-      child: TextButton(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          backgroundColor: isOutlined
-              ? Colors.transparent
-              : (color ?? AppColors.primary).withOpacity(0.1),
-          foregroundColor: color ?? AppColors.primary,
-          side: isOutlined
-              ? BorderSide(color: AppColors.textTertiary.withOpacity(0.5))
-              : null,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          minimumSize: Size.zero,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-        ),
-        child: Text(
-          text,
-          style: AppStyles.caption.copyWith(fontWeight: FontWeight.w600),
-        ),
-      ),
+      height: 40,
+      child: isOutlined
+          ? OutlinedButton(
+              onPressed: onPressed,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: color ?? AppColors.error,
+                side: BorderSide(
+                  color: (color ?? AppColors.error).withOpacity(0.5),
+                  width: 1.5,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                text,
+                style: AppStyles.bodySmall.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          : ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: color ?? AppColors.success,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                text,
+                style: AppStyles.bodySmall.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
     );
   }
 
@@ -512,21 +516,21 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   // Helper Methods
-  List<NotificationItem> _getNotificationsForToday() {
+  List<AppNotification> _getNotificationsForToday(List<AppNotification> notifications) {
     final today = DateTime.now();
-    return _notifications.where((notification) {
-      return notification.time.year == today.year &&
-          notification.time.month == today.month &&
-          notification.time.day == today.day;
+    return notifications.where((notification) {
+      return notification.createdAt.year == today.year &&
+          notification.createdAt.month == today.month &&
+          notification.createdAt.day == today.day;
     }).toList();
   }
 
-  List<NotificationItem> _getEarlierNotifications() {
+  List<AppNotification> _getEarlierNotifications(List<AppNotification> notifications) {
     final today = DateTime.now();
-    return _notifications.where((notification) {
-      return !(notification.time.year == today.year &&
-          notification.time.month == today.month &&
-          notification.time.day == today.day);
+    return notifications.where((notification) {
+      return !(notification.createdAt.year == today.year &&
+          notification.createdAt.month == today.month &&
+          notification.createdAt.day == today.day);
     }).toList();
   }
 
@@ -593,9 +597,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   // Action Handlers
-  void _handleNotificationTap(NotificationItem notification) {
+  void _handleNotificationTap(AppNotification notification) {
     if (!notification.isRead) {
-      _markAsRead(notification);
+      context.read<NotificationsCubit>().markAsRead(notification.id);
     }
 
     // Navigate based on notification type
@@ -618,41 +622,121 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     }
   }
 
-  void _handleFriendRequestAction(NotificationItem notification, bool accept) {
-    setState(() {
-      notification.isRead = true;
-    });
-
-    final message = accept
-        ? 'Friend request accepted!'
-        : 'Friend request declined';
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              accept ? Icons.check_circle : Icons.cancel,
-              color: Colors.white,
+  Future<void> _handleFriendRequestAction(AppNotification notification, bool accept) async {
+    // Extract requestId from notification data
+    // The notification data can have requestId, _id, or the notification id itself
+    final requestId = notification.data?['requestId'] ?? 
+                      notification.data?['_id'] ?? 
+                      notification.id;
+    
+    if (requestId == null || requestId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Unable to process friend request. Request ID not found.'),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(message),
-          ],
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+      return;
+    }
+    
+    try {
+      final friendsRepository = FriendsRepository();
+      
+      if (accept) {
+        await friendsRepository.acceptFriendRequest(requestId: requestId);
+      } else {
+        await friendsRepository.rejectFriendRequest(requestId: requestId);
+      }
+      
+      if (!mounted) return;
+      
+      // Mark notification as read
+      context.read<NotificationsCubit>().markAsRead(notification.id);
+      
+      // Reload notifications to update the list
+      context.read<NotificationsCubit>().loadNotifications();
+      
+      final message = accept
+          ? 'Friend request accepted!'
+          : 'Friend request declined';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                accept ? Icons.check_circle : Icons.cancel,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 8),
+              Text(message),
+            ],
+          ),
+          backgroundColor: accept ? AppColors.success : AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-        backgroundColor: accept ? AppColors.success : AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
+      );
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(e.message),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    accept
+                        ? 'Failed to accept friend request. Please try again.'
+                        : 'Failed to decline friend request. Please try again.',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+    }
   }
 
   void _handleEventInvitationAction(
-    NotificationItem notification,
+    AppNotification notification,
     String action,
   ) {
-    setState(() {
-      notification.isRead = true;
-    });
+    context.read<NotificationsCubit>().markAsRead(notification.id);
 
     final message = action == 'accept'
         ? 'Event invitation accepted!'
@@ -674,18 +758,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
-  void _markAsRead(NotificationItem notification) {
-    setState(() {
-      notification.isRead = true;
-    });
-  }
-
   void _markAllAsRead() {
-    setState(() {
-      for (var notification in _notifications) {
-        notification.isRead = true;
-      }
-    });
+    context.read<NotificationsCubit>().markAllAsRead();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -703,78 +777,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
-  void _openNotificationSettings() {
-    // Navigate to notification settings
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Notification Settings', style: AppStyles.headingSmall),
-            const SizedBox(height: 24),
-            ListTile(
-              leading: Icon(Icons.notifications_active),
-              title: Text('Push Notifications'),
-              trailing: Switch(value: true, onChanged: (value) {}),
-            ),
-            ListTile(
-              leading: Icon(Icons.email),
-              title: Text('Email Notifications'),
-              trailing: Switch(value: false, onChanged: (value) {}),
-            ),
-            ListTile(
-              leading: Icon(Icons.vibration),
-              title: Text('Vibration'),
-              trailing: Switch(value: true, onChanged: (value) {}),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Future<void> _refreshNotifications() async {
-    // Simulate refresh
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() {
-      // Add new notification or update existing ones
-    });
+    await context.read<NotificationsCubit>().loadNotifications();
   }
-}
-
-// Mock data models
-class NotificationItem {
-  final String id;
-  final NotificationType type;
-  final String title;
-  final String message;
-  final DateTime time;
-  bool isRead;
-  final Map<String, dynamic>? actionData;
-
-  NotificationItem({
-    required this.id,
-    required this.type,
-    required this.title,
-    required this.message,
-    required this.time,
-    this.isRead = false,
-    this.actionData,
-  });
-}
-
-enum NotificationType {
-  friendRequest,
-  friendRequestAccepted,
-  eventInvitation,
-  eventReminder,
-  itemPurchased,
-  itemReserved,
-  wishlistShared,
-  general,
 }

@@ -64,22 +64,17 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
   /// Load wishlist details and items from API or local storage
   Future<void> _loadWishlistDetails() async {
-    debugPrint('⭐ WishlistItemsScreen: _loadWishlistDetails STARTED');
-    debugPrint('   Current thread: ${DateTime.now()}');
+
 
     // Validate wishlistId
     if (widget.wishlistId.isEmpty) {
-      debugPrint('❌ WishlistItemsScreen: Empty wishlistId provided');
+
       setState(() {
         _errorMessage = 'Invalid wishlist ID. Please try again.';
         _isLoading = false;
       });
       return;
     }
-
-    debugPrint('✅ WishlistItemsScreen: wishlistId validation passed');
-    debugPrint('   wishlistId: ${widget.wishlistId}');
-    debugPrint('   wishlistId length: ${widget.wishlistId.length}');
 
     setState(() {
       _isLoading = true;
@@ -89,8 +84,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       _purchasedItems = widget.purchasedItems;
     });
 
-    debugPrint('✅ WishlistItemsScreen: setState completed, _isLoading = true');
-
     try {
       // Check if user is guest
       final authService = Provider.of<AuthRepository>(context, listen: false);
@@ -98,9 +91,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
       if (authService.isGuest) {
         // Load from local storage for guests
-        debugPrint(
-          '👤 WishlistItemsScreen: Loading guest wishlist from local storage',
-        );
+
         final guestDataRepo = Provider.of<GuestDataRepository>(
           context,
           listen: false,
@@ -146,16 +137,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
           },
         };
 
-        debugPrint(
-          '✅ WishlistItemsScreen: Loaded guest wishlist with ${items.length} items',
-        );
       } else {
         // Load from API for authenticated users
-        debugPrint('📡 WishlistItemsScreen: About to call getWishlistById API');
-        debugPrint('   Wishlist ID: ${widget.wishlistId}');
-        debugPrint('   Wishlist Name: ${widget.wishlistName}');
-        debugPrint('   Total Items: ${widget.totalItems}');
-        debugPrint('   Purchased Items: ${widget.purchasedItems}');
 
         // Call API to get wishlist details
         wishlistData = await _wishlistRepository.getWishlistById(
@@ -163,15 +146,10 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         );
       }
 
-      debugPrint(
-        '📡 WishlistItemsScreen: Received wishlist data: $wishlistData',
-      );
-      debugPrint('   WishlistData type: ${wishlistData.runtimeType}');
-      debugPrint('   WishlistData keys: ${wishlistData.keys.toList()}');
 
       // Validate response
       if (wishlistData.isEmpty) {
-        debugPrint('❌ WishlistItemsScreen: Empty wishlistData');
+
         final authService = Provider.of<AuthRepository>(context, listen: false);
         throw Exception(
           authService.isGuest
@@ -187,21 +165,19 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       if (wishlistData.containsKey('wishlist')) {
         // Response is wrapped: {success: true, wishlist: {...}}
         data = wishlistData['wishlist'] as Map<String, dynamic>;
-        debugPrint(
-          '📦 WishlistItemsScreen: Found wrapped wishlist in response',
-        );
+
       } else if (wishlistData.containsKey('data')) {
         // Response is wrapped: {success: true, data: {...}}
         data = wishlistData['data'] as Map<String, dynamic>;
-        debugPrint('📦 WishlistItemsScreen: Found wrapped data in response');
+
       } else {
         // Response is the wishlist object directly
         data = wishlistData;
-        debugPrint('📦 WishlistItemsScreen: Using wishlistData directly');
+
       }
 
       if (data.isEmpty) {
-        debugPrint('❌ WishlistItemsScreen: Empty data after parsing');
+
         final authService = Provider.of<AuthRepository>(context, listen: false);
         throw Exception(
           authService.isGuest
@@ -210,14 +186,9 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         );
       }
 
-      debugPrint('📊 WishlistItemsScreen: Parsed data structure');
-      debugPrint('   Data keys: ${data.keys.toList()}');
 
       // Parse items from response
       final itemsList = data['items'] as List<dynamic>? ?? [];
-      debugPrint(
-        '📦 WishlistItemsScreen: Found ${itemsList.length} items in response',
-      );
 
       final items = <WishlistItem>[];
       for (var i = 0; i < itemsList.length; i++) {
@@ -228,7 +199,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
             items.add(item);
           }
         } catch (e) {
-          debugPrint('⚠️ WishlistItemsScreen: Failed to parse item $i: $e');
+
         }
       }
 
@@ -255,22 +226,9 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         try {
           createdAt = DateTime.parse(data['createdAt'].toString());
         } catch (e) {
-          debugPrint('⚠️ Failed to parse createdAt: $e');
+
         }
       }
-
-      debugPrint('📊 WishlistItemsScreen: Parsed additional info');
-      debugPrint('   Category: $category');
-      debugPrint('   Privacy: $privacy');
-      debugPrint('   CreatedAt: $createdAt');
-
-      debugPrint('✅ WishlistItemsScreen: About to update state');
-      debugPrint('   Items count: ${items.length}');
-      debugPrint('   Total items: $totalItems');
-      debugPrint('   Purchased items: $purchasedItems');
-      debugPrint(
-        '   Wishlist name: ${data['name']?.toString() ?? widget.wishlistName}',
-      );
 
       if (mounted) {
         setState(() {
@@ -285,15 +243,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
           _errorMessage = null; // Clear any previous errors
         });
 
-        debugPrint('✅ WishlistItemsScreen: State updated successfully');
-        debugPrint('   Category: $_category');
-        debugPrint('   Privacy: $_privacy');
-        debugPrint('   CreatedAt: $_createdAt');
-        debugPrint('   _isLoading: $_isLoading');
       } else {
-        debugPrint(
-          '⚠️ WishlistItemsScreen: Widget not mounted, skipping setState',
-        );
+
       }
     } on ApiException catch (e) {
       setState(() {
@@ -335,10 +286,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         );
       }
     } catch (e) {
-      debugPrint('❌ WishlistItemsScreen: Error loading wishlist details');
-      debugPrint('   Error: $e');
-      debugPrint('   Error type: ${e.runtimeType}');
-      debugPrint('   WishlistId: ${widget.wishlistId}');
 
       setState(() {
         _errorMessage = e.toString().contains('Exception')
@@ -945,12 +892,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
           ? ItemStatus.desired
           : ItemStatus.purchased;
 
-      debugPrint(
-        '🔄 WishlistItemsScreen: Toggling purchase status for item: ${item.id}',
-      );
-      debugPrint('   Current status: ${item.status}');
-      debugPrint('   New status: $newStatus');
-
       // Check if user is guest
       final authService = Provider.of<AuthRepository>(context, listen: false);
 
@@ -966,11 +907,9 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
             updatedAt: DateTime.now(),
           );
           await guestDataRepo.updateWishlistItem(updatedItem);
-          debugPrint(
-            '✅ WishlistItemsScreen: Guest item updated successfully in Hive',
-          );
+
         } catch (e) {
-          debugPrint('❌ WishlistItemsScreen: Error updating guest item: $e');
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -1110,7 +1049,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         );
       }
     } catch (e) {
-      debugPrint('❌ WishlistItemsScreen: Error toggling status: $e');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1215,7 +1154,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
   Future<void> _performDeleteItem(WishlistItem item) async {
     try {
-      debugPrint('🗑️ WishlistItemsScreen: Deleting item: ${item.id}');
 
       // Show loading indicator
       if (mounted) {
@@ -1255,8 +1193,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         // Call API to delete item for authenticated users
         await _wishlistRepository.deleteItem(item.id);
       }
-
-      debugPrint('✅ WishlistItemsScreen: Item deleted successfully');
 
       // Reload wishlist details to update the screen
       await _loadWishlistDetails();
@@ -1299,9 +1235,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         );
       }
     } on ApiException catch (e) {
-      debugPrint(
-        '❌ WishlistItemsScreen: ApiException deleting item: ${e.message}',
-      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1337,8 +1270,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         );
       }
     } catch (e) {
-      debugPrint('❌ WishlistItemsScreen: Error deleting item: $e');
-      debugPrint('   Error type: ${e.runtimeType}');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1373,7 +1304,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
           ),
         );
       }
-      debugPrint('❌ WishlistItemsScreen: Unexpected error deleting item: $e');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

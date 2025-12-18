@@ -94,12 +94,7 @@ class AppRoutes {
       final eventId = args?['eventId'] as String?;
       final isForEvent = args?['isForEvent'] as bool? ?? false;
       final previousRoute = args?['previousRoute'] as String?;
-      debugPrint('🔍 AppRoutes: createWishlist route');
-      debugPrint('   Arguments: $args');
-      debugPrint('   WishlistId: $wishlistId');
-      debugPrint('   EventId: $eventId');
-      debugPrint('   IsForEvent: $isForEvent');
-      debugPrint('   PreviousRoute: $previousRoute');
+
       return MaterialPageRoute(
         builder: (context) => CreateWishlistScreen(
           wishlistId: wishlistId,

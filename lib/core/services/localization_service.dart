@@ -44,29 +44,17 @@ class LocalizationService extends ChangeNotifier {
       notifyListeners();
 
       final String assetPath = 'assets/translations/$_currentLanguage.json';
-      debugPrint('Attempting to load translations from: $assetPath');
 
       final String jsonString = await rootBundle.loadString(assetPath);
-      debugPrint(
-        'Successfully loaded JSON string, length: ${jsonString.length}',
-      );
 
       _translations = json.decode(jsonString) as Map<String, dynamic>;
-
-      debugPrint(
-        'Loaded translations for $_currentLanguage: ${_translations.keys.toList()}',
-      );
-      debugPrint(
-        'Sample translation - home.greeting: ${_translations['home']?['greeting']}',
-      );
 
       _isLoading = false;
       notifyListeners();
     } catch (e) {
       _isLoading = false;
       notifyListeners();
-      debugPrint('Error loading translations for $_currentLanguage: $e');
-      debugPrint('Stack trace: ${StackTrace.current}');
+
       // Fallback to empty translations
       _translations = {};
     }
@@ -74,36 +62,32 @@ class LocalizationService extends ChangeNotifier {
 
   // Change language
   Future<void> changeLanguage(String languageCode) async {
-    debugPrint(
-      'Attempting to change language from $_currentLanguage to $languageCode',
-    );
 
     if (_currentLanguage == languageCode) {
-      debugPrint('Language is already $languageCode, no change needed');
+
       return;
     }
 
     _currentLanguage = languageCode;
-    debugPrint('Language changed to: $_currentLanguage');
 
     // Save to SharedPreferences
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_languageKey, languageCode);
-      debugPrint('Language saved to SharedPreferences: $languageCode');
+
     } catch (e) {
-      debugPrint('Error saving language: $e');
+
     }
 
     // Load new translations
     await _loadTranslations();
-    debugPrint('Language change completed for: $_currentLanguage');
+
   }
 
   // Get translation by key
   String translate(String key, {Map<String, dynamic>? args}) {
     if (_translations.isEmpty) {
-      debugPrint('No translations loaded for key: $key');
+
       return key;
     }
 
@@ -114,7 +98,6 @@ class LocalizationService extends ChangeNotifier {
       if (value is Map<String, dynamic> && value.containsKey(k)) {
         value = value[k];
       } else {
-        debugPrint('Translation key not found: $key (missing: $k)');
         return key;
       }
     }
@@ -126,9 +109,6 @@ class LocalizationService extends ChangeNotifier {
       return value;
     }
 
-    debugPrint(
-      'Translation value is not a string for key: $key (value: $value)',
-    );
     return key;
   }
 

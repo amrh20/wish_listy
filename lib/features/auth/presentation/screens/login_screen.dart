@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
@@ -10,6 +11,8 @@ import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
 import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -148,6 +151,15 @@ class _LoginScreenState extends State<LoginScreen>
       );
 
       if (success && mounted) {
+        // Ensure NotificationsCubit is initialized and listener is registered
+        // This ensures the socket listener is active before navigation
+        try {
+          final notificationsCubit = context.read<NotificationsCubit>();
+          debugPrint('✅ LoginScreen: NotificationsCubit accessed, listener should be registered');
+        } catch (e) {
+          debugPrint('⚠️ LoginScreen: Could not access NotificationsCubit: $e');
+        }
+        
         // Navigate to main app
         Navigator.pushNamedAndRemoveUntil(
           context,
@@ -276,7 +288,7 @@ class _LoginScreenState extends State<LoginScreen>
           barrierDismissible: true,
         );
       }
-      debugPrint('Login error: $e');
+
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

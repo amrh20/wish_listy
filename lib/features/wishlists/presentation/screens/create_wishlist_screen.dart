@@ -92,8 +92,6 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     if (!mounted) return;
 
     final previousRoute = widget.previousRoute;
-    debugPrint('🔙 CreateWishlistScreen: Back navigation requested');
-    debugPrint('   PreviousRoute: $previousRoute');
 
     // Use post-frame callback to ensure Navigator is not locked
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -113,13 +111,13 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       // If previousRoute is null or is a MainNavigation route, just pop
       if (previousRoute == null ||
           mainNavigationRoutes.contains(previousRoute)) {
-        debugPrint('   MainNavigation route or null, using simple pop');
+
         if (Navigator.of(context).canPop()) {
           try {
             Navigator.of(context).pop();
-            debugPrint('   ✅ Popped to MainNavigation');
+
           } catch (e) {
-            debugPrint('⚠️ Error during pop: $e');
+
           }
         }
         return;
@@ -128,40 +126,40 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       // For other routes (like eventDetails), try to find them in the stack
       bool routeFound = false;
       try {
-        debugPrint('   Searching for route: $previousRoute');
+
         Navigator.of(context).popUntil((route) {
           final routeName = route.settings.name;
-          debugPrint('   Checking route: $routeName');
+
           if (routeName == previousRoute) {
             routeFound = true;
-            debugPrint('   ✅ Found target route: $routeName');
+
             return true; // Stop popping
           }
           // Also stop if we reach MainNavigation (to preserve bottom nav)
           if (routeName == AppRoutes.mainNavigation) {
-            debugPrint('   Reached MainNavigation, stopping');
+
             return true;
           }
           return false; // Continue popping
         });
       } catch (e) {
-        debugPrint('⚠️ Error during popUntil: $e');
+
         routeFound = false;
       }
 
       // If route not found, just pop (will return to MainNavigation)
       if (!routeFound && mounted) {
-        debugPrint('   Route not found, using simple pop');
+
         if (Navigator.of(context).canPop()) {
           try {
             Navigator.of(context).pop();
-            debugPrint('   ✅ Popped to previous screen');
+
           } catch (e) {
-            debugPrint('⚠️ Error during pop: $e');
+
           }
         }
       } else if (routeFound) {
-        debugPrint('   ✅ Successfully returned to: $previousRoute');
+
       }
     });
   }
@@ -830,7 +828,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         });
       }
     } catch (e) {
-      debugPrint('⚠️ Failed to load event name: $e');
+
       // Continue without event name - banner will show generic message
     }
   }

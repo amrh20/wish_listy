@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -6,6 +7,9 @@ import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
+import 'package:wish_listy/features/friends/data/models/user_model.dart';
 
 class AddFriendScreen extends StatefulWidget {
   const AddFriendScreen({super.key});
@@ -16,22 +20,41 @@ class AddFriendScreen extends StatefulWidget {
 
 class _AddFriendScreenState extends State<AddFriendScreen> {
   final _searchController = TextEditingController();
+  final FriendsRepository _friendsRepository = FriendsRepository();
+  Timer? _debounceTimer;
 
   bool _isSearching = false;
-  String _searchMethod = 'username';
-  List<Map<String, dynamic>> _searchResults = [];
+  String _searchMethod = 'email'; // Default to email
+  List<User> _searchResults = [];
+  String? _searchError;
 
-  final List<String> _searchMethods = ['username', 'email', 'phone'];
+  final List<String> _searchMethods = ['email', 'phone']; // Removed username
 
   @override
   void initState() {
     super.initState();
+    // Removed auto-search listener - search only happens on button tap
   }
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Perform search when search button is tapped
+  void _onSearchButtonTap() {
+    final query = _searchController.text.trim();
+    if (query.isEmpty || query.length < 2) {
+      setState(() {
+        _searchResults.clear();
+        _searchError = null;
+        _isSearching = false;
+      });
+      return;
+    }
+    _performSearch(query);
   }
 
   @override
@@ -54,42 +77,63 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                         children: [
                           const SizedBox(height: 20),
 
-                          // Search Method Selection
-                          _buildSearchMethodSelection(localization),
-
-                          const SizedBox(height: 24),
-
-                          // Search Field
-                          CustomTextField(
-                            controller: _searchController,
-                            label: _getSearchLabel(localization),
-                            hint: _getSearchHint(localization),
-                            prefixIcon: Icons.search,
-                            suffixIcon: _isSearching
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : null,
-                            onChanged: (value) {
-                              if (value.isNotEmpty && value.length > 2) {
-                                _performSearch(value, localization);
-                              } else {
-                                setState(() {
-                                  _searchResults.clear();
-                                });
-                              }
-                            },
+                          // Search Field with Search Button
+                          Row(
+                            children: [
+                              Expanded(
+                                child: CustomTextField(
+                                  controller: _searchController,
+                                  label: _getSearchLabel(localization),
+                                  hint: _getSearchHint(localization),
+                                  prefixIcon: Icons.search,
+                                  // We only show the main loader in the results section
+                                  // to avoid multiple spinners on the screen.
+                                  suffixIcon: null,
+                                  onChanged: (value) {
+                                    // No auto-search - only search on button tap
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              // Search Button
+                              ElevatedButton(
+                                onPressed: _isSearching ? null : _onSearchButtonTap,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 0,
+                                  minimumSize: const Size(0, 48),
+                                ),
+                                // Keep the label static; rely only on the results loader
+                                // so we don't show multiple loading indicators.
+                                child: Text(
+                                  localization.translate('friends.searchButton'),
+                                  style: AppStyles.bodyMedium.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
 
                           const SizedBox(height: 32),
 
                           // Search Results
-                          if (_searchResults.isNotEmpty) ...[
+                          if (_searchController.text.isNotEmpty &&
+                              _searchController.text.length >= 2) ...[
                             _buildSearchResults(localization),
+                            const SizedBox(height: 32),
+                          ],
+
+                          // Empty State - Show when no search is performed
+                          if (_searchController.text.isEmpty ||
+                              _searchController.text.length < 2) ...[
+                            _buildEmptySearchState(localization),
                             const SizedBox(height: 32),
                           ],
 
@@ -166,75 +210,80 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.primary.withOpacity(0.2)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            localization.translate('friends.searchFriends'),
-            style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: _searchMethods.map((method) {
-              final isSelected = _searchMethod == method;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _searchMethod = method;
-                      _searchController.clear();
-                      _searchResults.clear();
-                    });
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary.withOpacity(0.1)
-                          : AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.textTertiary.withOpacity(0.3),
-                        width: isSelected ? 2 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          _getSearchMethodIcon(method),
-                          color: isSelected
-                              ? AppColors.primary
-                              : AppColors.textTertiary,
-                          size: 20,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _getSearchMethodName(method, localization),
-                          style: AppStyles.caption.copyWith(
-                            color: isSelected
-                                ? AppColors.primary
-                                : AppColors.textTertiary,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
+      child: Text(
+        localization.translate('friends.searchFriends'),
+        style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
       ),
     );
   }
 
   Widget _buildSearchResults(LocalizationService localization) {
+    if (_isSearching) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_searchError != null) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: AppColors.error,
+              size: 48,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _searchError!,
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_searchResults.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              Icons.search_off,
+              color: AppColors.textTertiary,
+              size: 48,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No users found',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -249,7 +298,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
               Icon(Icons.search, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
               Text(
-                localization.translate('friends.searchResults'),
+                '${_searchResults.length} ${localization.translate('friends.searchResults')}',
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -266,7 +315,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
   }
 
   Widget _buildUserCard(
-    Map<String, dynamic> user,
+    User user,
     LocalizationService localization,
   ) {
     return Container(
@@ -277,109 +326,261 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.textTertiary.withOpacity(0.1)),
       ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 24,
-            backgroundColor: AppColors.primary.withOpacity(0.1),
-            child: Text(
-              user['name']?[0]?.toUpperCase() ?? '?',
-              style: AppStyles.headingSmall.copyWith(color: AppColors.primary),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user['name'] ?? 'Unknown',
-                  style: AppStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (user['mutualFriends'] != null)
-                  Text(
-                    localization.translate(
-                      'friends.mutualFriendsCount',
-                      args: {'count': user['mutualFriends'].toString()},
-                    ),
-                    style: AppStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Flexible(
-            child: CustomButton(
-              text: localization.translate('friends.sendRequest'),
-              onPressed: () => _sendFriendRequest(user, localization),
-              variant: ButtonVariant.primary,
-              size: ButtonSize.small,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-
-  Widget _buildSuggestedFriends(LocalizationService localization) {
-    final suggestions = [
-      {'name': 'Ahmed Ali', 'mutualFriends': 5},
-      {'name': 'Sara Mohamed', 'mutualFriends': 3},
-      {'name': 'Omar Hassan', 'mutualFriends': 8},
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Avatar and user info row
           Row(
             children: [
-              Icon(Icons.people_outline, color: AppColors.secondary, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                localization.translate('friends.peopleYouMayKnow'),
-                style: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundImage: user.profileImage != null
+                    ? NetworkImage(user.profileImage!)
+                    : null,
+                child: user.profileImage == null
+                    ? Text(
+                        user.fullName.isNotEmpty
+                            ? user.fullName[0].toUpperCase()
+                            : '?',
+                        style: AppStyles.headingSmall.copyWith(
+                          color: AppColors.primary,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.fullName,
+                      style: AppStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (user.username.isNotEmpty)
+                      Text(
+                        '@${user.username}',
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    if (user.mutualFriendsCount != null && user.mutualFriendsCount! > 0)
+                      Text(
+                        localization.translate(
+                          'friends.mutualFriendsCount',
+                          args: {'count': user.mutualFriendsCount.toString()},
+                        ),
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    // Show status message under the name if canSendRequest is false
+                    // But don't show message if status is 'received' (we'll show buttons instead)
+                    if (user.canSendRequest == false && user.friendshipStatus != 'received')
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: _buildRequestStatusMessage(user, localization),
+                      ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          ...suggestions
-              .map((user) => _buildUserCard(user, localization))
-              .toList(),
+          // Action buttons row at the bottom
+          if (user.friendshipStatus == 'received') ...[
+            // Accept/Reject buttons for received friend requests
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 40,
+                    child: OutlinedButton(
+                      onPressed: () => _handleFriendRequestAction(user, false, localization),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: BorderSide(
+                          color: AppColors.error.withOpacity(0.5),
+                          width: 1.5,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        localization.translate('friends.reject'),
+                        style: AppStyles.bodySmall.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 40,
+                    child: ElevatedButton(
+                      onPressed: () => _handleFriendRequestAction(user, true, localization),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        localization.translate('friends.accept'),
+                        style: AppStyles.bodySmall.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ] else if (user.canSendRequest != false) ...[
+            // Send Request button
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 40,
+              child: ElevatedButton(
+                onPressed: () => _sendFriendRequest(user, localization),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(
+                  localization.translate('friends.sendRequest'),
+                  style: AppStyles.bodySmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
+  /// Build status message when friend request cannot be sent
+  Widget _buildRequestStatusMessage(
+    User user,
+    LocalizationService localization,
+  ) {
+    // Determine message and color based on friendship status
+    String messageKey;
+    Color textColor;
+    
+    switch (user.friendshipStatus) {
+      case 'received':
+        // User received a request from this person
+        messageKey = 'requestReceived';
+        textColor = AppColors.primary;
+        break;
+      case 'pending':
+        // Request already sent
+        messageKey = 'requestPending';
+        textColor = AppColors.warning;
+        break;
+      case 'accepted':
+        // Already friends
+        messageKey = 'alreadyFriends';
+        textColor = AppColors.success;
+        break;
+      default:
+        // Default message
+        messageKey = 'requestAlreadySent';
+        textColor = AppColors.textSecondary;
+    }
+
+    return Text(
+      localization.translate('friends.$messageKey'),
+      style: AppStyles.bodySmall.copyWith(
+        color: textColor,
+        fontWeight: FontWeight.w500,
+        fontSize: 12,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildEmptySearchState(LocalizationService localization) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.search,
+              size: 48,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Search for Friends',
+            style: AppStyles.headingMedium.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Enter an email or phone number to find and connect with your friends',
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestedFriends(LocalizationService localization) {
+    // TODO: Load friend suggestions from API
+    // This will be implemented when we add getFriendSuggestions API
+    return const SizedBox.shrink();
+  }
+
   IconData _getSearchMethodIcon(String method) {
     switch (method) {
-      case 'username':
-        return Icons.person;
       case 'email':
         return Icons.email;
       case 'phone':
         return Icons.phone;
       default:
-        return Icons.person;
+        return Icons.email;
     }
   }
 
   String _getSearchMethodName(String method, LocalizationService localization) {
     switch (method) {
-      case 'username':
-        return localization.translate('friends.username');
       case 'email':
         return localization.translate('friends.email');
       case 'phone':
@@ -390,62 +591,225 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
   }
 
   String _getSearchLabel(LocalizationService localization) {
-    switch (_searchMethod) {
-      case 'username':
-        return localization.translate('friends.username');
-      case 'email':
-        return localization.translate('friends.email');
-      case 'phone':
-        return localization.translate('auth.phone');
-      default:
-        return localization.translate('friends.searchFriends');
-    }
+    // Unified label for email/phone search
+    return 'Email / Phone';
   }
 
   String _getSearchHint(LocalizationService localization) {
-    switch (_searchMethod) {
-      case 'username':
-        return localization.translate('friends.searchPlaceholder');
-      case 'email':
-        return localization.translate('auth.enterEmail');
-      case 'phone':
-        return localization.translate('auth.phone');
-      default:
-        return localization.translate('friends.searchPlaceholder');
+    // Simple hint explaining accepted input types
+    return 'Enter email address or phone number';
+  }
+
+  Future<void> _performSearch(String query) async {
+    if (query.isEmpty || query.length < 2) {
+      setState(() {
+        _searchResults.clear();
+        _searchError = null;
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+      _searchError = null;
+    });
+
+    try {
+      // Always use 'username' as type, but send the actual value (email or phone)
+      final users = await _friendsRepository.searchUsers(
+        type: 'username', // Always username type
+        value: query, // The actual value (email or phone number)
+      );
+
+      if (mounted) {
+        setState(() {
+          _searchResults = users;
+          _isSearching = false;
+        });
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() {
+          _searchError = e.message;
+          _searchResults.clear();
+          _isSearching = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _searchError = 'Failed to search users. Please try again.';
+          _searchResults.clear();
+          _isSearching = false;
+        });
+      }
+
     }
   }
 
-  Future<void> _performSearch(
-    String query,
+  Future<void> _sendFriendRequest(
+    User user,
     LocalizationService localization,
   ) async {
-    setState(() => _isSearching = true);
+    try {
+      final response = await _friendsRepository.sendFriendRequest(
+        toUserId: user.id,
+        message: null, // Optional message
+      );
 
-    // Simulate API search
-    await Future.delayed(const Duration(milliseconds: 800));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${localization.translate('friends.friendRequestSent')} to ${user.fullName}',
+            ),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send friend request. Please try again.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
 
-    setState(() {
-      _isSearching = false;
-      _searchResults = [
-        {'name': 'John Doe', 'mutualFriends': 2},
-        {'name': 'Jane Smith', 'mutualFriends': 5},
-      ];
-    });
+    }
   }
 
-  void _sendFriendRequest(
-    Map<String, dynamic> user,
+  /// Handle friend request action (accept/reject)
+  Future<void> _handleFriendRequestAction(
+    User user,
+    bool accept,
     LocalizationService localization,
-  ) {
-    // Send friend request logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(localization.translate('friends.friendRequestSent')),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
+  ) async {
+    // Extract requestId from user model
+    final requestId = user.requestId;
+    
+    if (requestId == null || requestId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(
+                  localization.translate('friends.requestIdNotFound') ?? 
+                  'Unable to process friend request. Request ID not found.',
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    
+    try {
+      if (accept) {
+        await _friendsRepository.acceptFriendRequest(requestId: requestId);
+      } else {
+        await _friendsRepository.rejectFriendRequest(requestId: requestId);
+      }
+
+      if (mounted) {
+        // Update the user in search results
+        setState(() {
+          final index = _searchResults.indexWhere((u) => u.id == user.id);
+          if (index != -1) {
+            _searchResults[index] = user.copyWith(
+              friendshipStatus: accept ? 'accepted' : 'none',
+              canSendRequest: accept ? false : true,
+            );
+          }
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  accept ? Icons.check_circle : Icons.cancel,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  accept
+                      ? localization.translate('friends.friendRequestAccepted')
+                      : localization.translate('friends.friendRequestRejected'),
+                ),
+              ],
+            ),
+            backgroundColor: accept ? AppColors.success : AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              accept
+                  ? 'Failed to accept friend request. Please try again.'
+                  : 'Failed to reject friend request. Please try again.',
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    }
   }
 
 }

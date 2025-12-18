@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
@@ -15,6 +16,11 @@ import 'package:wish_listy/features/wishlists/data/repository/wishlist_repositor
 import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'package:wish_listy/features/notifications/data/models/notification_model.dart';
+import 'package:wish_listy/core/services/socket_service.dart';
+import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
+import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 
 class HomeScreen extends StatefulWidget {
   final GlobalKey<HomeScreenState>? key;
@@ -43,6 +49,12 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
   List<Wishlist> _guestWishlists = [];
   bool _isLoadingGuestData = false;
   bool _hasLoadedOnce = false;
+  
+  // Notification dropdown key
+  final GlobalKey _notificationIconKey = GlobalKey();
+  
+  // Track if notification dropdown has been opened (to hide badge permanently)
+  bool _hasOpenedDropdown = false;
 
   // Mock data - replace with real data from your backend
   final List<UpcomingEvent> _upcomingEvents = [
@@ -123,6 +135,17 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
     _checkWishlists();
     _startAnimations();
     _loadGuestWishlists();
+    // Load notifications when screen appears (only for authenticated users)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      if (authService.isAuthenticated && !authService.isGuest) {
+        context.read<NotificationsCubit>().loadNotifications();
+        
+        // Debug: Check Socket.IO connection status
+        final socketService = SocketService();
+        socketService.printConnectionStatus();
+      }
+    });
   }
 
   @override
@@ -176,7 +199,6 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
     });
 
     try {
-      debugPrint('🏠 HomeScreen: Checking for wishlists...');
       final wishlists = await _wishlistRepository.getWishlists();
 
       setState(() {
@@ -186,18 +208,12 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
             !_hasWishlists; // Hide welcome card if user has wishlists
         _isCheckingWishlists = false;
       });
-
-      debugPrint(
-        '🏠 HomeScreen: Has wishlists: $_hasWishlists, Count: $_wishlistCount',
-      );
     } on ApiException catch (e) {
-      debugPrint('⚠️ HomeScreen: Error checking wishlists: ${e.message}');
       setState(() {
         _isCheckingWishlists = false;
         // Keep welcome card visible if there's an error
       });
     } catch (e) {
-      debugPrint('⚠️ HomeScreen: Unexpected error checking wishlists: $e');
       setState(() {
         _isCheckingWishlists = false;
       });
@@ -478,27 +494,44 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
     LocalizationService localization,
     AuthRepository authService,
   ) {
-    return UnifiedPageHeader(
-      title: '${localization.translate('home.greeting')} 👋',
-      subtitle: authService.userName ?? 'User',
-      showSearch: false,
-      actions: [
-        HeaderAction(
-          icon: Icons.notifications_outlined,
-          onTap: () {
-            AppRoutes.pushNamed(context, AppRoutes.notifications);
-          },
-          showBadge: true,
-          badgeColor: AppColors.accent,
-        ),
-      ],
-      // Add wishlist card as bottom content when user has wishlists
-      // Show skeleton loading while checking, or card if has wishlists
-      bottomContent: _isCheckingWishlists
-          ? _buildWishlistCardSkeleton()
-          : (_hasWishlists ? _buildSummaryCard(localization) : null),
-      // Remove bottom margin to allow container to overlap
-      bottomMargin: 0.0,
+    return BlocBuilder<NotificationsCubit, NotificationsState>(
+      builder: (context, notificationsState) {
+        // Get unread count from notifications state
+        int unreadCount = 0;
+        if (notificationsState is NotificationsLoaded) {
+          unreadCount = notificationsState.unreadCount;
+        }
+
+        // Get notifications list
+        List<AppNotification> notifications = [];
+        if (notificationsState is NotificationsLoaded) {
+          notifications = notificationsState.notifications;
+        }
+
+        return UnifiedPageHeader(
+          title: '${localization.translate('home.greeting')} 👋',
+          subtitle: authService.userName ?? 'User',
+          showSearch: false,
+          actions: [
+            HeaderAction(
+              icon: Icons.notifications_outlined,
+              onTap: () {
+                _showNotificationDropdown(context, notifications, localization);
+              },
+              showBadge: unreadCount > 0 && !_hasOpenedDropdown, // Hide badge after dropdown has been opened
+              badgeCount: (unreadCount > 0 && !_hasOpenedDropdown) ? unreadCount : null, // Hide count after dropdown has been opened
+              badgeColor: AppColors.accent,
+            ),
+          ],
+          // Add wishlist card as bottom content when user has wishlists
+          // Show skeleton loading while checking, or card if has wishlists
+          bottomContent: _isCheckingWishlists
+              ? _buildWishlistCardSkeleton()
+              : (_hasWishlists ? _buildSummaryCard(localization) : null),
+          // Remove bottom margin to allow container to overlap
+          bottomMargin: 0.0,
+        );
+      },
     );
   }
 
@@ -966,7 +999,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
                     ),
                     color: AppColors.success,
                     onTap: () {
-                      AppRoutes.pushNamed(context, AppRoutes.friends);
+                      // Switch to Friends tab in MainNavigation while keeping bottom nav
+                      MainNavigation.switchToTab(context, 3);
                     },
                   ),
                 ),
@@ -1437,10 +1471,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
         _guestWishlists = updatedWishlists;
         _isLoadingGuestData = false;
       });
-      
-      debugPrint('✅ HomeScreen: Loaded ${updatedWishlists.length} guest wishlists with items');
     } catch (e) {
-      debugPrint('❌ HomeScreen: Error loading guest wishlists: $e');
       if (!mounted) return;
       setState(() {
         _isLoadingGuestData = false;
@@ -1911,6 +1942,522 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
         ),
       ),
     );
+  }
+
+  /// Show notification dropdown menu
+  void _showNotificationDropdown(
+    BuildContext context,
+    List<AppNotification> notifications,
+    LocalizationService localization,
+  ) {
+    // Set flag that dropdown has been opened (to hide badge count permanently)
+    setState(() {
+      _hasOpenedDropdown = true;
+    });
+    
+    // Get max 5 notifications
+    final displayNotifications = notifications.take(5).toList();
+
+    // Get screen size
+    final screenSize = MediaQuery.of(context).size;
+    const dropdownWidth = 320.0;
+    const spacing = 8.0;
+    
+    // Calculate position: right-aligned, below header (approximately where icon is)
+    // Header is usually around 100-120px from top
+    final topPosition = 130.0; // Approximate header height + spacing
+    final rightPosition = 16.0; // Padding from right edge
+
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Notifications',
+      barrierColor: Colors.black.withOpacity(0.3),
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return const SizedBox.shrink();
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, -0.05), // Slide down from slightly above
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          )),
+          child: FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOut,
+            ),
+            child: Stack(
+              children: [
+                // Transparent background to close on tap
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(color: Colors.transparent),
+                  ),
+                ),
+                // Dropdown content - positioned at top right
+                Positioned(
+                  top: topPosition,
+                  right: rightPosition,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Container(
+                      constraints: const BoxConstraints(maxHeight: 400),
+                      width: dropdownWidth,
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.textTertiary.withOpacity(0.2),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Header
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: AppColors.textTertiary.withOpacity(0.1),
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Notifications',
+                                  style: AppStyles.headingSmall.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const Spacer(),
+                                if (notifications.length > 5)
+                                  Text(
+                                    '${notifications.length - 5} more',
+                                    style: AppStyles.bodySmall.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          // Notifications list
+                          if (displayNotifications.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.notifications_none,
+                                    size: 48,
+                                    color: AppColors.textTertiary,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'No notifications',
+                                    style: AppStyles.bodyMedium.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            Flexible(
+                              child: ListView.separated(
+                                shrinkWrap: true,
+                                padding: EdgeInsets.zero,
+                                itemCount: displayNotifications.length,
+                                separatorBuilder: (context, index) => Divider(
+                                  height: 1,
+                                  thickness: 1,
+                                  color: AppColors.textTertiary.withOpacity(0.1),
+                                ),
+                                itemBuilder: (context, index) {
+                                  final notification = displayNotifications[index];
+                                  return _buildNotificationItem(notification, context);
+                                },
+                              ),
+                            ),
+                          // View All button
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceVariant,
+                              borderRadius: const BorderRadius.only(
+                                bottomLeft: Radius.circular(16),
+                                bottomRight: Radius.circular(16),
+                              ),
+                            ),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context); // Close dropdown
+                                  AppRoutes.pushNamed(context, AppRoutes.notifications);
+                                },
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: Text(
+                                  'View All Notifications',
+                                  style: AppStyles.bodyMedium.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Build notification item for dropdown
+  Widget _buildNotificationItem(AppNotification notification, BuildContext context) {
+    final isFriendRequest = notification.type == NotificationType.friendRequest;
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      color: notification.isRead
+          ? Colors.transparent
+          : AppColors.info.withOpacity(0.05),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icon
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: _getNotificationColor(notification.type).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _getNotificationIcon(notification.type),
+                  color: _getNotificationColor(notification.type),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            notification.title,
+                            style: AppStyles.bodySmall.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: notification.isRead
+                                  ? AppColors.textSecondary
+                                  : AppColors.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (!notification.isRead)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: AppColors.info,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      notification.message,
+                      style: AppStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      notification.timeAgo,
+                      style: AppStyles.caption.copyWith(
+                        color: AppColors.textTertiary,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          // Accept/Reject buttons for friend requests
+          if (isFriendRequest) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 40,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        _handleFriendRequestAction(context, notification, false);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: BorderSide(
+                          color: AppColors.error.withOpacity(0.5),
+                          width: 1.5,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Reject',
+                        style: AppStyles.bodySmall.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 40,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _handleFriendRequestAction(context, notification, true);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Accept',
+                        style: AppStyles.bodySmall.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Handle friend request action (accept/reject)
+  Future<void> _handleFriendRequestAction(
+    BuildContext context,
+    AppNotification notification,
+    bool accept,
+  ) async {
+    Navigator.pop(context); // Close dropdown
+    
+    // Extract requestId from notification data
+    // The notification data can have requestId, _id, or the notification id itself
+    final requestId = notification.data?['requestId'] ?? 
+                      notification.data?['_id'] ?? 
+                      notification.id;
+    
+    if (requestId == null || requestId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Unable to process friend request. Request ID not found.'),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    
+    try {
+      final friendsRepository = FriendsRepository();
+      
+      if (accept) {
+        await friendsRepository.acceptFriendRequest(requestId: requestId);
+      } else {
+        await friendsRepository.rejectFriendRequest(requestId: requestId);
+      }
+      
+      if (!mounted) return;
+      
+      // Mark notification as read
+      context.read<NotificationsCubit>().markAsRead(notification.id);
+      
+      // Reload notifications to update the list
+      context.read<NotificationsCubit>().loadNotifications();
+      
+      final message = accept
+          ? 'Friend request accepted!'
+          : 'Friend request declined';
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                accept ? Icons.check_circle : Icons.cancel,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 8),
+              Text(message),
+            ],
+          ),
+          backgroundColor: accept ? AppColors.success : AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(e.message),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    accept
+                        ? 'Failed to accept friend request. Please try again.'
+                        : 'Failed to decline friend request. Please try again.',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Get notification color based on type
+  Color _getNotificationColor(NotificationType type) {
+    switch (type) {
+      case NotificationType.friendRequest:
+        return AppColors.secondary;
+      case NotificationType.friendRequestAccepted:
+        return AppColors.success;
+      case NotificationType.eventInvitation:
+        return AppColors.accent;
+      case NotificationType.eventReminder:
+        return AppColors.warning;
+      case NotificationType.itemPurchased:
+        return AppColors.success;
+      case NotificationType.itemReserved:
+        return AppColors.info;
+      case NotificationType.wishlistShared:
+        return AppColors.primary;
+      case NotificationType.general:
+        return AppColors.info;
+    }
+  }
+
+  /// Get notification icon based on type
+  IconData _getNotificationIcon(NotificationType type) {
+    switch (type) {
+      case NotificationType.friendRequest:
+        return Icons.person_add_outlined;
+      case NotificationType.friendRequestAccepted:
+        return Icons.person_add_alt_1_outlined;
+      case NotificationType.eventInvitation:
+        return Icons.celebration_outlined;
+      case NotificationType.eventReminder:
+        return Icons.event_outlined;
+      case NotificationType.itemPurchased:
+        return Icons.shopping_bag_outlined;
+      case NotificationType.itemReserved:
+        return Icons.bookmark_outline;
+      case NotificationType.wishlistShared:
+        return Icons.share_outlined;
+      case NotificationType.general:
+        return Icons.notifications_outlined;
+    }
   }
 }
 

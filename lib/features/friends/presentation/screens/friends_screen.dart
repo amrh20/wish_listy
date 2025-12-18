@@ -11,6 +11,9 @@ import 'package:wish_listy/core/widgets/unified_page_header.dart';
 import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
 import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
+import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
 
 class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
@@ -28,72 +31,25 @@ class _FriendsScreenState extends State<FriendsScreen>
   final _searchController = TextEditingController();
   String _searchQuery = '';
 
-  // Mock data
-  final List<Friend> _friends = [
-    Friend(
-      id: '1',
-      name: 'Sarah Johnson',
-      email: 'sarah@example.com',
-      profilePicture: null,
-      mutualFriends: 12,
-      lastActive: DateTime.now().subtract(Duration(minutes: 30)),
-      isOnline: true,
-      wishlistCount: 3,
-    ),
-    Friend(
-      id: '2',
-      name: 'Ahmed Ali',
-      email: 'ahmed@example.com',
-      profilePicture: null,
-      mutualFriends: 8,
-      lastActive: DateTime.now().subtract(Duration(hours: 2)),
-      isOnline: false,
-      wishlistCount: 5,
-    ),
-    Friend(
-      id: '3',
-      name: 'Emma Watson',
-      email: 'emma@example.com',
-      profilePicture: null,
-      mutualFriends: 15,
-      lastActive: DateTime.now().subtract(Duration(minutes: 5)),
-      isOnline: true,
-      wishlistCount: 2,
-    ),
-    Friend(
-      id: '4',
-      name: 'Mike Thompson',
-      email: 'mike@example.com',
-      profilePicture: null,
-      mutualFriends: 6,
-      lastActive: DateTime.now().subtract(Duration(days: 1)),
-      isOnline: false,
-      wishlistCount: 4,
-    ),
-  ];
+  // Repository
+  final _friendsRepository = FriendsRepository();
 
-  final List<FriendRequest> _friendRequests = [
-    FriendRequest(
-      id: '1',
-      senderId: 'user1',
-      senderName: 'Lisa Chen',
-      senderEmail: 'lisa@example.com',
-      senderProfilePicture: null,
-      mutualFriends: 5,
-      sentAt: DateTime.now().subtract(Duration(hours: 3)),
-      message: 'Hi! We met at the tech conference last week.',
-    ),
-    FriendRequest(
-      id: '2',
-      senderId: 'user2',
-      senderName: 'David Brown',
-      senderEmail: 'david@example.com',
-      senderProfilePicture: null,
-      mutualFriends: 2,
-      sentAt: DateTime.now().subtract(Duration(days: 2)),
-      message: null,
-    ),
-  ];
+  // Friends list state
+  List<Friend> _friends = [];
+  bool _isLoadingFriends = false;
+  String? _friendsError;
+
+  // Friend requests state
+  List<FriendRequest> _friendRequests = [];
+  bool _isLoadingRequests = false;
+  String? _requestsError;
+
+  // Pagination state
+  int _currentPage = 1;
+  int _totalFriends = 0;
+  bool _hasMoreFriends = true;
+  final ScrollController _scrollController = ScrollController();
+  bool _isLoadingMoreFriends = false;
 
   @override
   void initState() {
@@ -102,6 +58,26 @@ class _FriendsScreenState extends State<FriendsScreen>
     _initializeAnimations();
     _startAnimations();
     _searchController.addListener(_onSearchChanged);
+    
+    // Set up scroll listener for pagination
+    _scrollController.addListener(_onScroll);
+    
+    // Load data when screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadFriends();
+      _loadFriendRequests();
+    });
+  }
+
+  void _onScroll() {
+    // Detect when user scrolls to bottom to load more friends
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
+        !_isLoadingMoreFriends &&
+        _hasMoreFriends &&
+        !_isLoadingFriends) {
+      _loadMoreFriends();
+    }
   }
 
   void _initializeAnimations() {
@@ -130,6 +106,7 @@ class _FriendsScreenState extends State<FriendsScreen>
     _tabController.dispose();
     _animationController.dispose();
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -216,6 +193,35 @@ class _FriendsScreenState extends State<FriendsScreen>
 
 
   Widget _buildMyFriendsTab(LocalizationService localization) {
+    // Show loading state
+    if (_isLoadingFriends && _friends.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Show error state
+    if (_friendsError != null && _friends.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: AppColors.error),
+            const SizedBox(height: 16),
+            Text(
+              _friendsError!,
+              style: AppStyles.bodyMedium.copyWith(color: AppColors.error),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            CustomButton(
+              text: 'Retry',
+              onPressed: () => _loadFriends(resetPage: true),
+              variant: ButtonVariant.primary,
+            ),
+          ],
+        ),
+      );
+    }
+
     final filteredFriends = _getFilteredFriends();
 
     return RefreshIndicator(
@@ -225,10 +231,20 @@ class _FriendsScreenState extends State<FriendsScreen>
           ? _buildEmptyState()
           : AnimationLimiter(
               child: ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.all(16),
-                itemCount: filteredFriends.length + 1, // +1 for bottom padding
+                itemCount: filteredFriends.length +
+                    (_isLoadingMoreFriends ? 1 : 0) +
+                    1, // +1 for bottom padding
                 itemBuilder: (context, index) {
+                  // Loading indicator at bottom for pagination
                   if (index == filteredFriends.length) {
+                    if (_isLoadingMoreFriends) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
                     return const SizedBox(
                       height: 100,
                     ); // Bottom padding for FAB
@@ -253,6 +269,35 @@ class _FriendsScreenState extends State<FriendsScreen>
   }
 
   Widget _buildFriendRequestsTab(LocalizationService localization) {
+    // Show loading state
+    if (_isLoadingRequests && _friendRequests.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Show error state
+    if (_requestsError != null && _friendRequests.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: AppColors.error),
+            const SizedBox(height: 16),
+            Text(
+              _requestsError!,
+              style: AppStyles.bodyMedium.copyWith(color: AppColors.error),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            CustomButton(
+              text: 'Retry',
+              onPressed: _loadFriendRequests,
+              variant: ButtonVariant.primary,
+            ),
+          ],
+        ),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: _refreshFriends,
       color: AppColors.secondary,
@@ -307,40 +352,27 @@ class _FriendsScreenState extends State<FriendsScreen>
             child: Row(
               children: [
                 // Profile Picture
-                Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundColor: AppColors.secondary.withValues(
-                        alpha: 0.1,
-                      ),
-                      child: Text(
-                        friend.name[0].toUpperCase(),
-                        style: AppStyles.headingSmall.copyWith(
-                          color: AppColors.secondary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    // Online Status
-                    if (friend.isOnline)
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          width: 16,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            color: AppColors.success,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.surface,
-                              width: 2,
-                            ),
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: AppColors.secondary.withValues(
+                    alpha: 0.1,
+                  ),
+                  backgroundImage: friend.profileImage != null
+                      ? NetworkImage(friend.profileImage!)
+                      : null,
+                  child: friend.profileImage == null
+                      ? Text(
+                          friend.fullName.isNotEmpty
+                              ? friend.fullName[0].toUpperCase()
+                              : friend.username.isNotEmpty
+                                  ? friend.username[0].toUpperCase()
+                                  : '?',
+                          style: AppStyles.headingSmall.copyWith(
+                            color: AppColors.secondary,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ),
-                      ),
-                  ],
+                        )
+                      : null,
                 ),
 
                 const SizedBox(width: 12),
@@ -351,66 +383,45 @@ class _FriendsScreenState extends State<FriendsScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        friend.name,
+                        friend.fullName.isNotEmpty
+                            ? friend.fullName
+                            : friend.username,
                         style: AppStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
+                      if (friend.username.isNotEmpty &&
+                          friend.fullName.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '@${friend.username}',
+                          style: AppStyles.bodySmall.copyWith(
+                            color: AppColors.textTertiary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ],
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(
-                            Icons.people_outline,
-                            size: 14,
-                            color: AppColors.textTertiary,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              '${friend.mutualFriends} ${localization.translate('ui.mutualFriends')}',
-                              style: AppStyles.bodySmall.copyWith(
-                                color: AppColors.textTertiary,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
                           Icon(
                             Icons.favorite_outline,
                             size: 14,
                             color: AppColors.textTertiary,
                           ),
                           const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              '${friend.wishlistCount} ${localization.translate('ui.wishlists')}',
-                              style: AppStyles.bodySmall.copyWith(
-                                color: AppColors.textTertiary,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
+                          Text(
+                            '${friend.wishlistCount} ${localization.translate('ui.wishlists')}',
+                            style: AppStyles.bodySmall.copyWith(
+                              color: AppColors.textTertiary,
                             ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        friend.isOnline
-                            ? localization.translate('ui.onlineNow')
-                            : '${localization.translate('ui.lastSeen')} ${_formatLastActive(friend.lastActive)}',
-                        style: AppStyles.caption.copyWith(
-                          color: friend.isOnline
-                              ? AppColors.success
-                              : AppColors.textTertiary,
-                          fontWeight: friend.isOnline
-                              ? FontWeight.w500
-                              : FontWeight.normal,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
                       ),
                     ],
                   ),
@@ -424,6 +435,11 @@ class _FriendsScreenState extends State<FriendsScreen>
   }
 
   Widget _buildFriendRequestCard(FriendRequest request) {
+    final fromUser = request.from;
+    final senderName = fromUser.fullName.isNotEmpty
+        ? fromUser.fullName
+        : fromUser.username;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -453,13 +469,20 @@ class _FriendsScreenState extends State<FriendsScreen>
                 CircleAvatar(
                   radius: 24,
                   backgroundColor: AppColors.warning.withValues(alpha: 0.1),
-                  child: Text(
-                    request.senderName[0].toUpperCase(),
-                    style: AppStyles.bodyLarge.copyWith(
-                      color: AppColors.warning,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  backgroundImage: fromUser.profileImage != null
+                      ? NetworkImage(fromUser.profileImage!)
+                      : null,
+                  child: fromUser.profileImage == null
+                      ? Text(
+                          senderName.isNotEmpty
+                              ? senderName[0].toUpperCase()
+                              : '?',
+                          style: AppStyles.bodyLarge.copyWith(
+                            color: AppColors.warning,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
                 ),
 
                 const SizedBox(width: 12),
@@ -470,35 +493,28 @@ class _FriendsScreenState extends State<FriendsScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        request.senderName,
+                        senderName,
                         style: AppStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.people_outline,
-                            size: 14,
+                      if (fromUser.username.isNotEmpty &&
+                          fromUser.fullName.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '@${fromUser.username}',
+                          style: AppStyles.bodySmall.copyWith(
                             color: AppColors.textTertiary,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${request.mutualFriends} mutual friends',
-                            style: AppStyles.bodySmall.copyWith(
-                              color: AppColors.textTertiary,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
 
                 // Time
                 Text(
-                  _formatRequestTime(request.sentAt),
+                  _formatRequestTime(request.createdAt),
                   style: AppStyles.caption.copyWith(
                     color: AppColors.textTertiary,
                   ),
@@ -506,45 +522,59 @@ class _FriendsScreenState extends State<FriendsScreen>
               ],
             ),
 
-            // Message
-            if (request.message != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '"${request.message}"',
-                  style: AppStyles.bodySmall.copyWith(
-                    fontStyle: FontStyle.italic,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-
             const SizedBox(height: 16),
 
             // Action Buttons
             Row(
               children: [
                 Expanded(
-                  child: CustomButton(
-                    text: 'Decline',
-                    onPressed: () => _handleFriendRequest(request, false),
-                    variant: ButtonVariant.outline,
-                    customColor: AppColors.accent,
+                  child: SizedBox(
+                    height: 40,
+                    child: OutlinedButton(
+                      onPressed: () => _handleFriendRequest(request, false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: BorderSide(
+                          color: AppColors.error.withOpacity(0.5),
+                          width: 1.5,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Decline',
+                        style: AppStyles.bodySmall.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: CustomButton(
-                    text: 'Accept',
-                    onPressed: () => _handleFriendRequest(request, true),
-                    variant: ButtonVariant.primary,
-                    customColor: AppColors.success,
+                  child: SizedBox(
+                    height: 40,
+                    child: ElevatedButton(
+                      onPressed: () => _handleFriendRequest(request, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.success,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Accept',
+                        style: AppStyles.bodySmall.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -651,14 +681,16 @@ class _FriendsScreenState extends State<FriendsScreen>
     if (_searchQuery.isEmpty) return _friends;
 
     return _friends.where((friend) {
-      return friend.name.toLowerCase().contains(_searchQuery) ||
-          friend.email.toLowerCase().contains(_searchQuery);
+      final fullName = friend.fullName.toLowerCase();
+      final username = friend.username.toLowerCase();
+      return fullName.contains(_searchQuery) ||
+          username.contains(_searchQuery);
     }).toList();
   }
 
-  String _formatLastActive(DateTime lastActive) {
+  String _formatRequestTime(DateTime createdAt) {
     final now = DateTime.now();
-    final difference = now.difference(lastActive);
+    final difference = now.difference(createdAt);
 
     if (difference.inMinutes < 60) {
       return '${difference.inMinutes}m ago';
@@ -669,59 +701,184 @@ class _FriendsScreenState extends State<FriendsScreen>
     }
   }
 
-  String _formatRequestTime(DateTime sentAt) {
-    final now = DateTime.now();
-    final difference = now.difference(sentAt);
+  /// Load friends from API
+  Future<void> _loadFriends({bool resetPage = false}) async {
+    if (resetPage) {
+      setState(() {
+        _currentPage = 1;
+        _hasMoreFriends = true;
+      });
+    }
 
-    if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else {
-      return '${difference.inDays}d ago';
+    if (_isLoadingFriends || (_isLoadingMoreFriends && !resetPage)) return;
+
+    setState(() {
+      if (resetPage) {
+        _isLoadingFriends = true;
+      } else {
+        _isLoadingMoreFriends = true;
+      }
+      _friendsError = null;
+    });
+
+    try {
+      final response = await _friendsRepository.getFriends(
+        page: _currentPage,
+        limit: 20,
+      );
+
+      if (!mounted) return;
+
+      final friends = response['friends'] as List<Friend>;
+      final total = response['total'] as int;
+      final currentPage = response['page'] as int;
+
+      setState(() {
+        if (resetPage || currentPage == 1) {
+          _friends = friends;
+        } else {
+          _friends.addAll(friends);
+        }
+        _totalFriends = total;
+        _currentPage = currentPage;
+        _hasMoreFriends = _friends.length < total;
+        _isLoadingFriends = false;
+        _isLoadingMoreFriends = false;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _friendsError = e.message;
+        _isLoadingFriends = false;
+        _isLoadingMoreFriends = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _friendsError = 'Failed to load friends. Please try again.';
+        _isLoadingFriends = false;
+        _isLoadingMoreFriends = false;
+      });
+    }
+  }
+
+  /// Load more friends (pagination)
+  Future<void> _loadMoreFriends() async {
+    if (!_hasMoreFriends || _isLoadingMoreFriends || _isLoadingFriends) return;
+
+    setState(() {
+      _currentPage++;
+    });
+
+    await _loadFriends();
+  }
+
+  /// Load friend requests from API
+  Future<void> _loadFriendRequests() async {
+    setState(() {
+      _isLoadingRequests = true;
+      _requestsError = null;
+    });
+
+    try {
+      final requests = await _friendsRepository.getFriendRequests();
+
+      if (!mounted) return;
+
+      setState(() {
+        _friendRequests = requests;
+        _isLoadingRequests = false;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _requestsError = e.message;
+        _isLoadingRequests = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _requestsError = 'Failed to load friend requests. Please try again.';
+        _isLoadingRequests = false;
+      });
     }
   }
 
   // Action Handlers
-  void _handleFriendRequest(FriendRequest request, bool accept) {
-    setState(() {
-      _friendRequests.remove(request);
+  Future<void> _handleFriendRequest(FriendRequest request, bool accept) async {
+    try {
       if (accept) {
-        // Add to friends list
-        _friends.add(
-          Friend(
-            id: request.senderId,
-            name: request.senderName,
-            email: request.senderEmail,
-            profilePicture: request.senderProfilePicture,
-            mutualFriends: request.mutualFriends,
-            lastActive: DateTime.now(),
-            isOnline: false,
-            wishlistCount: 0,
-          ),
-        );
+        await _friendsRepository.acceptFriendRequest(requestId: request.id);
+      } else {
+        await _friendsRepository.rejectFriendRequest(requestId: request.id);
       }
-    });
 
-    final message = accept
-        ? 'Friend request accepted!'
-        : 'Friend request declined';
+      if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              accept ? Icons.check_circle : Icons.cancel,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 8),
-            Text(message),
-          ],
+      // Remove request from list
+      setState(() {
+        _friendRequests.remove(request);
+      });
+
+      // If accepted, reload friends list
+      if (accept) {
+        await _loadFriends(resetPage: true);
+      }
+
+      final message = accept
+          ? 'Friend request accepted!'
+          : 'Friend request declined';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                accept ? Icons.check_circle : Icons.cancel,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 8),
+              Text(message),
+            ],
+          ),
+          backgroundColor: accept ? AppColors.success : AppColors.accent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-        backgroundColor: accept ? AppColors.success : AppColors.accent,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text(e.message)),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.error, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Failed to process friend request. Please try again.'),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
   }
 
   void _viewFriendProfile(Friend friend) {
@@ -798,55 +955,10 @@ class _FriendsScreenState extends State<FriendsScreen>
 
 
   Future<void> _refreshFriends() async {
-    // Refresh friends data
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() {
-      // Update data
-    });
+    // Reset pagination and reload both friends and requests
+    await Future.wait([
+      _loadFriends(resetPage: true),
+      _loadFriendRequests(),
+    ]);
   }
-}
-
-// Mock data models
-class Friend {
-  final String id;
-  final String name;
-  final String email;
-  final String? profilePicture;
-  final int mutualFriends;
-  final DateTime lastActive;
-  final bool isOnline;
-  final int wishlistCount;
-
-  Friend({
-    required this.id,
-    required this.name,
-    required this.email,
-    this.profilePicture,
-    required this.mutualFriends,
-    required this.lastActive,
-    required this.isOnline,
-    required this.wishlistCount,
-  });
-}
-
-class FriendRequest {
-  final String id;
-  final String senderId;
-  final String senderName;
-  final String senderEmail;
-  final String? senderProfilePicture;
-  final int mutualFriends;
-  final DateTime sentAt;
-  final String? message;
-
-  FriendRequest({
-    required this.id,
-    required this.senderId,
-    required this.senderName,
-    required this.senderEmail,
-    this.senderProfilePicture,
-    required this.mutualFriends,
-    required this.sentAt,
-    this.message,
-  });
 }

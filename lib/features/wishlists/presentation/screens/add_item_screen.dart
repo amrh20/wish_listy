@@ -128,10 +128,6 @@ class _AddItemScreenState extends State<AddItemScreen>
     });
 
     try {
-      debugPrint(
-        '📡 AddItemScreen: Loading wish for editing. '
-        'wishlistId=$_selectedWishlist, itemId=$_editingItemId',
-      );
 
       // Check if user is guest
       final authService = Provider.of<AuthRepository>(context, listen: false);
@@ -139,9 +135,6 @@ class _AddItemScreenState extends State<AddItemScreen>
 
       if (authService.isGuest) {
         // Load from local storage for guests
-        debugPrint('👤 AddItemScreen: Loading guest item from Hive');
-        debugPrint('   WishlistId: $_selectedWishlist');
-        debugPrint('   ItemId: $_editingItemId');
 
         final guestDataRepo = Provider.of<GuestDataRepository>(
           context,
@@ -149,20 +142,14 @@ class _AddItemScreenState extends State<AddItemScreen>
         );
         final items = await guestDataRepo.getWishlistItems(_selectedWishlist);
 
-        debugPrint('   Found ${items.length} items in wishlist');
-
         // Find the specific item by ID
         final item = items.firstWhere(
           (item) => item.id == _editingItemId,
           orElse: () {
-            debugPrint(
-              '❌ AddItemScreen: Item $_editingItemId not found in wishlist $_selectedWishlist',
-            );
+
             throw Exception('Item not found in local storage');
           },
         );
-
-        debugPrint('✅ AddItemScreen: Found item: ${item.name}');
 
         // Convert WishlistItem to Map format
         // Parse description to extract storeName, storeLocation, and notes if they were stored there
@@ -221,9 +208,7 @@ class _AddItemScreenState extends State<AddItemScreen>
       }
 
       if (itemData.isEmpty) {
-        debugPrint(
-          '⚠️ AddItemScreen: Wish with id $_editingItemId not found in wishlist $_selectedWishlist',
-        );
+
         setState(() {
           _isLoading = false;
         });
@@ -267,8 +252,6 @@ class _AddItemScreenState extends State<AddItemScreen>
         _selectedPriority = 'medium';
       }
 
-      debugPrint('✅ AddItemScreen: Loaded wish data for editing');
-
       // Ensure setState is called to update UI after loading
       if (mounted) {
         setState(() {
@@ -276,9 +259,7 @@ class _AddItemScreenState extends State<AddItemScreen>
         });
       }
     } on ApiException catch (e) {
-      debugPrint(
-        '❌ AddItemScreen: Error loading wish for editing: ${e.message}',
-      );
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -313,11 +294,6 @@ class _AddItemScreenState extends State<AddItemScreen>
         );
       }
     } catch (e) {
-      debugPrint(
-        '❌ AddItemScreen: Unexpected error loading wish for editing: $e',
-      );
-      debugPrint('   Error type: ${e.runtimeType}');
-      debugPrint('   Stack trace: ${StackTrace.current}');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -376,9 +352,7 @@ class _AddItemScreenState extends State<AddItemScreen>
 
       if (authService.isGuest) {
         // Load from local storage for guests
-        debugPrint(
-          '👤 AddItemScreen: Loading guest wishlists from local storage...',
-        );
+
         final guestDataRepo = Provider.of<GuestDataRepository>(
           context,
           listen: false,
@@ -397,16 +371,11 @@ class _AddItemScreenState extends State<AddItemScreen>
           };
         }).toList();
 
-        debugPrint(
-          '✅ AddItemScreen: Loaded ${wishlistsData.length} guest wishlists',
-        );
       } else {
         // Load from API for authenticated users
-        debugPrint('📡 AddItemScreen: Loading wishlists from API...');
+
         wishlistsData = await _wishlistRepository.getWishlists();
-        debugPrint(
-          '📡 AddItemScreen: Received ${wishlistsData.length} wishlists',
-        );
+
       }
 
       setState(() {
@@ -443,7 +412,7 @@ class _AddItemScreenState extends State<AddItemScreen>
         }
       });
     } on ApiException catch (e) {
-      debugPrint('❌ AddItemScreen: Error loading wishlists: ${e.message}');
+
       setState(() {
         _isLoadingWishlists = false;
       });
@@ -481,7 +450,7 @@ class _AddItemScreenState extends State<AddItemScreen>
         );
       }
     } catch (e) {
-      debugPrint('❌ AddItemScreen: Unexpected error loading wishlists: $e');
+
       setState(() {
         _isLoadingWishlists = false;
       });
@@ -1231,7 +1200,7 @@ class _AddItemScreenState extends State<AddItemScreen>
 
       return 'Unnamed Wishlist'; // Fallback if not found
     } catch (e) {
-      debugPrint('⚠️ AddItemScreen: Error in _getWishlistDisplayName: $e');
+
       return 'Unnamed Wishlist'; // Safe fallback
     }
   }
@@ -1368,19 +1337,6 @@ class _AddItemScreenState extends State<AddItemScreen>
         }
       }
 
-      debugPrint(
-        '📤 AddItemScreen: ${_isEditing ? "Updating" : "Adding"} wish',
-      );
-      debugPrint('   Name: ${_nameController.text}');
-      debugPrint('   Description: ${_descriptionController.text}');
-      debugPrint('   Where to Find: $_selectedWhereToFind');
-      debugPrint('   URL: $url');
-      debugPrint('   Store Name: $storeName');
-      debugPrint('   Store Location: $storeLocation');
-      debugPrint('   Notes: $notes');
-      debugPrint('   Priority: $_selectedPriority');
-      debugPrint('   WishlistId: $_selectedWishlist');
-
       // Check if user is guest
       final authService = Provider.of<AuthRepository>(context, listen: false);
 
@@ -1409,28 +1365,18 @@ class _AddItemScreenState extends State<AddItemScreen>
 
         if (_isEditing && _editingItemId != null) {
           // Update existing item
-          debugPrint('👤 AddItemScreen: Updating guest item in Hive');
-          debugPrint('   WishlistId: $_selectedWishlist');
-          debugPrint('   ItemId: $_editingItemId');
 
           try {
             final existingItems = await guestDataRepo.getWishlistItems(
               _selectedWishlist,
             );
-            debugPrint('   Found ${existingItems.length} items in wishlist');
 
             final existingItem = existingItems.firstWhere(
               (item) => item.id == _editingItemId,
               orElse: () {
-                debugPrint(
-                  '❌ AddItemScreen: Item $_editingItemId not found for update',
-                );
+
                 throw Exception('Item not found in local storage');
               },
-            );
-
-            debugPrint(
-              '✅ AddItemScreen: Found existing item: ${existingItem.name}',
             );
 
             // Build description that includes storeName, storeLocation, and notes if needed
@@ -1480,20 +1426,10 @@ class _AddItemScreenState extends State<AddItemScreen>
               updatedAt: DateTime.now(),
             );
 
-            debugPrint('   Updated item name: ${updatedItem.name}');
-            debugPrint('   Updated item link: ${updatedItem.link}');
-            debugPrint('   Updated item priority: ${updatedItem.priority}');
-            debugPrint('   Preserved status: ${updatedItem.status}');
-            debugPrint('   Preserved createdAt: ${updatedItem.createdAt}');
-
             await guestDataRepo.updateWishlistItem(updatedItem);
-            debugPrint(
-              '✅ AddItemScreen: Guest wish updated successfully in Hive',
-            );
-            debugPrint('   Updated description: $finalDescription');
+
           } catch (e) {
-            debugPrint('❌ AddItemScreen: Error updating guest item: $e');
-            debugPrint('   Error type: ${e.runtimeType}');
+
             rethrow; // Re-throw to be caught by outer catch block
           }
         } else {
@@ -1537,8 +1473,7 @@ class _AddItemScreenState extends State<AddItemScreen>
           );
 
           await guestDataRepo.addWishlistItem(_selectedWishlist, newItem);
-          debugPrint('✅ AddItemScreen: Guest wish added successfully');
-          debugPrint('   Description with extra info: $finalDescription');
+
         }
       } else {
         // Save via API for authenticated users
@@ -1557,8 +1492,7 @@ class _AddItemScreenState extends State<AddItemScreen>
             priority: _selectedPriority,
             wishlistId: _selectedWishlist,
           );
-          debugPrint('✅ AddItemScreen: Wish updated successfully');
-          debugPrint('   Response: $updateResponse');
+
         } else {
           // Call API to add wish
           await _wishlistRepository.addItemToWishlist(
@@ -1573,7 +1507,7 @@ class _AddItemScreenState extends State<AddItemScreen>
             priority: _selectedPriority,
             wishlistId: _selectedWishlist,
           );
-          debugPrint('✅ AddItemScreen: Wish added successfully');
+
         }
       }
 
@@ -1624,9 +1558,6 @@ class _AddItemScreenState extends State<AddItemScreen>
       }
     } catch (e, stackTrace) {
       // Handle unexpected errors
-      debugPrint('❌ AddItemScreen: Unexpected error: $e');
-      debugPrint('   Stack trace: $stackTrace');
-      debugPrint('   Error type: ${e.runtimeType}');
 
       if (mounted) {
         setState(() => _isLoading = false);
@@ -1874,7 +1805,7 @@ class _AddItemScreenState extends State<AddItemScreen>
         }
       }
     } catch (e) {
-      debugPrint('Error pasting from clipboard: $e');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1912,7 +1843,7 @@ class _AddItemScreenState extends State<AddItemScreen>
       try {
         wishlistName = _getWishlistDisplayName(_selectedWishlist, localization);
       } catch (e) {
-        debugPrint('⚠️ AddItemScreen: Error getting wishlist name: $e');
+
         wishlistName = 'wishlist'; // Fallback name
       }
 
@@ -1937,8 +1868,7 @@ class _AddItemScreenState extends State<AddItemScreen>
         },
       );
     } catch (e, stackTrace) {
-      debugPrint('❌ AddItemScreen: Error showing success message: $e');
-      debugPrint('   Stack trace: $stackTrace');
+
       // If dialog fails, show a simple snackbar instead
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

@@ -223,7 +223,7 @@ class EventsScreenState extends State<EventsScreen>
     });
 
     try {
-      debugPrint('📥 Loading events from API...');
+
       final events = await _eventRepository.getEvents();
 
       if (!mounted) return;
@@ -260,9 +260,6 @@ class EventsScreenState extends State<EventsScreen>
       });
 
       _applyFilters();
-      debugPrint(
-        '✅ Loaded ${events.length} events (${myEventsList.length} my events, ${invitedEventsList.length} invited)',
-      );
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -274,7 +271,7 @@ class EventsScreenState extends State<EventsScreen>
         _publicEvents = _mockPublicEvents;
       });
       _applyFilters();
-      debugPrint('❌ API Error loading events: ${e.message}');
+
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -286,7 +283,7 @@ class EventsScreenState extends State<EventsScreen>
         _publicEvents = _mockPublicEvents;
       });
       _applyFilters();
-      debugPrint('❌ Error loading events: $e');
+
     }
   }
 
@@ -890,7 +887,7 @@ class EventsScreenState extends State<EventsScreen>
           ),
         );
       }
-      debugPrint('❌ Error deleting event: $e');
+
     }
   }
 

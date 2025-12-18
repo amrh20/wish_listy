@@ -1093,7 +1093,6 @@ class _CreateEventScreenState extends State<CreateEventScreen>
         final eventName = _nameController.text.trim();
         final wishlistName = '$eventName Wishlist';
 
-        debugPrint('📝 Creating wishlist for event: $wishlistName');
         final wishlistResponse = await _wishlistRepository.createWishlist(
           name: wishlistName,
           description: 'Wishlist for ${eventName} event',
@@ -1106,11 +1105,10 @@ class _CreateEventScreenState extends State<CreateEventScreen>
             wishlistData['id']?.toString() ??
             wishlistData['wishlistId']?.toString();
 
-        debugPrint('✅ Wishlist created: $wishlistId');
       } else if (_wishlistOption == 'link' && _linkedWishlistId != null) {
         // Use linked wishlist ID
         wishlistId = _linkedWishlistId;
-        debugPrint('🔗 Using linked wishlist: $wishlistId');
+
       } else if (_isEditMode && _existingEvent?.wishlistId != null) {
         // In edit mode, preserve existing wishlist ID if no change
         wishlistId = _existingEvent!.wishlistId;
@@ -1136,7 +1134,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
 
       if (_isEditMode) {
         // Update existing event via API
-        debugPrint('📤 Updating event via API...');
+
         updatedEvent = await _eventRepository.updateEvent(
           eventId: _eventId!,
           name: _nameController.text.trim(),
@@ -1154,10 +1152,9 @@ class _CreateEventScreenState extends State<CreateEventScreen>
           invitedFriends: _invitedFriends,
         );
 
-        debugPrint('✅ Event updated successfully: ${updatedEvent.id}');
       } else {
         // Create new event via API
-        debugPrint('📤 Creating event via API...');
+
         updatedEvent = await _eventRepository.createEvent(
           name: _nameController.text.trim(),
           description: _descriptionController.text.trim(),
@@ -1176,7 +1173,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
 
         // Store event ID from response
         _createdEventId = updatedEvent.id;
-        debugPrint('✅ Event created successfully: $_createdEventId');
+
       }
 
       if (mounted) {
@@ -1191,9 +1188,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
           SnackBar(content: Text(e.message), backgroundColor: AppColors.error),
         );
       }
-      debugPrint(
-        '❌ API Error ${_isEditMode ? 'updating' : 'creating'} event: ${e.message}',
-      );
+
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -1206,7 +1201,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
           ),
         );
       }
-      debugPrint('❌ Error ${_isEditMode ? 'updating' : 'creating'} event: $e');
+
     }
   }
 

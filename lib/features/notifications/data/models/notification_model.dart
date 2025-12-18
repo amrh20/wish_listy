@@ -22,19 +22,91 @@ class AppNotification {
   });
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
+    // Handle both API response format and Socket.IO event format
+    final notificationId = json['_id'] ?? json['id'] ?? '';
+    final userId = json['userId'] ?? json['user_id'] ?? '';
+    final typeStr = json['type'] ?? '';
+    
+    // Map backend notification types to our enum
+    NotificationType type;
+    try {
+      // Try to find matching enum value
+      final normalizedTypeStr = typeStr.toLowerCase().trim();
+      
+      // Direct mapping for common types
+      switch (normalizedTypeStr) {
+        case 'friendrequest':
+        case 'friend_request':
+          type = NotificationType.friendRequest;
+          break;
+        case 'friendrequestaccepted':
+        case 'friend_request_accepted':
+          type = NotificationType.friendRequestAccepted;
+          break;
+        case 'eventinvitation':
+        case 'event_invitation':
+          type = NotificationType.eventInvitation;
+          break;
+        case 'eventreminder':
+        case 'event_reminder':
+          type = NotificationType.eventReminder;
+          break;
+        case 'itempurchased':
+        case 'item_purchased':
+          type = NotificationType.itemPurchased;
+          break;
+        case 'itemreserved':
+        case 'item_reserved':
+          type = NotificationType.itemReserved;
+          break;
+        case 'wishlistshared':
+        case 'wishlist_shared':
+          type = NotificationType.wishlistShared;
+          break;
+        default:
+          // Fallback to enum search
+          type = NotificationType.values.firstWhere(
+            (e) => e.toString().split('.').last.toLowerCase() == normalizedTypeStr,
+            orElse: () => NotificationType.general,
+          );
+      }
+    } catch (e) {
+      type = NotificationType.general;
+    }
+
+    // Parse dates
+    DateTime createdAt;
+    try {
+      createdAt = json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : json['created_at'] != null
+              ? DateTime.parse(json['created_at'])
+              : DateTime.now();
+    } catch (e) {
+      createdAt = DateTime.now();
+    }
+
+    DateTime? readAt;
+    try {
+      if (json['readAt'] != null) {
+        readAt = DateTime.parse(json['readAt']);
+      } else if (json['read_at'] != null) {
+        readAt = DateTime.parse(json['read_at']);
+      }
+    } catch (e) {
+      readAt = null;
+    }
+
     return AppNotification(
-      id: json['id'] ?? '',
-      userId: json['user_id'] ?? '',
-      type: NotificationType.values.firstWhere(
-        (e) => e.toString().split('.').last == json['type'],
-        orElse: () => NotificationType.general,
-      ),
-      title: json['title'] ?? '',
-      message: json['message'] ?? '',
-      data: json['data'] as Map<String, dynamic>?,
-      isRead: json['is_read'] ?? false,
-      createdAt: DateTime.parse(json['created_at']),
-      readAt: json['read_at'] != null ? DateTime.parse(json['read_at']) : null,
+      id: notificationId,
+      userId: userId,
+      type: type,
+      title: json['title'] ?? json['message'] ?? '',
+      message: json['message'] ?? json['body'] ?? '',
+      data: json['data'] as Map<String, dynamic>? ?? json,
+      isRead: json['isRead'] ?? json['is_read'] ?? false,
+      createdAt: createdAt,
+      readAt: readAt,
     );
   }
 

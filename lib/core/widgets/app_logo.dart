@@ -26,10 +26,7 @@ class AppLogo extends StatelessWidget {
           fit: BoxFit.contain,
           errorBuilder: (context, error, stackTrace) {
             // Show error message in debug mode to help identify the issue
-            debugPrint(
-              '❌ AppLogo: Image not found at assets/images/app_logo.png',
-            );
-            debugPrint('Error: $error');
+
             // Return a simple placeholder to make it obvious the image is missing
             return Container(
               width: size,

@@ -214,7 +214,7 @@ class _SignupScreenState extends State<SignupScreen>
       if (mounted) {
         _showErrorSnackBar('An unexpected error occurred. Please try again.');
       }
-      debugPrint('Signup error: $e');
+
     }
   }
 

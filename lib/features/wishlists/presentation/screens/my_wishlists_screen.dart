@@ -77,9 +77,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    debugPrint('🔄 MyWishlistsScreen: didChangeDependencies called');
-    debugPrint('   isCurrent: ${ModalRoute.of(context)?.isCurrent}');
-    debugPrint('   _hasLoadedOnce: $_hasLoadedOnce');
+
 
     // Reload data when screen becomes visible
     // Check if this is the current route (screen is visible)
@@ -87,7 +85,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
     if (isCurrent && _hasLoadedOnce) {
       // Screen is now visible and we've loaded before, reload data
-      debugPrint('   ✅ Reloading wishlists (screen is current)');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _loadWishlists();
@@ -344,9 +341,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   void _showEditWishlistDialog(WishlistSummary wishlist) {
-    debugPrint('✏️ MyWishlistsScreen: Edit wishlist clicked');
-    debugPrint('   Wishlist ID: ${wishlist.id}');
-    debugPrint('   Wishlist Name: ${wishlist.name}');
 
     // Navigate to create-wishlist screen with wishlistId for editing
     Navigator.pushNamed(
@@ -514,7 +508,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
   Future<void> _deleteWishlist(WishlistSummary wishlist) async {
     try {
-      debugPrint('🗑️ MyWishlistsScreen: Deleting wishlist: ${wishlist.id}');
 
       // Show loading indicator
       if (mounted) {
@@ -555,8 +548,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         await _wishlistRepository.deleteWishlist(wishlist.id);
       }
 
-      debugPrint('✅ MyWishlistsScreen: Wishlist deleted successfully');
-
       // Reload wishlists to update the screen
       await _loadWishlists();
 
@@ -582,7 +573,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         );
       }
     } on ApiException catch (e) {
-      debugPrint('❌ MyWishlistsScreen: Error deleting wishlist: ${e.message}');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -618,7 +608,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         );
       }
     } catch (e) {
-      debugPrint('❌ MyWishlistsScreen: Unexpected error deleting wishlist: $e');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -727,18 +716,8 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         _hasLoadedOnce = true;
       });
 
-      debugPrint(
-        '📂 MyWishlistsScreen: Found ${categorySet.length} unique categories: ${categorySet.toList()..sort()}',
-      );
-      debugPrint(
-        '📊 MyWishlistsScreen: Category counts: $categoryCounts',
-      );
-
-      debugPrint(
-        '✅ MyWishlistsScreen: Loaded ${personalWishlists.length} guest wishlists',
-      );
     } catch (e) {
-      debugPrint('❌ MyWishlistsScreen: Error loading guest wishlists: $e');
+
       setState(() {
         _errorMessage = 'Failed to load wishlists';
         _isLoading = false;
@@ -762,29 +741,22 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
     try {
       // Call API to get wishlists
-      debugPrint('📡 MyWishlistsScreen: Loading wishlists...');
+
       final wishlistsData = await _wishlistRepository.getWishlists();
-      debugPrint(
-        '📡 MyWishlistsScreen: Received ${wishlistsData.length} wishlists',
-      );
 
       // Convert API response to WishlistSummary objects
       final personalWishlists = <WishlistSummary>[];
 
       for (final wishlistData in wishlistsData) {
-        debugPrint(
-          '📦 MyWishlistsScreen: Processing wishlist: ${wishlistData['name']}',
-        );
+
         final wishlist = _convertToWishlistSummary(wishlistData);
 
         // Only add personal wishlists (exclude event wishlists)
         if (wishlist.eventName == null && wishlistData['eventId'] == null) {
           personalWishlists.add(wishlist);
-          debugPrint('   → Added to personal wishlists');
+
         }
       }
-
-      debugPrint('✅ MyWishlistsScreen: Personal: ${personalWishlists.length}');
 
       // Store original wishlist data for category extraction and count items
       final Map<String, String> wishlistIdToCategory = {};
@@ -811,10 +783,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
       // Extract unique categories
       final categoriesSet = wishlistIdToCategory.values.toSet();
       final categories = categoriesSet.toList()..sort();
-
-      debugPrint(
-        '📂 MyWishlistsScreen: Found ${categories.length} unique categories: $categories',
-      );
 
       setState(() {
         _allPersonalWishlists = personalWishlists;
@@ -905,7 +873,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
           ),
         );
       }
-      debugPrint('Load wishlists error: $e');
+
     }
   }
 

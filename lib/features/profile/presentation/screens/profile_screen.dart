@@ -8,6 +8,8 @@ import 'package:wish_listy/core/widgets/unified_page_header.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
+import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -22,28 +24,11 @@ class _ProfileScreenState extends State<ProfileScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  // Mock user data
-  final UserProfile _userProfile = UserProfile(
-    id: 'user123',
-    name: 'Ahmed Ali',
-    email: 'ahmed@example.com',
-    bio:
-        'Love tech gadgets and outdoor adventures. Always looking for the next great read!',
-    profilePicture: null,
-    joinDate: DateTime(2023, 6, 15),
-    friendsCount: 24,
-    wishlistsCount: 5,
-    eventsCreated: 3,
-    giftsReceived: 12,
-    giftsGiven: 18,
-    privacy: PrivacySettings(
-      profileVisibility: ProfileVisibility.friends,
-      showOnlineStatus: true,
-      allowFriendRequests: true,
-      showWishlistActivity: true,
-    ),
-  );
-
+  // User profile data
+  UserProfile? _userProfile;
+  bool _isLoading = false;
+  bool _hasLoaded = false; // Flag to track if we've loaded data
+  String? _errorMessage;
   String _currentLanguage = 'en';
 
   @override
@@ -52,6 +37,20 @@ class _ProfileScreenState extends State<ProfileScreen>
     _initializeAnimations();
     _startAnimations();
     _loadCurrentLanguage();
+    // Don't load profile here - wait until screen is visible
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Load profile only when screen becomes visible and hasn't loaded yet
+    if (!_hasLoaded && !_isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadUserProfile();
+        }
+      });
+    }
   }
 
   void _loadCurrentLanguage() {
@@ -122,7 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 // Profile Header with UnifiedPageHeader
                 UnifiedPageHeader(
                   title: localization.translate('navigation.profile'),
-                  subtitle: _userProfile.name,
+                  subtitle: _userProfile?.name ?? '',
                   showSearch: false,
                   actions: [],
                   bottomMargin: 0.0, // Remove gap between header and container
@@ -135,39 +134,43 @@ class _ProfileScreenState extends State<ProfileScreen>
                     child: RefreshIndicator(
                       onRefresh: _refreshProfile,
                       color: AppColors.primary,
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        child: AnimatedBuilder(
-                          animation: _animationController,
-                          builder: (context, child) {
-                            return FadeTransition(
-                              opacity: _fadeAnimation,
-                              child: SlideTransition(
-                                position: _slideAnimation,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      // Stats Cards
-                                      _buildStatsSection(),
-                                      const SizedBox(height: 16),
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : _errorMessage != null
+                              ? _buildErrorState()
+                              : SingleChildScrollView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  child: AnimatedBuilder(
+                                    animation: _animationController,
+                                    builder: (context, child) {
+                                      return FadeTransition(
+                                        opacity: _fadeAnimation,
+                                        child: SlideTransition(
+                                          position: _slideAnimation,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                // Stats Cards
+                                                _buildStatsSection(),
+                                                const SizedBox(height: 16),
 
-                                      // Account Settings
-                                      _buildAccountSettings(),
-                                      const SizedBox(height: 16),
-                                      // App Settings
-                                      _buildAppSettings(),
-                                      const SizedBox(height: 80),
-                                    ],
+                                                // Account Settings
+                                                _buildAccountSettings(),
+                                                const SizedBox(height: 16),
+                                                // App Settings
+                                                _buildAppSettings(),
+                                                const SizedBox(height: 80),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
                     ),
                   ),
                 ),
@@ -179,7 +182,55 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  Widget _buildErrorState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: AppColors.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load profile',
+              style: AppStyles.headingMedium.copyWith(
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _errorMessage ?? 'Unknown error',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _loadUserProfile,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildStatsSection() {
+    if (_userProfile == null) return const SizedBox.shrink();
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       decoration: BoxDecoration(
@@ -200,10 +251,13 @@ class _ProfileScreenState extends State<ProfileScreen>
           // Friends Stat
           Expanded(
             child: GestureDetector(
-              onTap: () => AppRoutes.pushNamed(context, AppRoutes.friends),
+              onTap: () {
+                // Navigate to Friends tab while keeping the main navigation bar
+                MainNavigation.switchToTab(context, 3);
+              },
               child: _buildStatItem(
                 icon: Icons.people_outline,
-                value: '${_userProfile.friendsCount}',
+                value: '${_userProfile!.friendsCount}',
                 label: 'Friends',
                 iconColor: AppColors.secondary,
                 iconBackgroundColor: AppColors.secondary.withOpacity(0.1),
@@ -218,7 +272,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               onTap: () => AppRoutes.pushNamed(context, AppRoutes.myWishlists),
               child: _buildStatItem(
                 icon: Icons.favorite_outline,
-                value: '${_userProfile.wishlistsCount}',
+                value: '${_userProfile!.wishlistsCount}',
                 label: 'Wishlists',
                 iconColor: AppColors.primary,
                 iconBackgroundColor: AppColors.primary.withOpacity(0.1),
@@ -233,7 +287,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               onTap: () => AppRoutes.pushNamed(context, AppRoutes.events),
               child: _buildStatItem(
                 icon: Icons.event_outlined,
-                value: '${_userProfile.eventsCreated}',
+                value: '${_userProfile!.eventsCreated}',
                 label: 'Events',
                 iconColor: AppColors.accent,
                 iconBackgroundColor: AppColors.accent.withOpacity(0.1),
@@ -658,29 +712,32 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-
   void _editPersonalInfo() {
+    if (_userProfile == null) return;
+    
     Navigator.pushNamed(
       context,
       AppRoutes.personalInformation,
       arguments: {
-        'name': _userProfile.name,
-        'email': _userProfile.email,
-        'bio': _userProfile.bio,
+        'name': _userProfile!.name,
+        'email': _userProfile!.email,
+        'bio': _userProfile!.bio,
       },
     );
   }
 
   void _privacySettings() {
+    if (_userProfile == null) return;
+    
     Navigator.pushNamed(
       context,
       AppRoutes.privacySecurity,
       arguments: {
-        'showOnlineStatus': _userProfile.privacy.showOnlineStatus,
-        'allowFriendRequests': _userProfile.privacy.allowFriendRequests,
-        'showWishlistActivity': _userProfile.privacy.showWishlistActivity,
+        'showOnlineStatus': _userProfile!.privacy.showOnlineStatus,
+        'allowFriendRequests': _userProfile!.privacy.allowFriendRequests,
+        'showWishlistActivity': _userProfile!.privacy.showWishlistActivity,
         'showProfileToPublic':
-            _userProfile.privacy.profileVisibility == ProfileVisibility.public,
+            _userProfile!.privacy.profileVisibility == ProfileVisibility.public,
       },
     );
   }
@@ -761,12 +818,105 @@ class _ProfileScreenState extends State<ProfileScreen>
     });
   }
 
-  Future<void> _refreshProfile() async {
-    // Refresh profile data
-    await Future.delayed(const Duration(seconds: 1));
+  Future<void> _loadUserProfile({bool forceRefresh = false}) async {
+    // Don't reload if already loaded unless force refresh
+    if (_hasLoaded && !forceRefresh) return;
+
     setState(() {
-      // Update profile data
+      _isLoading = true;
+      _errorMessage = null;
     });
+
+    try {
+      final authRepository = Provider.of<AuthRepository>(
+        context,
+        listen: false,
+      );
+
+      final response = await authRepository.getCurrentUserProfile();
+
+      if (response['success'] == true) {
+        final data = response['data'] ?? response;
+        
+        // Parse the response data
+        if (mounted) {
+          setState(() {
+            _userProfile = UserProfile(
+              id: data['_id'] ?? data['id'] ?? '',
+              name: data['fullName'] ?? data['name'] ?? '',
+              email: data['email'] ?? '',
+              bio: data['bio'],
+              profilePicture: data['profileImage'] ?? data['profilePicture'],
+              joinDate: data['createdAt'] != null
+                  ? DateTime.parse(data['createdAt'])
+                  : DateTime.now(),
+              friendsCount: data['friendsCount'] ?? 0,
+              wishlistsCount: data['wishlistsCount'] ?? 0,
+              eventsCreated: data['eventsCreated'] ?? 0,
+              giftsReceived: data['giftsReceived'] ?? 0,
+              giftsGiven: data['giftsGiven'] ?? 0,
+              privacy: PrivacySettings(
+                profileVisibility: _parseProfileVisibility(
+                  data['privacySettings']?['profileVisibility'] ??
+                      data['privacySettings']?['publicWishlistVisibility'],
+                ),
+                showOnlineStatus:
+                    data['privacySettings']?['showOnlineStatus'] ?? true,
+                allowFriendRequests:
+                    data['privacySettings']?['allowFriendRequests'] ?? true,
+                showWishlistActivity:
+                    data['privacySettings']?['showWishlistActivity'] ?? true,
+              ),
+            );
+            _isLoading = false;
+            _hasLoaded = true;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _errorMessage = response['message'] ?? 'Failed to load profile';
+            _isLoading = false;
+            _hasLoaded = true; // Mark as loaded even on error to prevent retry loops
+          });
+        }
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+          _isLoading = false;
+          _hasLoaded = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load profile. Please try again.';
+          _isLoading = false;
+          _hasLoaded = true;
+        });
+      }
+
+    }
+  }
+
+  ProfileVisibility _parseProfileVisibility(dynamic value) {
+    if (value == null) return ProfileVisibility.friends;
+    
+    final str = value.toString().toLowerCase();
+    if (str == 'public') return ProfileVisibility.public;
+    if (str == 'private') return ProfileVisibility.private;
+    return ProfileVisibility.friends;
+  }
+
+  Future<void> _refreshProfile() async {
+    await _loadUserProfile(forceRefresh: true);
+  }
+
+  // Public method to refresh profile from outside (e.g., from MainNavigation)
+  void refreshProfile() {
+    _loadUserProfile(forceRefresh: true);
   }
 }
 

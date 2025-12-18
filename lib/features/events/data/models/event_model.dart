@@ -78,7 +78,7 @@ class Event {
       try {
         eventDate = DateTime.parse(json['date'].toString());
       } catch (e) {
-        debugPrint('⚠️ Failed to parse date: ${json['date']}');
+
       }
     }
     eventDate ??= DateTime.now();
@@ -105,7 +105,7 @@ class Event {
           );
         }
       } catch (e) {
-        debugPrint('⚠️ Failed to parse time: ${json['time']}');
+
       }
     }
 
@@ -118,7 +118,7 @@ class Event {
       try {
         createdAt = DateTime.parse(json['createdAt'].toString());
       } catch (e) {
-        debugPrint('⚠️ Failed to parse createdAt: ${json['createdAt']}');
+
       }
     }
     createdAt ??= json['created_at'] != null
@@ -132,7 +132,7 @@ class Event {
       try {
         updatedAt = DateTime.parse(json['updatedAt'].toString());
       } catch (e) {
-        debugPrint('⚠️ Failed to parse updatedAt: ${json['updatedAt']}');
+
       }
     }
     updatedAt ??= json['updated_at'] != null
@@ -173,7 +173,7 @@ class Event {
                     invitation as Map<String, dynamic>,
                   );
                 } catch (e) {
-                  debugPrint('⚠️ Failed to parse invitation: $e');
+
                   return null;
                 }
               })

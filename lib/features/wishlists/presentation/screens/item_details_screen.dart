@@ -52,26 +52,19 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       
       if (authService.isGuest) {
         // Load from local storage for guests
-        debugPrint('👤 ItemDetailsScreen: Loading guest item from Hive');
-        debugPrint('   ItemId: ${widget.item.id}');
-        debugPrint('   WishlistId: ${widget.item.wishlistId}');
-        
+
         final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
         final items = await guestDataRepo.getWishlistItems(widget.item.wishlistId);
-        
-        debugPrint('   Found ${items.length} items in wishlist');
-        
+
         // Find the specific item by ID
         final item = items.firstWhere(
           (item) => item.id == widget.item.id,
           orElse: () {
-            debugPrint('❌ ItemDetailsScreen: Item ${widget.item.id} not found in Hive');
+
             throw Exception('Item not found in local storage');
           },
         );
-        
-        debugPrint('✅ ItemDetailsScreen: Found item: ${item.name}');
-        
+
         // Load wishlist name for navigation
         final wishlist = await guestDataRepo.getWishlistById(widget.item.wishlistId);
         
@@ -86,13 +79,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         }
       } else {
         // Load from API for authenticated users
-        debugPrint(
-          '📡 ItemDetailsScreen: Fetching item details from API for ID: ${widget.item.id}',
-        );
 
         final itemData = await _wishlistRepository.getItemById(widget.item.id);
-
-        debugPrint('📡 ItemDetailsScreen: Received item data: $itemData');
 
         // Parse the item data to WishlistItem model
         final updatedItem = WishlistItem.fromJson(itemData);
@@ -112,7 +100,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         }
       }
     } on ApiException catch (e) {
-      debugPrint('❌ ItemDetailsScreen: ApiException: ${e.message}');
+
       if (mounted) {
         setState(() {
           _errorMessage = e.message;
@@ -120,8 +108,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         });
       }
     } catch (e) {
-      debugPrint('❌ ItemDetailsScreen: Unexpected error: $e');
-      debugPrint('   Error type: ${e.runtimeType}');
+
       if (mounted) {
         setState(() {
           _errorMessage = e.toString().contains('Exception')
@@ -791,7 +778,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     Navigator.pop(context);
     
     try {
-      debugPrint('🗑️ ItemDetailsScreen: Deleting item: ${item.id}');
 
       // Show loading indicator
       if (mounted) {
@@ -824,11 +810,11 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         // Delete from local storage for guests
         final guestDataRepo = Provider.of<GuestDataRepository>(context, listen: false);
         await guestDataRepo.deleteWishlistItem(item.id);
-        debugPrint('✅ ItemDetailsScreen: Guest item deleted successfully from Hive');
+
       } else {
         // Call API to delete item for authenticated users
         await _wishlistRepository.deleteItem(item.id);
-        debugPrint('✅ ItemDetailsScreen: Item deleted successfully from API');
+
       }
 
       // Navigate back to previous screen
@@ -872,7 +858,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         );
       }
     } on ApiException catch (e) {
-      debugPrint('❌ ItemDetailsScreen: ApiException deleting item: ${e.message}');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -908,9 +893,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         );
       }
     } catch (e) {
-      debugPrint('❌ ItemDetailsScreen: Error deleting item: $e');
-      debugPrint('   Error type: ${e.runtimeType}');
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

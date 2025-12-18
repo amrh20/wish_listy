@@ -53,16 +53,9 @@ class EventRepository {
         'invited_friends': invitedFriends ?? [],
       };
 
-      debugPrint('📤 EventRepository: Creating event');
-      debugPrint('   Request Data: $requestData');
-      debugPrint('   Endpoint: POST /api/events');
-
       // Make API call to create event
       // Endpoint: POST /api/events
       final response = await _apiService.post('/events', data: requestData);
-
-      debugPrint('📥 EventRepository: Response received');
-      debugPrint('   Response: $response');
 
       // Parse response and create Event object
       // API response structure: {success: true, data: {...}} or {id, name, ...}
@@ -75,16 +68,13 @@ class EventRepository {
       // Create Event object from response
       final event = Event.fromJson(eventData);
 
-      debugPrint('✅ EventRepository: Event created successfully');
-      debugPrint('   Event ID: ${event.id}');
-
       return event;
     } on ApiException {
       // Re-throw ApiException to preserve error details
       rethrow;
     } catch (e) {
       // Handle any unexpected errors
-      debugPrint('❌ Unexpected create event error: $e');
+
       throw Exception('Failed to create event. Please try again.');
     }
   }
@@ -137,20 +127,12 @@ class EventRepository {
         'invited_friends': invitedFriends ?? [],
       };
 
-      debugPrint('📤 EventRepository: Updating event');
-      debugPrint('   Event ID: $eventId');
-      debugPrint('   Request Data: $requestData');
-      debugPrint('   Endpoint: PUT /api/events/$eventId');
-
       // Make API call to update event
       // Endpoint: PUT /api/events/:id
       final response = await _apiService.put(
         '/events/$eventId',
         data: requestData,
       );
-
-      debugPrint('📥 EventRepository: Response received');
-      debugPrint('   Response: $response');
 
       // Parse response and create Event object
       // API response structure: {success: true, data: {...}} or {id, name, ...}
@@ -163,16 +145,13 @@ class EventRepository {
       // Create Event object from response
       final event = Event.fromJson(eventData);
 
-      debugPrint('✅ EventRepository: Event updated successfully');
-      debugPrint('   Event ID: ${event.id}');
-
       return event;
     } on ApiException {
       // Re-throw ApiException to preserve error details
       rethrow;
     } catch (e) {
       // Handle any unexpected errors
-      debugPrint('❌ Unexpected update event error: $e');
+
       throw Exception('Failed to update event. Please try again.');
     }
   }
@@ -182,15 +161,10 @@ class EventRepository {
   /// Returns a list of events (both created by user and invited to)
   Future<List<Event>> getEvents() async {
     try {
-      debugPrint('📥 EventRepository: Getting events');
-      debugPrint('   Endpoint: GET /api/events');
 
       // Make API call to get events
       // Endpoint: GET /api/events
       final response = await _apiService.get('/events');
-
-      debugPrint('📥 EventRepository: Response received');
-      debugPrint('   Response: $response');
 
       // Parse response
       // API response structure: {success: true, data: {created: [...], invited: [...]}}
@@ -223,7 +197,7 @@ class EventRepository {
       }
 
       if (eventsList.isEmpty) {
-        debugPrint('⚠️ EventRepository: No events found in response');
+
         return [];
       }
 
@@ -233,21 +207,20 @@ class EventRepository {
             try {
               return Event.fromJson(item as Map<String, dynamic>);
             } catch (e) {
-              debugPrint('⚠️ EventRepository: Failed to parse event: $e');
+
               return null;
             }
           })
           .whereType<Event>()
           .toList();
 
-      debugPrint('✅ EventRepository: Parsed ${events.length} events');
       return events;
     } on ApiException {
       // Re-throw ApiException to preserve error details
       rethrow;
     } catch (e) {
       // Handle any unexpected errors
-      debugPrint('❌ Unexpected get events error: $e');
+
       throw Exception('Failed to load events. Please try again.');
     }
   }
@@ -259,16 +232,10 @@ class EventRepository {
   /// Returns the event data
   Future<Event> getEventById(String id) async {
     try {
-      debugPrint('📥 EventRepository: Getting event by ID');
-      debugPrint('   Event ID: $id');
-      debugPrint('   Endpoint: GET /api/events/$id');
 
       // Make API call to get event by ID
       // Endpoint: GET /api/events/:id
       final response = await _apiService.get('/events/$id');
-
-      debugPrint('📥 EventRepository: Response received');
-      debugPrint('   Response: $response');
 
       // Parse response
       // API response structure: {success: true, data: {...}} or direct object
@@ -284,25 +251,21 @@ class EventRepository {
           eventData = response as Map<String, dynamic>;
         }
       } else {
-        debugPrint('⚠️ EventRepository: Invalid response format');
+
         throw Exception('Invalid response format from server');
       }
 
       // Create Event object from response
       final event = Event.fromJson(eventData);
 
-      debugPrint('✅ EventRepository: Event loaded successfully');
-      debugPrint('   Event ID: ${event.id}');
-      debugPrint('   Event Name: ${event.name}');
-
       return event;
     } on ApiException catch (e) {
       // Re-throw ApiException to preserve error details
-      debugPrint('❌ API Error loading event: ${e.message}');
+
       rethrow;
     } catch (e) {
       // Handle any unexpected errors
-      debugPrint('❌ Unexpected get event by ID error: $e');
+
       throw Exception('Failed to load event. Please try again.');
     }
   }
@@ -314,24 +277,19 @@ class EventRepository {
   /// Returns true if deletion was successful
   Future<bool> deleteEvent(String eventId) async {
     try {
-      debugPrint('🗑️ EventRepository: Deleting event');
-      debugPrint('   Event ID: $eventId');
-      debugPrint('   Endpoint: DELETE /api/events/$eventId');
 
       // Make API call to delete event
       // Endpoint: DELETE /api/events/:id
       await _apiService.delete('/events/$eventId');
 
-      debugPrint('✅ EventRepository: Event deleted successfully');
-
       return true;
     } on ApiException catch (e) {
       // Re-throw ApiException to preserve error details
-      debugPrint('❌ API Error deleting event: ${e.message}');
+
       rethrow;
     } catch (e) {
       // Handle any unexpected errors
-      debugPrint('❌ Unexpected delete event error: $e');
+
       throw Exception('Failed to delete event. Please try again.');
     }
   }
@@ -347,10 +305,6 @@ class EventRepository {
     required String wishlistId,
   }) async {
     try {
-      debugPrint('🔗 EventRepository: Linking wishlist to event');
-      debugPrint('   Event ID: $eventId');
-      debugPrint('   Wishlist ID: $wishlistId');
-      debugPrint('   Endpoint: PUT /api/events/$eventId/wishlist');
 
       // Prepare request body
       final requestData = <String, dynamic>{'wishlist_id': wishlistId};
@@ -361,9 +315,6 @@ class EventRepository {
         '/events/$eventId/wishlist',
         data: requestData,
       );
-
-      debugPrint('📥 EventRepository: Response received');
-      debugPrint('   Response: $response');
 
       // Parse response and create Event object
       // API response structure: {success: true, data: {...}} or {id, name, ...}
@@ -376,18 +327,14 @@ class EventRepository {
       // Create Event object from response
       final event = Event.fromJson(eventData);
 
-      debugPrint('✅ EventRepository: Wishlist linked successfully');
-      debugPrint('   Event ID: ${event.id}');
-      debugPrint('   Wishlist ID: ${event.wishlistId}');
-
       return event;
     } on ApiException catch (e) {
       // Re-throw ApiException to preserve error details
-      debugPrint('❌ API Error linking wishlist: ${e.message}');
+
       rethrow;
     } catch (e) {
       // Handle any unexpected errors
-      debugPrint('❌ Unexpected link wishlist error: $e');
+
       throw Exception('Failed to link wishlist to event. Please try again.');
     }
   }
@@ -401,9 +348,6 @@ class EventRepository {
     required String eventId,
   }) async {
     try {
-      debugPrint('🔓 EventRepository: Unlinking wishlist from event');
-      debugPrint('   Event ID: $eventId');
-      debugPrint('   Endpoint: PUT /api/events/$eventId/wishlist');
 
       // Prepare request body with null wishlist_id to unlink
       final requestData = <String, dynamic>{'wishlist_id': null};
@@ -414,9 +358,6 @@ class EventRepository {
         '/events/$eventId/wishlist',
         data: requestData,
       );
-
-      debugPrint('📥 EventRepository: Response received');
-      debugPrint('   Response: $response');
 
       // Parse response and create Event object
       // API response structure: {success: true, data: {...}} or {id, name, ...}
@@ -429,18 +370,14 @@ class EventRepository {
       // Create Event object from response
       final event = Event.fromJson(eventData);
 
-      debugPrint('✅ EventRepository: Wishlist unlinked successfully');
-      debugPrint('   Event ID: ${event.id}');
-      debugPrint('   Wishlist ID: ${event.wishlistId}');
-
       return event;
     } on ApiException catch (e) {
       // Re-throw ApiException to preserve error details
-      debugPrint('❌ API Error unlinking wishlist: ${e.message}');
+
       rethrow;
     } catch (e) {
       // Handle any unexpected errors
-      debugPrint('❌ Unexpected unlink wishlist error: $e');
+
       throw Exception('Failed to unlink wishlist from event. Please try again.');
     }
   }

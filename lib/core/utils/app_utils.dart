@@ -300,13 +300,13 @@ class AppUtils {
 
   // Debug Utilities
   static void debugLog(String message, [String tag = 'AppUtils']) {
-    debugPrint('[$tag] $message');
+
   }
 
   static void debugLogError(String error, [StackTrace? stackTrace]) {
-    debugPrint('[ERROR] $error');
+
     if (stackTrace != null) {
-      debugPrint('[STACK_TRACE] $stackTrace');
+
     }
   }
 

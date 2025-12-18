@@ -43,7 +43,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _startSplashSequence() async {
     if (kDebugMode) {
-      debugPrint('Splash screen: Starting sequence...');
+
     }
 
     // Wait 3 seconds for splash animation
@@ -66,9 +66,7 @@ class _SplashScreenState extends State<SplashScreen>
     final isAuthenticated = authRepository.isAuthenticated;
 
     if (kDebugMode) {
-      debugPrint(
-        'Splash screen: User is ${isAuthenticated ? "authenticated" : "guest"}, navigating...',
-      );
+
     }
 
     // Determine which screen to show
@@ -86,9 +84,7 @@ class _SplashScreenState extends State<SplashScreen>
       final hasGuestData = await guestDataRepo.hasGuestData();
 
       if (kDebugMode) {
-        debugPrint(
-          'Splash screen: Guest user has data: $hasGuestData',
-        );
+
       }
 
       if (!mounted) return;

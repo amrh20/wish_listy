@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/services/socket_service.dart';
 
 /// Authentication Repository
 /// Handles all authentication-related operations including:
@@ -47,6 +48,8 @@ class AuthRepository extends ChangeNotifier {
         final token = prefs.getString('auth_token');
         if (token != null) {
           _apiService.setAuthToken(token);
+          // Connect to Socket.IO for real-time notifications
+          SocketService().connect();
         }
       } else {
         _userState = UserState.guest;
@@ -122,7 +125,7 @@ class AuthRepository extends ChangeNotifier {
       rethrow;
     } catch (e) {
       // Handle any unexpected errors
-      debugPrint('Unexpected registration error: $e');
+
       throw Exception('Registration failed. Please try again.');
     }
   }
@@ -140,8 +143,11 @@ class AuthRepository extends ChangeNotifier {
       // Re-throw ApiException to preserve error details
       rethrow;
     } catch (e) {
-      debugPrint('Unexpected login error: $e');
-      throw Exception('Login failed. Please try again.');
+
+      // Convert to ApiException so it can be handled properly
+      throw ApiException(
+        'Login failed. Please check your connection and try again.',
+      );
     }
   }
 
@@ -176,23 +182,28 @@ class AuthRepository extends ChangeNotifier {
           await prefs.setString('auth_token', token);
           // Set token in API service for future requests
           _apiService.setAuthToken(token);
+          // Connect to Socket.IO for real-time notifications
+          await SocketService().connect();
         }
 
         notifyListeners();
         return true;
       } else {
         // Login failed - check for error message in response
-        debugPrint('Login failed - response: $response');
+
         return false;
       }
     } on ApiException catch (e) {
       // Re-throw ApiException so login screen can show proper error message
-      debugPrint('Login ApiException: ${e.message}');
+
       rethrow;
     } catch (e) {
       // Handle any unexpected errors
-      debugPrint('Login unexpected error: $e');
-      throw Exception('Login failed. Please try again.');
+
+      // Convert to ApiException so it can be handled properly by login screen
+      throw ApiException(
+        'Login failed. Please check your connection and try again.',
+      );
     }
   }
 
@@ -237,6 +248,8 @@ class AuthRepository extends ChangeNotifier {
           await prefs.setString('auth_token', token);
           // Set token in API service for future requests
           _apiService.setAuthToken(token);
+          // Connect to Socket.IO for real-time notifications
+          await SocketService().connect();
         }
 
         notifyListeners();
@@ -254,6 +267,9 @@ class AuthRepository extends ChangeNotifier {
   // Logout using real API
   Future<void> logout() async {
     try {
+      // Disconnect from Socket.IO
+      SocketService().disconnect();
+      
       // Call API to logout
       await _apiService.post('/auth/logout');
     } catch (e) {
@@ -423,5 +439,28 @@ class AuthRepository extends ChangeNotifier {
   // Get restricted message for guests
   String getGuestRestrictionMessage() {
     return 'This feature requires login. Please sign in to continue.';
+  }
+
+  // Get current user profile from API
+  Future<Map<String, dynamic>> getCurrentUserProfile() async {
+    try {
+      // Get current user ID
+      if (_userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Call API to get user profile
+      // Endpoint: GET /api/users/:id/profile
+      final response = await _apiService.get('/users/$_userId/profile');
+
+      // Return the response data
+      return response;
+    } on ApiException {
+      // Re-throw ApiException to preserve error details
+      rethrow;
+    } catch (e) {
+
+      throw Exception('Failed to load profile. Please try again.');
+    }
   }
 }

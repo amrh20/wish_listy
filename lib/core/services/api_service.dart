@@ -19,7 +19,7 @@ class ApiService {
   static String get _baseUrl {
     if (kIsWeb) {
       // Web platform
-      return 'http://localhost:4000/api';
+      return 'http://localhost:5000/api';
     }
 
     if (_isAndroid) {
@@ -33,8 +33,8 @@ class ApiService {
       // 4. Ensure both devices are on the same WiFi network
       // 5. Check firewall settings on your computer
       //
-      // For Emulator: use 'http://10.0.2.2:4000/api'
-      // For Physical Device: use 'http://YOUR_COMPUTER_IP:4000/api'
+      // For Emulator: use 'http://10.0.2.2:5000/api'
+      // For Physical Device: use 'http://YOUR_COMPUTER_IP:5000/api'
       
       // TODO: UPDATE THIS IP ADDRESS TO MATCH YOUR COMPUTER'S IP
       // Find your IP with: 
@@ -49,32 +49,21 @@ class ApiService {
       // To find your IP: ifconfig (Mac/Linux) or ipconfig (Windows)
       // Make sure both your computer and phone are on the same WiFi network!
       
-      const String androidIP = '192.168.1.5'; // Physical device - Your computer's IP
+      const String androidIP = '192.168.1.11'; // Physical device - Your computer's IP
       // const String androidIP = '10.0.2.2'; // Uncomment for Android Emulator
       
-      final url = 'http://$androidIP:4000/api';
-      
-      if (kDebugMode) {
-        debugPrint('🔗 ANDROID API URL: $url');
-        debugPrint('📱 Device Type: Physical Device (Samsung)');
-        debugPrint('⚠️ If login fails, check:');
-        debugPrint('   1. Is backend server running on port 4000?');
-        debugPrint('   2. Is IP address correct? (Current: $androidIP)');
-        debugPrint('   3. Are both devices on same WiFi network?');
-        debugPrint('   4. Is firewall blocking port 4000?');
-        debugPrint('   5. Backend should listen on 0.0.0.0, not just localhost');
-      }
-      
+      final url = 'http://$androidIP:5000/api';
+
       return url;
     }
 
     if (_isIOS) {
       // iOS Simulator - localhost works directly
-      return 'http://localhost:4000/api';
+      return 'http://localhost:5000/api';
     }
 
     // Default fallback
-    return 'http://localhost:4000/api';
+    return 'http://localhost:5000/api';
   }
 
   // Singleton pattern to ensure single instance across the app
@@ -92,16 +81,7 @@ class ApiService {
 
     // Log the base URL in debug mode for troubleshooting
     if (kDebugMode) {
-      debugPrint('🔗 API Base URL: $baseUrl');
-      debugPrint(
-        '📱 Platform: ${kIsWeb
-            ? "Web"
-            : _isAndroid
-            ? "Android"
-            : _isIOS
-            ? "iOS"
-            : "Other"}',
-      );
+
     }
 
     _dio = Dio(
@@ -145,20 +125,13 @@ class ApiService {
   void _handleError(DioException error) {
     // Enhanced error logging for debugging
     if (kDebugMode) {
-      debugPrint('🔴 API Error Details:');
-      debugPrint('   Type: ${error.type}');
-      debugPrint('   Message: ${error.message}');
-      debugPrint('   URL: ${error.requestOptions.uri}');
+
       if (error.response != null) {
-        debugPrint('   Status Code: ${error.response?.statusCode}');
-        debugPrint('   Response: ${error.response?.data}');
+
       }
       if (error.type == DioExceptionType.connectionError) {
-        debugPrint('   ⚠️ Connection Error - Check:');
-        debugPrint('      - Is backend server running?');
-        debugPrint('      - Is IP address correct? (Current: ${_baseUrl})');
-        debugPrint('      - Are devices on same network?');
-        debugPrint('      - Is firewall blocking connection?');
+
+
       }
     }
     
@@ -185,23 +158,13 @@ class ApiService {
 
         // Log detailed error information in debug mode
         if (kDebugMode) {
-          debugPrint('❌ API Error [${statusCode}]:');
-          debugPrint('   URL: ${error.requestOptions.uri}');
-          debugPrint('   Method: ${error.requestOptions.method}');
-          debugPrint('   Request Headers: ${error.requestOptions.headers}');
-          debugPrint('   Request Data: ${error.requestOptions.data}');
-          debugPrint('   Response Status Code: ${error.response?.statusCode}');
-          debugPrint(
-            '   Response Status Message: ${error.response?.statusMessage}',
-          );
-          debugPrint('   Response Data: $data');
-          debugPrint('   Response Data Type: ${data?.runtimeType}');
+
           if (error.response?.headers != null) {
-            debugPrint('   Response Headers:');
+
             final headers = error.response!.headers;
             final headerKeys = <String>[];
             headers.forEach((key, values) {
-              debugPrint('      $key: $values');
+
               headerKeys.add(key.toLowerCase());
             });
             // Check for CORS headers specifically
@@ -215,18 +178,13 @@ class ApiService {
                 .where((h) => !headerKeys.contains(h.toLowerCase()))
                 .toList();
             if (missingCors.isNotEmpty && statusCode == 403) {
-              debugPrint('   ⚠️  Missing CORS Headers: $missingCors');
-              debugPrint(
-                '   💡 This suggests a CORS configuration issue in the backend',
-              );
+
             }
           } else {
-            debugPrint('   ⚠️  No response headers available');
+
           }
           if (data == null || (data is String && data.isEmpty)) {
-            debugPrint(
-              '   ⚠️  Empty response body - This often indicates a CORS issue!',
-            );
+
           }
         }
 
@@ -256,9 +214,7 @@ class ApiService {
 
         // Log extracted error message for debugging
         if (kDebugMode) {
-          debugPrint(
-            '   📝 Extracted Error Message: ${errorMessage ?? "No error message found"}',
-          );
+
         }
 
         if (statusCode == 400) {
@@ -298,10 +254,7 @@ class ApiService {
                   'app.use(cors({ origin: \'*\' }));';
 
               if (kDebugMode) {
-                debugPrint('⚠️  403 Error - Empty response body detected');
-                debugPrint(
-                  '   This strongly indicates a CORS configuration issue in the backend',
-                );
+
               }
             } else {
               // Response has content but no error message
@@ -313,10 +266,7 @@ class ApiService {
                   '• Check backend logs for details';
 
               if (kDebugMode) {
-                debugPrint(
-                  '⚠️  403 Error - Response body exists but no error message found',
-                );
-                debugPrint('   Response: $data');
+
               }
             }
           }

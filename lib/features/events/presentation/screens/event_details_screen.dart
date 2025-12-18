@@ -60,13 +60,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         try {
           navigator.pop(true); // Return true to trigger refresh
         } catch (e) {
-          debugPrint('⚠️ Error during pop: $e');
+
           // If pop fails, navigate to events screen
           if (mounted) {
             try {
               navigator.pushReplacementNamed(AppRoutes.events);
             } catch (e2) {
-              debugPrint('⚠️ Error navigating to events: $e2');
+
             }
           }
         }
@@ -75,7 +75,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         try {
           navigator.pushReplacementNamed(AppRoutes.events);
         } catch (e) {
-          debugPrint('⚠️ Error navigating to events: $e');
+
         }
       }
     });
@@ -88,7 +88,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     });
 
     try {
-      debugPrint('📥 Loading event details for ID: ${widget.eventId}');
+
       final event = await _eventRepository.getEventById(widget.eventId);
 
       if (!mounted) return;
@@ -98,21 +98,20 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         _isLoading = false;
       });
 
-      debugPrint('✅ Event details loaded successfully');
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
         _errorMessage = e.message;
         _isLoading = false;
       });
-      debugPrint('❌ API Error loading event: ${e.message}');
+
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _errorMessage = 'Failed to load event. Please try again.';
         _isLoading = false;
       });
-      debugPrint('❌ Error loading event: $e');
+
     }
   }
 
@@ -869,7 +868,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           ),
         );
       }
-      debugPrint('❌ Error deleting event: $e');
+
     }
   }
 

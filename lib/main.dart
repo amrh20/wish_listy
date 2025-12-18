@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'core/services/localization_service.dart';
 import 'features/auth/data/repository/auth_repository.dart';
@@ -13,6 +15,7 @@ import 'core/storage/adapters/wishlist_item_adapter.dart';
 import 'core/storage/adapters/wishlist_adapter.dart';
 import 'features/wishlists/data/repository/guest_data_repository.dart';
 import 'features/wishlists/data/models/wishlist_model.dart';
+import 'features/notifications/presentation/cubit/notifications_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,11 +45,17 @@ void main() async {
   await localizationService.initialize();
   await authRepository.initialize();
 
+  // Create NotificationsCubit instance immediately to ensure listener is registered
+  // This must be done before runApp to ensure it's available when Socket connects
+  final notificationsCubit = NotificationsCubit();
+  debugPrint('✅ main.dart: NotificationsCubit created immediately');
+
   runApp(
     MyApp(
       localizationService: localizationService,
       authRepository: authRepository,
       guestDataRepository: guestDataRepository,
+      notificationsCubit: notificationsCubit,
     ),
   );
 }
@@ -55,6 +64,7 @@ class MyApp extends StatelessWidget {
   final LocalizationService localizationService;
   final AuthRepository authRepository;
   final GuestDataRepository guestDataRepository;
+  final NotificationsCubit notificationsCubit;
   
   // Create navigatorKey once and reuse it across rebuilds
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -64,6 +74,7 @@ class MyApp extends StatelessWidget {
     required this.localizationService,
     required this.authRepository,
     required this.guestDataRepository,
+    required this.notificationsCubit,
   });
 
   @override
@@ -75,6 +86,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider<AuthRepository>(create: (_) => authRepository),
         Provider<GuestDataRepository>(create: (_) => guestDataRepository),
+        BlocProvider<NotificationsCubit>.value(
+          value: notificationsCubit, // Use the pre-created instance
+        ),
       ],
       child: Consumer<LocalizationService>(
         builder: (context, localization, child) {

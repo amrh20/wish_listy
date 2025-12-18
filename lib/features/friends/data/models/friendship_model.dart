@@ -1,3 +1,5 @@
+import 'package:wish_listy/features/friends/data/models/user_model.dart';
+
 class Friendship {
   final String id;
   final String userId1;
@@ -91,79 +93,145 @@ class Friendship {
 
 class FriendRequest {
   final String id;
-  final String senderId;
-  final String receiverId;
-  final String? message;
+  final User from; // User who sent the request
   final FriendRequestStatus status;
-  final DateTime sentAt;
-  final DateTime? respondedAt;
+  final DateTime createdAt;
 
   FriendRequest({
     required this.id,
-    required this.senderId,
-    required this.receiverId,
-    this.message,
+    required this.from,
     this.status = FriendRequestStatus.pending,
-    required this.sentAt,
-    this.respondedAt,
+    required this.createdAt,
   });
 
   factory FriendRequest.fromJson(Map<String, dynamic> json) {
+    // Parse the 'from' user object
+    final fromJson = json['from'] as Map<String, dynamic>?;
+    if (fromJson == null) {
+      throw Exception('FriendRequest must have a "from" field');
+    }
+
     return FriendRequest(
-      id: json['id'] ?? '',
-      senderId: json['sender_id'] ?? '',
-      receiverId: json['receiver_id'] ?? '',
-      message: json['message'],
+      id: json['_id'] ?? json['id'] ?? '',
+      from: User.fromJson(fromJson),
       status: FriendRequestStatus.values.firstWhere(
         (e) => e.toString().split('.').last == json['status'],
         orElse: () => FriendRequestStatus.pending,
       ),
-      sentAt: DateTime.parse(json['sent_at']),
-      respondedAt: json['responded_at'] != null ? DateTime.parse(json['responded_at']) : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : (json['created_at'] != null
+              ? DateTime.parse(json['created_at'])
+              : DateTime.now()),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'sender_id': senderId,
-      'receiver_id': receiverId,
-      'message': message,
+      '_id': id,
+      'from': from.toJson(),
       'status': status.toString().split('.').last,
-      'sent_at': sentAt.toIso8601String(),
-      'responded_at': respondedAt?.toIso8601String(),
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 
   FriendRequest copyWith({
     String? id,
-    String? senderId,
-    String? receiverId,
-    String? message,
+    User? from,
     FriendRequestStatus? status,
-    DateTime? sentAt,
-    DateTime? respondedAt,
+    DateTime? createdAt,
   }) {
     return FriendRequest(
       id: id ?? this.id,
-      senderId: senderId ?? this.senderId,
-      receiverId: receiverId ?? this.receiverId,
-      message: message ?? this.message,
+      from: from ?? this.from,
       status: status ?? this.status,
-      sentAt: sentAt ?? this.sentAt,
-      respondedAt: respondedAt ?? this.respondedAt,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 
+  // Convenience getters for backward compatibility with existing code
+  String get senderId => from.id;
+  String get senderName => from.fullName;
+  String? get senderProfilePicture => from.profileImage;
+  DateTime get sentAt => createdAt;
+
   @override
   String toString() {
-    return 'FriendRequest(id: $id, sender: $senderId, receiver: $receiverId, status: $status)';
+    return 'FriendRequest(id: $id, from: ${from.fullName}, status: $status)';
   }
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is FriendRequest && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+}
+
+/// Friend model for friends list
+/// Matches API response structure
+class Friend {
+  final String id;
+  final String fullName;
+  final String username;
+  final String? profileImage;
+  final int wishlistCount;
+
+  Friend({
+    required this.id,
+    required this.fullName,
+    required this.username,
+    this.profileImage,
+    required this.wishlistCount,
+  });
+
+  factory Friend.fromJson(Map<String, dynamic> json) {
+    return Friend(
+      id: json['_id'] ?? json['id'] ?? '',
+      fullName: json['fullName'] ?? json['name'] ?? '',
+      username: json['username'] ?? '',
+      profileImage: json['profileImage'] ?? json['profile_image'],
+      wishlistCount: json['wishlistCount'] ?? json['wishlist_count'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      'fullName': fullName,
+      'username': username,
+      'profileImage': profileImage,
+      'wishlistCount': wishlistCount,
+    };
+  }
+
+  Friend copyWith({
+    String? id,
+    String? fullName,
+    String? username,
+    String? profileImage,
+    int? wishlistCount,
+  }) {
+    return Friend(
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      username: username ?? this.username,
+      profileImage: profileImage ?? this.profileImage,
+      wishlistCount: wishlistCount ?? this.wishlistCount,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'Friend(id: $id, fullName: $fullName, username: $username)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Friend && other.id == id;
   }
 
   @override

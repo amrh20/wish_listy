@@ -30,16 +30,9 @@ class WishlistRepository {
         'category': category,
       };
 
-      debugPrint('📤 WishlistRepository: Creating wishlist');
-      debugPrint('   Request Data: $requestData');
-      debugPrint('   Endpoint: POST /api/wishlists');
-
       // Make API call to create wishlist
       // Endpoint: POST /api/wishlists
       final response = await _apiService.post('/wishlists', data: requestData);
-
-      debugPrint('📥 WishlistRepository: Response received');
-      debugPrint('   Response: $response');
 
       // Return the response data
       return response;
@@ -48,7 +41,7 @@ class WishlistRepository {
       rethrow;
     } catch (e) {
       // Handle any unexpected errors
-      debugPrint('Unexpected create wishlist error: $e');
+
       throw Exception('Failed to create wishlist. Please try again.');
     }
   }
@@ -56,9 +49,8 @@ class WishlistRepository {
   /// Get all wishlists for the current user
   Future<List<Map<String, dynamic>>> getWishlists() async {
     try {
-      debugPrint('📥 WishlistRepository: Getting wishlists');
+
       final response = await _apiService.get('/wishlists');
-      debugPrint('📥 WishlistRepository: Response received: $response');
 
       // API returns: {success: true, count: 2, wishlists: [...]}
       // Try 'wishlists' first, then 'data' as fallback
@@ -67,7 +59,7 @@ class WishlistRepository {
           response['data'] as List<dynamic>?;
 
       if (wishlistsList == null) {
-        debugPrint('⚠️ WishlistRepository: No wishlists found in response');
+
         return [];
       }
 
@@ -75,12 +67,11 @@ class WishlistRepository {
           .map((item) => item as Map<String, dynamic>)
           .toList();
 
-      debugPrint('✅ WishlistRepository: Parsed ${result.length} wishlists');
       return result;
     } on ApiException {
       rethrow;
     } catch (e) {
-      debugPrint('Unexpected get wishlists error: $e');
+
       throw Exception('Failed to load wishlists. Please try again.');
     }
   }
@@ -92,19 +83,13 @@ class WishlistRepository {
         throw Exception('Wishlist ID cannot be empty');
       }
 
-      debugPrint('📥 WishlistRepository: Getting wishlist by ID: $wishlistId');
-      debugPrint('   Endpoint: GET /wishlists/$wishlistId');
-
       final response = await _apiService.get('/wishlists/$wishlistId');
-      debugPrint('📥 WishlistRepository: Response received: $response');
-      debugPrint('   Response type: ${response.runtimeType}');
 
       // Validate response
       if (response is! Map<String, dynamic>) {
         throw Exception('Invalid response format from API');
       }
 
-      debugPrint('   Response keys: ${response.keys.toList()}');
 
       // API might return: {success: true, wishlist: {...}} or {success: true, data: {...}} or directly the wishlist object
       final wishlistData =
@@ -116,15 +101,12 @@ class WishlistRepository {
         throw Exception('Wishlist data not found in response');
       }
 
-      debugPrint('✅ WishlistRepository: Parsed wishlist data');
-      debugPrint('   Wishlist keys: ${wishlistData.keys.toList()}');
       return wishlistData;
     } on ApiException catch (e) {
-      debugPrint('❌ WishlistRepository: ApiException: ${e.message}');
+
       rethrow;
     } catch (e) {
-      debugPrint('❌ WishlistRepository: Unexpected get wishlist error: $e');
-      debugPrint('   Error type: ${e.runtimeType}');
+
       throw Exception('Failed to load wishlist. Please try again.');
     }
   }
@@ -146,23 +128,16 @@ class WishlistRepository {
       if (privacy != null) requestData['privacy'] = privacy;
       if (category != null) requestData['category'] = category;
 
-      debugPrint('📤 WishlistRepository: Updating wishlist: $wishlistId');
-      debugPrint('   Request Data: $requestData');
-      debugPrint('   Endpoint: PUT /api/wishlists/$wishlistId');
-
       final response = await _apiService.put(
         '/wishlists/$wishlistId',
         data: requestData,
       );
 
-      debugPrint('📥 WishlistRepository: Response received: $response');
-      debugPrint('✅ WishlistRepository: Wishlist updated successfully');
-
       return response;
     } on ApiException {
       rethrow;
     } catch (e) {
-      debugPrint('Unexpected update wishlist error: $e');
+
       throw Exception('Failed to update wishlist. Please try again.');
     }
   }
@@ -174,7 +149,7 @@ class WishlistRepository {
     } on ApiException {
       rethrow;
     } catch (e) {
-      debugPrint('Unexpected delete wishlist error: $e');
+
       throw Exception('Failed to delete wishlist. Please try again.');
     }
   }
@@ -242,16 +217,9 @@ class WishlistRepository {
         requestData['notes'] = null;
       }
 
-      debugPrint('📤 WishlistRepository: Adding item to wishlist');
-      debugPrint('   Request Data: $requestData');
-      debugPrint('   Endpoint: POST /api/items');
-
       // Make API call to add item
       // Endpoint: POST /api/items
       final response = await _apiService.post('/items', data: requestData);
-
-      debugPrint('📥 WishlistRepository: Response received');
-      debugPrint('   Response: $response');
 
       // Return the response data
       return response;
@@ -260,7 +228,7 @@ class WishlistRepository {
       rethrow;
     } catch (e) {
       // Handle any unexpected errors
-      debugPrint('Unexpected add item error: $e');
+
       throw Exception('Failed to add item. Please try again.');
     }
   }
@@ -275,19 +243,13 @@ class WishlistRepository {
         throw Exception('Item ID cannot be empty');
       }
 
-      debugPrint('📥 WishlistRepository: Getting item by ID: $itemId');
-      debugPrint('   Endpoint: GET /items/$itemId');
-
       final response = await _apiService.get('/items/$itemId');
-      debugPrint('📥 WishlistRepository: Response received: $response');
-      debugPrint('   Response type: ${response.runtimeType}');
 
       // Validate response
       if (response is! Map<String, dynamic>) {
         throw Exception('Invalid response format from API');
       }
 
-      debugPrint('   Response keys: ${response.keys.toList()}');
 
       // API might return: {success: true, item: {...}} or {success: true, data: {...}} or directly the item object
       final itemData =
@@ -299,15 +261,12 @@ class WishlistRepository {
         throw Exception('Item data not found in response');
       }
 
-      debugPrint('✅ WishlistRepository: Parsed item data');
-      debugPrint('   Item keys: ${itemData.keys.toList()}');
       return itemData;
     } on ApiException catch (e) {
-      debugPrint('❌ WishlistRepository: ApiException: ${e.message}');
+
       rethrow;
     } catch (e) {
-      debugPrint('❌ WishlistRepository: Unexpected get item error: $e');
-      debugPrint('   Error type: ${e.runtimeType}');
+
       throw Exception('Failed to load item. Please try again.');
     }
   }
@@ -320,14 +279,8 @@ class WishlistRepository {
     String wishlistId,
   ) async {
     try {
-      debugPrint(
-        '📥 WishlistRepository: Getting items for wishlist: $wishlistId',
-      );
-      debugPrint('   Endpoint: GET /api/items/wishlist/$wishlistId');
 
       final response = await _apiService.get('/items/wishlist/$wishlistId');
-
-      debugPrint('📥 WishlistRepository: Response received: $response');
 
       // API might return: {success: true, items: [...]} or {success: true, data: [...]}
       final itemsList =
@@ -336,9 +289,7 @@ class WishlistRepository {
           (response is List ? response as List<dynamic> : null);
 
       if (itemsList == null) {
-        debugPrint(
-          '⚠️ WishlistRepository: No items array found in response for wishlist $wishlistId',
-        );
+
         return [];
       }
 
@@ -346,16 +297,13 @@ class WishlistRepository {
           .map((item) => item as Map<String, dynamic>)
           .toList();
 
-      debugPrint(
-        '✅ WishlistRepository: Parsed ${result.length} items for wishlist $wishlistId',
-      );
       return result;
     } on ApiException {
       // Re-throw ApiException to preserve error details
       rethrow;
     } catch (e) {
       // Handle any unexpected errors
-      debugPrint('Unexpected get items error: $e');
+
       throw Exception('Failed to load items. Please try again.');
     }
   }
@@ -414,28 +362,19 @@ class WishlistRepository {
         requestData['notes'] = null;
       }
 
-      debugPrint('📤 WishlistRepository: Updating item: $itemId');
-      debugPrint('   Request Data: $requestData');
-      debugPrint('   Endpoint: PUT /api/items/$itemId');
-
       final response = await _apiService.put(
         '/items/$itemId',
         data: requestData,
       );
 
-      debugPrint('📥 WishlistRepository: Response received: $response');
-      debugPrint('   Response type: ${response.runtimeType}');
-      debugPrint('✅ WishlistRepository: Item updated successfully');
-
       return response;
     } on ApiException catch (e) {
       // Re-throw ApiException to preserve error details
-      debugPrint('❌ WishlistRepository: ApiException: ${e.message}');
+
       rethrow;
     } catch (e, stackTrace) {
       // Handle any unexpected errors
-      debugPrint('❌ WishlistRepository: Unexpected update item error: $e');
-      debugPrint('   Stack trace: $stackTrace');
+
       throw Exception('Failed to update item. Please try again.');
     }
   }
@@ -447,20 +386,17 @@ class WishlistRepository {
   /// Returns nothing on success
   Future<void> deleteItem(String itemId) async {
     try {
-      debugPrint('🗑️ WishlistRepository: Deleting item: $itemId');
-      debugPrint('   Endpoint: DELETE /api/items/$itemId');
 
       // Make API call to delete item
       // Endpoint: DELETE /api/items/:id
       await _apiService.delete('/items/$itemId');
 
-      debugPrint('✅ WishlistRepository: Item deleted successfully');
     } on ApiException {
       // Re-throw ApiException to preserve error details
       rethrow;
     } catch (e) {
       // Handle any unexpected errors
-      debugPrint('Unexpected delete item error: $e');
+
       throw Exception('Failed to delete item. Please try again.');
     }
   }
