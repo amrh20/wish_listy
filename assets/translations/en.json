@@ -472,6 +472,7 @@
     "inviteSelected": "Invite Selected",
     "selectAll": "Select All",
     "deselectAll": "Deselect All",
+    "invitationsUpdatedSuccessfully": "Invitations updated successfully",
     "eventTime": "Event Time",
     "eventLocation": "Event Location",
     "eventDescription": "Event Description",

@@ -365,6 +365,7 @@
     "inviteSelected": "دعوة المحددين",
     "selectAll": "اختيار الكل",
     "deselectAll": "إلغاء اختيار الكل",
+    "invitationsUpdatedSuccessfully": "تم تحديث الدعوات بنجاح",
     "eventTime": "وقت الفعالية",
     "eventLocation": "موقع الفعالية",
     "eventDescription": "وصف الفعالية",

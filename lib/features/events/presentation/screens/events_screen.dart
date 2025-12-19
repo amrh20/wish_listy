@@ -13,6 +13,7 @@ import 'package:wish_listy/features/events/data/repository/event_repository.dart
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import '../widgets/event_card.dart';
+import '../widgets/invited_event_card.dart';
 import '../widgets/guest_events_view.dart';
 import '../widgets/empty_states.dart';
 import '../widgets/event_modals.dart';
@@ -559,12 +560,11 @@ class EventsScreenState extends State<EventsScreen>
                     ),
                     const SizedBox(height: 12),
                     ...upcomingEvents.map(
-                      (event) => EventCard(
+                      (event) => InvitedEventCard(
                         event: event,
                         localization: localization,
                         onTap: () => _viewEventDetails(event),
-                        onViewWishlist: () =>
-                            _viewEventWishlist(event, localization),
+                        onRSVP: (status) => _handleRSVP(event, status),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -577,7 +577,7 @@ class EventsScreenState extends State<EventsScreen>
                     ),
                     const SizedBox(height: 12),
                     ...pastEvents.map(
-                      (event) => EventCard(
+                      (event) => InvitedEventCard(
                         event: event,
                         localization: localization,
                         onTap: () => _viewEventDetails(event),
@@ -618,6 +618,50 @@ class EventsScreenState extends State<EventsScreen>
     // This ensures data is updated after create/edit/delete operations
     if (mounted) {
       _loadEvents();
+    }
+  }
+
+  Future<void> _handleRSVP(EventSummary event, String status) async {
+    try {
+      // Show loading indicator
+      if (!mounted) return;
+      
+      // Call API to respond to invitation
+      await _eventRepository.respondToEventInvitation(
+        eventId: event.id,
+        status: status,
+      );
+
+      // Refresh events list to get updated invitation status
+      if (mounted) {
+        await _loadEvents();
+        
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              status == 'accepted'
+                  ? 'You accepted the invitation'
+                  : status == 'declined'
+                  ? 'You declined the invitation'
+                  : 'You marked as maybe',
+            ),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update RSVP: ${e.toString()}'),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 

@@ -17,6 +17,9 @@ class Event {
   final String? privacy; // 'public', 'private', 'friends_only'
   final String? mode; // 'in_person', 'online', 'hybrid'
   final String? meetingLink; // For online/hybrid events
+  final List<InvitedFriend> invitedFriends; // List of invited friends from API
+  final String? creatorName; // Creator's full name from API
+  final String? creatorImage; // Creator's profile image from API
 
   Event({
     required this.id,
@@ -35,6 +38,9 @@ class Event {
     this.privacy,
     this.mode,
     this.meetingLink,
+    this.invitedFriends = const [],
+    this.creatorName,
+    this.creatorImage,
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
@@ -45,12 +51,17 @@ class Event {
     // Get ID - support both _id (MongoDB) and id
     final id = json['_id']?.toString() ?? json['id']?.toString() ?? '';
 
-    // Get creator ID - support both creator object and creator_id
+    // Get creator ID and info - support both creator object and creator_id
     String? creatorId;
+    String? creatorName;
+    String? creatorImage;
     if (json['creator'] != null && json['creator'] is Map) {
+      final creator = json['creator'] as Map<String, dynamic>;
       creatorId =
-          json['creator']['_id']?.toString() ??
-          json['creator']['id']?.toString();
+          creator['_id']?.toString() ??
+          creator['id']?.toString();
+      creatorName = creator['fullName']?.toString() ?? creator['name']?.toString();
+      creatorImage = creator['profileImage']?.toString() ?? creator['profile_image']?.toString();
     }
     creatorId ??=
         json['creator_id']?.toString() ?? json['creatorId']?.toString() ?? '';
@@ -140,6 +151,28 @@ class Event {
         : null;
     updatedAt ??= DateTime.now();
 
+    // Parse invited_friends array from API response
+    List<InvitedFriend> invitedFriendsList = [];
+    if (json['invited_friends'] != null && json['invited_friends'] is List) {
+      final invitedFriendsData = json['invited_friends'] as List<dynamic>;
+      invitedFriendsList = invitedFriendsData
+          .map((friendData) {
+            try {
+              if (friendData is Map<String, dynamic>) {
+                return InvitedFriend.fromJson(friendData);
+              } else if (friendData is String) {
+                // If it's just an ID string, create InvitedFriend with ID only
+                return InvitedFriend(id: friendData);
+              }
+              return null;
+            } catch (e) {
+              return null;
+            }
+          })
+          .whereType<InvitedFriend>()
+          .toList();
+    }
+
     // Parse invitations - support both 'invitations' and 'invited'
     List<dynamic>? invitationsList;
     if (json['invitations'] != null && json['invitations'] is List) {
@@ -186,6 +219,9 @@ class Event {
       mode: json['mode']?.toString(),
       meetingLink:
           json['meeting_link']?.toString() ?? json['meetingLink']?.toString(),
+      invitedFriends: invitedFriendsList,
+      creatorName: creatorName,
+      creatorImage: creatorImage,
     );
   }
 
@@ -209,6 +245,7 @@ class Event {
       if (privacy != null) 'privacy': privacy,
       if (mode != null) 'mode': mode,
       if (meetingLink != null) 'meeting_link': meetingLink,
+      'invited_friends': invitedFriends.map((f) => f.id).toList(),
     };
   }
 
@@ -229,6 +266,9 @@ class Event {
     String? privacy,
     String? mode,
     String? meetingLink,
+    List<InvitedFriend>? invitedFriends,
+    String? creatorName,
+    String? creatorImage,
   }) {
     return Event(
       id: id ?? this.id,
@@ -247,6 +287,9 @@ class Event {
       privacy: privacy ?? this.privacy,
       mode: mode ?? this.mode,
       meetingLink: meetingLink ?? this.meetingLink,
+      invitedFriends: invitedFriends ?? this.invitedFriends,
+      creatorName: creatorName ?? this.creatorName,
+      creatorImage: creatorImage ?? this.creatorImage,
     );
   }
 
@@ -393,7 +436,54 @@ enum EventType {
 
 enum EventStatus { upcoming, ongoing, completed, cancelled }
 
-enum InvitationStatus { pending, accepted, declined }
+enum InvitationStatus { pending, accepted, declined, maybe }
+
+/// Model for invited friend data from API
+class InvitedFriend {
+  final String id;
+  final String? fullName;
+  final String? username;
+  final String? profileImage;
+
+  InvitedFriend({
+    required this.id,
+    this.fullName,
+    this.username,
+    this.profileImage,
+  });
+
+  factory InvitedFriend.fromJson(Map<String, dynamic> json) {
+    return InvitedFriend(
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      fullName: json['fullName']?.toString(),
+      username: json['username']?.toString(),
+      profileImage: json['profileImage']?.toString() ?? json['profile_image']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      '_id': id,
+      if (fullName != null) 'fullName': fullName,
+      if (username != null) 'username': username,
+      if (profileImage != null) 'profileImage': profileImage,
+    };
+  }
+
+  @override
+  String toString() {
+    return 'InvitedFriend(id: $id, fullName: $fullName, username: $username)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is InvitedFriend && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+}
 
 extension EventTypeExtension on EventType {
   String get displayName {
@@ -467,6 +557,9 @@ class EventSummary {
   final String? wishlistId;
   final bool isCreatedByMe;
   final EventStatus status;
+  final InvitationStatus? invitationStatus; // User's RSVP status for invited events
+  final String? creatorName; // Creator's full name
+  final String? creatorImage; // Creator's profile image
 
   EventSummary({
     required this.id,
@@ -483,12 +576,32 @@ class EventSummary {
     this.wishlistId,
     required this.isCreatedByMe,
     required this.status,
+    this.invitationStatus,
+    this.creatorName,
+    this.creatorImage,
   });
 
   factory EventSummary.fromEvent(Event event, {String? currentUserId}) {
     // Determine if event is created by current user
     final isCreatedByMe =
         currentUserId != null && event.creatorId == currentUserId;
+
+    // Find user's invitation status if not the creator
+    InvitationStatus? invitationStatus;
+    if (!isCreatedByMe && currentUserId != null) {
+      final userInvitation = event.invitations.firstWhere(
+        (inv) => inv.inviteeId == currentUserId,
+        orElse: () => EventInvitation(
+          id: '',
+          eventId: event.id,
+          inviterId: event.creatorId, // Use event creator as inviter
+          inviteeId: currentUserId,
+          status: InvitationStatus.pending,
+          sentAt: DateTime.now(),
+        ),
+      );
+      invitationStatus = userInvitation.status;
+    }
 
     return EventSummary(
       id: event.id,
@@ -499,12 +612,17 @@ class EventSummary {
       location: event.location,
       description: event.description,
       hostName: null, // Would be fetched from creator/user info
-      invitedCount: event.invitations.length,
+      invitedCount: event.invitedFriends.isNotEmpty
+          ? event.invitedFriends.length
+          : event.invitations.length, // Fallback to invitations if invitedFriends is empty
       acceptedCount: event.acceptedInvitations,
       wishlistItemCount: 0, // Would be calculated from backend
       wishlistId: event.wishlistId,
       isCreatedByMe: isCreatedByMe,
       status: event.status,
+      invitationStatus: invitationStatus,
+      creatorName: event.creatorName,
+      creatorImage: event.creatorImage,
     );
   }
 
