@@ -540,6 +540,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         return AppColors.secondary;
       case NotificationType.friendRequestAccepted:
         return AppColors.success;
+      case NotificationType.friendRequestRejected:
+        return AppColors.error;
       case NotificationType.eventInvitation:
         return AppColors.accent;
       case NotificationType.eventReminder:
@@ -561,6 +563,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         return Icons.person_add_outlined;
       case NotificationType.friendRequestAccepted:
         return Icons.person_add_alt_1_outlined;
+      case NotificationType.friendRequestRejected:
+        return Icons.person_remove_outlined;
       case NotificationType.eventInvitation:
         return Icons.celebration_outlined;
       case NotificationType.eventReminder:

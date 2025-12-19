@@ -37,6 +37,7 @@ class _MainNavigationState extends State<MainNavigation>
   final GlobalKey<MyWishlistsScreenState> _wishlistsKey = GlobalKey();
   final GlobalKey<EventsScreenState> _eventsKey = GlobalKey();
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
+  final GlobalKey<FriendsScreenState> _friendsKey = GlobalKey<FriendsScreenState>();
   final GlobalKey homeKey = GlobalKey();
 
   @override
@@ -130,6 +131,11 @@ class _MainNavigationState extends State<MainNavigation>
       _eventsKey.currentState!.refreshEvents();
     }
 
+    // Refresh data when switching to friends tab
+    if (index == 3 && _friendsKey.currentState != null) {
+      _friendsKey.currentState!.refreshFriends();
+    }
+
     // Haptic feedback
     HapticFeedback.lightImpact();
 
@@ -142,7 +148,7 @@ class _MainNavigationState extends State<MainNavigation>
     HomeScreen(key: _homeKey),
     MyWishlistsScreen(key: _wishlistsKey),
     EventsScreen(key: _eventsKey),
-    const FriendsScreen(),
+    FriendsScreen(key: _friendsKey),
     const ProfileScreen(), // Profile will load via didChangeDependencies when tab becomes visible
   ];
 

@@ -27,6 +27,9 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
   String _searchMethod = 'email'; // Default to email
   List<User> _searchResults = [];
   String? _searchError;
+  
+  // Track which user is currently sending a request (for loading state)
+  String? _sendingRequestToUserId;
 
   final List<String> _searchMethods = ['email', 'phone']; // Removed username
 
@@ -448,13 +451,13 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
               ],
             ),
           ] else if (user.canSendRequest != false) ...[
-            // Send Request button
+            // Send Request button with purple gradient design
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               height: 40,
               child: ElevatedButton(
-                onPressed: () => _sendFriendRequest(user, localization),
+                onPressed: _sendingRequestToUserId == user.id ? null : () => _sendFriendRequest(user, localization),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -463,14 +466,31 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   elevation: 0,
+                  disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
+                  // Ensure text is never clipped
+                  minimumSize: const Size(double.infinity, 40),
                 ),
-                child: Text(
-                  localization.translate('friends.sendRequest'),
-                  style: AppStyles.bodySmall.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: _sendingRequestToUserId == user.id
+                    ? SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          localization.translate('friends.sendRequest'),
+                          style: AppStyles.bodySmall.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.visible,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -623,8 +643,24 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
       );
 
       if (mounted) {
+        final timestamp = DateTime.now().toIso8601String();
+        debugPrint('👥 [AddFriend] ⏰ [$timestamp] Search completed');
+        debugPrint('👥 [AddFriend] ⏰ [$timestamp]    Total results from API: ${users.length}');
+        
+        // Filter out users who are already friends (isFriend: true)
+        final filteredUsers = users.where((user) {
+          final isAlreadyFriend = user.isFriend == true;
+          if (isAlreadyFriend) {
+            debugPrint('👥 [AddFriend] ⏰ [$timestamp]    Filtering out friend: ${user.fullName} (${user.username})');
+          }
+          return !isAlreadyFriend;
+        }).toList();
+        
+        debugPrint('👥 [AddFriend] ⏰ [$timestamp]    Filtered results (excluding friends): ${filteredUsers.length}');
+        debugPrint('👥 [AddFriend] ⏰ [$timestamp]    Removed ${users.length - filteredUsers.length} friend(s) from results');
+        
         setState(() {
-          _searchResults = users;
+          _searchResults = filteredUsers;
           _isSearching = false;
         });
       }
@@ -652,6 +688,11 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
     User user,
     LocalizationService localization,
   ) async {
+    // Set loading state
+    setState(() {
+      _sendingRequestToUserId = user.id;
+    });
+    
     try {
       final response = await _friendsRepository.sendFriendRequest(
         toUserId: user.id,
@@ -659,6 +700,29 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
       );
 
       if (mounted) {
+        final timestamp = DateTime.now().toIso8601String();
+        debugPrint('👥 [AddFriend] ⏰ [$timestamp] Friend request sent successfully');
+        debugPrint('👥 [AddFriend] ⏰ [$timestamp]    User ID: ${user.id}');
+        debugPrint('👥 [AddFriend] ⏰ [$timestamp]    User Name: ${user.fullName}');
+        debugPrint('👥 [AddFriend] ⏰ [$timestamp]    Updating UI to show "Request already sent"');
+        
+        // Update the user in search results to reflect that request was sent
+        setState(() {
+          _sendingRequestToUserId = null; // Clear loading state
+          final index = _searchResults.indexWhere((u) => u.id == user.id);
+          if (index != -1) {
+            _searchResults[index] = user.copyWith(
+              friendshipStatus: 'pending',
+              canSendRequest: false,
+            );
+            debugPrint('👥 [AddFriend] ⏰ [$timestamp]    ✅ User updated in search results at index $index');
+            debugPrint('👥 [AddFriend] ⏰ [$timestamp]       New status: pending');
+            debugPrint('👥 [AddFriend] ⏰ [$timestamp]       Can send request: false');
+          } else {
+            debugPrint('👥 [AddFriend] ⏰ [$timestamp]    ⚠️ User not found in search results');
+          }
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -674,6 +738,9 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
       }
     } on ApiException catch (e) {
       if (mounted) {
+        setState(() {
+          _sendingRequestToUserId = null; // Clear loading state on error
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.message),
@@ -687,6 +754,9 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _sendingRequestToUserId = null; // Clear loading state on error
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to send friend request. Please try again.'),

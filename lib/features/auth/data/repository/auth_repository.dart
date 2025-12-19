@@ -49,7 +49,25 @@ class AuthRepository extends ChangeNotifier {
         if (token != null) {
           _apiService.setAuthToken(token);
           // Connect to Socket.IO for real-time notifications
-          SocketService().connect();
+          final timestamp = DateTime.now().toIso8601String();
+          print('═══════════════════════════════════════════════════════');
+          print('🔥 AUTH REPOSITORY: ABOUT TO CALL SOCKET.CONNECT()');
+          print('🔥 User ID: $_userId');
+          print('🔥 Token exists: ${token.isNotEmpty}');
+          print('═══════════════════════════════════════════════════════');
+          
+          debugPrint('🔌 [Auth] ⏰ [$timestamp] Calling SocketService.connect() from initialize()');
+          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User ID: $_userId');
+          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Email: $_userEmail');
+          
+          try {
+            await SocketService().connect();
+            print('✅ SocketService().connect() completed');
+          } catch (e) {
+            print('❌ ERROR calling SocketService().connect(): $e');
+          }
+        } else {
+          print('⚠️ No auth token found in initialize()');
         }
       } else {
         _userState = UserState.guest;
@@ -183,15 +201,32 @@ class AuthRepository extends ChangeNotifier {
           // Set token in API service for future requests
           _apiService.setAuthToken(token);
           // Connect to Socket.IO for real-time notifications
-          await SocketService().connect();
+          // Use forceReconnect=true to ensure clean connection after logout/login
+          final timestamp = DateTime.now().toIso8601String();
+          debugPrint('🔌 [Auth] ⏰ [$timestamp] Calling SocketService.connect(forceReconnect: true) from loginUser()');
+          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User ID: $_userId');
+          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Email: $_userEmail');
+          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Name: $_userName');
+          debugPrint('🔌 [Auth] ⏰ [$timestamp]    Token length: ${token.length}');
+          await SocketService().connect(forceReconnect: true);
         }
 
         notifyListeners();
         return true;
       } else {
-        // Login failed - check for error message in response
-
-        return false;
+        // Login failed - extract error message from response and throw ApiException
+        final errorMessage = response['message'] ?? 
+                            response['error'] ?? 
+                            'Login failed. Please check your credentials.';
+        
+        debugPrint('❌ Login failed: $errorMessage');
+        
+        // Throw ApiException with the actual error message from backend
+        throw ApiException(
+          errorMessage,
+          statusCode: 400, // Assume 400 for failed login
+          data: response,
+        );
       }
     } on ApiException catch (e) {
       // Re-throw ApiException so login screen can show proper error message
@@ -249,6 +284,12 @@ class AuthRepository extends ChangeNotifier {
           // Set token in API service for future requests
           _apiService.setAuthToken(token);
           // Connect to Socket.IO for real-time notifications
+          final timestamp = DateTime.now().toIso8601String();
+          debugPrint('🔌 [Auth] ⏰ [$timestamp] Calling SocketService.connect() from registerUser()');
+          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User ID: $_userId');
+          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Email: $_userEmail');
+          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Name: $_userName');
+          debugPrint('🔌 [Auth] ⏰ [$timestamp]    Token length: ${token.length}');
           await SocketService().connect();
         }
 

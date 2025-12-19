@@ -19,7 +19,7 @@ class ApiService {
   static String get _baseUrl {
     if (kIsWeb) {
       // Web platform
-      return 'http://localhost:5000/api';
+      return 'http://localhost:4000/api';
     }
 
     if (_isAndroid) {
@@ -33,8 +33,8 @@ class ApiService {
       // 4. Ensure both devices are on the same WiFi network
       // 5. Check firewall settings on your computer
       //
-      // For Emulator: use 'http://10.0.2.2:5000/api'
-      // For Physical Device: use 'http://YOUR_COMPUTER_IP:5000/api'
+      // For Emulator: use 'http://10.0.2.2:4000/api'
+      // For Physical Device: use 'http://YOUR_COMPUTER_IP:4000/api'
       
       // TODO: UPDATE THIS IP ADDRESS TO MATCH YOUR COMPUTER'S IP
       // Find your IP with: 
@@ -52,18 +52,18 @@ class ApiService {
       const String androidIP = '192.168.1.11'; // Physical device - Your computer's IP
       // const String androidIP = '10.0.2.2'; // Uncomment for Android Emulator
       
-      final url = 'http://$androidIP:5000/api';
+      final url = 'http://$androidIP:4000/api';
 
       return url;
     }
 
     if (_isIOS) {
       // iOS Simulator - localhost works directly
-      return 'http://localhost:5000/api';
+      return 'http://localhost:4000/api';
     }
 
     // Default fallback
-    return 'http://localhost:5000/api';
+    return 'http://localhost:4000/api';
   }
 
   // Singleton pattern to ensure single instance across the app
@@ -101,14 +101,56 @@ class ApiService {
 
     // Add interceptors for logging and error handling
     _dio.interceptors.addAll([
-      // Logging interceptor - only in debug mode
+      // Custom logging interceptor - only in debug mode
+      // Filters out wishlists requests to reduce console noise
       if (kDebugMode)
-        LogInterceptor(
-          requestBody: true,
-          responseBody: true,
-          requestHeader: true,
-          responseHeader: true, // Show response headers for debugging
-          error: true, // Show error details
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            // Skip logging for wishlists endpoints
+            if (!options.path.contains('/wishlists') && 
+                !options.path.contains('/items')) {
+              debugPrint('┌─────────────────────────────────────────────────────────');
+              debugPrint('│ REQUEST: ${options.method} ${options.path}');
+              debugPrint('│ Headers: ${options.headers}');
+              if (options.data != null) {
+                debugPrint('│ Body: ${options.data}');
+              }
+              if (options.queryParameters.isNotEmpty) {
+                debugPrint('│ Query: ${options.queryParameters}');
+              }
+              debugPrint('└─────────────────────────────────────────────────────────');
+            }
+            handler.next(options);
+          },
+          onResponse: (response, handler) {
+            // Skip logging for wishlists endpoints
+            if (!response.requestOptions.path.contains('/wishlists') && 
+                !response.requestOptions.path.contains('/items')) {
+              debugPrint('┌─────────────────────────────────────────────────────────');
+              debugPrint('│ RESPONSE: ${response.requestOptions.method} ${response.requestOptions.path}');
+              debugPrint('│ Status: ${response.statusCode}');
+              debugPrint('│ Headers: ${response.headers}');
+              debugPrint('│ Data: ${response.data}');
+              debugPrint('└─────────────────────────────────────────────────────────');
+            }
+            handler.next(response);
+          },
+          onError: (error, handler) {
+            // Skip logging for wishlists endpoints
+            if (!error.requestOptions.path.contains('/wishlists') && 
+                !error.requestOptions.path.contains('/items')) {
+              debugPrint('┌─────────────────────────────────────────────────────────');
+              debugPrint('│ ERROR: ${error.requestOptions.method} ${error.requestOptions.path}');
+              debugPrint('│ Type: ${error.type}');
+              debugPrint('│ Message: ${error.message}');
+              if (error.response != null) {
+                debugPrint('│ Status: ${error.response?.statusCode}');
+                debugPrint('│ Data: ${error.response?.data}');
+              }
+              debugPrint('└─────────────────────────────────────────────────────────');
+            }
+            handler.next(error);
+          },
         ),
 
       // Error handling interceptor
@@ -214,7 +256,8 @@ class ApiService {
 
         // Log extracted error message for debugging
         if (kDebugMode) {
-
+          debugPrint('🌐 [API] Error message extracted: $errorMessage');
+          debugPrint('🌐 [API] Response data: $data');
         }
 
         if (statusCode == 400) {
@@ -374,6 +417,24 @@ class ApiService {
   }) async {
     try {
       final response = await _dio.put(
+        path,
+        data: data,
+        options: Options(headers: headers),
+      );
+      return response.data;
+    } on DioException {
+      rethrow; // Let the interceptor handle the error
+    }
+  }
+
+  /// Generic PATCH request method
+  Future<Map<String, dynamic>> patch(
+    String path, {
+    dynamic data,
+    Map<String, String>? headers,
+  }) async {
+    try {
+      final response = await _dio.patch(
         path,
         data: data,
         options: Options(headers: headers),

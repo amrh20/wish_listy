@@ -181,6 +181,13 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   Widget _buildHeader() {
+    final isPurchased =
+        (_currentItem?.status ?? widget.item.status) == ItemStatus.purchased;
+    
+    // Check if user is guest
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    final isGuest = authService.isGuest;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -191,10 +198,61 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             style: IconButton.styleFrom(padding: const EdgeInsets.all(8)),
           ),
           const Spacer(),
-          IconButton(
-            onPressed: _editItem,
-            icon: const Icon(Icons.edit_outlined, size: 20),
-            style: IconButton.styleFrom(padding: const EdgeInsets.all(8)),
+          // Mark as Purchased text button (small, compact)
+          if (!isGuest) ...[
+            TextButton(
+              onPressed: _togglePurchaseStatus,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                isPurchased ? 'Mark as Available' : 'Mark as Gifted',
+                style: AppStyles.caption.copyWith(
+                  fontSize: 12,
+                  color: isPurchased ? AppColors.textSecondary : AppColors.success,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          // Actions menu (Edit, Delete)
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, size: 20),
+            onSelected: (value) {
+              switch (value) {
+                case 'edit':
+                  _editItem();
+                  break;
+                case 'delete':
+                  _deleteItem();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_outlined, size: 18, color: AppColors.textPrimary),
+                    SizedBox(width: 8),
+                    Text('Edit'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                    SizedBox(width: 8),
+                    Text('Delete'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -511,32 +569,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
     return Column(
       children: [
-        // Button 1: Mark as Gifted (Primary State Action) - Hide for guest users
-        if (!isGuest) ...[
-          SizedBox(
-            width: double.infinity,
-            height: buttonHeight,
-            child: ElevatedButton(
-              onPressed: _togglePurchaseStatus,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(buttonBorderRadius),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-              ),
-              child: Text(
-                isPurchased ? 'Mark as Available' : 'Mark as Gifted',
-                style: AppStyles.button,
-              ),
-            ),
-          ),
-          SizedBox(height: buttonSpacing),
-        ],
-
-        // Button 2: Share Item (Secondary Action)
+        // Button 1: Share Item (Secondary Action)
         SizedBox(
           width: double.infinity,
           height: buttonHeight,

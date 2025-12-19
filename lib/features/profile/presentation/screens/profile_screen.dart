@@ -269,7 +269,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           // Wishlists Stat
           Expanded(
             child: GestureDetector(
-              onTap: () => AppRoutes.pushNamed(context, AppRoutes.myWishlists),
+              onTap: () {
+                // Navigate to Wishlists tab while keeping the main navigation bar
+                MainNavigation.switchToTab(context, 1);
+              },
               child: _buildStatItem(
                 icon: Icons.favorite_outline,
                 value: '${_userProfile!.wishlistsCount}',
@@ -284,7 +287,10 @@ class _ProfileScreenState extends State<ProfileScreen>
           // Events Stat
           Expanded(
             child: GestureDetector(
-              onTap: () => AppRoutes.pushNamed(context, AppRoutes.events),
+              onTap: () {
+                // Navigate to Events tab while keeping the main navigation bar
+                MainNavigation.switchToTab(context, 2);
+              },
               child: _buildStatItem(
                 icon: Icons.event_outlined,
                 value: '${_userProfile!.eventsCreated}',
@@ -851,8 +857,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ? DateTime.parse(data['createdAt'])
                   : DateTime.now(),
               friendsCount: data['friendsCount'] ?? 0,
-              wishlistsCount: data['wishlistsCount'] ?? 0,
-              eventsCreated: data['eventsCreated'] ?? 0,
+              wishlistsCount: data['wishlistCount'] ?? data['wishlistsCount'] ?? 0,
+              eventsCreated: data['eventsCount'] ?? data['eventsCreated'] ?? 0,
               giftsReceived: data['giftsReceived'] ?? 0,
               giftsGiven: data['giftsGiven'] ?? 0,
               privacy: PrivacySettings(

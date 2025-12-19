@@ -9,6 +9,7 @@ class User {
   final bool? canSendRequest; // Whether user can send friend request
   final String? friendshipStatus; // Status: 'pending', 'received', 'accepted', etc.
   final String? requestId; // Friend request ID (if status is 'received' or 'pending')
+  final bool? isFriend; // Whether user is already a friend
 
   User({
     required this.id,
@@ -19,6 +20,7 @@ class User {
     this.canSendRequest,
     this.friendshipStatus,
     this.requestId,
+    this.isFriend,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -31,6 +33,7 @@ class User {
       canSendRequest: json['canSendRequest'] ?? true, // Default to true if not provided
       friendshipStatus: json['friendshipStatus'] ?? json['friendship_status'],
       requestId: json['friendRequestId'] ?? json['friend_request_id'] ?? json['requestId'] ?? json['request_id'], // Extract friendRequestId if available
+      isFriend: json['isFriend'] ?? json['is_friend'] ?? false, // Default to false if not provided
     );
   }
 
@@ -44,6 +47,7 @@ class User {
       if (canSendRequest != null) 'canSendRequest': canSendRequest,
       if (friendshipStatus != null) 'friendshipStatus': friendshipStatus,
       if (requestId != null) 'requestId': requestId,
+      if (isFriend != null) 'isFriend': isFriend,
     };
   }
 
@@ -56,6 +60,7 @@ class User {
     bool? canSendRequest,
     String? friendshipStatus,
     String? requestId,
+    bool? isFriend,
   }) {
     return User(
       id: id ?? this.id,
@@ -66,6 +71,7 @@ class User {
       canSendRequest: canSendRequest ?? this.canSendRequest,
       friendshipStatus: friendshipStatus ?? this.friendshipStatus,
       requestId: requestId ?? this.requestId,
+      isFriend: isFriend ?? this.isFriend,
     );
   }
 

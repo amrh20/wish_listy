@@ -43,6 +43,10 @@ class AppNotification {
         case 'friend_request_accepted':
           type = NotificationType.friendRequestAccepted;
           break;
+        case 'friendrequestrejected':
+        case 'friend_request_rejected':
+          type = NotificationType.friendRequestRejected;
+          break;
         case 'eventinvitation':
         case 'event_invitation':
           type = NotificationType.eventInvitation;
@@ -190,6 +194,7 @@ class AppNotification {
 enum NotificationType {
   friendRequest,
   friendRequestAccepted,
+  friendRequestRejected, // Added to match backend
   eventInvitation,
   eventReminder,
   itemPurchased,
@@ -205,6 +210,8 @@ extension NotificationTypeExtension on NotificationType {
         return 'Friend Request';
       case NotificationType.friendRequestAccepted:
         return 'Friend Request Accepted';
+      case NotificationType.friendRequestRejected:
+        return 'Friend Request Rejected';
       case NotificationType.eventInvitation:
         return 'Event Invitation';
       case NotificationType.eventReminder:
@@ -226,6 +233,8 @@ extension NotificationTypeExtension on NotificationType {
         return '👥';
       case NotificationType.friendRequestAccepted:
         return '✅';
+      case NotificationType.friendRequestRejected:
+        return '❌';
       case NotificationType.eventInvitation:
         return '🎉';
       case NotificationType.eventReminder:

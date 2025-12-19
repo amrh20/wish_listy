@@ -166,42 +166,8 @@ class _LoginScreenState extends State<LoginScreen>
           AppRoutes.mainNavigation,
           (route) => false,
         );
-      } else {
-        // Login failed
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Login failed. Please check your credentials.',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.error,
-              duration: const Duration(seconds: 4),
-              behavior: SnackBarBehavior.floating,
-              width: 320,
-              margin: const EdgeInsets.only(top: 60, right: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        }
       }
+      // Note: Login failures now throw ApiException, so no else block needed
     } on ApiException catch (e) {
       // Handle API-specific errors
       if (mounted) {
@@ -210,44 +176,24 @@ class _LoginScreenState extends State<LoginScreen>
           listen: false,
         );
 
-        // Get the actual error message from API
+        // Get the actual error message from API (use backend message directly)
         String errorMessage = e.message.isNotEmpty
             ? e.message
             : 'An error occurred';
-        final errorMessageLower = errorMessage.toLowerCase();
-
+        
         String title = localization.translate('auth.loginFailed');
 
-        // Handle different error types with user-friendly messages
-        if (e.statusCode == 400) {
-          // For 400 errors, show the actual API message or a user-friendly one
-          if (errorMessageLower.contains('user not found') ||
-              errorMessageLower.contains('user does not exist') ||
-              errorMessageLower.contains('email not found')) {
-            errorMessage =
-                'Invalid credentials. Please check your email or phone number.';
-          } else if (errorMessageLower.contains('invalid password') ||
-              errorMessageLower.contains('incorrect password') ||
-              errorMessageLower.contains('wrong password')) {
-            errorMessage = localization.translate('auth.wrongPassword');
-          } else if (errorMessageLower.contains('invalid credentials') ||
-              errorMessageLower.contains('authentication failed')) {
-            errorMessage =
-                'Invalid credentials. Please check your email/phone and password.';
-          } else {
-            // Use the actual API message if it's meaningful
-            errorMessage = errorMessage;
-          }
-        } else if (e.statusCode == 401) {
-          errorMessage =
-              'Invalid credentials. Please check your email/phone and password.';
+        // For 400, 401, 404, 422 errors: Show the actual API message from backend
+        if (e.statusCode == 400 || e.statusCode == 401 || e.statusCode == 404 || e.statusCode == 422) {
+          // Use the actual API message directly (no translation or modification)
+          errorMessage = e.message.isNotEmpty ? e.message : 'Invalid request. Please check your input.';
         } else if (e.statusCode == 500) {
           // For 500 errors, show generic server error message
           title = localization.translate('auth.error');
           errorMessage = localization.translate('auth.unexpectedError');
         } else {
           // For other errors, show the actual API message
-          errorMessage = errorMessage;
+          errorMessage = e.message.isNotEmpty ? e.message : 'An error occurred';
         }
 
         // Show error dialog with Lottie animation

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/friends/data/models/user_model.dart';
 import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
@@ -123,11 +124,22 @@ class FriendsRepository {
         },
       );
 
-      final data = response['data'] ?? response;
-      return data as Map<String, dynamic>;
+      // Handle different response structures
+      if (response is Map<String, dynamic>) {
+        final data = response['data'] ?? response;
+        if (data is Map<String, dynamic>) {
+          return data;
+        }
+        // If data is not a Map, return the response itself
+        return response;
+      }
+      
+      // If response is not a Map, return empty map (success case)
+      return {'success': true};
     } on ApiException {
       rethrow;
     } catch (e) {
+      debugPrint('❌ FriendsRepository: Error accepting friend request: $e');
       throw Exception('Failed to accept friend request. Please try again.');
     }
   }
@@ -152,11 +164,22 @@ class FriendsRepository {
         },
       );
 
-      final data = response['data'] ?? response;
-      return data as Map<String, dynamic>;
+      // Handle different response structures
+      if (response is Map<String, dynamic>) {
+        final data = response['data'] ?? response;
+        if (data is Map<String, dynamic>) {
+          return data;
+        }
+        // If data is not a Map, return the response itself
+        return response;
+      }
+      
+      // If response is not a Map, return empty map (success case)
+      return {'success': true};
     } on ApiException {
       rethrow;
     } catch (e) {
+      debugPrint('❌ FriendsRepository: Error rejecting friend request: $e');
       throw Exception('Failed to reject friend request. Please try again.');
     }
   }

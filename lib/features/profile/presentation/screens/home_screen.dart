@@ -53,8 +53,11 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
   // Notification dropdown key
   final GlobalKey _notificationIconKey = GlobalKey();
   
-  // Track if notification dropdown has been opened (to hide badge permanently)
-  bool _hasOpenedDropdown = false;
+  // Track last shown notification ID to avoid duplicate snackbars
+  String? _lastShownNotificationId;
+  
+  // Track friend request action states (loading, success, error) per notification
+  final Map<String, String> _notificationActionStates = {}; // 'loading', 'accepted', 'rejected', 'error'
 
   // Mock data - replace with real data from your backend
   final List<UpcomingEvent> _upcomingEvents = [
@@ -164,6 +167,22 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
     if (state == AppLifecycleState.resumed) {
       _loadGuestWishlists();
       _checkWishlists();
+      
+      // Connect socket when app resumes (as per requirements)
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      if (authService.isAuthenticated && !authService.isGuest) {
+        final socketService = SocketService();
+        if (!socketService.isConnected) {
+          debugPrint('🔄 [HomeScreen] App resumed - Connecting socket...');
+          socketService.connect();
+        } else {
+          debugPrint('🔄 [HomeScreen] App resumed - Socket already connected');
+        }
+      }
+    } else if (state == AppLifecycleState.paused) {
+      // Optionally disconnect socket when app is paused to save resources
+      // But we keep it connected for real-time notifications
+      debugPrint('🔄 [HomeScreen] App paused - Keeping socket connected for notifications');
     }
   }
 
@@ -494,21 +513,128 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
     LocalizationService localization,
     AuthRepository authService,
   ) {
-    return BlocBuilder<NotificationsCubit, NotificationsState>(
-      builder: (context, notificationsState) {
-        // Get unread count from notifications state
-        int unreadCount = 0;
-        if (notificationsState is NotificationsLoaded) {
-          unreadCount = notificationsState.unreadCount;
+    return BlocListener<NotificationsCubit, NotificationsState>(
+      listener: (context, state) {
+        final timestamp = DateTime.now().toIso8601String();
+        debugPrint('🖥️ [UI] ⏰ [$timestamp] BlocListener triggered - State changed');
+        debugPrint('🖥️ [UI] ⏰ [$timestamp]    New state type: ${state.runtimeType}');
+        
+        if (state is NotificationsLoaded) {
+          debugPrint('🖥️ [UI] ⏰ [$timestamp]    Notifications count: ${state.notifications.length}');
+          debugPrint('🖥️ [UI] ⏰ [$timestamp]    Unread count: ${state.unreadCount}');
+          debugPrint('🖥️ [UI] ⏰ [$timestamp]    Is new notification: ${state.isNewNotification}');
+          
+          // Show snackbar ONLY for new notifications from Socket (not from API load)
+          // Skip snackbar for friend requests (they are shown in the banner instead)
+          if (state.isNewNotification && state.unreadCount > 0 && state.notifications.isNotEmpty) {
+            final latestNotification = state.notifications.first;
+            
+            // Skip snackbar for friend requests
+            if (latestNotification.type == NotificationType.friendRequest) {
+              debugPrint('🖥️ [UI] ⏰ [$timestamp]    ⚠️ Skipping snackbar for friend request (shown in banner instead)');
+              return;
+            }
+            
+            // Only show snackbar if this is a new notification (not already shown)
+            if (_lastShownNotificationId != latestNotification.id) {
+              debugPrint('🖥️ [UI] ⏰ [$timestamp]    New notification detected: ${latestNotification.id}');
+              debugPrint('🖥️ [UI] ⏰ [$timestamp]    Last shown: $_lastShownNotificationId');
+              debugPrint('🖥️ [UI] ⏰ [$timestamp]    Showing snackbar for notification: ${latestNotification.title}');
+              
+              _lastShownNotificationId = latestNotification.id;
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(
+                      Icons.notifications_active,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            latestNotification.title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            latestNotification.message,
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: AppColors.accent,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                margin: EdgeInsets.all(16),
+                duration: Duration(seconds: 4),
+                action: SnackBarAction(
+                  label: 'View',
+                  textColor: Colors.white,
+                  onPressed: () {
+                    Navigator.pushNamed(context, AppRoutes.notifications);
+                  },
+                ),
+              ),
+            );
+            
+              final snackbarTimestamp = DateTime.now().toIso8601String();
+              debugPrint('🖥️ [UI] ⏰ [$snackbarTimestamp]    ✅ Snackbar displayed successfully');
+            } else {
+              debugPrint('🖥️ [UI] ⏰ [$timestamp]    ⚠️ Notification already shown, skipping snackbar');
+              debugPrint('🖥️ [UI] ⏰ [$timestamp]       Notification ID: ${latestNotification.id}');
+              debugPrint('🖥️ [UI] ⏰ [$timestamp]       Last shown ID: $_lastShownNotificationId');
+            }
+          } else {
+            debugPrint('🖥️ [UI] ⏰ [$timestamp]    ⚠️ No unread notifications or empty list');
+            debugPrint('🖥️ [UI] ⏰ [$timestamp]       Unread count: ${state.unreadCount}');
+            debugPrint('🖥️ [UI] ⏰ [$timestamp]       Notifications count: ${state.notifications.length}');
+          }
+        } else {
+          debugPrint('🖥️ [UI] ⏰ [$timestamp]    ⚠️ State is not NotificationsLoaded');
         }
+      },
+      child: BlocBuilder<NotificationsCubit, NotificationsState>(
+        builder: (context, notificationsState) {
+          final rebuildTimestamp = DateTime.now().toIso8601String();
+          debugPrint('🖥️ [UI] ⏰ [$rebuildTimestamp] BlocBuilder rebuild triggered');
+          debugPrint('🖥️ [UI] ⏰ [$rebuildTimestamp]    State type: ${notificationsState.runtimeType}');
+          
+          // Get unread count from notifications state
+          int unreadCount = 0;
+          if (notificationsState is NotificationsLoaded) {
+            unreadCount = notificationsState.unreadCount;
+            debugPrint('🖥️ [UI] ⏰ [$rebuildTimestamp]    Unread count: $unreadCount');
+          }
 
-        // Get notifications list
-        List<AppNotification> notifications = [];
-        if (notificationsState is NotificationsLoaded) {
-          notifications = notificationsState.notifications;
-        }
+          // Get notifications list
+          List<AppNotification> notifications = [];
+          if (notificationsState is NotificationsLoaded) {
+            notifications = notificationsState.notifications;
+            debugPrint('🖥️ [UI] ⏰ [$rebuildTimestamp]    Notifications count: ${notifications.length}');
+          }
 
-        return UnifiedPageHeader(
+          debugPrint('🖥️ [UI] ⏰ [$rebuildTimestamp]    Building UnifiedPageHeader with badge: ${unreadCount > 0}');
+
+          return UnifiedPageHeader(
           title: '${localization.translate('home.greeting')} 👋',
           subtitle: authService.userName ?? 'User',
           showSearch: false,
@@ -518,8 +644,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
               onTap: () {
                 _showNotificationDropdown(context, notifications, localization);
               },
-              showBadge: unreadCount > 0 && !_hasOpenedDropdown, // Hide badge after dropdown has been opened
-              badgeCount: (unreadCount > 0 && !_hasOpenedDropdown) ? unreadCount : null, // Hide count after dropdown has been opened
+              showBadge: unreadCount > 0, // Show badge when there are unread notifications
+              badgeCount: unreadCount > 0 ? unreadCount : null, // Show count when there are unread notifications
               badgeColor: AppColors.accent,
             ),
           ],
@@ -531,7 +657,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
           // Remove bottom margin to allow container to overlap
           bottomMargin: 0.0,
         );
-      },
+        },
+      ),
     );
   }
 
@@ -1950,10 +2077,18 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
     List<AppNotification> notifications,
     LocalizationService localization,
   ) {
-    // Set flag that dropdown has been opened (to hide badge count permanently)
-    setState(() {
-      _hasOpenedDropdown = true;
-    });
+    final timestamp = DateTime.now().toIso8601String();
+    debugPrint('🔔 [UI] ⏰ [$timestamp] Opening notification dropdown');
+    
+    // Dismiss badge (update lastBadgeSeenAt on backend)
+    // This will:
+    // 1. Call PATCH /api/notifications/dismiss-badge
+    // 2. Backend updates lastBadgeSeenAt to current timestamp
+    // 3. Backend recalculates unreadCount (only notifications created after lastBadgeSeenAt)
+    // 4. Badge count becomes 0 (because all visible notifications are now "seen")
+    // Note: الإشعارات نفسها لن تتعلم كـ read إلا عند الضغط عليها
+    debugPrint('🔔 [UI] ⏰ [$timestamp] Dismissing badge (updating lastBadgeSeenAt)');
+    context.read<NotificationsCubit>().dismissBadge();
     
     // Get max 5 notifications
     final displayNotifications = notifications.take(5).toList();
@@ -2145,12 +2280,25 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
   Widget _buildNotificationItem(AppNotification notification, BuildContext context) {
     final isFriendRequest = notification.type == NotificationType.friendRequest;
     
-    return Container(
-      padding: const EdgeInsets.all(12),
-      color: notification.isRead
-          ? Colors.transparent
-          : AppColors.info.withOpacity(0.05),
-      child: Column(
+    return InkWell(
+      onTap: () {
+        // Mark notification as read when clicked
+        if (!notification.isRead) {
+          final timestamp = DateTime.now().toIso8601String();
+          debugPrint('🔔 [UI] ⏰ [$timestamp] Notification clicked - Marking as read');
+          debugPrint('🔔 [UI] ⏰ [$timestamp]    Notification ID: ${notification.id}');
+          context.read<NotificationsCubit>().markAsRead(notification.id);
+        }
+        
+        // Handle navigation based on notification type
+        _handleNotificationTap(context, notification);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        color: notification.isRead
+            ? Colors.transparent
+            : AppColors.info.withOpacity(0.05),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -2224,86 +2372,202 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
               ),
             ],
           ),
-          // Accept/Reject buttons for friend requests
+          // Compact Accept/Reject buttons for friend requests (Row at bottom)
           if (isFriendRequest) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 40,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        _handleFriendRequestAction(context, notification, false);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.error,
-                        side: BorderSide(
-                          color: AppColors.error.withOpacity(0.5),
-                          width: 1.5,
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: Text(
-                        'Reject',
-                        style: AppStyles.bodySmall.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: SizedBox(
-                    height: 40,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        _handleFriendRequestAction(context, notification, true);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.success,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: Text(
-                        'Accept',
-                        style: AppStyles.bodySmall.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            const SizedBox(height: 8),
+            _buildFriendRequestActionButtons(context, notification),
           ],
         ],
       ),
+      ),
+    );
+  }
+  
+  /// Build friend request action buttons based on state
+  Widget _buildFriendRequestActionButtons(BuildContext context, AppNotification notification) {
+    final actionState = _notificationActionStates[notification.id];
+    
+    // Check if notification type indicates it's already been processed
+    final isAlreadyAccepted = notification.type == NotificationType.friendRequestAccepted;
+    final isAlreadyRejected = notification.type == NotificationType.friendRequestRejected;
+    
+    // Loading state - show CircularProgressIndicator
+    if (actionState == 'loading') {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.success),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // Success states - show light text label (hide buttons)
+    // Check both actionState and notification type to ensure buttons stay hidden
+    if (actionState == 'accepted' || isAlreadyAccepted) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Text(
+            'تم الموافقة',
+            style: AppStyles.caption.copyWith(
+              fontSize: 11,
+              color: AppColors.success.withOpacity(0.7),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      );
+    }
+    
+    if (actionState == 'rejected' || isAlreadyRejected) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Text(
+            'تم الرفض',
+            style: AppStyles.caption.copyWith(
+              fontSize: 11,
+              color: AppColors.textSecondary.withOpacity(0.7),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // Default state - show Accept/Reject buttons
+    // Check if any action is in progress for this notification
+    final isProcessing = actionState == 'loading' || 
+                        actionState == 'accepted' || 
+                        actionState == 'rejected';
+    
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        // Reject button - subtle grey/light red with border
+        OutlinedButton(
+          onPressed: isProcessing ? null : () {
+            _handleFriendRequestAction(context, notification, false);
+          },
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.textSecondary,
+            side: BorderSide(
+              color: AppColors.textSecondary.withOpacity(0.3),
+              width: 1,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+            ),
+          ),
+          child: Text(
+            'Reject',
+            style: AppStyles.caption.copyWith(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Accept button - clean green with border
+        OutlinedButton(
+          onPressed: isProcessing ? null : () {
+            _handleFriendRequestAction(context, notification, true);
+          },
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.success,
+            side: BorderSide(
+              color: AppColors.success.withOpacity(0.5),
+              width: 1,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+            ),
+          ),
+          child: Text(
+            'Accept',
+            style: AppStyles.caption.copyWith(
+              fontSize: 12,
+              color: AppColors.success,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
+  /// Handle notification tap (navigation based on type)
+  void _handleNotificationTap(BuildContext context, AppNotification notification) {
+    final timestamp = DateTime.now().toIso8601String();
+    debugPrint('🔔 [UI] ⏰ [$timestamp] Handling notification tap');
+    debugPrint('🔔 [UI] ⏰ [$timestamp]    Type: ${notification.type}');
+    
+    // Close the dropdown first
+    Navigator.pop(context);
+    
+    // Navigate based on notification type
+    switch (notification.type) {
+      case NotificationType.friendRequest:
+        // Navigate to friend requests screen
+        AppRoutes.pushNamed(context, AppRoutes.friends);
+        break;
+      case NotificationType.friendRequestAccepted:
+      case NotificationType.friendRequestRejected:
+        // Navigate to friends list
+        AppRoutes.pushNamed(context, AppRoutes.friends);
+        break;
+      case NotificationType.eventInvitation:
+        // Navigate to events screen
+        // TODO: Navigate to specific event if ID is available in notification.data
+        AppRoutes.pushNamed(context, AppRoutes.events);
+        break;
+      case NotificationType.itemPurchased:
+      case NotificationType.wishlistShared:
+        // Navigate to wishlists
+        // TODO: Navigate to specific wishlist if ID is available in notification.data
+        AppRoutes.pushNamed(context, AppRoutes.myWishlists);
+        break;
+      default:
+        // For unknown types, just go to notifications page
+        AppRoutes.pushNamed(context, AppRoutes.notifications);
+    }
+  }
+
   /// Handle friend request action (accept/reject)
+  /// Implements state-based UI updates with loading, success, and error states
   Future<void> _handleFriendRequestAction(
     BuildContext context,
     AppNotification notification,
     bool accept,
   ) async {
-    Navigator.pop(context); // Close dropdown
-    
     // Extract requestId from notification data
-    // The notification data can have requestId, _id, or the notification id itself
-    final requestId = notification.data?['requestId'] ?? 
+    // For friend requests, we need to use relatedId (the friend request ID)
+    // The backend sends: relatedId (friend request ID), not the notification _id
+    final requestId = notification.data?['relatedId'] ?? 
+                      notification.data?['requestId'] ?? 
                       notification.data?['_id'] ?? 
                       notification.id;
+    
+    debugPrint('🔔 [FriendRequest] Extracting requestId...');
+    debugPrint('🔔 [FriendRequest] relatedId: ${notification.data?['relatedId']}');
+    debugPrint('🔔 [FriendRequest] requestId: ${notification.data?['requestId']}');
+    debugPrint('🔔 [FriendRequest] _id: ${notification.data?['_id']}');
+    debugPrint('🔔 [FriendRequest] notification.id: ${notification.id}');
+    debugPrint('🔔 [FriendRequest] Final requestId: $requestId');
     
     if (requestId == null || requestId.isEmpty) {
       if (mounted) {
@@ -2327,80 +2591,139 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
       return;
     }
     
+    // Set loading state - UI will show CircularProgressIndicator
+    setState(() {
+      _notificationActionStates[notification.id] = 'loading';
+    });
+    
     try {
       final friendsRepository = FriendsRepository();
       
+      debugPrint('🔔 [FriendRequest] Starting ${accept ? "accept" : "reject"} action');
+      debugPrint('🔔 [FriendRequest] Request ID: $requestId');
+      debugPrint('🔔 [FriendRequest] Notification ID: ${notification.id}');
+      
+      // Call API
+      Map<String, dynamic> response;
       if (accept) {
-        await friendsRepository.acceptFriendRequest(requestId: requestId);
+        response = await friendsRepository.acceptFriendRequest(requestId: requestId);
       } else {
-        await friendsRepository.rejectFriendRequest(requestId: requestId);
+        response = await friendsRepository.rejectFriendRequest(requestId: requestId);
       }
+      
+      debugPrint('🔔 [FriendRequest] API call successful');
+      debugPrint('🔔 [FriendRequest] Response: $response');
       
       if (!mounted) return;
       
-      // Mark notification as read
-      context.read<NotificationsCubit>().markAsRead(notification.id);
+      final notificationsCubit = context.read<NotificationsCubit>();
       
-      // Reload notifications to update the list
-      context.read<NotificationsCubit>().loadNotifications();
-      
-      final message = accept
-          ? 'Friend request accepted!'
-          : 'Friend request declined';
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                accept ? Icons.check_circle : Icons.cancel,
-                color: Colors.white,
-              ),
-              const SizedBox(width: 8),
-              Text(message),
-            ],
-          ),
-          backgroundColor: accept ? AppColors.success : AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
+      // Step 1: Update notification type in cubit immediately to hide buttons
+      // This ensures buttons stay hidden even if notification list is reloaded
+      final updatedNotification = AppNotification(
+        id: notification.id,
+        userId: notification.userId,
+        type: accept ? NotificationType.friendRequestAccepted : NotificationType.friendRequestRejected,
+        title: accept ? 'تم الموافقة على الطلب' : 'تم رفض الطلب',
+        message: notification.message,
+        data: notification.data,
+        isRead: true,
+        createdAt: notification.createdAt,
       );
-    } on ApiException catch (e) {
+      
+      notificationsCubit.updateNotification(updatedNotification);
+      
+      // Step 2: Update local state to hide buttons and show light text
+      setState(() {
+        _notificationActionStates[notification.id] = accept ? 'accepted' : 'rejected';
+      });
+      
+      debugPrint('🔔 [FriendRequest] Notification type updated to: ${updatedNotification.type}');
+      debugPrint('🔔 [FriendRequest] State updated to: ${accept ? "accepted" : "rejected"}');
+      debugPrint('🔔 [FriendRequest] Buttons hidden, showing light text');
+      
+      // Step 3: Show light snackbar with success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error, color: Colors.white),
+                Icon(
+                  accept ? Icons.check_circle : Icons.cancel,
+                  color: Colors.white,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: Text(e.message),
+                Text(
+                  accept ? 'تم الموافقة على الطلب' : 'تم رفض الطلب',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
-            backgroundColor: AppColors.error,
+            backgroundColor: accept ? AppColors.success : AppColors.textSecondary,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(16),
+            elevation: 2,
           ),
         );
       }
-    } catch (e) {
+      
+      // Step 3: After 2 seconds, delete notification from backend and remove from UI
+      Future.delayed(const Duration(seconds: 2), () async {
+        if (!mounted) return;
+        
+        debugPrint('🔔 [FriendRequest] Deleting notification after 2 seconds...');
+        
+        // Delete from backend
+        try {
+          await notificationsCubit.deleteNotification(notification.id);
+          debugPrint('🔔 [FriendRequest] ✅ Notification deleted from backend');
+        } catch (e) {
+          debugPrint('🔔 [FriendRequest] ⚠️ Error deleting notification: $e');
+          // If delete fails, still remove from UI optimistically
+          notificationsCubit.removeNotificationOptimistically(notification.id);
+        }
+        
+        // Remove from action states (cleanup)
+        if (mounted) {
+          setState(() {
+            _notificationActionStates.remove(notification.id);
+          });
+        }
+      });
+      
+    } on ApiException catch (e) {
+      // Log error details
+      debugPrint('🔔 [FriendRequest] ❌ ApiException caught');
+      debugPrint('🔔 [FriendRequest] Error message: ${e.message}');
+      debugPrint('🔔 [FriendRequest] Status code: ${e.statusCode}');
+      debugPrint('🔔 [FriendRequest] Error data: ${e.data}');
+      
+      // Revert to original state on error
       if (mounted) {
+        setState(() {
+          _notificationActionStates[notification.id] = 'error';
+        });
+        
+        // Show error snackbar
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error, color: Colors.white),
+                const Icon(Icons.error, color: Colors.white, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    accept
-                        ? 'Failed to accept friend request. Please try again.'
-                        : 'Failed to decline friend request. Please try again.',
+                    e.message,
+                    style: const TextStyle(fontSize: 13),
                   ),
                 ),
               ],
@@ -2410,8 +2733,64 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
+            margin: const EdgeInsets.all(16),
           ),
         );
+        
+        // Reset to original state after showing error
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            setState(() {
+              _notificationActionStates.remove(notification.id);
+            });
+          }
+        });
+      }
+    } catch (e, stackTrace) {
+      // Log unexpected error details
+      debugPrint('🔔 [FriendRequest] ❌ Unexpected error caught');
+      debugPrint('🔔 [FriendRequest] Error: $e');
+      debugPrint('🔔 [FriendRequest] Stack trace: $stackTrace');
+      
+      // Revert to original state on error
+      if (mounted) {
+        setState(() {
+          _notificationActionStates[notification.id] = 'error';
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    accept
+                        ? 'Failed to accept friend request. Please try again.'
+                        : 'Failed to decline friend request. Please try again.',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+        
+        // Reset to original state after showing error
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            setState(() {
+              _notificationActionStates.remove(notification.id);
+            });
+          }
+        });
       }
     }
   }
@@ -2423,6 +2802,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
         return AppColors.secondary;
       case NotificationType.friendRequestAccepted:
         return AppColors.success;
+      case NotificationType.friendRequestRejected:
+        return AppColors.error;
       case NotificationType.eventInvitation:
         return AppColors.accent;
       case NotificationType.eventReminder:
@@ -2445,6 +2826,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
         return Icons.person_add_outlined;
       case NotificationType.friendRequestAccepted:
         return Icons.person_add_alt_1_outlined;
+      case NotificationType.friendRequestRejected:
+        return Icons.person_remove_outlined;
       case NotificationType.eventInvitation:
         return Icons.celebration_outlined;
       case NotificationType.eventReminder:

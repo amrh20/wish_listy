@@ -19,10 +19,10 @@ class FriendsScreen extends StatefulWidget {
   const FriendsScreen({super.key});
 
   @override
-  _FriendsScreenState createState() => _FriendsScreenState();
+  FriendsScreenState createState() => FriendsScreenState();
 }
 
-class _FriendsScreenState extends State<FriendsScreen>
+class FriendsScreenState extends State<FriendsScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   late AnimationController _animationController;
@@ -774,6 +774,14 @@ class _FriendsScreenState extends State<FriendsScreen>
   }
 
   /// Load friend requests from API
+  /// Refresh friends and friend requests data
+  /// This method is called when the Friends tab is tapped
+  void refreshFriends() {
+    debugPrint('🔄 FriendsScreen: Refreshing friends data...');
+    _loadFriends(resetPage: true);
+    _loadFriendRequests();
+  }
+
   Future<void> _loadFriendRequests() async {
     setState(() {
       _isLoadingRequests = true;

@@ -154,30 +154,129 @@ class WishlistItem {
   });
 
   factory WishlistItem.fromJson(Map<String, dynamic> json) {
-    return WishlistItem(
-      id: json['id'] ?? '',
-      wishlistId: json['wishlist_id'] ?? '',
-      name: json['name'] ?? '',
-      description: json['description'],
-      link: json['link'],
-      priceRange: json['price_range'] != null
-          ? PriceRange.fromJson(json['price_range'])
-          : null,
-      imageUrl: json['image_url'],
-      priority: ItemPriority.values.firstWhere(
-        (e) => e.toString().split('.').last == json['priority'],
-        orElse: () => ItemPriority.medium,
-      ),
-      status: ItemStatus.values.firstWhere(
-        (e) => e.toString().split('.').last == json['status'],
+    // Support both camelCase (from API) and snake_case (from local storage)
+    final id = json['id']?.toString() ?? 
+               json['_id']?.toString() ?? 
+               '';
+    
+    final wishlistId = json['wishlistId']?.toString() ?? 
+                       json['wishlist_id']?.toString() ?? 
+                       json['wishlist']?.toString() ?? 
+                       '';
+    
+    // Parse status: support both isPurchased (boolean) and status (string)
+    ItemStatus status = ItemStatus.desired;
+    if (json['isPurchased'] == true) {
+      status = ItemStatus.purchased;
+    } else if (json['status'] != null) {
+      final statusStr = json['status'].toString().toLowerCase();
+      status = ItemStatus.values.firstWhere(
+        (e) => e.toString().split('.').last.toLowerCase() == statusStr,
         orElse: () => ItemStatus.desired,
-      ),
-      purchasedBy: json['purchased_by'],
-      purchasedAt: json['purchased_at'] != null
-          ? DateTime.parse(json['purchased_at'])
-          : null,
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      );
+    }
+    
+    // Parse priority
+    final priorityStr = json['priority']?.toString().toLowerCase() ?? 'medium';
+    final priority = ItemPriority.values.firstWhere(
+      (e) => e.toString().split('.').last.toLowerCase() == priorityStr,
+      orElse: () => ItemPriority.medium,
+    );
+    
+    // Parse dates: support both camelCase and snake_case
+    DateTime createdAt;
+    if (json['createdAt'] != null) {
+      try {
+        createdAt = DateTime.parse(json['createdAt'].toString());
+      } catch (e) {
+        createdAt = DateTime.now();
+      }
+    } else if (json['created_at'] != null) {
+      try {
+        createdAt = DateTime.parse(json['created_at'].toString());
+      } catch (e) {
+        createdAt = DateTime.now();
+      }
+    } else {
+      createdAt = DateTime.now();
+    }
+    
+    DateTime updatedAt;
+    if (json['updatedAt'] != null) {
+      try {
+        updatedAt = DateTime.parse(json['updatedAt'].toString());
+      } catch (e) {
+        updatedAt = DateTime.now();
+      }
+    } else if (json['updated_at'] != null) {
+      try {
+        updatedAt = DateTime.parse(json['updated_at'].toString());
+      } catch (e) {
+        updatedAt = DateTime.now();
+      }
+    } else {
+      updatedAt = DateTime.now();
+    }
+    
+    // Parse purchasedAt
+    DateTime? purchasedAt;
+    if (json['purchasedAt'] != null) {
+      try {
+        purchasedAt = DateTime.parse(json['purchasedAt'].toString());
+      } catch (e) {
+        purchasedAt = null;
+      }
+    } else if (json['purchased_at'] != null) {
+      try {
+        purchasedAt = DateTime.parse(json['purchased_at'].toString());
+      } catch (e) {
+        purchasedAt = null;
+      }
+    }
+    
+    // Parse link: support both 'url' and 'link'
+    final link = json['link']?.toString() ?? 
+                 json['url']?.toString();
+    
+    // Parse imageUrl: support both camelCase and snake_case
+    final imageUrl = json['imageUrl']?.toString() ?? 
+                     json['image_url']?.toString() ?? 
+                     json['image']?.toString();
+    
+    // Parse purchasedBy: support both camelCase and snake_case
+    final purchasedBy = json['purchasedBy']?.toString() ?? 
+                        json['purchased_by']?.toString();
+    
+    // Parse priceRange: support both camelCase and snake_case
+    PriceRange? priceRange;
+    if (json['priceRange'] != null) {
+      try {
+        priceRange = PriceRange.fromJson(json['priceRange'] as Map<String, dynamic>);
+      } catch (e) {
+        priceRange = null;
+      }
+    } else if (json['price_range'] != null) {
+      try {
+        priceRange = PriceRange.fromJson(json['price_range'] as Map<String, dynamic>);
+      } catch (e) {
+        priceRange = null;
+      }
+    }
+    
+    return WishlistItem(
+      id: id,
+      wishlistId: wishlistId,
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString(),
+      link: link,
+      priceRange: priceRange,
+      imageUrl: imageUrl,
+      priority: priority,
+      status: status,
+      purchasedBy: purchasedBy,
+      purchasedAt: purchasedAt,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 

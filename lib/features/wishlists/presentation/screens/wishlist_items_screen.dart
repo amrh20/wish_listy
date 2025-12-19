@@ -837,45 +837,59 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          backgroundColor: AppColors.surface.withOpacity(0.95),
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: Row(
+          contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.check_circle_outline,
-                color: AppColors.primary,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Mark as Gifted?',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
+              Text(
+                'Mark as Gifted?',
+                style: AppStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
                 ),
               ),
+              const SizedBox(height: 8),
+              Text(
+                'Are you sure you want to mark "${item.name}" as gifted?',
+                style: AppStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ],
-          ),
-          content: Text(
-            'Are you sure you want to mark "${item.name}" as gifted?',
-            style: AppStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
               child: Text(
                 'Cancel',
-                style: TextStyle(color: AppColors.textSecondary),
+                style: AppStyles.caption.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                ),
               ),
             ),
-            PrimaryGradientButton(
-              text: 'Confirm',
+            TextButton(
               onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: Text(
+                'Confirm',
+                style: AppStyles.caption.copyWith(
+                  color: AppColors.success,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),
@@ -961,90 +975,41 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       }
 
       if (mounted) {
-        // Show success dialog instead of SnackBar
-        showDialog(
-          context: context,
-          barrierDismissible: true,
-          builder: (context) => Dialog(
-            backgroundColor: Colors.white,
+        // Show light snackbar instead of dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  newStatus == ItemStatus.purchased
+                      ? Icons.check_circle
+                      : Icons.shopping_bag_outlined,
+                  color: Colors.white,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  newStatus == ItemStatus.purchased
+                      ? 'Marked as Gifted! 🎉'
+                      : 'Marked as Available',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: newStatus == ItemStatus.purchased
+                ? AppColors.success
+                : AppColors.info,
+            behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Success Icon
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: newStatus == ItemStatus.purchased
-                          ? AppColors.success.withOpacity(0.15)
-                          : AppColors.info.withOpacity(0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      newStatus == ItemStatus.purchased
-                          ? Icons.check_circle
-                          : Icons.shopping_bag_outlined,
-                      color: newStatus == ItemStatus.purchased
-                          ? AppColors.success
-                          : AppColors.info,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  // Success Message
-                  Text(
-                    newStatus == ItemStatus.purchased
-                        ? 'Marked as Gifted! 🎉'
-                        : 'Marked as Available',
-                    style: AppStyles.headingMedium.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${item.name}',
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 24),
-                  // OK Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: newStatus == ItemStatus.purchased
-                            ? AppColors.success
-                            : AppColors.info,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: const Text(
-                        'OK',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(16),
+            elevation: 2,
           ),
         );
       }
