@@ -21,6 +21,7 @@ import 'package:wish_listy/features/notifications/data/models/notification_model
 import 'package:wish_listy/core/services/socket_service.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
+import 'package:wish_listy/core/widgets/top_overlay_toast.dart';
 
 class HomeScreen extends StatefulWidget {
   final GlobalKey<HomeScreenState>? key;
@@ -529,9 +530,13 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
           if (state.isNewNotification && state.unreadCount > 0 && state.notifications.isNotEmpty) {
             final latestNotification = state.notifications.first;
             
-            // Skip snackbar for friend requests
-            if (latestNotification.type == NotificationType.friendRequest) {
-              debugPrint('🖥️ [UI] ⏰ [$timestamp]    ⚠️ Skipping snackbar for friend request (shown in banner instead)');
+            // Skip snackbar for ALL friend request related notifications when app is in foreground
+            // (friendRequest, friendRequestAccepted, friendRequestRejected)
+            // Badge count will still update, but no snackbar to avoid redundancy
+            if (latestNotification.type == NotificationType.friendRequest ||
+                latestNotification.type == NotificationType.friendRequestAccepted ||
+                latestNotification.type == NotificationType.friendRequestRejected) {
+              debugPrint('🖥️ [UI] ⏰ [$timestamp]    ⚠️ Skipping snackbar for friend request notification (badge count updated instead)');
               return;
             }
             
@@ -563,6 +568,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
+                              fontSize: 14,
                             ),
                           ),
                           Text(
@@ -582,10 +588,16 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
                 backgroundColor: AppColors.accent,
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                margin: EdgeInsets.all(16),
-                duration: Duration(seconds: 4),
+                margin: const EdgeInsets.only(
+                  top: 60,
+                  left: 16,
+                  right: 16,
+                  bottom: 0,
+                ),
+                duration: const Duration(seconds: 5),
+                elevation: 4,
                 action: SnackBarAction(
                   label: 'View',
                   textColor: Colors.white,
@@ -2080,6 +2092,21 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
     final timestamp = DateTime.now().toIso8601String();
     debugPrint('🔔 [UI] ⏰ [$timestamp] Opening notification dropdown');
     
+    final notificationsCubit = context.read<NotificationsCubit>();
+    
+    // Only load notifications if state is initial or error (not if already loaded)
+    // This prevents unnecessary reloading when dropdown is opened
+    final currentState = notificationsCubit.state;
+    if (currentState is NotificationsInitial || 
+        currentState is NotificationsError) {
+      debugPrint('🔔 [UI] ⏰ [$timestamp] State is initial/error - Loading notifications...');
+      notificationsCubit.loadNotifications();
+    } else if (currentState is NotificationsLoaded) {
+      debugPrint('🔔 [UI] ⏰ [$timestamp] Notifications already loaded (${currentState.notifications.length} notifications) - Skipping reload');
+    } else if (currentState is NotificationsLoading) {
+      debugPrint('🔔 [UI] ⏰ [$timestamp] Notifications already loading - Skipping reload');
+    }
+    
     // Dismiss badge (update lastBadgeSeenAt on backend)
     // This will:
     // 1. Call PATCH /api/notifications/dismiss-badge
@@ -2088,10 +2115,10 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
     // 4. Badge count becomes 0 (because all visible notifications are now "seen")
     // Note: الإشعارات نفسها لن تتعلم كـ read إلا عند الضغط عليها
     debugPrint('🔔 [UI] ⏰ [$timestamp] Dismissing badge (updating lastBadgeSeenAt)');
-    context.read<NotificationsCubit>().dismissBadge();
+    notificationsCubit.dismissBadge();
     
-    // Get max 5 notifications
-    final displayNotifications = notifications.take(5).toList();
+    // Note: Notifications list is now read directly from cubit state via BlocBuilder
+    // No need for displayNotifications snapshot
 
     // Get screen size
     final screenSize = MediaQuery.of(context).size;
@@ -2158,78 +2185,153 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Header
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(16),
-                                topRight: Radius.circular(16),
-                              ),
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: AppColors.textTertiary.withOpacity(0.1),
-                                ),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  'Notifications',
-                                  style: AppStyles.headingSmall.copyWith(
-                                    fontWeight: FontWeight.bold,
+                          // Header - Use BlocBuilder to read from cubit state
+                          BlocBuilder<NotificationsCubit, NotificationsState>(
+                            builder: (context, notificationsState) {
+                              int totalNotificationsCount = 0;
+                              if (notificationsState is NotificationsLoaded) {
+                                totalNotificationsCount = notificationsState.notifications.length;
+                              }
+                              
+                              return Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(16),
+                                    topRight: Radius.circular(16),
                                   ),
-                                ),
-                                const Spacer(),
-                                if (notifications.length > 5)
-                                  Text(
-                                    '${notifications.length - 5} more',
-                                    style: AppStyles.bodySmall.copyWith(
-                                      color: AppColors.textSecondary,
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: AppColors.textTertiary.withOpacity(0.1),
                                     ),
                                   ),
-                              ],
-                            ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      'Notifications',
+                                      style: AppStyles.headingSmall.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    if (totalNotificationsCount > 5)
+                                      Text(
+                                        '${totalNotificationsCount - 5} more',
+                                        style: AppStyles.bodySmall.copyWith(
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
-                          // Notifications list
-                          if (displayNotifications.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.all(32),
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    Icons.notifications_none,
-                                    size: 48,
-                                    color: AppColors.textTertiary,
+                          // Notifications list - Use BlocBuilder to read from cubit state
+                          BlocBuilder<NotificationsCubit, NotificationsState>(
+                            builder: (context, notificationsState) {
+                              // Show loading indicator while loading
+                              if (notificationsState is NotificationsLoading || 
+                                  notificationsState is NotificationsInitial) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(32),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Loading notifications...',
+                                        style: AppStyles.bodyMedium.copyWith(
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    'No notifications',
-                                    style: AppStyles.bodyMedium.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
+                                );
+                              }
+                              
+                              // Show error state if there's an error
+                              if (notificationsState is NotificationsError) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(32),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.error_outline,
+                                        size: 48,
+                                        color: AppColors.error,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        notificationsState.message,
+                                        style: AppStyles.bodyMedium.copyWith(
+                                          color: AppColors.error,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            )
-                          else
-                            Flexible(
-                              child: ListView.separated(
-                                shrinkWrap: true,
-                                padding: EdgeInsets.zero,
-                                itemCount: displayNotifications.length,
-                                separatorBuilder: (context, index) => Divider(
-                                  height: 1,
-                                  thickness: 1,
-                                  color: AppColors.textTertiary.withOpacity(0.1),
+                                );
+                              }
+                              
+                              // Read notifications directly from cubit state (not snapshot)
+                              List<AppNotification> liveDisplayNotifications = [];
+                              if (notificationsState is NotificationsLoaded) {
+                                liveDisplayNotifications = notificationsState.notifications.take(5).toList();
+                              }
+                              
+                              // Show empty state only if loaded and empty
+                              if (liveDisplayNotifications.isEmpty) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(32),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.notifications_none,
+                                        size: 48,
+                                        color: AppColors.textTertiary,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'No notifications',
+                                        style: AppStyles.bodyMedium.copyWith(
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                              
+                              return Flexible(
+                                child: ListView.separated(
+                                  shrinkWrap: true,
+                                  padding: EdgeInsets.zero,
+                                  itemCount: liveDisplayNotifications.length,
+                                  separatorBuilder: (context, index) => Divider(
+                                    height: 1,
+                                    thickness: 1,
+                                    color: AppColors.textTertiary.withOpacity(0.1),
+                                  ),
+                                  itemBuilder: (context, index) {
+                                    final notification = liveDisplayNotifications[index];
+                                    return _buildNotificationItem(notification, context);
+                                  },
                                 ),
-                                itemBuilder: (context, index) {
-                                  final notification = displayNotifications[index];
-                                  return _buildNotificationItem(notification, context);
-                                },
-                              ),
-                            ),
+                              );
+                            },
+                          ),
                           // View All button
                           Container(
                             padding: const EdgeInsets.all(12),
@@ -2415,7 +2517,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Text(
-            'تم الموافقة',
+            'تم الموافقة / Accepted',
             style: AppStyles.caption.copyWith(
               fontSize: 11,
               color: AppColors.success.withOpacity(0.7),
@@ -2431,7 +2533,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Text(
-            'تم الرفض',
+            'تم الرفض / Rejected',
             style: AppStyles.caption.copyWith(
               fontSize: 11,
               color: AppColors.textSecondary.withOpacity(0.7),
@@ -2642,57 +2744,34 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
       debugPrint('🔔 [FriendRequest] State updated to: ${accept ? "accepted" : "rejected"}');
       debugPrint('🔔 [FriendRequest] Buttons hidden, showing light text');
       
-      // Step 3: Show light snackbar with success message
+      // Step 3: Show top overlay toast with localized success message
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  accept ? Icons.check_circle : Icons.cancel,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  accept ? 'تم الموافقة على الطلب' : 'تم رفض الطلب',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: accept ? AppColors.success : AppColors.textSecondary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            duration: const Duration(seconds: 2),
-            margin: const EdgeInsets.all(16),
-            elevation: 2,
-          ),
+        final localization = Provider.of<LocalizationService>(context, listen: false);
+        final message = localization.translate(
+          accept ? 'notifications.requestAccepted' : 'notifications.requestRejected',
+        );
+        
+        TopOverlayToast.showSuccess(
+          context,
+          message,
+          duration: const Duration(seconds: 2),
         );
       }
       
-      // Step 3: After 2 seconds, delete notification from backend and remove from UI
-      Future.delayed(const Duration(seconds: 2), () async {
-        if (!mounted) return;
-        
-        debugPrint('🔔 [FriendRequest] Deleting notification after 2 seconds...');
-        
-        // Delete from backend
-        try {
-          await notificationsCubit.deleteNotification(notification.id);
-          debugPrint('🔔 [FriendRequest] ✅ Notification deleted from backend');
-        } catch (e) {
-          debugPrint('🔔 [FriendRequest] ⚠️ Error deleting notification: $e');
-          // If delete fails, still remove from UI optimistically
-          notificationsCubit.removeNotificationOptimistically(notification.id);
-        }
-        
-        // Remove from action states (cleanup)
+      // Step 4: Delete notification from backend immediately after success
+      // This ensures the notification is removed from the dropdown if reopened
+      debugPrint('🔔 [FriendRequest] Deleting notification from backend immediately...');
+      try {
+        await notificationsCubit.deleteNotification(notification.id);
+        debugPrint('🔔 [FriendRequest] ✅ Notification deleted from backend successfully');
+      } catch (e) {
+        debugPrint('🔔 [FriendRequest] ⚠️ Error deleting notification: $e');
+        // If delete fails, still remove from UI optimistically to ensure it doesn't show
+        notificationsCubit.removeNotificationOptimistically(notification.id);
+      }
+      
+      // Step 5: Cleanup action states after a short delay (to show success text briefly)
+      Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
           setState(() {
             _notificationActionStates.remove(notification.id);
@@ -2713,28 +2792,11 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
           _notificationActionStates[notification.id] = 'error';
         });
         
-        // Show error snackbar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    e.message,
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            margin: const EdgeInsets.all(16),
-          ),
+        // Show error overlay toast (at top of screen)
+        TopOverlayToast.showError(
+          context,
+          e.message,
+          duration: const Duration(seconds: 3),
         );
         
         // Reset to original state after showing error
@@ -2762,14 +2824,18 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.error, color: Colors.white, size: 20),
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     accept
                         ? 'Failed to accept friend request. Please try again.'
                         : 'Failed to decline friend request. Please try again.',
-                    style: const TextStyle(fontSize: 13),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -2777,9 +2843,16 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
-            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            elevation: 4,
           ),
         );
         

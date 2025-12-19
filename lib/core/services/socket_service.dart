@@ -154,6 +154,13 @@ class SocketService {
         debugPrint('🔌 [Socket] ⏰ [$connectTimestamp] ✅ Connected successfully!');
         debugPrint('🔌 [Socket] ⏰ [$connectTimestamp] Socket ID: ${_socket?.id}');
         debugPrint('🔌 [Socket] ⏰ [$connectTimestamp] Connection status: isConnected=$_isConnected, isConnecting=$_isConnecting');
+        
+        // Re-setup notification listeners after reconnection
+        // This ensures listeners are active even after socket reconnects
+        debugPrint('🔌 [Socket] ⏰ [$connectTimestamp] 🔄 Re-setting up notification listeners after connection...');
+        _setupNotificationListeners();
+        debugPrint('🔌 [Socket] ⏰ [$connectTimestamp] ✅ Notification listeners re-setup complete');
+        debugPrint('🔌 [Socket] ⏰ [$connectTimestamp]    Total listeners: ${_notificationListeners.length}');
       });
 
       _socket!.onDisconnect((reason) {

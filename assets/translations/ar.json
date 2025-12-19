@@ -585,7 +585,9 @@
     "eventReminder": "تذكير بالفعالية",
     "birthdayReminder": "تذكير بعيد الميلاد",
     "newMessage": "رسالة جديدة",
-    "systemUpdate": "تحديث النظام"
+    "systemUpdate": "تحديث النظام",
+    "requestAccepted": "تم قبول الطلب بنجاح",
+    "requestRejected": "تم رفض الطلب بنجاح"
   },
   "common": {
     "cancel": "إلغاء",

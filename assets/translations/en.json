@@ -820,7 +820,9 @@
     "eventReminder": "Event reminder",
     "birthdayReminder": "Birthday reminder",
     "newMessage": "New message",
-    "systemUpdate": "System update"
+    "systemUpdate": "System update",
+    "requestAccepted": "Request Accepted Successfully",
+    "requestRejected": "Request Rejected Successfully"
   },
   "common": {
     "cancel": "Cancel",

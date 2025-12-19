@@ -60,55 +60,76 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   final ApiService _apiService = ApiService();
 
   NotificationsCubit() : super(NotificationsInitial()) {
-    debugPrint('🔔 NotificationsCubit: Initializing...');
+    final initTimestamp = DateTime.now().toIso8601String();
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$initTimestamp] ========== INITIALIZING ==========');
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$initTimestamp] Initializing NotificationsCubit...');
     _setupSocketListeners();
-    debugPrint('🔔 NotificationsCubit: Initialized with socket listener');
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$initTimestamp] ✅ Initialized with socket listener');
     
     // Debug: Check if socket is connected after initialization
     SchedulerBinding.instance.addPostFrameCallback((_) {
+      final statusCheckTimestamp = DateTime.now().toIso8601String();
       final status = _socketService.getConnectionStatus();
-      debugPrint('🔔 NotificationsCubit: Socket status check (post-init)');
-      debugPrint('   Connected: ${status['isConnected']}');
-      debugPrint('   Connecting: ${status['isConnecting']}');
-      debugPrint('   Socket ID: ${status['socketId']}');
-      debugPrint('   Listeners: ${status['listenersCount']}');
-      debugPrint('   URL: ${status['socketUrl']}');
+      debugPrint('🔔 [NotificationsCubit] ⏰ [$statusCheckTimestamp] Socket status check (post-init)');
+      debugPrint('🔔 [NotificationsCubit] ⏰ [$statusCheckTimestamp]    Connected: ${status['isConnected']}');
+      debugPrint('🔔 [NotificationsCubit] ⏰ [$statusCheckTimestamp]    Connecting: ${status['isConnecting']}');
+      debugPrint('🔔 [NotificationsCubit] ⏰ [$statusCheckTimestamp]    Socket ID: ${status['socketId']}');
+      debugPrint('🔔 [NotificationsCubit] ⏰ [$statusCheckTimestamp]    Listeners: ${status['listenersCount']}');
+      debugPrint('🔔 [NotificationsCubit] ⏰ [$statusCheckTimestamp]    URL: ${status['socketUrl']}');
+      
+      // If socket is connected but listener count is 0, re-register
+      if (status['isConnected'] == true && status['listenersCount'] == 0) {
+        debugPrint('🔔 [NotificationsCubit] ⏰ [$statusCheckTimestamp]    ⚠️ Socket connected but no listeners! Re-registering...');
+        _setupSocketListeners();
+      }
     });
   }
 
   /// Setup Socket.IO listeners for real-time notifications
+  /// This method can be called multiple times safely (e.g., after reconnection)
   void _setupSocketListeners() {
-    debugPrint('🔔 NotificationsCubit: Setting up socket listener...');
-    debugPrint('   SocketService instance: ${_socketService.hashCode}');
-    debugPrint('   Handler function: ${_handleSocketNotification.runtimeType}');
-    debugPrint('   Handler hash: ${_handleSocketNotification.hashCode}');
+    final setupTimestamp = DateTime.now().toIso8601String();
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp] ========== SETTING UP SOCKET LISTENER ==========');
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp] Setting up socket listener...');
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    SocketService instance: ${_socketService.hashCode}');
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Handler function: ${_handleSocketNotification.runtimeType}');
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Handler hash: ${_handleSocketNotification.hashCode}');
     
     // Get status before adding listener
     final statusBefore = _socketService.getConnectionStatus();
-    debugPrint('   Listeners count BEFORE: ${statusBefore['listenersCount']}');
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Listeners count BEFORE: ${statusBefore['listenersCount']}');
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Socket connected: ${statusBefore['isConnected']}');
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Socket ID: ${statusBefore['socketId']}');
+    
+    // Remove existing listener first to avoid duplicates
+    _socketService.removeNotificationListener(_handleSocketNotification);
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Removed existing listener (if any)');
     
     // Add the listener
     _socketService.addNotificationListener(_handleSocketNotification);
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    ✅ Listener added');
     
     // Get status after adding listener
     final statusAfter = _socketService.getConnectionStatus();
-    debugPrint('🔔 NotificationsCubit: Socket listener added');
-    debugPrint('   Listeners count AFTER: ${statusAfter['listenersCount']}');
-    debugPrint('   Socket exists: ${_socketService.socket != null}');
-    debugPrint('   Is connected: ${statusAfter['isConnected']}');
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Listeners count AFTER: ${statusAfter['listenersCount']}');
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Socket exists: ${_socketService.socket != null}');
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Is connected: ${statusAfter['isConnected']}');
     
     // Verify listener was added
     if (statusAfter['listenersCount'] == 0) {
-      debugPrint('   ❌ ERROR: Listener count is still 0 after adding!');
-      debugPrint('   This means the listener was not registered properly.');
+      debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    ❌❌❌ ERROR: Listener count is still 0 after adding!');
+      debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    This means the listener was not registered properly.');
     } else {
-      debugPrint('   ✅ Listener registered successfully!');
+      debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    ✅✅✅ Listener registered successfully!');
+      debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Ready to receive socket notifications');
     }
+    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp] ========== SETUP COMPLETE ==========');
   }
 
   /// Handle notification from Socket.IO
   Future<void> _handleSocketNotification(Map<String, dynamic> data) async {
     final timestamp = DateTime.now().toIso8601String();
+    debugPrint('🔔 [Notifications] ⏰ [$timestamp] ========== SOCKET NOTIFICATION RECEIVED ==========');
     debugPrint('🔔 [Notifications] ⏰ [$timestamp] Received socket notification from SocketService');
     debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Raw data: $data');
     debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Data type: ${data.runtimeType}');
@@ -133,9 +154,17 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         ));
         
         debugPrint('🔔 [Notifications] ⏰ [$updateTimestamp]    ✅ Unread count synced successfully');
+        debugPrint('🔔 [Notifications] ⏰ [$updateTimestamp]    ✅ State emitted - BlocBuilder should rebuild now');
       } else {
         debugPrint('🔔 [Notifications] ⏰ [$updateTimestamp]    ⚠️ State not loaded, loading notifications...');
-        loadNotifications();
+        // Load notifications first, then update count
+        await loadNotifications();
+        // After loading, update with the unread count from socket
+        if (state is NotificationsLoaded) {
+          final loadedState = state as NotificationsLoaded;
+          emit(loadedState.copyWith(unreadCount: unreadCount));
+          debugPrint('🔔 [Notifications] ⏰ [$updateTimestamp]    ✅ Unread count updated after loading');
+        }
       }
       return;
     }
@@ -176,85 +205,113 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         debugPrint('🔔 [Notifications] ⏰ [$parseErrorTimestamp]       - Title: ${notification.title}');
       }
       
+      // CRITICAL: Always update state immediately, regardless of current state
+      // This ensures instant badge count update for better UX
+      final stateUpdateTimestamp = DateTime.now().toIso8601String();
+      debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp] ========== UPDATING STATE IMMEDIATELY ==========');
+      
+      List<AppNotification> updatedNotifications;
+      int currentUnreadCount = 0;
+      
       if (state is NotificationsLoaded) {
-        final stateUpdateTimestamp = DateTime.now().toIso8601String();
         final currentState = state as NotificationsLoaded;
         debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    Current state is NotificationsLoaded');
         debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       Current notifications count: ${currentState.notifications.length}');
         debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       Current unread count: ${currentState.unreadCount}');
         
-        final updatedNotifications = [notification, ...currentState.notifications];
+        updatedNotifications = [notification, ...currentState.notifications];
+        currentUnreadCount = currentState.unreadCount;
+      } else {
+        // State is NotificationsInitial or NotificationsLoading
+        // Create a minimal state with just this notification for instant feedback
+        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    ⚠️ State is ${state.runtimeType} - Creating immediate state');
+        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       Will load full notifications in background');
         
-        // IMPORTANT: Extract unreadCount from payload if available
-        // If not available, fetch from backend to ensure accuracy (considers lastBadgeSeenAt)
-        int unreadCount;
-        if (data['unreadCount'] != null || data['unread_count'] != null) {
-          unreadCount = data['unreadCount'] as int? ?? data['unread_count'] as int? ?? 0;
-          debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    Using unreadCount from payload: $unreadCount');
+        updatedNotifications = [notification];
+        currentUnreadCount = 0; // Will be incremented to 1 below
+        
+        // Load full notifications in background (non-blocking)
+        loadNotifications().catchError((e) {
+          debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    ⚠️ Background load failed: $e');
+        });
+      }
+      
+      // IMPORTANT: Always increment unreadCount by 1 immediately for instant visual feedback
+      // Extract unreadCount from payload if available, otherwise increment current count
+      int newUnreadCount;
+      if (data['unreadCount'] != null || data['unread_count'] != null) {
+        newUnreadCount = data['unreadCount'] as int? ?? data['unread_count'] as int? ?? 0;
+        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    ✅ Using unreadCount from payload: $newUnreadCount');
+      } else {
+        // Increment current count by 1 for immediate feedback
+        newUnreadCount = currentUnreadCount + 1;
+        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    ⚠️ unreadCount not in payload');
+        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    ✅ Incrementing unreadCount: $currentUnreadCount -> $newUnreadCount (INSTANT UPDATE)');
+      }
+      
+      // Emit state IMMEDIATELY with incremented count
+      debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    📤 EMITTING STATE NOW...');
+      debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       Notifications: ${updatedNotifications.length}');
+      debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       Unread count: $newUnreadCount');
+      debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       Is new notification: true');
+      
+      emit(NotificationsLoaded(
+        notifications: updatedNotifications,
+        unreadCount: newUnreadCount,
+        isNewNotification: true, // Mark as new notification from Socket
+      ));
+      
+      final emitCompleteTimestamp = DateTime.now().toIso8601String();
+      debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    ✅✅✅ STATE EMITTED SUCCESSFULLY ✅✅✅');
+      debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]       BlocBuilder should rebuild NOW');
+      debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]       Badge count should update to: $newUnreadCount');
+      
+      // If unreadCount was not in payload, fetch accurate count from backend (async, non-blocking)
+      if (data['unreadCount'] == null && data['unread_count'] == null) {
+        debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    🔄 Fetching accurate count from backend (async)...');
+        try {
+          final accurateCount = await getUnreadCount();
+          debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    ✅ Fetched accurate unreadCount: $accurateCount');
           
-          // Emit state immediately with payload count
-          emit(NotificationsLoaded(
-            notifications: updatedNotifications,
-            unreadCount: unreadCount,
-            isNewNotification: true, // Mark as new notification from Socket
-          ));
-        } else {
-          // If unreadCount not in payload, fetch from backend
-          debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    ⚠️ unreadCount not in payload, fetching from backend...');
-          
-          // Increment current unreadCount by 1 (new notification received)
-          // This ensures immediate visual feedback
-          final newCount = currentState.unreadCount + 1;
-          debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    Incrementing unreadCount: ${currentState.unreadCount} -> $newCount');
-          
-          emit(NotificationsLoaded(
-            notifications: updatedNotifications,
-            unreadCount: newCount,
-            isNewNotification: true,
-          ));
-          
-          // Then fetch accurate count from backend (async)
-          try {
-            final accurateCount = await getUnreadCount();
-            debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    ✅ Fetched accurate unreadCount: $accurateCount');
-            
-            // Update state with accurate count
-            if (state is NotificationsLoaded) {
-              final latestState = state as NotificationsLoaded;
+          // Update state with accurate count (only if state hasn't changed)
+          if (state is NotificationsLoaded) {
+            final latestState = state as NotificationsLoaded;
+            if (latestState.unreadCount != accurateCount) {
+              debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    🔄 Syncing unreadCount: ${latestState.unreadCount} -> $accurateCount');
               emit(latestState.copyWith(
                 unreadCount: accurateCount,
                 isNewNotification: false, // Don't show snackbar again
               ));
+              debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    ✅ Count synced successfully');
+            } else {
+              debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    ✅ Count already accurate, no update needed');
             }
-          } catch (e) {
-            debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    ⚠️ Failed to fetch accurate count: $e');
-            // Keep the temporary count
           }
-          
-          return; // Exit early since we already emitted
+        } catch (e) {
+          debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    ⚠️ Failed to fetch accurate count: $e');
+          debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]       Keeping optimistic count: $newUnreadCount');
+          // Keep the optimistic count - it's better than showing nothing
         }
-        
-        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    Updating state...');
-        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       New notifications count: ${updatedNotifications.length}');
-        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       New unread count: $unreadCount');
-        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       Added notification: ${notification.type} - ${notification.title}');
-        
-        final emitCompleteTimestamp = DateTime.now().toIso8601String();
-        debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    ✅ State updated and emitted successfully');
-        debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]       UI should now show the new notification');
-        debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]       BlocBuilder and BlocListener should rebuild now');
-      } else {
-        final loadTimestamp = DateTime.now().toIso8601String();
-        debugPrint('🔔 [Notifications] ⏰ [$loadTimestamp]    ⚠️ State not loaded yet (current: ${state.runtimeType})');
-        debugPrint('🔔 [Notifications] ⏰ [$loadTimestamp]    Loading notifications from API first...');
-        // If not loaded yet, load notifications first
-        loadNotifications();
       }
+      
+      debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp] ========== HANDLING COMPLETE ==========');
     } catch (e, stackTrace) {
       final errorTimestamp = DateTime.now().toIso8601String();
-      debugPrint('🔔 [Notifications] ⏰ [$errorTimestamp]    ❌ Error handling socket notification: $e');
+      debugPrint('🔔 [Notifications] ⏰ [$errorTimestamp]    ❌❌❌ ERROR HANDLING SOCKET NOTIFICATION ❌❌❌');
+      debugPrint('🔔 [Notifications] ⏰ [$errorTimestamp]       Error: $e');
       debugPrint('🔔 [Notifications] ⏰ [$errorTimestamp]       Error type: ${e.runtimeType}');
       debugPrint('🔔 [Notifications] ⏰ [$errorTimestamp]       Stack trace: $stackTrace');
+      
+      // Even on error, try to increment count if state is loaded
+      if (state is NotificationsLoaded) {
+        final currentState = state as NotificationsLoaded;
+        final errorCount = currentState.unreadCount + 1;
+        debugPrint('🔔 [Notifications] ⏰ [$errorTimestamp]    ⚠️ Attempting fallback: incrementing count to $errorCount');
+        emit(currentState.copyWith(
+          unreadCount: errorCount,
+          isNewNotification: false,
+        ));
+      }
     }
   }
 
@@ -486,23 +543,49 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       final currentState = state as NotificationsLoaded;
       debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Current unreadCount: ${currentState.unreadCount}');
       
-      // Call backend API to update lastBadgeSeenAt
+      // Optimistically set unreadCount to 0 immediately (better UX)
+      emit(NotificationsLoaded(
+        notifications: currentState.notifications,
+        unreadCount: 0,
+        isNewNotification: false,
+      ));
+      
+      // Call backend API to update lastBadgeSeenAt (fire and forget)
       debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Calling API: PATCH /api/notifications/dismiss-badge');
-      await _apiService.patch('/notifications/dismiss-badge');
+      _apiService.patch('/notifications/dismiss-badge').then((_) {
+        // After API call succeeds, fetch accurate unreadCount from backend
+        // This ensures sync but doesn't block UI
+        getUnreadCount().then((unreadCount) {
+          if (state is NotificationsLoaded) {
+            final currentState = state as NotificationsLoaded;
+            emit(NotificationsLoaded(
+              notifications: currentState.notifications,
+              unreadCount: unreadCount,
+              isNewNotification: false,
+            ));
+          }
+        }).catchError((e) {
+          debugPrint('🔔 [Notifications] ⏰ [$timestamp]    ⚠️ Error fetching unreadCount: $e');
+        });
+      }).catchError((e) {
+        debugPrint('❌ NotificationsCubit: Error dismissing badge: ${e.message}');
+        // On error, revert to original unreadCount
+        if (state is NotificationsLoaded) {
+          final currentState = state as NotificationsLoaded;
+          // Recalculate unreadCount from notifications
+          final unreadCount = currentState.notifications.where((n) => !n.isRead).length;
+          emit(NotificationsLoaded(
+            notifications: currentState.notifications,
+            unreadCount: unreadCount,
+            isNewNotification: false,
+          ));
+        }
+      });
       
-      // Reload notifications to get updated unreadCount from backend
-      // Backend will now calculate unreadCount based on lastBadgeSeenAt
-      debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Reloading notifications to get updated unreadCount...');
-      await loadNotifications();
-      
-      debugPrint('🔔 [Notifications] ⏰ [$timestamp]    ✅ Badge dismissed successfully');
-    } on ApiException catch (e) {
-      debugPrint('❌ NotificationsCubit: Error dismissing badge: ${e.message}');
-      // On error, still try to reload to sync state
-      loadNotifications();
+      debugPrint('🔔 [Notifications] ⏰ [$timestamp]    ✅ Badge dismissed (optimistic update)');
     } catch (e) {
       debugPrint('❌ NotificationsCubit: Error dismissing badge: $e');
-      loadNotifications();
+      // Don't reload on error - just log it
     }
   }
 
