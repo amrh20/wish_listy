@@ -56,6 +56,9 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
   
   // Track last shown notification ID to avoid duplicate snackbars
   String? _lastShownNotificationId;
+
+  // Debug: track unread count changes to confirm socket updates at runtime
+  int? _lastShownUnreadCount;
   
   // Track friend request action states (loading, success, error) per notification
   final Map<String, String> _notificationActionStates = {}; // 'loading', 'accepted', 'rejected', 'error'
@@ -525,20 +528,32 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
           debugPrint('🖥️ [UI] ⏰ [$timestamp]    Unread count: ${state.unreadCount}');
           debugPrint('🖥️ [UI] ⏰ [$timestamp]    Is new notification: ${state.isNewNotification}');
           
-          // Show snackbar ONLY for new notifications from Socket (not from API load)
-          // Skip snackbar for friend requests (they are shown in the banner instead)
-          if (state.isNewNotification && state.unreadCount > 0 && state.notifications.isNotEmpty) {
+          // Debug: show a small snackbar when unreadCount changes (after first load)
+          // This helps verify socket updates are happening at runtime.
+          if (_lastShownUnreadCount == null) {
+            _lastShownUnreadCount = state.unreadCount;
+          } else if (_lastShownUnreadCount != state.unreadCount) {
+            final previous = _lastShownUnreadCount;
+            _lastShownUnreadCount = state.unreadCount;
+
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  '🔌 Socket unread count: ${previous ?? 0} → ${state.unreadCount}',
+                ),
+                backgroundColor: AppColors.info,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+
+          // Show snackbar for new notifications from Socket (not from API load)
+          // NOTE: We intentionally DO show it for friend-request notifications for debugging.
+          if (state.isNewNotification &&
+              state.notifications.isNotEmpty) {
             final latestNotification = state.notifications.first;
-            
-            // Skip snackbar for ALL friend request related notifications when app is in foreground
-            // (friendRequest, friendRequestAccepted, friendRequestRejected)
-            // Badge count will still update, but no snackbar to avoid redundancy
-            if (latestNotification.type == NotificationType.friendRequest ||
-                latestNotification.type == NotificationType.friendRequestAccepted ||
-                latestNotification.type == NotificationType.friendRequestRejected) {
-              debugPrint('🖥️ [UI] ⏰ [$timestamp]    ⚠️ Skipping snackbar for friend request notification (badge count updated instead)');
-              return;
-            }
             
             // Only show snackbar if this is a new notification (not already shown)
             if (_lastShownNotificationId != latestNotification.id) {

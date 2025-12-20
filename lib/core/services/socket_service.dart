@@ -554,10 +554,11 @@ class SocketService {
         // Clear socket reference
         _socket = null;
         debugPrint('🔌 [Socket] ⏰ [$timestamp]    ✅ Socket reference cleared');
-        
-        // Clear all notification listeners
-        _notificationListeners.clear();
-        debugPrint('🔌 [Socket] ⏰ [$timestamp]    ✅ Notification listeners cleared');
+        // IMPORTANT:
+        // Do NOT clear `_notificationListeners` here.
+        // These are app-level listeners (e.g., NotificationsCubit) that must survive logout/login
+        // and socket reconnects. Clearing them causes real-time notifications to stop until the
+        // listener is re-registered manually (often only when opening Notifications screen).
         
         final completeTimestamp = DateTime.now().toIso8601String();
         debugPrint('🔌 [Socket] ⏰ [$completeTimestamp] ✅ Disconnect complete - All resources cleaned up');
@@ -570,14 +571,12 @@ class SocketService {
         _socket = null;
         _isConnected = false;
         _isConnecting = false;
-        _notificationListeners.clear();
         debugPrint('🔌 [Socket] ⏰ [$errorTimestamp]    ✅ Forced cleanup completed');
       }
     } else {
       // No socket to disconnect, but ensure flags are reset
       _isConnected = false;
       _isConnecting = false;
-      _notificationListeners.clear();
       debugPrint('🔌 [Socket] ⏰ [$timestamp]    ⚠️ No socket to disconnect, but flags reset');
     }
   }
