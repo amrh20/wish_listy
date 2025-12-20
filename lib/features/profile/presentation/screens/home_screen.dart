@@ -18,6 +18,9 @@ import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:wish_listy/features/notifications/data/models/notification_model.dart';
+import 'package:wish_listy/features/notifications/presentation/widgets/friend_request_tile.dart';
+import 'package:wish_listy/features/notifications/presentation/widgets/friend_request_accepted_tile.dart';
+import 'package:wish_listy/features/notifications/presentation/widgets/friend_request_rejected_tile.dart';
 import 'package:wish_listy/core/services/socket_service.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
@@ -2395,8 +2398,20 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
 
   /// Build notification item for dropdown
   Widget _buildNotificationItem(AppNotification notification, BuildContext context) {
-    final isFriendRequest = notification.type == NotificationType.friendRequest;
+    // Use custom widgets for friend request notifications
+    if (notification.type == NotificationType.friendRequest) {
+      return _buildFriendRequestCardForDropdown(notification, context);
+    }
     
+    if (notification.type == NotificationType.friendRequestAccepted) {
+      return _buildFriendRequestAcceptedCardForDropdown(notification, context);
+    }
+    
+    if (notification.type == NotificationType.friendRequestRejected) {
+      return _buildFriendRequestRejectedCardForDropdown(notification, context);
+    }
+    
+    // Default design for other notification types
     return InkWell(
       onTap: () {
         // Mark notification as read when clicked
@@ -2489,14 +2504,193 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
               ),
             ],
           ),
-          // Compact Accept/Reject buttons for friend requests (Row at bottom)
-          if (isFriendRequest) ...[
-            const SizedBox(height: 8),
-            _buildFriendRequestActionButtons(context, notification),
-          ],
         ],
       ),
       ),
+    );
+  }
+
+  /// Build friend request card for dropdown
+  Widget _buildFriendRequestCardForDropdown(AppNotification notification, BuildContext context) {
+    // Extract sender information from notification data
+    String? senderId;
+    String? senderName;
+    String? senderImage;
+
+    // Check for relatedUser object (new API structure)
+    if (notification.data?['relatedUser'] != null && 
+        notification.data!['relatedUser'] is Map<String, dynamic>) {
+      final relatedUser = notification.data!['relatedUser'] as Map<String, dynamic>;
+      senderId = relatedUser['_id']?.toString() ?? 
+                relatedUser['id']?.toString();
+      senderName = relatedUser['fullName']?.toString();
+      senderImage = relatedUser['profileImage']?.toString();
+    }
+
+    // Fallback to old structure if relatedUser not found
+    if (senderId == null || senderId.isEmpty) {
+      senderId = notification.data?['senderId'] ?? 
+                  notification.data?['sender_id'] ?? 
+                  notification.data?['fromUserId'] ?? 
+                  notification.data?['from_user_id'] ?? 
+                  notification.userId;
+    }
+
+    if (senderName == null || senderName.isEmpty) {
+      senderName = notification.data?['senderName'] ?? 
+                   notification.data?['sender_name'] ?? 
+                   notification.data?['fromUserName'] ?? 
+                   notification.data?['from_user_name'] ?? 
+                   notification.title.split(' ').first;
+    }
+
+    if (senderImage == null || senderImage.isEmpty) {
+      senderImage = notification.data?['senderImage'] ?? 
+                   notification.data?['sender_image'] ?? 
+                   notification.data?['fromUserImage'] ?? 
+                   notification.data?['from_user_image'];
+    }
+
+    return FriendRequestTile(
+      senderName: senderName ?? 'Unknown',
+      senderImage: senderImage,
+      timeAgo: notification.timeAgo,
+      onAccept: () => _handleFriendRequestAction(context, notification, true),
+      onDecline: () => _handleFriendRequestAction(context, notification, false),
+      onProfileTap: () {
+        Navigator.pop(context); // Close dropdown
+        _navigateToProfile(senderId);
+      },
+      compact: true, // Use compact mode for dropdown
+    );
+  }
+
+  /// Build friend request accepted card for dropdown
+  Widget _buildFriendRequestAcceptedCardForDropdown(AppNotification notification, BuildContext context) {
+    // Extract friend information from notification data
+    String? friendId;
+    String? friendName;
+    String? friendImage;
+
+    // Check for relatedUser object (new API structure)
+    if (notification.data?['relatedUser'] != null && 
+        notification.data!['relatedUser'] is Map<String, dynamic>) {
+      final relatedUser = notification.data!['relatedUser'] as Map<String, dynamic>;
+      friendId = relatedUser['_id']?.toString() ?? 
+                relatedUser['id']?.toString();
+      friendName = relatedUser['fullName']?.toString();
+      friendImage = relatedUser['profileImage']?.toString();
+    }
+
+    // Fallback to old structure if relatedUser not found
+    if (friendId == null || friendId.isEmpty) {
+      friendId = notification.data?['friendId'] ?? 
+                  notification.data?['friend_id'] ?? 
+                  notification.data?['userId'] ?? 
+                  notification.userId;
+    }
+
+    if (friendName == null || friendName.isEmpty) {
+      final message = notification.message;
+      if (message.isNotEmpty) {
+        final parts = message.split(' ');
+        if (parts.isNotEmpty) {
+          friendName = parts[0];
+        }
+      }
+      
+      if (friendName == null || friendName.isEmpty) {
+        friendName = notification.data?['friendName'] ?? 
+                     notification.data?['friend_name'] ?? 
+                     notification.title.split(' ').first;
+      }
+    }
+
+    if (friendImage == null || friendImage.isEmpty) {
+      friendImage = notification.data?['friendImage'] ?? 
+                   notification.data?['friend_image'] ?? 
+                   notification.data?['profileImage'] ?? 
+                   notification.data?['profile_image'];
+    }
+
+    return FriendRequestAcceptedTile(
+      friendName: friendName ?? 'Unknown',
+      friendImage: friendImage,
+      timeAgo: notification.timeAgo,
+      onProfileTap: () {
+        Navigator.pop(context); // Close dropdown
+        _navigateToProfile(friendId);
+      },
+    );
+  }
+
+  /// Build friend request rejected card for dropdown
+  Widget _buildFriendRequestRejectedCardForDropdown(AppNotification notification, BuildContext context) {
+    // Extract friend information from notification data
+    String? friendId;
+    String? friendName;
+    String? friendImage;
+
+    // Check for relatedUser object (new API structure)
+    if (notification.data?['relatedUser'] != null && 
+        notification.data!['relatedUser'] is Map<String, dynamic>) {
+      final relatedUser = notification.data!['relatedUser'] as Map<String, dynamic>;
+      friendId = relatedUser['_id']?.toString() ?? 
+                relatedUser['id']?.toString();
+      friendName = relatedUser['fullName']?.toString();
+      friendImage = relatedUser['profileImage']?.toString();
+    }
+
+    // Fallback to old structure if relatedUser not found
+    if (friendId == null || friendId.isEmpty) {
+      friendId = notification.data?['friendId'] ?? 
+                  notification.data?['friend_id'] ?? 
+                  notification.data?['userId'] ?? 
+                  notification.userId;
+    }
+
+    if (friendName == null || friendName.isEmpty) {
+      final message = notification.message;
+      if (message.isNotEmpty) {
+        final parts = message.split(' ');
+        if (parts.isNotEmpty) {
+          friendName = parts[0];
+        }
+      }
+      
+      if (friendName == null || friendName.isEmpty) {
+        friendName = notification.data?['friendName'] ?? 
+                     notification.data?['friend_name'] ?? 
+                     notification.title.split(' ').first;
+      }
+    }
+
+    if (friendImage == null || friendImage.isEmpty) {
+      friendImage = notification.data?['friendImage'] ?? 
+                   notification.data?['friend_image'] ?? 
+                   notification.data?['profileImage'] ?? 
+                   notification.data?['profile_image'];
+    }
+
+    return FriendRequestRejectedTile(
+      friendName: friendName ?? 'Unknown',
+      friendImage: friendImage,
+      timeAgo: notification.timeAgo,
+      onProfileTap: () {
+        Navigator.pop(context); // Close dropdown
+        _navigateToProfile(friendId);
+      },
+    );
+  }
+
+  /// Navigate to friend profile
+  void _navigateToProfile(String? friendId) {
+    if (friendId == null || friendId.isEmpty) return;
+    
+    Navigator.pushNamed(
+      context,
+      AppRoutes.friendProfile,
+      arguments: {'friendId': friendId},
     );
   }
   

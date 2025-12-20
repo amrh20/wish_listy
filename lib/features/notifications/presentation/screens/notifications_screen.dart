@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/animated_background.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:wish_listy/features/notifications/data/models/notification_model.dart';
+import 'package:wish_listy/features/notifications/presentation/widgets/friend_request_tile.dart';
+import 'package:wish_listy/features/notifications/presentation/widgets/friend_request_accepted_tile.dart';
+import 'package:wish_listy/features/notifications/presentation/widgets/friend_request_rejected_tile.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -262,6 +267,22 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   }
 
   Widget _buildNotificationCard(AppNotification notification) {
+    // Special design for friend request notifications
+    if (notification.type == NotificationType.friendRequest) {
+      return _buildFriendRequestCard(notification);
+    }
+
+    // Special design for friend request accepted notifications
+    if (notification.type == NotificationType.friendRequestAccepted) {
+      return _buildFriendRequestAcceptedCard(notification);
+    }
+
+    // Special design for friend request rejected notifications
+    if (notification.type == NotificationType.friendRequestRejected) {
+      return _buildFriendRequestRejectedCard(notification);
+    }
+
+    // Default design for other notification types
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -374,6 +395,190 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           ),
         ),
       ),
+    );
+  }
+
+  /// Build specialized friend request notification card
+  Widget _buildFriendRequestCard(AppNotification notification) {
+    // Extract sender information from notification data
+    // Priority: relatedUser object (new API structure)
+    String? senderId;
+    String? senderName;
+    String? senderImage;
+
+    // Check for relatedUser object (new API structure)
+    if (notification.data?['relatedUser'] != null && 
+        notification.data!['relatedUser'] is Map<String, dynamic>) {
+      final relatedUser = notification.data!['relatedUser'] as Map<String, dynamic>;
+      senderId = relatedUser['_id']?.toString() ?? 
+                relatedUser['id']?.toString();
+      senderName = relatedUser['fullName']?.toString();
+      senderImage = relatedUser['profileImage']?.toString();
+    }
+
+    // Fallback to old structure if relatedUser not found
+    if (senderId == null || senderId.isEmpty) {
+      senderId = notification.data?['senderId'] ?? 
+                  notification.data?['sender_id'] ?? 
+                  notification.data?['fromUserId'] ?? 
+                  notification.data?['from_user_id'] ?? 
+                  notification.userId;
+    }
+
+    if (senderName == null || senderName.isEmpty) {
+      senderName = notification.data?['senderName'] ?? 
+                   notification.data?['sender_name'] ?? 
+                   notification.data?['fromUserName'] ?? 
+                   notification.data?['from_user_name'] ?? 
+                   notification.title.split(' ').first; // Fallback: first word of title
+    }
+
+    if (senderImage == null || senderImage.isEmpty) {
+      senderImage = notification.data?['senderImage'] ?? 
+                   notification.data?['sender_image'] ?? 
+                   notification.data?['fromUserImage'] ?? 
+                   notification.data?['from_user_image'];
+    }
+
+    // Use the custom FriendRequestTile widget
+    return FriendRequestTile(
+      senderName: senderName ?? 'Unknown',
+      senderImage: senderImage,
+      timeAgo: notification.timeAgo,
+      onAccept: () => _handleFriendRequestAction(notification, true),
+      onDecline: () => _handleFriendRequestAction(notification, false),
+      onProfileTap: () => _navigateToProfile(senderId),
+    );
+  }
+
+  /// Build specialized friend request accepted notification card
+  Widget _buildFriendRequestAcceptedCard(AppNotification notification) {
+    // Extract friend information from notification data
+    // Priority: relatedUser object (new API structure)
+    String? friendId;
+    String? friendName;
+    String? friendImage;
+
+    // Check for relatedUser object (new API structure)
+    if (notification.data?['relatedUser'] != null && 
+        notification.data!['relatedUser'] is Map<String, dynamic>) {
+      final relatedUser = notification.data!['relatedUser'] as Map<String, dynamic>;
+      friendId = relatedUser['_id']?.toString() ?? 
+                relatedUser['id']?.toString();
+      friendName = relatedUser['fullName']?.toString();
+      friendImage = relatedUser['profileImage']?.toString();
+    }
+
+    // Fallback to old structure if relatedUser not found
+    if (friendId == null || friendId.isEmpty) {
+      friendId = notification.data?['friendId'] ?? 
+                  notification.data?['friend_id'] ?? 
+                  notification.data?['userId'] ?? 
+                  notification.userId;
+    }
+
+    if (friendName == null || friendName.isEmpty) {
+      // Try to extract from message (e.g., "amrr accepted your friend request")
+      final message = notification.message;
+      if (message.isNotEmpty) {
+        final parts = message.split(' ');
+        if (parts.isNotEmpty) {
+          friendName = parts[0]; // First word is usually the name
+        }
+      }
+      
+      // Final fallback
+      if (friendName == null || friendName.isEmpty) {
+        friendName = notification.data?['friendName'] ?? 
+                     notification.data?['friend_name'] ?? 
+                     notification.title.split(' ').first;
+      }
+    }
+
+    if (friendImage == null || friendImage.isEmpty) {
+      friendImage = notification.data?['friendImage'] ?? 
+                   notification.data?['friend_image'] ?? 
+                   notification.data?['profileImage'] ?? 
+                   notification.data?['profile_image'];
+    }
+
+    // Use the custom FriendRequestAcceptedTile widget
+    return FriendRequestAcceptedTile(
+      friendName: friendName ?? 'Unknown',
+      friendImage: friendImage,
+      timeAgo: notification.timeAgo,
+      onProfileTap: () => _navigateToProfile(friendId),
+    );
+  }
+
+  /// Build specialized friend request rejected notification card
+  Widget _buildFriendRequestRejectedCard(AppNotification notification) {
+    // Extract friend information from notification data
+    // Priority: relatedUser object (new API structure)
+    String? friendId;
+    String? friendName;
+    String? friendImage;
+
+    // Check for relatedUser object (new API structure)
+    if (notification.data?['relatedUser'] != null && 
+        notification.data!['relatedUser'] is Map<String, dynamic>) {
+      final relatedUser = notification.data!['relatedUser'] as Map<String, dynamic>;
+      friendId = relatedUser['_id']?.toString() ?? 
+                relatedUser['id']?.toString();
+      friendName = relatedUser['fullName']?.toString();
+      friendImage = relatedUser['profileImage']?.toString();
+    }
+
+    // Fallback to old structure if relatedUser not found
+    if (friendId == null || friendId.isEmpty) {
+      friendId = notification.data?['friendId'] ?? 
+                  notification.data?['friend_id'] ?? 
+                  notification.data?['userId'] ?? 
+                  notification.userId;
+    }
+
+    if (friendName == null || friendName.isEmpty) {
+      // Try to extract from message (e.g., "amrr declined your friend request")
+      final message = notification.message;
+      if (message.isNotEmpty) {
+        final parts = message.split(' ');
+        if (parts.isNotEmpty) {
+          friendName = parts[0]; // First word is usually the name
+        }
+      }
+      
+      // Final fallback
+      if (friendName == null || friendName.isEmpty) {
+        friendName = notification.data?['friendName'] ?? 
+                     notification.data?['friend_name'] ?? 
+                     notification.title.split(' ').first;
+      }
+    }
+
+    if (friendImage == null || friendImage.isEmpty) {
+      friendImage = notification.data?['friendImage'] ?? 
+                   notification.data?['friend_image'] ?? 
+                   notification.data?['profileImage'] ?? 
+                   notification.data?['profile_image'];
+    }
+
+    // Use the custom FriendRequestRejectedTile widget
+    return FriendRequestRejectedTile(
+      friendName: friendName ?? 'Unknown',
+      friendImage: friendImage,
+      timeAgo: notification.timeAgo,
+      onProfileTap: () => _navigateToProfile(friendId),
+    );
+  }
+
+  /// Navigate to friend profile
+  void _navigateToProfile(String? friendId) {
+    if (friendId == null || friendId.isEmpty) return;
+    
+    Navigator.pushNamed(
+      context,
+      AppRoutes.friendProfile,
+      arguments: {'friendId': friendId},
     );
   }
 
