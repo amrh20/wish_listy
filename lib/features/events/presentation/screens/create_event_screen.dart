@@ -657,12 +657,23 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   }
 
   void _showFriendsSelectionModal() {
+    // Create map of friend ID to their response status (for edit mode)
+    final friendStatuses = <String, InvitationStatus>{};
+    if (_isEditMode && _existingEvent?.invitedFriends != null) {
+      for (final friend in _existingEvent!.invitedFriends) {
+        if (friend.status != null) {
+          friendStatuses[friend.id] = friend.status!;
+        }
+      }
+    }
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => InviteFriendsBottomSheet(
         initiallySelectedIds: _invitedFriends,
+        friendStatuses: friendStatuses.isNotEmpty ? friendStatuses : null,
         onInvite: (List<String> friendIds) {
           setState(() {
             _invitedFriends = friendIds;

@@ -477,6 +477,7 @@
     "youMarkedMaybe": "لقد وضعت 'ربما'",
     "pendingResponse": "استجابة معلقة",
     "editResponse": "تعديل الاستجابة",
+    "alreadyResponded": "تم الرد بالفعل",
     "accept": "قبول",
     "maybe": "ربما",
     "reject": "رفض",

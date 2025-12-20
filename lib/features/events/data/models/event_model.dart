@@ -21,6 +21,7 @@ class Event {
   final String? creatorName; // Creator's full name from API
   final String? creatorImage; // Creator's profile image from API
   final InvitationStatus? invitationStatus; // User's RSVP status (from API invitation_status field)
+  final int? statsAccepted; // Accepted count from API stats.accepted field
 
   Event({
     required this.id,
@@ -43,6 +44,7 @@ class Event {
     this.creatorName,
     this.creatorImage,
     this.invitationStatus,
+    this.statsAccepted,
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
@@ -185,6 +187,13 @@ class Event {
       );
     }
 
+    // Parse stats.accepted from API response
+    int? statsAccepted;
+    if (json['stats'] != null && json['stats'] is Map<String, dynamic>) {
+      final stats = json['stats'] as Map<String, dynamic>;
+      statsAccepted = stats['accepted'] as int?;
+    }
+
     // Parse invitations - support both 'invitations' and 'invited'
     List<dynamic>? invitationsList;
     if (json['invitations'] != null && json['invitations'] is List) {
@@ -235,6 +244,7 @@ class Event {
       creatorName: creatorName,
       creatorImage: creatorImage,
       invitationStatus: invitationStatus,
+      statsAccepted: statsAccepted,
     );
   }
 
@@ -283,6 +293,7 @@ class Event {
     String? creatorName,
     String? creatorImage,
     InvitationStatus? invitationStatus,
+    int? statsAccepted,
   }) {
     return Event(
       id: id ?? this.id,
@@ -305,6 +316,7 @@ class Event {
       creatorName: creatorName ?? this.creatorName,
       creatorImage: creatorImage ?? this.creatorImage,
       invitationStatus: invitationStatus ?? this.invitationStatus,
+      statsAccepted: statsAccepted ?? this.statsAccepted,
     );
   }
 
@@ -459,20 +471,61 @@ class InvitedFriend {
   final String? fullName;
   final String? username;
   final String? profileImage;
+  final InvitationStatus? status; // Response status: accepted, declined, pending, maybe
 
   InvitedFriend({
     required this.id,
     this.fullName,
     this.username,
     this.profileImage,
+    this.status,
   });
 
   factory InvitedFriend.fromJson(Map<String, dynamic> json) {
+    // Parse status from API response
+    InvitationStatus? parsedStatus;
+    if (json['status'] != null) {
+      final statusString = json['status'].toString().toLowerCase();
+      parsedStatus = InvitationStatus.values.firstWhere(
+        (e) => e.toString().split('.').last == statusString,
+        orElse: () => InvitationStatus.pending,
+      );
+    } else if (json['invitation_status'] != null) {
+      final statusString = json['invitation_status'].toString().toLowerCase();
+      parsedStatus = InvitationStatus.values.firstWhere(
+        (e) => e.toString().split('.').last == statusString,
+        orElse: () => InvitationStatus.pending,
+      );
+    }
+    
+    // Handle new API structure: { user: {...}, status: "...", updatedAt: "..." }
+    // OR old structure: { _id: "...", fullName: "...", ... }
+    String? id;
+    String? fullName;
+    String? username;
+    String? profileImage;
+    
+    if (json['user'] != null && json['user'] is Map<String, dynamic>) {
+      // New API structure: data is inside 'user' object
+      final userData = json['user'] as Map<String, dynamic>;
+      id = userData['_id']?.toString() ?? userData['id']?.toString() ?? '';
+      fullName = userData['fullName']?.toString();
+      username = userData['username']?.toString();
+      profileImage = userData['profileImage']?.toString() ?? userData['profile_image']?.toString();
+    } else {
+      // Old API structure: data is directly in the object
+      id = json['_id']?.toString() ?? json['id']?.toString() ?? '';
+      fullName = json['fullName']?.toString();
+      username = json['username']?.toString();
+      profileImage = json['profileImage']?.toString() ?? json['profile_image']?.toString();
+    }
+    
     return InvitedFriend(
-      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
-      fullName: json['fullName']?.toString(),
-      username: json['username']?.toString(),
-      profileImage: json['profileImage']?.toString() ?? json['profile_image']?.toString(),
+      id: id ?? '',
+      fullName: fullName,
+      username: username,
+      profileImage: profileImage,
+      status: parsedStatus,
     );
   }
 
@@ -482,7 +535,24 @@ class InvitedFriend {
       if (fullName != null) 'fullName': fullName,
       if (username != null) 'username': username,
       if (profileImage != null) 'profileImage': profileImage,
+      if (status != null) 'status': status.toString().split('.').last,
     };
+  }
+
+  InvitedFriend copyWith({
+    String? id,
+    String? fullName,
+    String? username,
+    String? profileImage,
+    InvitationStatus? status,
+  }) {
+    return InvitedFriend(
+      id: id ?? this.id,
+      fullName: fullName ?? this.fullName,
+      username: username ?? this.username,
+      profileImage: profileImage ?? this.profileImage,
+      status: status ?? this.status,
+    );
   }
 
   @override
@@ -626,6 +696,12 @@ class EventSummary {
       }
     }
 
+    final acceptedFromInvitedFriends = event.invitedFriends.isNotEmpty
+        ? event.invitedFriends
+            .where((friend) => friend.status == InvitationStatus.accepted)
+            .length
+        : null;
+
     return EventSummary(
       id: event.id,
       name: event.name,
@@ -638,7 +714,9 @@ class EventSummary {
       invitedCount: event.invitedFriends.isNotEmpty
           ? event.invitedFriends.length
           : event.invitations.length, // Fallback to invitations if invitedFriends is empty
-      acceptedCount: event.acceptedInvitations,
+      acceptedCount: event.statsAccepted ??
+          acceptedFromInvitedFriends ??
+          event.acceptedInvitations, // Fallback: invited_friends status count, then invitations count
       wishlistItemCount: 0, // Would be calculated from backend
       wishlistId: event.wishlistId,
       isCreatedByMe: isCreatedByMe,

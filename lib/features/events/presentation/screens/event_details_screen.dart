@@ -855,46 +855,157 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     );
   }
 
-  /// Build friend item with avatar and full name
+  /// Build friend item with avatar, status indicator, and full name
   Widget _buildFriendItem(InvitedFriend friend) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final initials = _getInitials(friend.fullName ?? friend.username ?? friend.id);
     final displayName = friend.fullName ?? friend.username ?? '';
+    final status = friend.status ?? InvitationStatus.pending;
     
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        CircleAvatar(
-          radius: 20,
-          backgroundColor: AppColors.primary.withOpacity(0.1),
-          backgroundImage: friend.profileImage != null && friend.profileImage!.isNotEmpty
-              ? NetworkImage(friend.profileImage!)
-              : null,
-          child: friend.profileImage == null || friend.profileImage!.isEmpty
-              ? Text(
-                  initials,
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold,
+        // Avatar with status indicator
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: AppColors.primary.withOpacity(0.1),
+              backgroundImage: friend.profileImage != null && friend.profileImage!.isNotEmpty
+                  ? NetworkImage(friend.profileImage!)
+                  : null,
+              child: friend.profileImage == null || friend.profileImage!.isEmpty
+                  ? Text(
+                      initials,
+                      style: AppStyles.bodySmall.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    )
+                  : null,
+            ),
+            // Status indicator (small dot/icon at bottom-right)
+            Positioned(
+              right: -2,
+              bottom: -2,
+              child: Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: _getInvitationStatusColor(status),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.surface,
+                    width: 2,
                   ),
-                )
-              : null,
+                ),
+                child: Icon(
+                  _getInvitationStatusIcon(status),
+                  size: 10,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 4),
-        SizedBox(
-          width: 60,
-          child: Text(
-            displayName,
-            style: AppStyles.bodySmall.copyWith(
-              color: AppColors.textPrimary,
-              fontSize: 11,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+        // Name + status badge (more room so text doesn't truncate badly)
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 96),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                displayName,
+                style: AppStyles.bodySmall.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _getInvitationStatusColor(status).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _getInvitationStatusIcon(status),
+                      size: 12,
+                      color: _getInvitationStatusColor(status),
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        _getInvitationStatusText(status, localization),
+                        style: AppStyles.caption.copyWith(
+                          color: _getInvitationStatusColor(status),
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
+  }
+
+  /// Get invitation status color based on invitation status
+  Color _getInvitationStatusColor(InvitationStatus status) {
+    switch (status) {
+      case InvitationStatus.accepted:
+        return AppColors.success; // Green
+      case InvitationStatus.declined:
+        return AppColors.error; // Red
+      case InvitationStatus.maybe:
+        return AppColors.warning; // Orange/Yellow
+      case InvitationStatus.pending:
+      default:
+        return AppColors.textSecondary; // Grey
+    }
+  }
+
+  /// Get invitation status icon based on invitation status
+  IconData _getInvitationStatusIcon(InvitationStatus status) {
+    switch (status) {
+      case InvitationStatus.accepted:
+        return Icons.check;
+      case InvitationStatus.declined:
+        return Icons.close;
+      case InvitationStatus.maybe:
+        return Icons.help_outline;
+      case InvitationStatus.pending:
+      default:
+        return Icons.access_time;
+    }
+  }
+
+  /// Get invitation status text based on invitation status
+  String _getInvitationStatusText(InvitationStatus status, LocalizationService localization) {
+    switch (status) {
+      case InvitationStatus.accepted:
+        return localization.translate('events.accepted') ?? 'Accepted';
+      case InvitationStatus.declined:
+        return localization.translate('events.declined') ?? 'Declined';
+      case InvitationStatus.maybe:
+        return localization.translate('events.maybe') ?? 'Maybe';
+      case InvitationStatus.pending:
+      default:
+        return localization.translate('events.pending') ?? 'Pending';
+    }
   }
 
   /// Build friend avatar widget (kept for backward compatibility if needed)
@@ -981,12 +1092,23 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     // Get currently invited friend IDs from event
     final currentlyInvitedIds = _event?.invitedFriends.map((f) => f.id).toList() ?? [];
     
+    // Create map of friend ID to their response status
+    final friendStatuses = <String, InvitationStatus>{};
+    if (_event?.invitedFriends != null) {
+      for (final friend in _event!.invitedFriends) {
+        if (friend.status != null) {
+          friendStatuses[friend.id] = friend.status!;
+        }
+      }
+    }
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => InviteFriendsBottomSheet(
         initiallySelectedIds: currentlyInvitedIds,
+        friendStatuses: friendStatuses.isNotEmpty ? friendStatuses : null,
         onInvite: (List<String> friendIds) async {
           // Close bottom sheet first
           Navigator.pop(context);

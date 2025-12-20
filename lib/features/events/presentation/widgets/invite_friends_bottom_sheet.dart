@@ -6,16 +6,19 @@ import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/features/events/data/models/event_model.dart';
 
 /// Bottom sheet widget for inviting friends to an event
 class InviteFriendsBottomSheet extends StatefulWidget {
   final List<String> initiallySelectedIds; // Pre-selected friend IDs (for edit mode)
+  final Map<String, InvitationStatus>? friendStatuses; // Map of friend ID to their response status (for disabling responded friends)
   final void Function(List<String>) onInvite; // Callback with selected friend IDs
   final void Function(List<Friend>)? onInviteWithFriends; // Optional callback with full friend data
 
   const InviteFriendsBottomSheet({
     super.key,
     this.initiallySelectedIds = const [],
+    this.friendStatuses,
     required this.onInvite,
     this.onInviteWithFriends,
   });
@@ -45,10 +48,18 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
   @override
   void initState() {
     super.initState();
+    // Pre-select friends, including those who have responded (they will be disabled)
     _selectedFriendIds = Set.from(widget.initiallySelectedIds);
     _searchController.addListener(_filterFriends);
     _scrollController.addListener(_onScroll);
     _loadFriends();
+  }
+
+  /// Check if a friend has already responded (status != pending)
+  bool _hasResponded(String friendId) {
+    if (widget.friendStatuses == null) return false;
+    final status = widget.friendStatuses![friendId];
+    return status != null && status != InvitationStatus.pending;
   }
 
   @override
@@ -179,8 +190,11 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
     });
   }
 
-  /// Toggle friend selection
+  /// Toggle friend selection (only if friend hasn't responded)
   void _toggleFriendSelection(String friendId) {
+    // Don't allow toggling if friend has already responded
+    if (_hasResponded(friendId)) return;
+    
     setState(() {
       if (_selectedFriendIds.contains(friendId)) {
         _selectedFriendIds.remove(friendId);
@@ -555,101 +569,194 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
 
   /// Build individual friend item
   Widget _buildFriendItem(Friend friend, bool isSelected) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final hasResponded = _hasResponded(friend.id);
+    final status = widget.friendStatuses?[friend.id];
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: isSelected
             ? AppColors.primary.withOpacity(0.1)
-            : AppColors.background,
+            : hasResponded
+                ? AppColors.background.withOpacity(0.5)
+                : AppColors.background,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isSelected
               ? AppColors.primary
-              : AppColors.border.withOpacity(0.3),
+              : hasResponded
+                  ? AppColors.border.withOpacity(0.2)
+                  : AppColors.border.withOpacity(0.3),
           width: isSelected ? 2 : 1,
         ),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _toggleFriendSelection(friend.id),
+          onTap: hasResponded ? null : () => _toggleFriendSelection(friend.id),
           borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                // Avatar
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
-                  backgroundImage: friend.profileImage != null &&
-                          friend.profileImage!.isNotEmpty
-                      ? NetworkImage(friend.profileImage!)
-                      : null,
-                  child: friend.profileImage == null ||
-                          friend.profileImage!.isEmpty
-                      ? Text(
-                          _getInitials(friend.fullName),
-                          style: AppStyles.headingSmall.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 12),
-                // Name and username
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        friend.fullName,
-                        style: AppStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (friend.username.isNotEmpty) ...[
-                        const SizedBox(height: 2),
+          child: Opacity(
+            opacity: hasResponded ? 0.6 : 1.0,
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    backgroundImage: friend.profileImage != null &&
+                            friend.profileImage!.isNotEmpty
+                        ? NetworkImage(friend.profileImage!)
+                        : null,
+                    child: friend.profileImage == null ||
+                            friend.profileImage!.isEmpty
+                        ? Text(
+                            _getInitials(friend.fullName),
+                            style: AppStyles.headingSmall.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          '@${friend.username}',
-                          style: AppStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
+                          friend.fullName,
+                          style: AppStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: hasResponded
+                                ? AppColors.textSecondary
+                                : AppColors.textPrimary,
                           ),
                         ),
+                        if (friend.username.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            '@${friend.username}',
+                            style: AppStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        if (hasResponded && status != null) ...[
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                _getStatusIcon(status),
+                                size: 12,
+                                color: _getStatusColor(status),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _getStatusText(status, localization),
+                                style: AppStyles.caption.copyWith(
+                                  color: _getStatusColor(status),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                ),
-                // Checkbox
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.border,
-                      width: 2,
                     ),
-                    color: isSelected
-                        ? AppColors.primary
-                        : Colors.transparent,
                   ),
-                  child: isSelected
-                      ? const Icon(
-                          Icons.check,
-                          size: 16,
-                          color: Colors.white,
-                        )
-                      : null,
-                ),
-              ],
+                  Tooltip(
+                    message: hasResponded
+                        ? (localization.translate('events.alreadyResponded') ??
+                            'Already responded')
+                        : '',
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: hasResponded
+                              ? AppColors.border.withOpacity(0.3)
+                              : isSelected
+                                  ? AppColors.primary
+                                  : AppColors.border,
+                          width: 2,
+                        ),
+                        color: hasResponded
+                            ? AppColors.background
+                            : isSelected
+                                ? AppColors.primary
+                                : Colors.transparent,
+                      ),
+                      child: hasResponded
+                          ? Icon(
+                              Icons.lock_outline,
+                              size: 14,
+                              color: AppColors.textSecondary,
+                            )
+                          : isSelected
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 16,
+                                  color: Colors.white,
+                                )
+                              : null,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  /// Get status color based on invitation status
+  Color _getStatusColor(InvitationStatus status) {
+    switch (status) {
+      case InvitationStatus.accepted:
+        return AppColors.success; // Green
+      case InvitationStatus.declined:
+        return AppColors.error; // Red
+      case InvitationStatus.maybe:
+        return AppColors.warning; // Orange/Yellow
+      case InvitationStatus.pending:
+      default:
+        return AppColors.textSecondary; // Grey
+    }
+  }
+
+  /// Get status icon based on invitation status
+  IconData _getStatusIcon(InvitationStatus status) {
+    switch (status) {
+      case InvitationStatus.accepted:
+        return Icons.check_circle;
+      case InvitationStatus.declined:
+        return Icons.cancel;
+      case InvitationStatus.maybe:
+        return Icons.help_outline;
+      case InvitationStatus.pending:
+      default:
+        return Icons.access_time;
+    }
+  }
+
+  /// Get status text based on invitation status
+  String _getStatusText(InvitationStatus status, LocalizationService localization) {
+    switch (status) {
+      case InvitationStatus.accepted:
+        return localization.translate('events.accepted') ?? 'Accepted';
+      case InvitationStatus.declined:
+        return localization.translate('events.declined') ?? 'Declined';
+      case InvitationStatus.maybe:
+        return localization.translate('events.maybe') ?? 'Maybe';
+      case InvitationStatus.pending:
+      default:
+        return localization.translate('events.pending') ?? 'Pending';
+    }
   }
 }

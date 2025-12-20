@@ -561,6 +561,7 @@
     "youMarkedMaybe": "You marked as maybe",
     "pendingResponse": "Pending response",
     "editResponse": "Edit Response",
+    "alreadyResponded": "Already responded",
     "accept": "Accept",
     "maybe": "Maybe",
     "reject": "Reject",
