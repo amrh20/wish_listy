@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
+import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
@@ -86,9 +87,20 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         final updatedItem = WishlistItem.fromJson(itemData);
         
         // Try to get wishlist name from itemData or use default
-        final wishlistName = itemData['wishlistName']?.toString() ?? 
-                            itemData['wishlist']?['name']?.toString() ?? 
-                            'Wishlist';
+        // API may return `wishlist` as a String id OR an object {name: ...}
+        String wishlistName = 'Wishlist';
+        final directName = itemData['wishlistName']?.toString();
+        if (directName != null && directName.isNotEmpty) {
+          wishlistName = directName;
+        } else {
+          final wishlistField = itemData['wishlist'];
+          if (wishlistField is Map<String, dynamic>) {
+            final nestedName = wishlistField['name']?.toString();
+            if (nestedName != null && nestedName.isNotEmpty) {
+              wishlistName = nestedName;
+            }
+          }
+        }
 
         if (mounted) {
           setState(() {
@@ -157,24 +169,35 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Minimal Header
-            _buildHeader(),
+      body: DecorativeBackground(
+        showGifts: true,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Minimal Header
+              _buildHeader(),
 
-            // Content
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _errorMessage != null
-                  ? _buildErrorState()
-                  : _currentItem == null
-                  ? const Center(child: Text('Item not found'))
-                  : _buildContent(),
-            ),
-          ],
+              // Content
+              Expanded(
+                child: _isLoading
+                    ? Center(
+                        child: CircularProgressIndicator(color: AppColors.primary),
+                      )
+                    : _errorMessage != null
+                        ? _buildErrorState()
+                        : _currentItem == null
+                            ? Center(
+                                child: Text(
+                                  'Item not found',
+                                  style: AppStyles.bodyMedium.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              )
+                            : _buildContent(),
+              ),
+            ],
+          ),
         ),
       ),
     );
