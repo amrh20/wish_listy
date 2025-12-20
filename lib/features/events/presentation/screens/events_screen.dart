@@ -13,6 +13,7 @@ import 'package:wish_listy/features/events/data/repository/event_repository.dart
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import '../widgets/event_card.dart';
+import '../widgets/invited_event_card.dart';
 import '../widgets/guest_events_view.dart';
 import '../widgets/empty_states.dart';
 import '../widgets/event_modals.dart';
@@ -559,12 +560,11 @@ class EventsScreenState extends State<EventsScreen>
                     ),
                     const SizedBox(height: 12),
                     ...upcomingEvents.map(
-                      (event) => EventCard(
+                      (event) => InvitedEventCard(
                         event: event,
                         localization: localization,
                         onTap: () => _viewEventDetails(event),
-                        onViewWishlist: () =>
-                            _viewEventWishlist(event, localization),
+                        onRSVP: (status) => _handleRSVP(event, status),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -577,7 +577,7 @@ class EventsScreenState extends State<EventsScreen>
                     ),
                     const SizedBox(height: 12),
                     ...pastEvents.map(
-                      (event) => EventCard(
+                      (event) => InvitedEventCard(
                         event: event,
                         localization: localization,
                         onTap: () => _viewEventDetails(event),
@@ -619,6 +619,73 @@ class EventsScreenState extends State<EventsScreen>
     if (mounted) {
       _loadEvents();
     }
+  }
+
+  Future<void> _handleRSVP(EventSummary event, String status) async {
+    if (!mounted) return;
+
+    // Convert string to InvitationStatus enum
+    final invitationStatus = status == 'accepted'
+        ? InvitationStatus.accepted
+        : status == 'declined'
+            ? InvitationStatus.declined
+            : InvitationStatus.maybe;
+
+    // Optimistic update - update UI immediately
+    _updateEventInvitationStatus(event.id, invitationStatus);
+
+    try {
+      // Call API to respond to invitation
+      await _eventRepository.respondToEventInvitation(
+        eventId: event.id,
+        status: status,
+      );
+
+      // Show success message (optional, as UI already updated)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              status == 'accepted'
+                  ? 'You accepted the invitation'
+                  : status == 'declined'
+                      ? 'You declined the invitation'
+                      : 'You marked as maybe',
+            ),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      // No need to reload - already updated optimistically
+    } catch (e) {
+      if (!mounted) return;
+
+      // On error, revert optimistic update and reload to sync with server
+      _updateEventInvitationStatus(event.id, event.invitationStatus ?? InvitationStatus.pending);
+      await _loadEvents(); // Full reload to ensure consistency
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to update RSVP: ${e.toString()}'),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _updateEventInvitationStatus(String eventId, InvitationStatus status) {
+    setState(() {
+      _invitedEvents = _invitedEvents.map((event) {
+        if (event.id == eventId) {
+          return event.copyWith(invitationStatus: status);
+        }
+        return event;
+      }).toList();
+    });
+    _applyFilters(); // Re-apply filters to update _filteredEvents
   }
 
   void _viewEventWishlist(

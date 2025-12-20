@@ -13,7 +13,9 @@ import 'package:wish_listy/features/wishlists/data/repository/wishlist_repositor
 import 'package:wish_listy/features/events/data/repository/event_repository.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
 import '../widgets/index.dart';
+import '../widgets/invite_friends_bottom_sheet.dart';
 
 class CreateEventScreen extends StatefulWidget {
   const CreateEventScreen({super.key});
@@ -46,6 +48,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
 
   // New variables for enhanced features
   List<String> _invitedFriends = [];
+  List<InvitedFriend> _invitedFriendsData = []; // Full friend data for display
   final WishlistRepository _wishlistRepository = WishlistRepository();
   final EventRepository _eventRepository = EventRepository();
   String? _createdEventId; // Store created event ID for navigation
@@ -234,12 +237,20 @@ class _CreateEventScreenState extends State<CreateEventScreen>
       _wishlistOption = 'none';
     }
 
-    // Extract invited friends from invitations
-    if (event.invitations.isNotEmpty) {
+    // Extract invited friends from invitedFriends array (from API)
+    if (event.invitedFriends.isNotEmpty) {
+      _invitedFriends = event.invitedFriends
+          .map((friend) => friend.id)
+          .where((id) => id.isNotEmpty)
+          .toList();
+      _invitedFriendsData = event.invitedFriends;
+    } else if (event.invitations.isNotEmpty) {
+      // Fallback to invitations if invitedFriends is empty
       _invitedFriends = event.invitations
           .map((invitation) => invitation.inviteeId)
           .where((id) => id.isNotEmpty)
           .toList();
+      // Note: invitations don't have full friend data, so _invitedFriendsData stays empty
     }
   }
 
@@ -449,6 +460,9 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                                       // Invite Guests Section
                                       InviteGuestsWidget(
                                         invitedFriends: _invitedFriends,
+                                        invitedFriendsData: _invitedFriendsData.isNotEmpty
+                                            ? _invitedFriendsData
+                                            : _existingEvent?.invitedFriends,
                                         onInvitePressed:
                                             _navigateToInviteGuests,
                                       ),
@@ -643,288 +657,30 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   }
 
   void _showFriendsSelectionModal() {
-    final localization = Provider.of<LocalizationService>(
-      context,
-      listen: false,
-    );
-
-    // Mock friends data - in real app, this would come from API
-    final List<Map<String, dynamic>> mockFriends = [
-      {
-        'id': '1',
-        'name': 'Ahmed Ali',
-        'email': 'ahmed@example.com',
-        'avatar': null,
-      },
-      {
-        'id': '2',
-        'name': 'Sara Mohamed',
-        'email': 'sara@example.com',
-        'avatar': null,
-      },
-      {
-        'id': '3',
-        'name': 'Omar Hassan',
-        'email': 'omar@example.com',
-        'avatar': null,
-      },
-      {
-        'id': '4',
-        'name': 'Fatma Ibrahim',
-        'email': 'fatma@example.com',
-        'avatar': null,
-      },
-      {
-        'id': '5',
-        'name': 'Youssef Ahmed',
-        'email': 'youssef@example.com',
-        'avatar': null,
-      },
-    ];
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return DecoratedBottomSheet(
-            vectorType: BottomSheetVectorType.friends,
-            height: MediaQuery.of(context).size.height * 0.7,
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        localization.translate('events.inviteFriends'),
-                        style: AppStyles.headingSmall.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    if (_invitedFriends.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          '${_invitedFriends.length} ${localization.translate('events.selected')}',
-                          style: AppStyles.bodySmall.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Search Field
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: CustomTextField(
-                  controller: TextEditingController(),
-                  label: localization.translate('events.searchFriends'),
-                  hint: localization.translate('events.searchFriendsHint'),
-                  prefixIcon: Icons.search,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Select All Button
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      localization.translate('events.selectAll'),
-                      style: AppStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        setModalState(() {
-                          if (_invitedFriends.length == mockFriends.length) {
-                            // If all are selected, deselect all
-                            _invitedFriends.clear();
-                          } else {
-                            // Select all friends (by ID)
-                            _invitedFriends = mockFriends
-                                .map((friend) => friend['id'] as String)
-                                .toList();
-                          }
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _invitedFriends.length == mockFriends.length
-                              ? AppColors.primary
-                              : AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: AppColors.primary,
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _invitedFriends.length == mockFriends.length
-                                  ? Icons.check
-                                  : Icons.add,
-                              size: 16,
-                              color:
-                                  _invitedFriends.length == mockFriends.length
-                                  ? Colors.white
-                                  : AppColors.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _invitedFriends.length == mockFriends.length
-                                  ? localization.translate('events.deselectAll')
-                                  : localization.translate('events.selectAll'),
-                              style: AppStyles.bodySmall.copyWith(
-                                color:
-                                    _invitedFriends.length == mockFriends.length
-                                    ? Colors.white
-                                    : AppColors.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Friends List
-              SizedBox(
-                height: MediaQuery.of(context).size.height * 0.35,
-                child: ListView.builder(
-                  itemCount: mockFriends.length,
-                  itemBuilder: (context, index) {
-                    final friend = mockFriends[index];
-                    final friendId = friend['id'] as String;
-                    final isSelected = _invitedFriends.contains(friendId);
-
-                    return Container(
-                      margin: const EdgeInsets.only(
-                        bottom: 8,
-                        left: 16,
-                        right: 16,
-                      ),
-                      child: ListTile(
-                        onTap: () {
-                          setModalState(() {
-                            if (isSelected) {
-                              _invitedFriends.remove(friendId);
-                            } else {
-                              _invitedFriends.add(friendId);
-                            }
-                          });
-                        },
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        tileColor: isSelected
-                            ? AppColors.primary.withOpacity(0.1)
-                            : AppColors.surface,
-                        leading: CircleAvatar(
-                          backgroundColor: AppColors.primary.withOpacity(0.1),
-                          child: Text(
-                            friend['name'][0].toUpperCase(),
-                            style: AppStyles.bodyMedium.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        title: Text(
-                          friend['name'],
-                          style: AppStyles.bodyMedium.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        subtitle: Text(
-                          friend['email'],
-                          style: AppStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        trailing: isSelected
-                            ? Icon(
-                                Icons.check_circle,
-                                color: AppColors.primary,
-                                size: 24,
-                              )
-                            : Icon(
-                                Icons.radio_button_unchecked,
-                                color: AppColors.textTertiary,
-                                size: 24,
-                              ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Action Buttons
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: CustomButton(
-                        text: localization.translate('common.cancel'),
-                        onPressed: () => Navigator.pop(context),
-                        variant: ButtonVariant.outline,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: CustomButton(
-                        text: localization.translate('events.inviteSelected'),
-                        onPressed: () {
-                          setState(() {});
-                          Navigator.pop(context);
-                        },
-                        variant: ButtonVariant.gradient,
-                        gradientColors: [
-                          AppColors.primary,
-                          AppColors.secondary,
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          );
+      builder: (context) => InviteFriendsBottomSheet(
+        initiallySelectedIds: _invitedFriends,
+        onInvite: (List<String> friendIds) {
+          setState(() {
+            _invitedFriends = friendIds;
+          });
+          Navigator.pop(context);
+        },
+        onInviteWithFriends: (List<Friend> friends) {
+          // Convert Friend objects to InvitedFriend objects
+          setState(() {
+            _invitedFriendsData = friends.map((friend) {
+              return InvitedFriend(
+                id: friend.id,
+                fullName: friend.fullName,
+                username: friend.username,
+                profileImage: friend.profileImage,
+              );
+            }).toList();
+          });
         },
       ),
     );

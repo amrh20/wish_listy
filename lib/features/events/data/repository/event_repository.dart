@@ -381,4 +381,48 @@ class EventRepository {
       throw Exception('Failed to unlink wishlist from event. Please try again.');
     }
   }
+
+  /// Respond to an event invitation (RSVP)
+  ///
+  /// [eventId] - Event ID to respond to (required)
+  /// [status] - RSVP status: 'accepted', 'declined', or 'maybe' (required)
+  ///
+  /// Returns the updated event data
+  Future<Event> respondToEventInvitation({
+    required String eventId,
+    required String status, // 'accepted', 'declined', or 'maybe'
+  }) async {
+    try {
+      // Prepare request body
+      final requestData = <String, dynamic>{
+        'status': status,
+      };
+
+      // Make API call to respond to invitation
+      // Endpoint: PATCH /api/events/:id/respond
+      final response = await _apiService.patch(
+        '/events/$eventId/respond',
+        data: requestData,
+      );
+
+      // Parse response and create Event object
+      // API response structure: {success: true, data: {...}} or {id, name, ...}
+      final eventData = response['data'] ?? response;
+
+      if (eventData is! Map<String, dynamic>) {
+        throw Exception('Invalid response format from server');
+      }
+
+      // Create Event object from response
+      final event = Event.fromJson(eventData);
+
+      return event;
+    } on ApiException catch (e) {
+      // Re-throw ApiException to preserve error details
+      rethrow;
+    } catch (e) {
+      // Handle any unexpected errors
+      throw Exception('Failed to respond to event invitation. Please try again.');
+    }
+  }
 }

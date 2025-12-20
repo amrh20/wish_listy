@@ -178,6 +178,8 @@ class Friend {
   final String username;
   final String? profileImage;
   final int wishlistCount;
+  final String? email;
+  final String? phone;
 
   Friend({
     required this.id,
@@ -185,6 +187,8 @@ class Friend {
     required this.username,
     this.profileImage,
     required this.wishlistCount,
+    this.email,
+    this.phone,
   });
 
   factory Friend.fromJson(Map<String, dynamic> json) {
@@ -194,6 +198,8 @@ class Friend {
       username: json['username'] ?? '',
       profileImage: json['profileImage'] ?? json['profile_image'],
       wishlistCount: json['wishlistCount'] ?? json['wishlist_count'] ?? 0,
+      email: json['email']?.toString(),
+      phone: json['phone']?.toString() ?? json['mobile']?.toString() ?? json['phoneNumber']?.toString(),
     );
   }
 
@@ -204,6 +210,8 @@ class Friend {
       'username': username,
       'profileImage': profileImage,
       'wishlistCount': wishlistCount,
+      if (email != null) 'email': email,
+      if (phone != null) 'phone': phone,
     };
   }
 
@@ -213,6 +221,8 @@ class Friend {
     String? username,
     String? profileImage,
     int? wishlistCount,
+    String? email,
+    String? phone,
   }) {
     return Friend(
       id: id ?? this.id,
@@ -220,6 +230,8 @@ class Friend {
       username: username ?? this.username,
       profileImage: profileImage ?? this.profileImage,
       wishlistCount: wishlistCount ?? this.wishlistCount,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
     );
   }
 

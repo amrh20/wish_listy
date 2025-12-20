@@ -12,6 +12,7 @@ import 'package:wish_listy/features/events/data/repository/event_repository.dart
 import 'package:wish_listy/features/events/presentation/widgets/invite_friends_bottom_sheet.dart';
 import 'package:wish_listy/features/events/presentation/widgets/wishlist_options_bottom_sheet.dart';
 import 'package:wish_listy/features/events/presentation/widgets/link_wishlist_bottom_sheet.dart';
+import 'package:wish_listy/core/widgets/top_overlay_toast.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final String eventId;
@@ -544,48 +545,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          if (acceptedGuests.isEmpty)
-            _buildQuickInviteWidget()
-          else
-            Row(
-              children: [
-                ...acceptedGuests.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final guest = entry.value;
-                  return Container(
-                    margin: EdgeInsets.only(left: index > 0 ? -12 : 0),
-                    child: CircleAvatar(
-                      radius: 20,
-                      backgroundColor: AppColors.primary,
-                      child: Text(
-                        guest.inviteeId.isNotEmpty
-                            ? guest.inviteeId[0].toUpperCase()
-                            : 'G',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  );
-                }),
-                if (remainingCount > 0)
-                  Container(
-                    margin: const EdgeInsets.only(left: 8),
-                    child: CircleAvatar(
-                      radius: 20,
-                      backgroundColor: AppColors.surfaceVariant,
-                      child: Text(
-                        '+$remainingCount',
-                        style: AppStyles.bodySmall.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+          _buildWhosComingSection(),
         ],
       ),
     );
@@ -606,27 +566,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
         if (widget.isOwner) {
           // Owner Actions
-          items.add(
-            PopupMenuItem<String>(
-              value: 'manage_guests',
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.group_add_outlined,
-                    color: AppColors.textPrimary,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Manage Guests',
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
           items.add(
             PopupMenuItem<String>(
               value: 'edit_event',
@@ -704,17 +643,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   /// Handles menu action selection
   void _handleMenuAction(String value) {
     switch (value) {
-      case 'manage_guests':
-        // Navigate to guest management
-        if (widget.isOwner) {
-          // TODO: Navigate to guest management screen
-          Navigator.pushNamed(
-            context,
-            AppRoutes.eventManagement,
-            arguments: _event,
-          );
-        }
-        break;
       case 'edit_event':
         // Navigate to edit event screen
         Navigator.pushNamed(
@@ -872,7 +800,139 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
-  /// Builds the Quick Invite Widget (for empty guests state)
+  /// Builds the Who's Coming section with invited friends
+  Widget _buildWhosComingSection() {
+    final invitedFriends = _event?.invitedFriends ?? [];
+    
+    if (invitedFriends.isEmpty) {
+      return _buildQuickInviteWidget();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Display invited friends with avatars and names
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            ...invitedFriends.take(10).map((friend) {
+              return _buildFriendItem(friend);
+            }),
+            if (invitedFriends.length > 10)
+              Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      '+${invitedFriends.length - 10}',
+                      style: AppStyles.bodySmall.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'more',
+                    style: AppStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Invite Friends button (always visible to add more)
+        if (widget.isOwner) _buildQuickInviteWidget(),
+      ],
+    );
+  }
+
+  /// Build friend item with avatar and full name
+  Widget _buildFriendItem(InvitedFriend friend) {
+    final initials = _getInitials(friend.fullName ?? friend.username ?? friend.id);
+    final displayName = friend.fullName ?? friend.username ?? '';
+    
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CircleAvatar(
+          radius: 20,
+          backgroundColor: AppColors.primary.withOpacity(0.1),
+          backgroundImage: friend.profileImage != null && friend.profileImage!.isNotEmpty
+              ? NetworkImage(friend.profileImage!)
+              : null,
+          child: friend.profileImage == null || friend.profileImage!.isEmpty
+              ? Text(
+                  initials,
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                )
+              : null,
+        ),
+        const SizedBox(height: 4),
+        SizedBox(
+          width: 60,
+          child: Text(
+            displayName,
+            style: AppStyles.bodySmall.copyWith(
+              color: AppColors.textPrimary,
+              fontSize: 11,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build friend avatar widget (kept for backward compatibility if needed)
+  Widget _buildFriendAvatar(InvitedFriend friend) {
+    final initials = _getInitials(friend.fullName ?? friend.username ?? friend.id);
+    
+    return Tooltip(
+      message: friend.fullName ?? friend.username ?? '',
+      child: CircleAvatar(
+        radius: 20,
+        backgroundColor: AppColors.primary.withOpacity(0.1),
+        backgroundImage: friend.profileImage != null && friend.profileImage!.isNotEmpty
+            ? NetworkImage(friend.profileImage!)
+            : null,
+        child: friend.profileImage == null || friend.profileImage!.isEmpty
+            ? Text(
+                initials,
+                style: AppStyles.bodySmall.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              )
+            : null,
+      ),
+    );
+  }
+
+  /// Get initials from name
+  String _getInitials(String name) {
+    if (name.isEmpty) return '?';
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name[0].toUpperCase();
+  }
+
+  /// Builds the Quick Invite Widget (for empty guests state or to add more)
   Widget _buildQuickInviteWidget() {
     return Material(
       color: Colors.transparent,
@@ -901,7 +961,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               Icon(Icons.person_add_alt_1, color: AppColors.primary, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Invite Friends',
+                _event?.invitedFriends.isEmpty ?? true
+                    ? 'Invite Friends'
+                    : 'Invite More Friends',
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.primary,
@@ -915,24 +977,99 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   /// Shows bottom sheet for inviting friends
-  void _showInviteFriendsBottomSheet() {
+  void _showInviteFriendsBottomSheet() async {
+    // Get currently invited friend IDs from event
+    final currentlyInvitedIds = _event?.invitedFriends.map((f) => f.id).toList() ?? [];
+    
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => InviteFriendsBottomSheet(
-        eventId: widget.eventId,
-        onInvite: (friendIds) {
-          // TODO: Implement invite API call
+        initiallySelectedIds: currentlyInvitedIds,
+        onInvite: (List<String> friendIds) async {
+          // Close bottom sheet first
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Invited ${friendIds.length} friend(s)'),
-              backgroundColor: AppColors.success,
-            ),
-          );
+          
+          // Show loading indicator
+          if (!mounted) return;
+          
+          try {
+            // Call PATCH API to update invited friends
+            await _updateInvitedFriends(friendIds);
+            
+            // Refresh event details to get updated data
+            await _loadEventDetails();
+            
+            // Show success toast
+            if (mounted) {
+              final localization = Provider.of<LocalizationService>(context, listen: false);
+              TopOverlayToast.showSuccess(
+                context,
+                localization.translate('events.invitationsUpdatedSuccessfully') != 'events.invitationsUpdatedSuccessfully'
+                    ? localization.translate('events.invitationsUpdatedSuccessfully')
+                    : 'Invitations updated successfully',
+                duration: const Duration(seconds: 2),
+              );
+            }
+          } catch (e) {
+            // Show error toast
+            if (mounted) {
+              TopOverlayToast.showError(
+                context,
+                e.toString().replaceAll('Exception: ', ''),
+                duration: const Duration(seconds: 3),
+              );
+            }
+          }
         },
       ),
+    );
+  }
+
+  /// Update invited friends via PUT API (edit event)
+  /// Sends all event data with updated invited_friends list
+  Future<void> _updateInvitedFriends(List<String> friendIds) async {
+    if (_event == null) {
+      throw Exception('Event not loaded');
+    }
+
+    final event = _event!;
+
+    // Format date for API (ISO 8601 UTC format)
+    // Extract date part only (without time) and create UTC date at midnight
+    final eventDate = DateTime.utc(
+      event.date.year,
+      event.date.month,
+      event.date.day,
+    ).toIso8601String();
+    
+    // Format time (HH:mm format)
+    // Extract time from event.date if time field is not available
+    String eventTime;
+    if (event.time != null && event.time!.isNotEmpty) {
+      eventTime = event.time!;
+    } else {
+      // Extract time from event.date DateTime
+      final hour = event.date.hour.toString().padLeft(2, '0');
+      final minute = event.date.minute.toString().padLeft(2, '0');
+      eventTime = '$hour:$minute';
+    }
+
+    // Call PUT /api/events/:eventId with all event data
+    await _eventRepository.updateEvent(
+      eventId: widget.eventId,
+      name: event.name,
+      description: event.description,
+      date: eventDate,
+      time: eventTime,
+      type: event.type.toString().split('.').last,
+      privacy: event.privacy ?? 'friends_only',
+      mode: event.mode ?? 'in_person',
+      location: event.location,
+      meetingLink: event.meetingLink,
+      wishlistId: event.wishlistId,
+      invitedFriends: friendIds, // Updated invited friends list
     );
   }
 

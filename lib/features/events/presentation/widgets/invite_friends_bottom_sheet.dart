@@ -1,31 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
-
-/// Mock friend data model
-class MockFriend {
-  final String id;
-  final String name;
-  final String? avatarUrl;
-  final bool isOnline;
-
-  MockFriend({
-    required this.id,
-    required this.name,
-    this.avatarUrl,
-    this.isOnline = false,
-  });
-}
+import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
+import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
+import 'package:wish_listy/core/services/api_service.dart';
 
 /// Bottom sheet widget for inviting friends to an event
 class InviteFriendsBottomSheet extends StatefulWidget {
-  final String eventId;
-  final Function(List<String>) onInvite;
+  final List<String> initiallySelectedIds; // Pre-selected friend IDs (for edit mode)
+  final void Function(List<String>) onInvite; // Callback with selected friend IDs
+  final void Function(List<Friend>)? onInviteWithFriends; // Optional callback with full friend data
 
   const InviteFriendsBottomSheet({
     super.key,
-    required this.eventId,
+    this.initiallySelectedIds = const [],
     required this.onInvite,
+    this.onInviteWithFriends,
   });
 
   @override
@@ -33,93 +25,155 @@ class InviteFriendsBottomSheet extends StatefulWidget {
       _InviteFriendsBottomSheetState();
 }
 
-class _InviteFriendsBottomSheetState
-    extends State<InviteFriendsBottomSheet> {
+class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
+  final FriendsRepository _friendsRepository = FriendsRepository();
   final TextEditingController _searchController = TextEditingController();
-  final Set<String> _selectedFriendIds = {};
-  List<MockFriend> _allFriends = [];
-  List<MockFriend> _filteredFriends = [];
+  final ScrollController _scrollController = ScrollController();
+
+  List<Friend> _allFriends = [];
+  List<Friend> _filteredFriends = [];
+  Set<String> _selectedFriendIds = {};
+
+  // Pagination state
+  int _currentPage = 1;
+  bool _hasMoreFriends = false;
+  bool _isLoadingFriends = false;
+  bool _isLoadingMoreFriends = false;
+  int _totalFriends = 0;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadMockFriends();
+    _selectedFriendIds = Set.from(widget.initiallySelectedIds);
     _searchController.addListener(_filterFriends);
+    _scrollController.addListener(_onScroll);
+    _loadFriends();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  /// Load mock friends data
-  void _loadMockFriends() {
-    _allFriends = [
-      MockFriend(
-        id: '1',
-        name: 'Sarah Ahmed',
-        isOnline: true,
-      ),
-      MockFriend(
-        id: '2',
-        name: 'Mohamed Ali',
-        isOnline: false,
-      ),
-      MockFriend(
-        id: '3',
-        name: 'Fatima Hassan',
-        isOnline: true,
-      ),
-      MockFriend(
-        id: '4',
-        name: 'Omar Khaled',
-        isOnline: false,
-      ),
-      MockFriend(
-        id: '5',
-        name: 'Layla Mahmoud',
-        isOnline: true,
-      ),
-      MockFriend(
-        id: '6',
-        name: 'Ahmed Youssef',
-        isOnline: false,
-      ),
-      MockFriend(
-        id: '7',
-        name: 'Nour Ibrahim',
-        isOnline: true,
-      ),
-      MockFriend(
-        id: '8',
-        name: 'Youssef Mostafa',
-        isOnline: false,
-      ),
-      MockFriend(
-        id: '9',
-        name: 'Mariam Tarek',
-        isOnline: true,
-      ),
-      MockFriend(
-        id: '10',
-        name: 'Karim Samir',
-        isOnline: false,
-      ),
-    ];
-    _filteredFriends = _allFriends;
+  /// Handle scroll to load more friends when near bottom
+  void _onScroll() {
+    if (_scrollController.hasClients &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent * 0.8) {
+      if (_hasMoreFriends && !_isLoadingMoreFriends && !_isLoadingFriends) {
+        _loadMoreFriends();
+      }
+    }
+  }
+
+  /// Load friends from API
+  Future<void> _loadFriends({bool resetPage = false}) async {
+    if (resetPage) {
+      setState(() {
+        _currentPage = 1;
+        _hasMoreFriends = false;
+        _errorMessage = null;
+      });
+    }
+
+    if (_isLoadingFriends || (_isLoadingMoreFriends && !resetPage)) return;
+
+    setState(() {
+      if (resetPage) {
+        _isLoadingFriends = true;
+      } else {
+        _isLoadingMoreFriends = true;
+      }
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await _friendsRepository.getFriends(
+        page: _currentPage,
+        limit: 20,
+      );
+
+      if (!mounted) return;
+
+      final friends = response['friends'] as List<Friend>;
+      final total = response['total'] as int;
+      final currentPage = response['page'] as int;
+
+      setState(() {
+        if (resetPage || currentPage == 1) {
+          _allFriends = friends;
+        } else {
+          // Append new friends to existing list
+          _allFriends.addAll(friends);
+        }
+        _totalFriends = total;
+        _currentPage = currentPage;
+        _hasMoreFriends = _allFriends.length < total;
+        _isLoadingFriends = false;
+        _isLoadingMoreFriends = false;
+        
+        // Apply current search filter
+        _filterFriends();
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.message;
+        _isLoadingFriends = false;
+        _isLoadingMoreFriends = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Failed to load friends. Please try again.';
+        _isLoadingFriends = false;
+        _isLoadingMoreFriends = false;
+      });
+    }
+  }
+
+  /// Load more friends (pagination)
+  Future<void> _loadMoreFriends() async {
+    if (!_hasMoreFriends || _isLoadingMoreFriends || _isLoadingFriends) return;
+
+    setState(() {
+      _currentPage++;
+    });
+
+    await _loadFriends();
   }
 
   /// Filter friends based on search query
+  /// Searches by name, username, email, or phone
   void _filterFriends() {
-    final query = _searchController.text.toLowerCase();
+    final query = _searchController.text.toLowerCase().trim();
     setState(() {
       if (query.isEmpty) {
-        _filteredFriends = _allFriends;
+        _filteredFriends = List.from(_allFriends);
       } else {
         _filteredFriends = _allFriends
-            .where((friend) =>
-                friend.name.toLowerCase().contains(query))
+            .where((friend) {
+              // Search by full name
+              if (friend.fullName.toLowerCase().contains(query)) {
+                return true;
+              }
+              // Search by username
+              if (friend.username.toLowerCase().contains(query)) {
+                return true;
+              }
+              // Search by email (if available)
+              if (friend.email != null && friend.email!.toLowerCase().contains(query)) {
+                return true;
+              }
+              // Search by phone (if available)
+              if (friend.phone != null && friend.phone!.toLowerCase().contains(query)) {
+                return true;
+              }
+              return false;
+            })
             .toList();
       }
     });
@@ -136,8 +190,37 @@ class _InviteFriendsBottomSheetState
     });
   }
 
+  /// Toggle select all friends
+  void _toggleSelectAll() {
+    setState(() {
+      final allSelected = _allFriends.every(
+        (friend) => _selectedFriendIds.contains(friend.id),
+      );
+
+      if (allSelected) {
+        // Deselect all
+        _selectedFriendIds.clear();
+      } else {
+        // Select all loaded friends
+        _selectedFriendIds = _allFriends.map((friend) => friend.id).toSet();
+      }
+    });
+  }
+
+  /// Get initials from full name
+  String _getInitials(String fullName) {
+    if (fullName.isEmpty) return '?';
+    final parts = fullName.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return fullName[0].toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context);
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
       decoration: const BoxDecoration(
@@ -164,7 +247,7 @@ class _InviteFriendsBottomSheetState
               children: [
                 Expanded(
                   child: Text(
-                    'Invite Friends',
+                    localization.translate('events.inviteFriends'),
                     style: AppStyles.headingSmall.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -184,7 +267,7 @@ class _InviteFriendsBottomSheetState
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search friends...',
+                hintText: localization.translate('events.searchFriendsHint'),
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: AppColors.background,
@@ -213,12 +296,86 @@ class _InviteFriendsBottomSheetState
 
           const SizedBox(height: 16),
 
+          // Select All Button
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  localization.translate('events.selectAll'),
+                  style: AppStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: _toggleSelectAll,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _allFriends.isNotEmpty &&
+                              _allFriends.every((friend) =>
+                                  _selectedFriendIds.contains(friend.id))
+                          ? AppColors.primary
+                          : AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: AppColors.primary,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _allFriends.isNotEmpty &&
+                                  _allFriends.every((friend) =>
+                                      _selectedFriendIds.contains(friend.id))
+                              ? Icons.check
+                              : Icons.add,
+                          size: 16,
+                          color: _allFriends.isNotEmpty &&
+                                  _allFriends.every((friend) =>
+                                      _selectedFriendIds.contains(friend.id))
+                              ? Colors.white
+                              : AppColors.primary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _allFriends.isNotEmpty &&
+                                  _allFriends.every((friend) =>
+                                      _selectedFriendIds.contains(friend.id))
+                              ? localization.translate('events.deselectAll')
+                              : localization.translate('events.selectAll'),
+                          style: AppStyles.bodySmall.copyWith(
+                            color: _allFriends.isNotEmpty &&
+                                    _allFriends.every((friend) =>
+                                        _selectedFriendIds.contains(friend.id))
+                                ? Colors.white
+                                : AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
           // Selected Count
           if (_selectedFriendIds.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                '${_selectedFriendIds.length} friend(s) selected',
+                '${_selectedFriendIds.length} ${localization.translate('events.selected')}',
                 style: AppStyles.bodySmall.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
@@ -230,37 +387,7 @@ class _InviteFriendsBottomSheetState
 
           // Friends List
           Expanded(
-            child: _filteredFriends.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.person_search_outlined,
-                          size: 64,
-                          color: AppColors.textTertiary,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No friends found',
-                          style: AppStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: _filteredFriends.length,
-                    itemBuilder: (context, index) {
-                      final friend = _filteredFriends[index];
-                      final isSelected =
-                          _selectedFriendIds.contains(friend.id);
-
-                      return _buildFriendItem(friend, isSelected);
-                    },
-                  ),
+            child: _buildFriendsList(localization),
           ),
 
           // Bottom Action Button
@@ -282,7 +409,16 @@ class _InviteFriendsBottomSheetState
                   onPressed: _selectedFriendIds.isEmpty
                       ? null
                       : () {
-                          widget.onInvite(_selectedFriendIds.toList());
+                          final selectedIds = _selectedFriendIds.toList();
+                          widget.onInvite(selectedIds);
+                          
+                          // Also call onInviteWithFriends if provided
+                          if (widget.onInviteWithFriends != null) {
+                            final selectedFriends = _allFriends
+                                .where((friend) => selectedIds.contains(friend.id))
+                                .toList();
+                            widget.onInviteWithFriends!(selectedFriends);
+                          }
                         },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -295,7 +431,7 @@ class _InviteFriendsBottomSheetState
                   child: Text(
                     _selectedFriendIds.isEmpty
                         ? 'Select Friends'
-                        : 'Invite ${_selectedFriendIds.length} Friend(s)',
+                        : 'Invite ${_selectedFriendIds.length} Friend${_selectedFriendIds.length > 1 ? 's' : ''}',
                     style: AppStyles.bodyMedium.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -310,8 +446,115 @@ class _InviteFriendsBottomSheetState
     );
   }
 
+  /// Build friends list with loading, error, and empty states
+  Widget _buildFriendsList(LocalizationService localization) {
+    // Loading state (initial load)
+    if (_isLoadingFriends && _allFriends.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              'Loading friends...',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Error state
+    if (_errorMessage != null && _allFriends.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: AppColors.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.error,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => _loadFriends(resetPage: true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                ),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Empty state
+    if (_filteredFriends.isEmpty && !_isLoadingFriends) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _searchController.text.isNotEmpty
+                  ? Icons.person_search_outlined
+                  : Icons.people_outline,
+              size: 64,
+              color: AppColors.textTertiary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _searchController.text.isNotEmpty
+                  ? 'No friends found'
+                  : 'No friends available',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Friends list
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: _filteredFriends.length + (_isLoadingMoreFriends ? 1 : 0),
+      itemBuilder: (context, index) {
+        // Loading indicator at bottom for pagination
+        if (index == _filteredFriends.length) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        final friend = _filteredFriends[index];
+        final isSelected = _selectedFriendIds.contains(friend.id);
+
+        return _buildFriendItem(friend, isSelected);
+      },
+    );
+  }
+
   /// Build individual friend item
-  Widget _buildFriendItem(MockFriend friend, bool isSelected) {
+  Widget _buildFriendItem(Friend friend, bool isSelected) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
@@ -336,46 +579,46 @@ class _InviteFriendsBottomSheetState
             child: Row(
               children: [
                 // Avatar
-                Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
-                      child: Text(
-                        friend.name[0].toUpperCase(),
-                        style: AppStyles.headingSmall.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    if (friend.isOnline)
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: AppColors.success,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.surface,
-                              width: 2,
-                            ),
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundImage: friend.profileImage != null &&
+                          friend.profileImage!.isNotEmpty
+                      ? NetworkImage(friend.profileImage!)
+                      : null,
+                  child: friend.profileImage == null ||
+                          friend.profileImage!.isEmpty
+                      ? Text(
+                          _getInitials(friend.fullName),
+                          style: AppStyles.headingSmall.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ),
-                      ),
-                  ],
+                        )
+                      : null,
                 ),
                 const SizedBox(width: 12),
-                // Name
+                // Name and username
                 Expanded(
-                  child: Text(
-                    friend.name,
-                    style: AppStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        friend.fullName,
+                        style: AppStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (friend.username.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '@${friend.username}',
+                          style: AppStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
                 // Checkbox
@@ -410,4 +653,3 @@ class _InviteFriendsBottomSheetState
     );
   }
 }
-
