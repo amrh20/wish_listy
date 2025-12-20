@@ -20,6 +20,7 @@ class Event {
   final List<InvitedFriend> invitedFriends; // List of invited friends from API
   final String? creatorName; // Creator's full name from API
   final String? creatorImage; // Creator's profile image from API
+  final InvitationStatus? invitationStatus; // User's RSVP status (from API invitation_status field)
 
   Event({
     required this.id,
@@ -41,6 +42,7 @@ class Event {
     this.invitedFriends = const [],
     this.creatorName,
     this.creatorImage,
+    this.invitationStatus,
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
@@ -173,6 +175,16 @@ class Event {
           .toList();
     }
 
+    // Parse invitation_status directly from API (for invited events)
+    InvitationStatus? invitationStatus;
+    if (json['invitation_status'] != null) {
+      final statusString = json['invitation_status'].toString().toLowerCase();
+      invitationStatus = InvitationStatus.values.firstWhere(
+        (e) => e.toString().split('.').last == statusString,
+        orElse: () => InvitationStatus.pending,
+      );
+    }
+
     // Parse invitations - support both 'invitations' and 'invited'
     List<dynamic>? invitationsList;
     if (json['invitations'] != null && json['invitations'] is List) {
@@ -222,6 +234,7 @@ class Event {
       invitedFriends: invitedFriendsList,
       creatorName: creatorName,
       creatorImage: creatorImage,
+      invitationStatus: invitationStatus,
     );
   }
 
@@ -269,6 +282,7 @@ class Event {
     List<InvitedFriend>? invitedFriends,
     String? creatorName,
     String? creatorImage,
+    InvitationStatus? invitationStatus,
   }) {
     return Event(
       id: id ?? this.id,
@@ -290,6 +304,7 @@ class Event {
       invitedFriends: invitedFriends ?? this.invitedFriends,
       creatorName: creatorName ?? this.creatorName,
       creatorImage: creatorImage ?? this.creatorImage,
+      invitationStatus: invitationStatus ?? this.invitationStatus,
     );
   }
 
@@ -587,20 +602,28 @@ class EventSummary {
         currentUserId != null && event.creatorId == currentUserId;
 
     // Find user's invitation status if not the creator
+    // Priority: Use invitationStatus from Event (from API invitation_status field)
+    // Fallback: Search in event.invitations array
     InvitationStatus? invitationStatus;
     if (!isCreatedByMe && currentUserId != null) {
-      final userInvitation = event.invitations.firstWhere(
-        (inv) => inv.inviteeId == currentUserId,
-        orElse: () => EventInvitation(
-          id: '',
-          eventId: event.id,
-          inviterId: event.creatorId, // Use event creator as inviter
-          inviteeId: currentUserId,
-          status: InvitationStatus.pending,
-          sentAt: DateTime.now(),
-        ),
-      );
-      invitationStatus = userInvitation.status;
+      // First, try to use invitationStatus directly from Event (from API)
+      if (event.invitationStatus != null) {
+        invitationStatus = event.invitationStatus;
+      } else {
+        // Fallback: Search in invitations array
+        final userInvitation = event.invitations.firstWhere(
+          (inv) => inv.inviteeId == currentUserId,
+          orElse: () => EventInvitation(
+            id: '',
+            eventId: event.id,
+            inviterId: event.creatorId, // Use event creator as inviter
+            inviteeId: currentUserId,
+            status: InvitationStatus.pending,
+            sentAt: DateTime.now(),
+          ),
+        );
+        invitationStatus = userInvitation.status;
+      }
     }
 
     return EventSummary(
@@ -623,6 +646,46 @@ class EventSummary {
       invitationStatus: invitationStatus,
       creatorName: event.creatorName,
       creatorImage: event.creatorImage,
+    );
+  }
+
+  EventSummary copyWith({
+    String? id,
+    String? name,
+    DateTime? date,
+    String? time,
+    EventType? type,
+    String? location,
+    String? description,
+    String? hostName,
+    int? invitedCount,
+    int? acceptedCount,
+    int? wishlistItemCount,
+    String? wishlistId,
+    bool? isCreatedByMe,
+    EventStatus? status,
+    InvitationStatus? invitationStatus,
+    String? creatorName,
+    String? creatorImage,
+  }) {
+    return EventSummary(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      date: date ?? this.date,
+      time: time ?? this.time,
+      type: type ?? this.type,
+      location: location ?? this.location,
+      description: description ?? this.description,
+      hostName: hostName ?? this.hostName,
+      invitedCount: invitedCount ?? this.invitedCount,
+      acceptedCount: acceptedCount ?? this.acceptedCount,
+      wishlistItemCount: wishlistItemCount ?? this.wishlistItemCount,
+      wishlistId: wishlistId ?? this.wishlistId,
+      isCreatedByMe: isCreatedByMe ?? this.isCreatedByMe,
+      status: status ?? this.status,
+      invitationStatus: invitationStatus ?? this.invitationStatus,
+      creatorName: creatorName ?? this.creatorName,
+      creatorImage: creatorImage ?? this.creatorImage,
     );
   }
 

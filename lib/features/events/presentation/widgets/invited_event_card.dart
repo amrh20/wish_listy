@@ -1,291 +1,188 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 
+/// Invited Event Card - Displays events where the user was invited
+/// Shows RSVP buttons for pending invitations or status banner for responded invitations
 class InvitedEventCard extends StatelessWidget {
   final EventSummary event;
   final LocalizationService localization;
-  final VoidCallback? onTap;
-  final Function(String status)? onRSVP; // Callback with 'accepted', 'declined', or 'maybe'
+  final VoidCallback onTap;
+  final Function(String status)? onRSVP;
 
   const InvitedEventCard({
     super.key,
     required this.event,
     required this.localization,
-    this.onTap,
+    required this.onTap,
     this.onRSVP,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isPast = event.status == EventStatus.completed;
-    final daysUntil = event.date.difference(DateTime.now()).inDays;
     final hasResponded = event.invitationStatus != null &&
         event.invitationStatus != InvitationStatus.pending;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        clipBehavior: Clip.antiAlias,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.grey.shade200,
-              width: 1.0,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(24),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Invited By Row
+            _buildInvitedByRow(),
+
+            // Event Content
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(context, isPast, daysUntil),
-                  _buildContent(context, hasResponded),
+                  // Event Name
+                  Text(
+                    event.name,
+                    style: AppStyles.headingSmall.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Event Details
+                  _buildEventDetails(),
+
+                  const SizedBox(height: 16),
+
+                  // RSVP Section (with AnimatedSwitcher)
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: hasResponded
+                        ? _buildStatusBanner()
+                        : _buildRSVPButtons(),
+                  ),
+
+                  // Wishlist Badge (if accepted)
+                  if (event.invitationStatus == InvitationStatus.accepted &&
+                      event.wishlistId != null)
+                    _buildWishlistBadge(),
                 ],
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, bool isPast, int daysUntil) {
-    final eventColor = _getEventTypeColor(event.type);
-
+  Widget _buildInvitedByRow() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.secondary.withOpacity(0.06),
+        color: AppColors.background,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              // Event Icon
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isPast ? AppColors.textTertiary : eventColor)
-                          .withOpacity(0.15),
-                      offset: const Offset(0, 2),
-                      blurRadius: 8,
+          // Creator Avatar
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: AppColors.primary.withOpacity(0.1),
+            backgroundImage: event.creatorImage != null
+                ? NetworkImage(event.creatorImage!)
+                : null,
+            child: event.creatorImage == null
+                ? Text(
+                    _getInitials(event.creatorName ?? ''),
+                    style: AppStyles.caption.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
                     ),
-                  ],
-                ),
-                child: Icon(
-                  _getEventTypeIcon(event.type),
-                  color: isPast ? AppColors.textTertiary : eventColor,
-                  size: 32,
-                ),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 12),
+          // Creator Name
+          Expanded(
+            child: Text(
+              '${event.creatorName ?? 'Someone'} ${localization.translate('events.invitedYou')}',
+              style: AppStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
               ),
-              const SizedBox(width: 16),
-              // Event Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      event.name,
-                      style: AppStyles.headingSmall.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isPast
-                            ? AppColors.textSecondary
-                            : AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // Creator Info
-                    if (event.creatorName != null)
-                      Row(
-                        children: [
-                          if (event.creatorImage != null &&
-                              event.creatorImage!.isNotEmpty)
-                            Container(
-                              width: 20,
-                              height: 20,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.border,
-                                  width: 1,
-                                ),
-                              ),
-                              child: ClipOval(
-                                child: CachedNetworkImage(
-                                  imageUrl: event.creatorImage!,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (context, url, error) =>
-                                      _buildInitialsAvatar(event.creatorName!),
-                                ),
-                              ),
-                            )
-                          else
-                            _buildInitialsAvatar(event.creatorName!),
-                          const SizedBox(width: 6),
-                          Text(
-                            'By: ${event.creatorName}',
-                            style: AppStyles.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 16,
-                          color: AppColors.textTertiary,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            event.location ?? 'Location TBD',
-                            style: AppStyles.bodySmall.copyWith(
-                              color: AppColors.textTertiary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              // Date Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isPast
-                      ? AppColors.textTertiary.withOpacity(0.15)
-                      : daysUntil <= 7
-                      ? AppColors.warning.withOpacity(0.15)
-                      : AppColors.info.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      '${event.date.day} ${_getMonthName(event.date.month)}',
-                      style: AppStyles.headingSmall.copyWith(
-                        color: isPast
-                            ? AppColors.textTertiary
-                            : daysUntil <= 7
-                            ? AppColors.warning
-                            : AppColors.info,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (event.time != null && event.time!.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        event.time!,
-                        style: AppStyles.caption.copyWith(
-                          color: isPast
-                              ? AppColors.textTertiary
-                              : daysUntil <= 7
-                              ? AppColors.warning
-                              : AppColors.info,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContent(BuildContext context, bool hasResponded) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Description
-          if (event.description != null) ...[
-            Text(
-              event.description!,
-              style: AppStyles.bodyMedium.copyWith(
+  Widget _buildEventDetails() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Date & Time
+        if (event.date != null) ...[
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_today_outlined,
+                size: 16,
                 color: AppColors.textSecondary,
-                height: 1.4,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // Wishlist indicator (if linked)
-          if (event.wishlistId != null) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+              const SizedBox(width: 8),
+              Text(
+                _formatDate(event.date!),
+                style: AppStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.card_giftcard_outlined,
-                    size: 16,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Wishlist Linked',
-                    style: AppStyles.bodySmall.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // RSVP Section
-          if (!hasResponded && event.status != EventStatus.completed)
-            _buildRSVPButtons()
-          else if (hasResponded)
-            _buildRSVPStatusBadge(),
+            ],
+          ),
+          const SizedBox(height: 8),
         ],
-      ),
+
+        // Location
+        if (event.location != null) ...[
+          Row(
+            children: [
+              Icon(
+                Icons.location_on_outlined,
+                size: 16,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  event.location!,
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
     );
   }
 
@@ -294,30 +191,28 @@ class InvitedEventCard extends StatelessWidget {
       children: [
         Expanded(
           child: _buildRSVPButton(
-            label: 'Accept',
-            icon: Icons.check_circle_outline,
-            color: AppColors.success,
+            text: localization.translate('events.accept'),
             onPressed: () => onRSVP?.call('accepted'),
+            isPrimary: false,
+            color: AppColors.success,
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: _buildRSVPButton(
-            label: 'Maybe',
-            icon: Icons.help_outline,
-            color: AppColors.primary,
+            text: localization.translate('events.maybe'),
             onPressed: () => onRSVP?.call('maybe'),
-            isOutlined: true,
+            isPrimary: false,
+            color: AppColors.warning,
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: _buildRSVPButton(
-            label: 'Reject',
-            icon: Icons.cancel_outlined,
-            color: AppColors.error,
+            text: localization.translate('events.reject'),
             onPressed: () => onRSVP?.call('declined'),
-            isOutlined: true,
+            isPrimary: false,
+            color: AppColors.error,
           ),
         ),
       ],
@@ -325,121 +220,55 @@ class InvitedEventCard extends StatelessWidget {
   }
 
   Widget _buildRSVPButton({
-    required String label,
-    required IconData icon,
-    required Color color,
+    required String text,
     required VoidCallback? onPressed,
-    bool isOutlined = false,
+    required bool isPrimary,
+    required Color color,
   }) {
     return SizedBox(
       height: 40,
-      child: isOutlined
-          ? OutlinedButton(
-              onPressed: onPressed,
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: color, width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, size: 16, color: color),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      label,
-                      style: AppStyles.bodySmall.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : ElevatedButton(
-              onPressed: onPressed,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: color,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                elevation: 0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(icon, size: 16),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      label,
-                      style: AppStyles.bodySmall.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: color, width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Text(
+          text,
+          style: AppStyles.bodySmall.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildRSVPStatusBadge() {
+  Widget _buildStatusBanner() {
     final status = event.invitationStatus!;
-    final statusText = _getRSVPStatusText(status);
-    final statusColor = _getRSVPStatusColor(status);
-    final statusIcon = _getRSVPStatusIcon(status);
+    final message = _getRSVPStatusMessage(status);
+    final color = _getStatusColor(status);
+    final icon = _getStatusIcon(status);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: statusColor.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(statusIcon, size: 18, color: statusColor),
-          const SizedBox(width: 8),
-          Text(
-            statusText,
-            style: AppStyles.bodyMedium.copyWith(
-              color: statusColor,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 8),
-          TextButton(
-            onPressed: () {
-              // Allow changing response
-              onRSVP?.call('pending');
-            },
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
             child: Text(
-              'Change',
+              message,
               style: AppStyles.bodySmall.copyWith(
-                color: statusColor,
-                fontWeight: FontWeight.w500,
-                fontSize: 12,
+                color: color,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -448,26 +277,72 @@ class InvitedEventCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInitialsAvatar(String name) {
-    final initials = _getInitials(name);
+  Widget _buildWishlistBadge() {
     return Container(
-      width: 20,
-      height: 20,
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.1),
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Center(
-        child: Text(
-          initials,
-          style: AppStyles.caption.copyWith(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.card_giftcard_outlined,
+            size: 16,
             color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-            fontSize: 10,
           ),
-        ),
+          const SizedBox(width: 6),
+          Text(
+            localization.translate('events.wishlistLinked'),
+            style: AppStyles.caption.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  String _getRSVPStatusMessage(InvitationStatus status) {
+    switch (status) {
+      case InvitationStatus.accepted:
+        return localization.translate('events.youAreGoing');
+      case InvitationStatus.declined:
+        return localization.translate('events.youDeclined');
+      case InvitationStatus.maybe:
+        return localization.translate('events.youMarkedMaybe');
+      case InvitationStatus.pending:
+        return localization.translate('events.pendingResponse');
+    }
+  }
+
+  Color _getStatusColor(InvitationStatus status) {
+    switch (status) {
+      case InvitationStatus.accepted:
+        return AppColors.success;
+      case InvitationStatus.declined:
+        return AppColors.error;
+      case InvitationStatus.maybe:
+        return AppColors.warning;
+      case InvitationStatus.pending:
+        return AppColors.textSecondary;
+    }
+  }
+
+  IconData _getStatusIcon(InvitationStatus status) {
+    switch (status) {
+      case InvitationStatus.accepted:
+        return Icons.check_circle_outline;
+      case InvitationStatus.declined:
+        return Icons.cancel_outlined;
+      case InvitationStatus.maybe:
+        return Icons.help_outline;
+      case InvitationStatus.pending:
+        return Icons.schedule;
+    }
   }
 
   String _getInitials(String name) {
@@ -479,89 +354,8 @@ class InvitedEventCard extends StatelessWidget {
     return name[0].toUpperCase();
   }
 
-  String _getRSVPStatusText(InvitationStatus status) {
-    switch (status) {
-      case InvitationStatus.accepted:
-        return 'Accepted';
-      case InvitationStatus.declined:
-        return 'Declined';
-      case InvitationStatus.maybe:
-        return 'Maybe';
-      case InvitationStatus.pending:
-        return 'Pending';
-    }
-  }
-
-  Color _getRSVPStatusColor(InvitationStatus status) {
-    switch (status) {
-      case InvitationStatus.accepted:
-        return AppColors.success;
-      case InvitationStatus.declined:
-        return AppColors.error;
-      case InvitationStatus.maybe:
-        return AppColors.primary;
-      case InvitationStatus.pending:
-        return AppColors.warning;
-    }
-  }
-
-  IconData _getRSVPStatusIcon(InvitationStatus status) {
-    switch (status) {
-      case InvitationStatus.accepted:
-        return Icons.check_circle;
-      case InvitationStatus.declined:
-        return Icons.cancel;
-      case InvitationStatus.maybe:
-        return Icons.help_outline;
-      case InvitationStatus.pending:
-        return Icons.pending;
-    }
-  }
-
-  Color _getEventTypeColor(EventType type) {
-    switch (type) {
-      case EventType.birthday:
-        return AppColors.secondary;
-      case EventType.wedding:
-        return AppColors.primary;
-      case EventType.anniversary:
-        return AppColors.error;
-      case EventType.graduation:
-        return AppColors.accent;
-      case EventType.holiday:
-        return AppColors.success;
-      case EventType.babyShower:
-        return AppColors.info;
-      case EventType.houseWarming:
-        return AppColors.warning;
-      default:
-        return AppColors.primary;
-    }
-  }
-
-  IconData _getEventTypeIcon(EventType type) {
-    switch (type) {
-      case EventType.birthday:
-        return Icons.cake_outlined;
-      case EventType.wedding:
-        return Icons.favorite_outline;
-      case EventType.anniversary:
-        return Icons.favorite_border;
-      case EventType.graduation:
-        return Icons.school_outlined;
-      case EventType.holiday:
-        return Icons.celebration_outlined;
-      case EventType.babyShower:
-        return Icons.child_friendly_outlined;
-      case EventType.houseWarming:
-        return Icons.home_outlined;
-      default:
-        return Icons.event_outlined;
-    }
-  }
-
-  String _getMonthName(int month) {
-    const months = [
+  String _formatDate(DateTime date) {
+    final months = [
       'Jan',
       'Feb',
       'Mar',
@@ -573,9 +367,9 @@ class InvitedEventCard extends StatelessWidget {
       'Sep',
       'Oct',
       'Nov',
-      'Dec',
+      'Dec'
     ];
-    return months[month - 1];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 }
 

@@ -622,38 +622,49 @@ class EventsScreenState extends State<EventsScreen>
   }
 
   Future<void> _handleRSVP(EventSummary event, String status) async {
+    if (!mounted) return;
+
+    // Convert string to InvitationStatus enum
+    final invitationStatus = status == 'accepted'
+        ? InvitationStatus.accepted
+        : status == 'declined'
+            ? InvitationStatus.declined
+            : InvitationStatus.maybe;
+
+    // Optimistic update - update UI immediately
+    _updateEventInvitationStatus(event.id, invitationStatus);
+
     try {
-      // Show loading indicator
-      if (!mounted) return;
-      
       // Call API to respond to invitation
       await _eventRepository.respondToEventInvitation(
         eventId: event.id,
         status: status,
       );
 
-      // Refresh events list to get updated invitation status
+      // Show success message (optional, as UI already updated)
       if (mounted) {
-        await _loadEvents();
-        
-        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               status == 'accepted'
                   ? 'You accepted the invitation'
                   : status == 'declined'
-                  ? 'You declined the invitation'
-                  : 'You marked as maybe',
+                      ? 'You declined the invitation'
+                      : 'You marked as maybe',
             ),
             backgroundColor: AppColors.success,
             duration: const Duration(seconds: 2),
           ),
         );
       }
+      // No need to reload - already updated optimistically
     } catch (e) {
       if (!mounted) return;
-      
+
+      // On error, revert optimistic update and reload to sync with server
+      _updateEventInvitationStatus(event.id, event.invitationStatus ?? InvitationStatus.pending);
+      await _loadEvents(); // Full reload to ensure consistency
+
       // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -663,6 +674,18 @@ class EventsScreenState extends State<EventsScreen>
         ),
       );
     }
+  }
+
+  void _updateEventInvitationStatus(String eventId, InvitationStatus status) {
+    setState(() {
+      _invitedEvents = _invitedEvents.map((event) {
+        if (event.id == eventId) {
+          return event.copyWith(invitationStatus: status);
+        }
+        return event;
+      }).toList();
+    });
+    _applyFilters(); // Re-apply filters to update _filteredEvents
   }
 
   void _viewEventWishlist(
