@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 
 /// Invited Event Card - Displays events where the user was invited
@@ -91,46 +93,84 @@ class InvitedEventCard extends StatelessWidget {
   }
 
   Widget _buildInvitedByRow() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Creator Avatar
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: AppColors.primary.withOpacity(0.1),
-            backgroundImage: event.creatorImage != null
-                ? NetworkImage(event.creatorImage!)
-                : null,
-            child: event.creatorImage == null
-                ? Text(
-                    _getInitials(event.creatorName ?? ''),
-                    style: AppStyles.caption.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(width: 12),
-          // Creator Name
-          Expanded(
-            child: Text(
-              '${event.creatorName ?? 'Someone'} ${localization.translate('events.invitedYou')}',
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
+    return Builder(
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
             ),
           ),
-        ],
-      ),
+          child: Row(
+            children: [
+              // Creator Avatar (clickable) - Larger size for better tap target
+              GestureDetector(
+                onTap: () => _navigateToProfile(context),
+                child: CircleAvatar(
+                  radius: 20, // Increased from 16 to 20
+                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundImage: event.creatorImage != null
+                      ? NetworkImage(event.creatorImage!)
+                      : null,
+                  child: event.creatorImage == null
+                      ? Text(
+                          _getInitials(event.creatorName ?? ''),
+                          style: AppStyles.bodySmall.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14, // Increased font size
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Creator Name (clickable) - Larger font size
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                      fontSize: 14, // Increased from bodySmall to bodyMedium
+                    ),
+                    children: [
+                      // Bold, clickable creator name
+                      TextSpan(
+                        text: event.creatorName ?? 'Someone',
+                        style: AppStyles.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14, // Explicit font size
+                        ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () => _navigateToProfile(context),
+                      ),
+                      // Regular text
+                      TextSpan(
+                        text: ' ${localization.translate('events.invitedYou')}',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// Navigate to creator's profile
+  void _navigateToProfile(BuildContext context) {
+    if (event.creatorId == null || event.creatorId!.isEmpty) return;
+    
+    Navigator.pushNamed(
+      context,
+      AppRoutes.friendProfile,
+      arguments: {'friendId': event.creatorId},
     );
   }
 

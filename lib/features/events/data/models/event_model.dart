@@ -645,6 +645,7 @@ class EventSummary {
   final InvitationStatus? invitationStatus; // User's RSVP status for invited events
   final String? creatorName; // Creator's full name
   final String? creatorImage; // Creator's profile image
+  final String? creatorId; // Creator's ID for navigation
 
   EventSummary({
     required this.id,
@@ -664,6 +665,7 @@ class EventSummary {
     this.invitationStatus,
     this.creatorName,
     this.creatorImage,
+    this.creatorId,
   });
 
   factory EventSummary.fromEvent(Event event, {String? currentUserId}) {
@@ -724,6 +726,7 @@ class EventSummary {
       invitationStatus: invitationStatus,
       creatorName: event.creatorName,
       creatorImage: event.creatorImage,
+      creatorId: event.creatorId,
     );
   }
 
@@ -745,6 +748,7 @@ class EventSummary {
     InvitationStatus? invitationStatus,
     String? creatorName,
     String? creatorImage,
+    String? creatorId,
   }) {
     return EventSummary(
       id: id ?? this.id,
@@ -764,6 +768,7 @@ class EventSummary {
       invitationStatus: invitationStatus ?? this.invitationStatus,
       creatorName: creatorName ?? this.creatorName,
       creatorImage: creatorImage ?? this.creatorImage,
+      creatorId: creatorId ?? this.creatorId,
     );
   }
 

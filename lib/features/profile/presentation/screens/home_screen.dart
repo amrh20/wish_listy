@@ -21,6 +21,7 @@ import 'package:wish_listy/features/notifications/data/models/notification_model
 import 'package:wish_listy/features/notifications/presentation/widgets/friend_request_tile.dart';
 import 'package:wish_listy/features/notifications/presentation/widgets/friend_request_accepted_tile.dart';
 import 'package:wish_listy/features/notifications/presentation/widgets/friend_request_rejected_tile.dart';
+import 'package:wish_listy/features/notifications/presentation/widgets/event_response_tile.dart';
 import 'package:wish_listy/core/services/socket_service.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
@@ -2410,6 +2411,20 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
     if (notification.type == NotificationType.friendRequestRejected) {
       return _buildFriendRequestRejectedCardForDropdown(notification, context);
     }
+
+    // Special design for event invitation response notifications
+    if (notification.type == NotificationType.eventInvitation) {
+      // Check if this is a response notification (accepted, declined, maybe)
+      final notificationTypeString = notification.data?['type']?.toString() ?? 
+                                    notification.data?['notificationType']?.toString() ??
+                                    notification.title.toLowerCase();
+      
+      if (notificationTypeString.contains('accepted') || 
+          notificationTypeString.contains('declined') || 
+          notificationTypeString.contains('maybe')) {
+        return _buildEventResponseCardForDropdown(notification, context);
+      }
+    }
     
     // Default design for other notification types
     return InkWell(
@@ -2680,6 +2695,125 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
         Navigator.pop(context); // Close dropdown
         _navigateToProfile(friendId);
       },
+    );
+  }
+
+  /// Build specialized event response notification card for dropdown
+  Widget _buildEventResponseCardForDropdown(AppNotification notification, BuildContext context) {
+    // Extract responder information from notification data
+    String? responderId;
+    String? responderName;
+    String? responderImage;
+    String? eventName;
+    String? eventId;
+    String? notificationTypeString;
+
+    // Check for relatedUser object (new API structure)
+    if (notification.data?['relatedUser'] != null && 
+        notification.data!['relatedUser'] is Map<String, dynamic>) {
+      final relatedUser = notification.data!['relatedUser'] as Map<String, dynamic>;
+      responderId = relatedUser['_id']?.toString() ?? 
+                   relatedUser['id']?.toString();
+      responderName = relatedUser['fullName']?.toString();
+      responderImage = relatedUser['profileImage']?.toString();
+    }
+
+    // Fallback to old structure if relatedUser not found
+    if (responderId == null || responderId.isEmpty) {
+      responderId = notification.data?['responderId'] ?? 
+                     notification.data?['responder_id'] ?? 
+                     notification.data?['userId'] ?? 
+                     notification.userId;
+    }
+
+    if (responderName == null || responderName.isEmpty) {
+      // Try to extract from message
+      final message = notification.message;
+      if (message.isNotEmpty) {
+        final parts = message.split(' ');
+        if (parts.isNotEmpty) {
+          responderName = parts[0];
+        }
+      }
+      
+      if (responderName == null || responderName.isEmpty) {
+        responderName = notification.data?['responderName'] ?? 
+                        notification.data?['responder_name'] ?? 
+                        notification.title.split(' ').first;
+      }
+    }
+
+    if (responderImage == null || responderImage.isEmpty) {
+      responderImage = notification.data?['responderImage'] ?? 
+                      notification.data?['responder_image'] ?? 
+                      notification.data?['profileImage'] ?? 
+                      notification.data?['profile_image'];
+    }
+
+    // Extract event name and ID
+    eventName = notification.data?['eventName'] ?? 
+               notification.data?['event_name'] ?? 
+               notification.data?['event']?['name']?.toString() ??
+               notification.title.split(' ').last;
+    
+    if (eventName == null || eventName.isEmpty || eventName == responderName) {
+      final message = notification.message;
+      if (message.contains(' to ')) {
+        final parts = message.split(' to ');
+        if (parts.length > 1) {
+          eventName = parts[1].replaceAll('.', '').trim();
+        }
+      } else if (message.contains(' in ')) {
+        final parts = message.split(' in ');
+        if (parts.length > 1) {
+          eventName = parts[1].replaceAll('.', '').trim();
+        }
+      }
+    }
+
+    eventId = notification.data?['eventId'] ?? 
+             notification.data?['event_id'] ?? 
+             notification.data?['event']?['_id']?.toString() ??
+             notification.data?['event']?['id']?.toString();
+
+    // Determine notification type
+    notificationTypeString = notification.data?['type']?.toString() ?? 
+                            notification.data?['notificationType']?.toString() ?? 
+                            notification.data?['responseType']?.toString();
+    
+    if (notificationTypeString == null || notificationTypeString.isEmpty) {
+      final message = notification.message.toLowerCase();
+      if (message.contains('accepted') || message.contains('going')) {
+        notificationTypeString = 'event_invitation_accepted';
+      } else if (message.contains('declined') || message.contains('rejected')) {
+        notificationTypeString = 'event_invitation_declined';
+      } else if (message.contains('maybe') || message.contains('interested')) {
+        notificationTypeString = 'event_invitation_maybe';
+      } else {
+        notificationTypeString = 'event_invitation_accepted';
+      }
+    }
+
+    return EventResponseTile(
+      notificationType: notificationTypeString,
+      responderName: responderName ?? 'Someone',
+      responderImage: responderImage,
+      eventName: eventName ?? 'Event',
+      timeAgo: notification.timeAgo,
+      onProfileTap: () {
+        Navigator.pop(context); // Close dropdown
+        _navigateToProfile(responderId);
+      },
+      onEventTap: eventId != null && eventId.isNotEmpty
+          ? () {
+              Navigator.pop(context); // Close dropdown
+              Navigator.pushNamed(
+                context,
+                AppRoutes.eventDetails,
+                arguments: {'eventId': eventId},
+              );
+            }
+          : null,
     );
   }
 
