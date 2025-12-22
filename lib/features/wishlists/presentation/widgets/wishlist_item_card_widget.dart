@@ -127,84 +127,84 @@ class _WishlistItemCardWidgetState extends State<WishlistItemCardWidget> {
         // Right swipe (start-to-end): Mark as Gifted (only if NOT purchased)
         startActionPane: widget.onToggleGifted != null && !widget.isPurchased
             ? ActionPane(
-                motion: const DrawerMotion(),
-                extentRatio: 0.25,
-                children: [
-                  CustomSlidableAction(
-                    onPressed: (_) => widget.onToggleGifted?.call(),
+          motion: const DrawerMotion(),
+          extentRatio: 0.25,
+          children: [
+            CustomSlidableAction(
+              onPressed: (_) => widget.onToggleGifted?.call(),
                     backgroundColor: AppColors.success, // Green
-                    foregroundColor: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+              foregroundColor: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                         Icon(Icons.card_giftcard, size: 28, color: Colors.white),
-                        SizedBox(height: 4),
-                        Text(
-                          'Gift',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                  SizedBox(height: 4),
+                  Text(
+                    'Gift',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
+              ),
+            ),
+          ],
               )
             : null,
         // Left swipe (end-to-start): Edit and Delete
         endActionPane: (widget.onEdit != null || widget.onDelete != null)
             ? ActionPane(
-                motion: const DrawerMotion(),
-                extentRatio: 0.5,
-                children: [
-                  if (widget.onEdit != null)
-                    CustomSlidableAction(
-                      onPressed: (_) => widget.onEdit?.call(),
+          motion: const DrawerMotion(),
+          extentRatio: 0.5,
+          children: [
+            if (widget.onEdit != null)
+              CustomSlidableAction(
+                onPressed: (_) => widget.onEdit?.call(),
                       backgroundColor: AppColors.info, // Blue
-                      foregroundColor: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      child: const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
+                foregroundColor: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                           Icon(Icons.edit, size: 28, color: Colors.white),
-                          SizedBox(height: 4),
-                          Text(
-                            'Edit',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                    SizedBox(height: 4),
+                    Text(
+                      'Edit',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  if (widget.onDelete != null)
-                    CustomSlidableAction(
+                  ],
+                ),
+              ),
+            if (widget.onDelete != null)
+              CustomSlidableAction(
                       onPressed: (_) => _handleDeleteWithConfirmation(),
                       backgroundColor: AppColors.error, // Red
-                      foregroundColor: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      child: const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
+                foregroundColor: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                           Icon(Icons.delete, size: 28, color: Colors.white),
-                          SizedBox(height: 4),
-                          Text(
-                            'Delete',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                    SizedBox(height: 4),
+                    Text(
+                      'Delete',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                ],
+                  ],
+                ),
+              ),
+          ],
               )
             : null,
         child: cardContent,
@@ -247,80 +247,80 @@ class _ModernWishlistItemContent extends StatelessWidget {
     return Opacity(
       opacity: isPurchased ? 0.7 : 1.0,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-              spreadRadius: 0,
-            ),
-          ],
-        ),
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
         child: Stack(
           children: [
             // Main content
             ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: isPurchased
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: isPurchased
                       ? AppColors.success.withOpacity(0.15)
-                      : priorityColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  getCategoryIcon('General'),
+                : priorityColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            getCategoryIcon('General'),
                   color: isPurchased ? AppColors.success : priorityColor,
-                  size: 24,
-                ),
-              ),
-              title: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 300),
-                style: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.bold,
+            size: 24,
+          ),
+        ),
+        title: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 300),
+          style: AppStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.bold,
                   decoration: isPurchased
                       ? TextDecoration.lineThrough
                       : TextDecoration.none,
                   color: isPurchased
                       ? AppColors.textTertiary
                       : AppColors.textPrimary,
-                ),
-                child: Text(item.name),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      // Priority dot + text
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: priorityColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        getPriorityText(item.priority),
-                        style: AppStyles.caption.copyWith(
-                          color: priorityColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+          ),
+          child: Text(item.name),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                // Priority dot + text
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: priorityColor,
+                    shape: BoxShape.circle,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  getPriorityText(item.priority),
+                  style: AppStyles.caption.copyWith(
+                    color: priorityColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
               onTap: onTap,
             ),
             // Purchased/Gifted tag
@@ -336,7 +336,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                     border: Border.all(
                       color: AppColors.success.withOpacity(0.25),
                       width: 1,
-                    ),
+                          ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -345,7 +345,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                         Icons.check_circle,
                         size: 14,
                         color: AppColors.success,
-                      ),
+              ),
                       const SizedBox(width: 6),
                       Text(
                         'Gifted',
@@ -365,67 +365,67 @@ class _ModernWishlistItemContent extends StatelessWidget {
                 top: 8,
                 right: 8,
                 child: PopupMenuButton<String>(
-                  color: Colors.white,
-                  icon: Icon(
-                    Icons.more_vert,
-                    color: AppColors.textTertiary,
-                    size: 20,
-                  ),
-                  iconSize: 20,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
+                color: Colors.white,
+                icon: Icon(
+                  Icons.more_vert,
+                  color: AppColors.textTertiary,
+                  size: 20,
+                ),
+                iconSize: 20,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
                     minWidth: 44,
                     minHeight: 44,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  onSelected: (value) {
-                    if (value == 'edit') {
-                      onEdit?.call();
-                    } else if (value == 'delete') {
-                      onDelete?.call();
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    if (onEdit != null)
-                      PopupMenuItem<String>(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.edit,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    onEdit?.call();
+                  } else if (value == 'delete') {
+                    onDelete?.call();
+                  }
+                },
+                itemBuilder: (context) => [
+                  if (onEdit != null)
+                    PopupMenuItem<String>(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.edit,
+                            color: AppColors.textPrimary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Edit',
+                            style: AppStyles.bodyMedium.copyWith(
                               color: AppColors.textPrimary,
-                              size: 20,
                             ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Edit',
-                              style: AppStyles.bodyMedium.copyWith(
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    if (onDelete != null)
-                      PopupMenuItem<String>(
-                        value: 'delete',
-                        child: Row(
-                          children: [
+                    ),
+                  if (onDelete != null)
+                    PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Row(
+                        children: [
                             Icon(Icons.delete, color: AppColors.error, size: 20),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Delete',
-                              style: AppStyles.bodyMedium.copyWith(
+                          const SizedBox(width: 12),
+                          Text(
+                            'Delete',
+                            style: AppStyles.bodyMedium.copyWith(
                                 color: AppColors.error,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              fontWeight: FontWeight.w600,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                  ],
+                    ),
+                ],
                 ),
               ),
             // Gift Action Button at bottom-right (only show if NOT purchased)
@@ -443,16 +443,16 @@ class _ModernWishlistItemContent extends StatelessWidget {
                       child: Container(
                         width: 44,
                         height: 44,
-                        decoration: BoxDecoration(
+                decoration: BoxDecoration(
                           color: Colors.transparent,
-                          shape: BoxShape.circle,
+                  shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.card_giftcard_outlined,
                           color: Colors.grey[400],
                           size: 24,
                         ),
-                      ),
+                ),
                     ),
                   ),
                 ),

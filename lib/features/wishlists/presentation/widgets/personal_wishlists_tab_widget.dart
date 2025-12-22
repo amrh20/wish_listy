@@ -4,6 +4,7 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
+import 'guest_wishlist_card_widget.dart';
 import 'wishlist_card_widget.dart';
 
 /// Personal wishlists tab widget with trendy stacked cards scroll effect
@@ -14,6 +15,7 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
   final Function(String, WishlistSummary) onMenuAction;
   final VoidCallback? onCreateWishlist;
   final Future<void> Function() onRefresh;
+  final bool guestStyle;
 
   const PersonalWishlistsTabWidget({
     super.key,
@@ -23,6 +25,7 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
     required this.onMenuAction,
     this.onCreateWishlist,
     required this.onRefresh,
+    this.guestStyle = false,
   });
 
   @override
@@ -50,6 +53,13 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
         separatorBuilder: (context, index) => const SizedBox(height: 16),
         itemBuilder: (context, index) {
           final wishlist = personalWishlists[index];
+          if (guestStyle) {
+            return GuestWishlistCardWidget(
+              wishlist: wishlist,
+              onTap: () => onWishlistTap(wishlist),
+            );
+          }
+
           return WishlistCardWidget(
             wishlist: wishlist,
             isEvent: false,

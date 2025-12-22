@@ -26,6 +26,7 @@ import 'package:wish_listy/core/services/socket_service.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 import 'package:wish_listy/core/widgets/top_overlay_toast.dart';
+import 'package:wish_listy/features/profile/presentation/screens/guest_home_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final GlobalKey<HomeScreenState>? key;
@@ -143,9 +144,12 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeAnimations();
-    _checkWishlists();
     _startAnimations();
-    _loadGuestWishlists();
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    // Avoid extra guest-loading here; GuestHomeScreen owns guest data now.
+    if (!authService.isGuest) {
+      _checkWishlists();
+    }
     // Load notifications when screen appears (only for authenticated users)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authService = Provider.of<AuthRepository>(context, listen: false);
@@ -307,116 +311,17 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
       builder: (context, localization, authService, child) {
         // For guest users, use UnifiedPageHeader like wishlist screen
         if (authService.isGuest) {
-          return Scaffold(
-            backgroundColor: AppColors.background,
-            body: UnifiedPageBackground(
-              child: DecorativeBackground(
-                showGifts: true,
-                child: Column(
-                  children: [
-                    // Unified Page Header with welcome message
-                    UnifiedPageHeader(
-                      title: 'WishListy',
-                      titleIcon: Icons.favorite_rounded,
-                      subtitle: 'Hello there! 👋\nWelcome to WishListy. Start by creating your first wishlist and organize your dreams.',
-                      showSearch: false,
-                      subtitleStyle: AppStyles.bodyMedium.copyWith(
-                        fontSize: 15,
-                        fontWeight: FontWeight.normal,
-                      ),
-                      titleSubtitleSpacing: 32,
-                      customSubtitleWidget: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Hello there! 👋',
-                            style: AppStyles.headingMedium.copyWith(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Welcome to WishListy. Start by creating your first wishlist and organize your dreams.',
-                            style: AppStyles.bodyMedium.copyWith(
-                              fontSize: 15,
-                              fontWeight: FontWeight.normal,
-                              color: AppColors.textSecondary,
-                            ),
-                            maxLines: 3,
-                            overflow: TextOverflow.visible,
-                          ),
-                        ],
-                      ),
-                      actions: [
-                        HeaderAction(
-                          icon: Icons.login_rounded,
-                          iconColor: AppColors.primary,
-                          onTap: () {
+          return GuestHomeScreen(
+            onCreateWishlist: () async {
+              await Navigator.pushNamed(
+                context,
+                AppRoutes.createWishlist,
+                arguments: {'previousRoute': AppRoutes.mainNavigation},
+              );
+            },
+            onLogin: () {
                             Navigator.pushNamed(context, AppRoutes.login);
                           },
-                        ),
-                      ],
-                    ),
-                    // Content in rounded container with decorative blobs
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          // Decorative background blobs (behind everything, extends to bottom)
-                          _buildDecorativeBlobsForEmptyState(),
-                          UnifiedPageContainer(
-                            backgroundColor: _guestWishlists.isEmpty ? Colors.transparent : null,
-                            showShadow: !_guestWishlists.isEmpty,
-                            child: RefreshIndicator(
-                              onRefresh: _refreshData,
-                              color: AppColors.primary,
-                              child: AnimatedBuilder(
-                                animation: _animationController,
-                                builder: (context, child) {
-                                  return FadeTransition(
-                                    opacity: _fadeAnimation,
-                                    child: SlideTransition(
-                                      position: _slideAnimation,
-                                      child: SingleChildScrollView(
-                                        controller: _scrollController,
-                                        physics: const AlwaysScrollableScrollPhysics(),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(16.0),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              // Guest Wishlist Section
-                                              if (_isLoadingGuestData) ...[
-                                                const Center(
-                                                  child: Padding(
-                                                    padding: EdgeInsets.all(32.0),
-                                                    child: CircularProgressIndicator(),
-                                                  ),
-                                                ),
-                                              ] else if (_guestWishlists.isEmpty) ...[
-                                                _buildCreateFirstWishlistButton(),
-                                              ] else ...[
-                                                _buildGuestWishlistList(),
-                                              ],
-                                              const SizedBox(height: 100), // Bottom padding
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           );
         }
 
@@ -644,28 +549,28 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
         }
       },
       child: BlocBuilder<NotificationsCubit, NotificationsState>(
-        builder: (context, notificationsState) {
+      builder: (context, notificationsState) {
           final rebuildTimestamp = DateTime.now().toIso8601String();
           debugPrint('🖥️ [UI] ⏰ [$rebuildTimestamp] BlocBuilder rebuild triggered');
           debugPrint('🖥️ [UI] ⏰ [$rebuildTimestamp]    State type: ${notificationsState.runtimeType}');
           
-          // Get unread count from notifications state
-          int unreadCount = 0;
-          if (notificationsState is NotificationsLoaded) {
-            unreadCount = notificationsState.unreadCount;
+        // Get unread count from notifications state
+        int unreadCount = 0;
+        if (notificationsState is NotificationsLoaded) {
+          unreadCount = notificationsState.unreadCount;
             debugPrint('🖥️ [UI] ⏰ [$rebuildTimestamp]    Unread count: $unreadCount');
-          }
+        }
 
-          // Get notifications list
-          List<AppNotification> notifications = [];
-          if (notificationsState is NotificationsLoaded) {
-            notifications = notificationsState.notifications;
+        // Get notifications list
+        List<AppNotification> notifications = [];
+        if (notificationsState is NotificationsLoaded) {
+          notifications = notificationsState.notifications;
             debugPrint('🖥️ [UI] ⏰ [$rebuildTimestamp]    Notifications count: ${notifications.length}');
-          }
+        }
 
           debugPrint('🖥️ [UI] ⏰ [$rebuildTimestamp]    Building UnifiedPageHeader with badge: ${unreadCount > 0}');
 
-          return UnifiedPageHeader(
+        return UnifiedPageHeader(
           title: '${localization.translate('home.greeting')} 👋',
           subtitle: authService.userName ?? 'User',
           showSearch: false,
@@ -688,7 +593,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
           // Remove bottom margin to allow container to overlap
           bottomMargin: 0.0,
         );
-        },
+      },
       ),
     );
   }
@@ -2213,37 +2118,37 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
                               }
                               
                               return Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: AppColors.surface,
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(16),
-                                    topRight: Radius.circular(16),
-                                  ),
-                                  border: Border(
-                                    bottom: BorderSide(
-                                      color: AppColors.textTertiary.withOpacity(0.1),
-                                    ),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                                topRight: Radius.circular(16),
+                              ),
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: AppColors.textTertiary.withOpacity(0.1),
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Notifications',
+                                  style: AppStyles.headingSmall.copyWith(
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      'Notifications',
-                                      style: AppStyles.headingSmall.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const Spacer(),
+                                const Spacer(),
                                     if (totalNotificationsCount > 5)
-                                      Text(
+                                  Text(
                                         '${totalNotificationsCount - 5} more',
-                                        style: AppStyles.bodySmall.copyWith(
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                  ],
-                                ),
+                                    style: AppStyles.bodySmall.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                              ],
+                            ),
                               );
                             },
                           ),
@@ -2254,8 +2159,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
                               if (notificationsState is NotificationsLoading || 
                                   notificationsState is NotificationsInitial) {
                                 return Padding(
-                                  padding: const EdgeInsets.all(32),
-                                  child: Column(
+                              padding: const EdgeInsets.all(32),
+                              child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       SizedBox(
@@ -2315,42 +2220,42 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
                                   padding: const EdgeInsets.all(32),
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.notifications_none,
-                                        size: 48,
-                                        color: AppColors.textTertiary,
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        'No notifications',
-                                        style: AppStyles.bodyMedium.copyWith(
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ],
+                                children: [
+                                  Icon(
+                                    Icons.notifications_none,
+                                    size: 48,
+                                    color: AppColors.textTertiary,
                                   ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'No notifications',
+                                    style: AppStyles.bodyMedium.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
                                 );
                               }
                               
                               return Flexible(
-                                child: ListView.separated(
-                                  shrinkWrap: true,
-                                  padding: EdgeInsets.zero,
+                              child: ListView.separated(
+                                shrinkWrap: true,
+                                padding: EdgeInsets.zero,
                                   itemCount: liveDisplayNotifications.length,
-                                  separatorBuilder: (context, index) => Divider(
-                                    height: 1,
-                                    thickness: 1,
-                                    color: AppColors.textTertiary.withOpacity(0.1),
-                                  ),
-                                  itemBuilder: (context, index) {
-                                    final notification = liveDisplayNotifications[index];
-                                    return _buildNotificationItem(notification, context);
-                                  },
+                                separatorBuilder: (context, index) => Divider(
+                                  height: 1,
+                                  thickness: 1,
+                                  color: AppColors.textTertiary.withOpacity(0.1),
                                 ),
+                                itemBuilder: (context, index) {
+                                    final notification = liveDisplayNotifications[index];
+                                  return _buildNotificationItem(notification, context);
+                                },
+                              ),
                               );
                             },
-                          ),
+                            ),
                           // View All button
                           Container(
                             padding: const EdgeInsets.all(12),
@@ -2441,11 +2346,11 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
         _handleNotificationTap(context, notification);
       },
       child: Container(
-        padding: const EdgeInsets.all(12),
-        color: notification.isRead
-            ? Colors.transparent
-            : AppColors.info.withOpacity(0.05),
-        child: Column(
+      padding: const EdgeInsets.all(12),
+      color: notification.isRead
+          ? Colors.transparent
+          : AppColors.info.withOpacity(0.05),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -2840,7 +2745,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
     if (actionState == 'loading') {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
-        children: [
+              children: [
           SizedBox(
             width: 16,
             height: 16,
@@ -2899,36 +2804,36 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
         // Reject button - subtle grey/light red with border
         OutlinedButton(
           onPressed: isProcessing ? null : () {
-            _handleFriendRequestAction(context, notification, false);
-          },
-          style: OutlinedButton.styleFrom(
+                        _handleFriendRequestAction(context, notification, false);
+                      },
+                      style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.textSecondary,
-            side: BorderSide(
+                        side: BorderSide(
               color: AppColors.textSecondary.withOpacity(0.3),
               width: 1,
-            ),
+                        ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            shape: RoundedRectangleBorder(
+                        shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-          child: Text(
-            'Reject',
+                        ),
+                      ),
+                      child: Text(
+                        'Reject',
             style: AppStyles.caption.copyWith(
               fontSize: 12,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
+                        ),
+                      ),
+                    ),
         const SizedBox(width: 8),
         // Accept button - clean green with border
         OutlinedButton(
           onPressed: isProcessing ? null : () {
-            _handleFriendRequestAction(context, notification, true);
-          },
+                        _handleFriendRequestAction(context, notification, true);
+                      },
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.success,
             side: BorderSide(
@@ -2938,20 +2843,20 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, W
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            shape: RoundedRectangleBorder(
+                        shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-          child: Text(
-            'Accept',
+                        ),
+                      ),
+                      child: Text(
+                        'Accept',
             style: AppStyles.caption.copyWith(
               fontSize: 12,
               color: AppColors.success,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
+                          fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
     );
   }
 

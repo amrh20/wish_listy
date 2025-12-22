@@ -3,6 +3,7 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/bottom_sheet_vectors.dart';
 import 'package:wish_listy/core/widgets/decorated_bottom_sheet.dart';
 import 'package:wish_listy/core/widgets/modern_wishlist_card.dart';
+import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 
 /// Model for wishlist privacy settings
 enum WishlistPrivacy { public, private, onlyInvited }
@@ -11,6 +12,7 @@ enum WishlistPrivacy { public, private, onlyInvited }
 class WishlistSummary {
   final String id;
   final String name;
+  final String? description;
   final int itemCount;
   final int purchasedCount;
   final DateTime lastUpdated;
@@ -19,10 +21,12 @@ class WishlistSummary {
   final String? eventName;
   final DateTime? eventDate;
   final String? category; // Added category field
+  final List<WishlistItem> previewItems;
 
   WishlistSummary({
     required this.id,
     required this.name,
+    this.description,
     required this.itemCount,
     required this.purchasedCount,
     required this.lastUpdated,
@@ -31,6 +35,7 @@ class WishlistSummary {
     this.eventName,
     this.eventDate,
     this.category, // Added category field
+    this.previewItems = const [],
   });
 }
 

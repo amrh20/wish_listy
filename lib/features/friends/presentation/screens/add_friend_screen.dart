@@ -27,7 +27,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
   String _searchMethod = 'email'; // Default to email
   List<User> _searchResults = [];
   String? _searchError;
-  
+
   // Track which user is currently sending a request (for loading state)
   String? _sendingRequestToUserId;
 
@@ -481,16 +481,16 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                       )
                     : FittedBox(
                         fit: BoxFit.scaleDown,
-                        child: Text(
-                          localization.translate('friends.sendRequest'),
-                          style: AppStyles.bodySmall.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
+                child: Text(
+                  localization.translate('friends.sendRequest'),
+                  style: AppStyles.bodySmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.visible,
-                        ),
-                      ),
+                  ),
+                ),
               ),
             ),
           ],
