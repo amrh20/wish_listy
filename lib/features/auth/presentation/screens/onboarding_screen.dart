@@ -458,7 +458,21 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 32.0),
         child: Column(
           children: [
-            // Explore as Guest Button (Guest Mode)
+            // Sign In Button (Primary Action)
+            CustomButton(
+              text: localization.translate('welcome.alreadyHaveAccount'),
+              onPressed: () {
+                Navigator.pushNamed(context, AppRoutes.login);
+              },
+              variant: ButtonVariant.gradient,
+              gradientColors: [AppColors.primary, AppColors.secondary],
+              size: ButtonSize.medium,
+              icon: Icons.login_rounded,
+            ),
+
+            const SizedBox(height: 16),
+
+            // Explore as Guest Button (Secondary Action)
             CustomButton(
               text: 'Explore as Guest',
               onPressed: () async {
@@ -474,22 +488,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   (route) => false,
                 );
               },
-              variant: ButtonVariant.gradient,
-              gradientColors: [AppColors.primary, AppColors.secondary],
-              size: ButtonSize.medium,
-              icon: Icons.rocket_launch_rounded,
-            ),
-
-            const SizedBox(height: 16),
-
-            // Login Button
-            CustomButton(
-              text: localization.translate('welcome.alreadyHaveAccount'),
-              onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.login);
-              },
               variant: ButtonVariant.outline,
-              icon: Icons.login_rounded,
+              icon: Icons.rocket_launch_rounded,
             ),
           ],
         ),

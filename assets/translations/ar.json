@@ -143,6 +143,7 @@
     "noGiftSuggestionsSubtitle": "سنقترح عليك هدايا بناءً على قوائم أمنيات أصدقائك"
   },
   "wishlists": {
+    "viewwishlist": "عرض قائمة الأمنيات",
     "title": "قوائم الأمنيات",
     "myWishlists": "الأمنيات",
     "createWishlist": "إنشاء قائمة أمنيات",

@@ -145,6 +145,7 @@
     "noGiftSuggestionsSubtitle": "We'll suggest gifts based on your friends' wishlists"
   },
   "wishlists": {
+    "viewwishlist": "View Wishlist",
     "title": "Wishlists",
     "myWishlists": "Wishlists",
     "createWishlist": "Create Wishlist",

@@ -53,12 +53,14 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     WidgetsBinding.instance.addObserver(this);
     _mainTabController = TabController(length: 2, vsync: this);
     _mainTabController.addListener(() {
-      setState(() {
-        // Reset category filter when switching tabs
-        if (_mainTabController.index != 0) {
-          _selectedCategory = null;
-        }
-      });
+      if (mounted) {
+        setState(() {
+          // Reset category filter when switching tabs
+          if (_mainTabController.index != 0) {
+            _selectedCategory = null;
+          }
+        });
+      }
     });
     _initializeAnimations();
     _startAnimations();
@@ -184,12 +186,14 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                         ? null
                         : (index) {
                             _mainTabController.animateTo(index);
-                            setState(() {
-                              // Reset category filter when switching tabs
-                              if (index != 0) {
-                                _selectedCategory = null;
-                              }
-                            });
+                            if (mounted) {
+                              setState(() {
+                                // Reset category filter when switching tabs
+                                if (index != 0) {
+                                  _selectedCategory = null;
+                                }
+                              });
+                            }
                           },
                   ),
 
@@ -647,10 +651,12 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
   /// Load wishlists from local storage for guest users
   Future<void> _loadGuestWishlists() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
       final guestDataRepo = Provider.of<GuestDataRepository>(
@@ -706,22 +712,25 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
       final categorySet = categoryMap.values.toSet();
       categoryCounts['all'] = totalCount; // Store total count for "All" filter
 
-      setState(() {
-        _personalWishlists = personalWishlists;
-        _allPersonalWishlists = List.from(personalWishlists);
-        _wishlistIdToCategory = categoryMap;
-        _availableCategories = categorySet.toList()..sort();
-        _categoryCounts = categoryCounts; // Store category counts for filter tabs
-        _isLoading = false;
-        _hasLoadedOnce = true;
-      });
+      if (mounted) {
+        setState(() {
+          _personalWishlists = personalWishlists;
+          _allPersonalWishlists = List.from(personalWishlists);
+          _wishlistIdToCategory = categoryMap;
+          _availableCategories = categorySet.toList()..sort();
+          _categoryCounts = categoryCounts; // Store category counts for filter tabs
+          _isLoading = false;
+          _hasLoadedOnce = true;
+        });
+      }
 
     } catch (e) {
-
-      setState(() {
-        _errorMessage = 'Failed to load wishlists';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load wishlists';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -734,10 +743,12 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
       // Call API to get wishlists
@@ -784,22 +795,26 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
       final categoriesSet = wishlistIdToCategory.values.toSet();
       final categories = categoriesSet.toList()..sort();
 
-      setState(() {
-        _allPersonalWishlists = personalWishlists;
-        _availableCategories = categories;
-        _wishlistIdToCategory = wishlistIdToCategory;
-        _categoryCounts = categoryCounts;
-        _categoryCounts['all'] = totalCount; // Store total count
-        _isLoading = false;
-        _hasLoadedOnce = true;
-        // Apply current filter if any
-        _applyCategoryFilter();
-      });
+      if (mounted) {
+        setState(() {
+          _allPersonalWishlists = personalWishlists;
+          _availableCategories = categories;
+          _wishlistIdToCategory = wishlistIdToCategory;
+          _categoryCounts = categoryCounts;
+          _categoryCounts['all'] = totalCount; // Store total count
+          _isLoading = false;
+          _hasLoadedOnce = true;
+          // Apply current filter if any
+          _applyCategoryFilter();
+        });
+      }
     } on ApiException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+          _isLoading = false;
+        });
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -835,10 +850,12 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         );
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to load wishlists. Please try again.';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load wishlists. Please try again.';
+          _isLoading = false;
+        });
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -983,9 +1000,11 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
           (wishlist.category?.toLowerCase().contains(searchLower) ?? false);
     }).toList();
 
-    setState(() {
-      _personalWishlists = filtered;
-    });
+    if (mounted) {
+      setState(() {
+        _personalWishlists = filtered;
+      });
+    }
   }
 
   /// Apply category filter to personal wishlists
@@ -1063,10 +1082,12 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   }) {
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _selectedCategory = category;
-          _applyCategoryFilter();
-        });
+        if (mounted) {
+          setState(() {
+            _selectedCategory = category;
+            _applyCategoryFilter();
+          });
+        }
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),

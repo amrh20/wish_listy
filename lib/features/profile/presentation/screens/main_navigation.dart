@@ -34,6 +34,7 @@ class _MainNavigationState extends State<MainNavigation>
     with TickerProviderStateMixin {
   int _currentIndex = 0;
   late AnimationController _fabAnimationController;
+  final PageStorageBucket _pageStorageBucket = PageStorageBucket();
   final GlobalKey<MyWishlistsScreenState> _wishlistsKey = GlobalKey();
   final GlobalKey<EventsScreenState> _eventsKey = GlobalKey();
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
@@ -116,26 +117,6 @@ class _MainNavigationState extends State<MainNavigation>
       _currentIndex = index;
     });
 
-    // Refresh data when switching to home tab (for guest wishlists)
-    if (index == 0 && _homeKey.currentState != null) {
-      _homeKey.currentState!.refreshGuestWishlists();
-    }
-
-    // Refresh data when switching to wishlists tab
-    if (index == 1 && _wishlistsKey.currentState != null) {
-      _wishlistsKey.currentState!.refreshWishlists();
-    }
-
-    // Refresh data when switching to events tab
-    if (index == 2 && _eventsKey.currentState != null) {
-      _eventsKey.currentState!.refreshEvents();
-    }
-
-    // Refresh data when switching to friends tab
-    if (index == 3 && _friendsKey.currentState != null) {
-      _friendsKey.currentState!.refreshFriends();
-    }
-
     // Haptic feedback
     HapticFeedback.lightImpact();
 
@@ -145,11 +126,26 @@ class _MainNavigationState extends State<MainNavigation>
   }
 
   List<Widget> get _screens => [
-    HomeScreen(key: _homeKey),
-    MyWishlistsScreen(key: _wishlistsKey),
-    EventsScreen(key: _eventsKey),
-    FriendsScreen(key: _friendsKey),
-    const ProfileScreen(), // Profile will load via didChangeDependencies when tab becomes visible
+    KeyedSubtree(
+      key: const PageStorageKey('tab_home'),
+      child: HomeScreen(key: _homeKey),
+    ),
+    KeyedSubtree(
+      key: const PageStorageKey('tab_wishlists'),
+      child: MyWishlistsScreen(key: _wishlistsKey),
+    ),
+    KeyedSubtree(
+      key: const PageStorageKey('tab_events'),
+      child: EventsScreen(key: _eventsKey),
+    ),
+    KeyedSubtree(
+      key: const PageStorageKey('tab_friends'),
+      child: FriendsScreen(key: _friendsKey),
+    ),
+    const KeyedSubtree(
+      key: PageStorageKey('tab_profile'),
+      child: ProfileScreen(),
+    ),
   ];
 
   void _handleDoubleTap(int index) {
@@ -190,13 +186,19 @@ class _MainNavigationState extends State<MainNavigation>
                 onTap: _onTabTapped,
               ),
             ),
-            body: IndexedStack(index: _currentIndex, children: _screens),
+            body: PageStorage(
+              bucket: _pageStorageBucket,
+              child: IndexedStack(index: _currentIndex, children: _screens),
+            ),
           );
         } else {
           return Scaffold(
             backgroundColor: Colors.white,
             extendBody: true,
-            body: IndexedStack(index: _currentIndex, children: _screens),
+            body: PageStorage(
+              bucket: _pageStorageBucket,
+              child: IndexedStack(index: _currentIndex, children: _screens),
+            ),
             bottomNavigationBar: Container(
               color: Colors.transparent,
               child: CustomBottomNavigation(

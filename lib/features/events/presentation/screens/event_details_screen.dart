@@ -1623,6 +1623,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             wishlistName: _event!.wishlistName ?? 'Event Wishlist',
             itemCount: _event!.wishlistItemCount ?? 0,
             reservedCount: 0, // TODO: Get from API if available
+            showUnlinkAction: widget.isOwner, // Only show unlink for event owner
             onTap: () {
               Navigator.pushNamed(
                 context,
@@ -1633,6 +1634,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 },
               );
             },
+            onUnlink: widget.isOwner ? _handleUnlinkWishlist : null,
           )
         else
           const SizedBox.shrink(),

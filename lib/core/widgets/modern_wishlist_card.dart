@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/utils/category_images.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wish_listy/features/wishlists/presentation/widgets/wishlist_card_widget.dart';
 
 /// Modern 2025 wishlist card - Clean, minimal, and trendy
 class ModernWishlistCard extends StatefulWidget {
   final String title;
   final String? description;
-  final bool isPublic;
+  final WishlistPrivacy privacy;
   final int totalItems;
   final int giftedItems;
   final int todayItems;
@@ -24,7 +25,7 @@ class ModernWishlistCard extends StatefulWidget {
     super.key,
     required this.title,
     this.description,
-    this.isPublic = false,
+    this.privacy = WishlistPrivacy.public,
     required this.totalItems,
     required this.giftedItems,
     this.todayItems = 0,
@@ -291,12 +292,27 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
   }
 
   Widget _buildStatusPill() {
-    final isPublic = widget.isPublic;
-    final backgroundColor = isPublic
-        ? AppColors.success.withOpacity(0.15)
-        : AppColors.info.withOpacity(0.15);
-    final textColor = isPublic ? AppColors.success : AppColors.info;
-    final label = isPublic ? 'Public' : 'Private';
+    Color backgroundColor;
+    Color textColor;
+    String label;
+    
+    switch (widget.privacy) {
+      case WishlistPrivacy.public:
+        backgroundColor = AppColors.success.withOpacity(0.15);
+        textColor = AppColors.success;
+        label = 'Public';
+        break;
+      case WishlistPrivacy.onlyInvited:
+        backgroundColor = AppColors.warning.withOpacity(0.15);
+        textColor = AppColors.warning;
+        label = 'Friends';
+        break;
+      case WishlistPrivacy.private:
+        backgroundColor = AppColors.info.withOpacity(0.15);
+        textColor = AppColors.info;
+        label = 'Private';
+        break;
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

@@ -72,7 +72,7 @@ class WishlistCardWidget extends StatelessWidget {
     return ModernWishlistCard(
       title: wishlist.name,
       description: description,
-      isPublic: wishlist.privacy == WishlistPrivacy.public,
+      privacy: wishlist.privacy,
       totalItems: wishlist.itemCount,
       giftedItems: wishlist.purchasedCount,
       todayItems: todayItems,

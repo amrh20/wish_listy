@@ -8,6 +8,8 @@ class EventWishlistTile extends StatelessWidget {
   final int itemCount;
   final int? reservedCount;
   final VoidCallback onTap;
+  final VoidCallback? onUnlink;
+  final bool showUnlinkAction;
 
   const EventWishlistTile({
     super.key,
@@ -15,6 +17,8 @@ class EventWishlistTile extends StatelessWidget {
     required this.itemCount,
     this.reservedCount,
     required this.onTap,
+    this.onUnlink,
+    this.showUnlinkAction = false,
   });
 
   @override
@@ -87,11 +91,35 @@ class EventWishlistTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Trailing Arrow
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 16,
-                    color: AppColors.textTertiary,
+                  // Trailing Actions (Menu + Arrow)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Unlink Menu (if enabled and callback provided)
+                      if (showUnlinkAction && onUnlink != null)
+                        IconButton(
+                          onPressed: () => _showUnlinkMenu(context),
+                          icon: Icon(
+                            Icons.more_vert,
+                            size: 20,
+                            color: AppColors.textTertiary,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 32,
+                            minHeight: 32,
+                          ),
+                          tooltip: 'Wishlist options',
+                        ),
+                      if (showUnlinkAction && onUnlink != null)
+                        const SizedBox(width: 4),
+                      // Trailing Arrow
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                        color: AppColors.textTertiary,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -107,6 +135,65 @@ class EventWishlistTile extends StatelessWidget {
       return '$itemCount ${itemCount == 1 ? 'Item' : 'Items'} • $reservedCount Reserved';
     }
     return '$itemCount ${itemCount == 1 ? 'Item' : 'Items'}';
+  }
+
+  void _showUnlinkMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Unlink option
+              ListTile(
+                leading: Icon(
+                  Icons.link_off,
+                  color: AppColors.error,
+                ),
+                title: Text(
+                  'Unlink Wishlist',
+                  style: AppStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.error,
+                  ),
+                ),
+                subtitle: Text(
+                  'Remove this wishlist from the event',
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  onUnlink?.call();
+                },
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
