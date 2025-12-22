@@ -3,11 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/features/events/data/models/event_model.dart';
 
 /// Widget for event mode selection (in-person, online, hybrid)
 class EventModeWidget extends StatelessWidget {
-  final String selectedMode;
-  final ValueChanged<String> onModeChanged;
+  final EventMode selectedMode;
+  final ValueChanged<EventMode> onModeChanged;
 
   const EventModeWidget({
     super.key,
@@ -56,7 +57,7 @@ class EventModeWidget extends StatelessWidget {
             runSpacing: 8,
             children: [
               _buildModeOption(
-                'in_person',
+                EventMode.inPerson,
                 localization.translate('events.inPerson'),
                 localization.translate('events.inPersonDescription'),
                 Icons.location_on_outlined,
@@ -64,7 +65,7 @@ class EventModeWidget extends StatelessWidget {
                 localization,
               ),
               _buildModeOption(
-                'online',
+                EventMode.online,
                 localization.translate('events.online'),
                 localization.translate('events.onlineDescription'),
                 Icons.video_call_outlined,
@@ -72,7 +73,7 @@ class EventModeWidget extends StatelessWidget {
                 localization,
               ),
               _buildModeOption(
-                'hybrid',
+                EventMode.hybrid,
                 localization.translate('events.hybrid'),
                 localization.translate('events.hybridDescription'),
                 Icons.connect_without_contact_outlined,
@@ -87,7 +88,7 @@ class EventModeWidget extends StatelessWidget {
   }
 
   Widget _buildModeOption(
-    String value,
+    EventMode value,
     String title,
     String description,
     IconData icon,

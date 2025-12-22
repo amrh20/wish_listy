@@ -43,7 +43,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   String? _linkedWishlistId;
   String? _linkedWishlistName;
   String _selectedPrivacy = 'friends_only';
-  String _selectedEventMode = 'in_person';
+  EventMode _selectedEventMode = EventMode.inPerson;
   final _meetingLinkController = TextEditingController();
 
   // New variables for enhanced features
@@ -185,7 +185,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     _selectedPrivacy = event.privacy ?? 'friends_only';
 
     // Set mode
-    _selectedEventMode = event.mode ?? 'in_person';
+    _selectedEventMode = EventModeExtension.fromString(event.mode ?? 'in_person');
 
     // Set meeting link
     _meetingLinkController.text = event.meetingLink ?? '';
@@ -393,48 +393,65 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                                       ),
                                       const SizedBox(height: 24),
 
-                                      // Location (moved under Event Mode)
-                                      CustomTextField(
-                                        controller: _locationController,
-                                        label: localization.translate(
-                                          'events.location',
-                                        ),
-                                        hint: localization.translate(
-                                          'events.whereWillItTakePlace',
-                                        ),
-                                        prefixIcon: Icons.location_on_outlined,
-                                        suffixIcon: IconButton(
-                                          icon: Icon(Icons.map_outlined),
-                                          onPressed: _selectLocationFromMap,
+                                      // Animated Fields Container based on Event Mode
+                                      AnimatedSize(
+                                        duration: const Duration(milliseconds: 300),
+                                        curve: Curves.easeInOut,
+                                        child: Column(
+                                          children: [
+                                            // Location Field - Show for In Person & Hybrid
+                                            if (_selectedEventMode == EventMode.inPerson ||
+                                                _selectedEventMode == EventMode.hybrid)
+                                              Column(
+                                                children: [
+                                                  CustomTextField(
+                                                    controller: _locationController,
+                                                    label: localization.translate('events.location'),
+                                                    hint: 'Enter address or pick on map',
+                                                    prefixIcon: null,
+                                                    suffixIcon: IconButton(
+                                                      icon: const Icon(Icons.map_outlined),
+                                                      onPressed: () => _pickLocationOnMap(),
+                                                      tooltip: 'Pick location on map',
+                                                    ),
+                                                    isRequired: true,
+                                                    validator: (value) {
+                                                      if ((_selectedEventMode == EventMode.inPerson ||
+                                                              _selectedEventMode == EventMode.hybrid) &&
+                                                          (value?.trim().isEmpty ?? true)) {
+                                                        return 'Location is required for ${_selectedEventMode == EventMode.inPerson ? 'in-person' : 'hybrid'} events';
+                                                      }
+                                                      return null;
+                                                    },
+                                                  ),
+                                                  if (_selectedEventMode == EventMode.hybrid)
+                                                    const SizedBox(height: 20),
+                                                ],
+                                              ),
+
+                                            // Meeting Link Field - Show for Online & Hybrid
+                                            if (_selectedEventMode == EventMode.online ||
+                                                _selectedEventMode == EventMode.hybrid)
+                                              CustomTextField(
+                                                controller: _meetingLinkController,
+                                                label: localization.translate('events.onlineMeetingLink'),
+                                                hint: 'Paste meeting link (Zoom, Meet, etc)',
+                                                prefixIcon: Icons.video_camera_front_outlined,
+                                                keyboardType: TextInputType.url,
+                                                isRequired: true,
+                                                validator: (value) {
+                                                  if ((_selectedEventMode == EventMode.online ||
+                                                          _selectedEventMode == EventMode.hybrid) &&
+                                                      (value?.trim().isEmpty ?? true)) {
+                                                    return 'Meeting link is required for ${_selectedEventMode == EventMode.online ? 'online' : 'hybrid'} events';
+                                                  }
+                                                  return null;
+                                                },
+                                              ),
+                                          ],
                                         ),
                                       ),
 
-                                      // Online Meeting Link (only for online/hybrid events)
-                                      if (_selectedEventMode == 'online' ||
-                                          _selectedEventMode == 'hybrid') ...[
-                                        const SizedBox(height: 20),
-                                        CustomTextField(
-                                          controller: _meetingLinkController,
-                                          label: localization.translate(
-                                            'events.onlineMeetingLink',
-                                          ),
-                                          hint: localization.translate(
-                                            'events.enterMeetingLink',
-                                          ),
-                                          prefixIcon: Icons.video_call_outlined,
-                                          keyboardType: TextInputType.url,
-                                          validator: (value) {
-                                            if (_selectedEventMode ==
-                                                    'online' &&
-                                                (value?.isEmpty ?? true)) {
-                                              return localization.translate(
-                                                'events.pleaseEnterMeetingLink',
-                                              );
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                      ],
                                       const SizedBox(height: 24),
 
                                       // Wishlist Option
@@ -810,6 +827,16 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     );
   }
 
+  void _pickLocationOnMap() {
+    // TODO: Implement map picker integration
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Map integration coming soon!'),
+        backgroundColor: AppColors.info,
+      ),
+    );
+  }
+
   Future<void> _saveEvent(LocalizationService localization) async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -837,12 +864,28 @@ class _CreateEventScreenState extends State<CreateEventScreen>
       return;
     }
 
-    // Validate meeting link for online/hybrid events
-    if ((_selectedEventMode == 'online' || _selectedEventMode == 'hybrid') &&
-        (_meetingLinkController.text.trim().isEmpty)) {
+    // Validate Location for in-person and hybrid events
+    if ((_selectedEventMode == EventMode.inPerson ||
+            _selectedEventMode == EventMode.hybrid) &&
+        _locationController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please enter meeting link for online events'),
+          content: Text(
+            'Location is required for ${_selectedEventMode == EventMode.inPerson ? 'in-person' : 'hybrid'} events',
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    // Validate Meeting Link for online and hybrid events
+    if ((_selectedEventMode == EventMode.online ||
+            _selectedEventMode == EventMode.hybrid) &&
+        _meetingLinkController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Meeting link is required for online/hybrid events'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -890,7 +933,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
 
       // Determine meeting link
       String? meetingLink;
-      if (_selectedEventMode == 'online' || _selectedEventMode == 'hybrid') {
+      if (_selectedEventMode == EventMode.online || _selectedEventMode == EventMode.hybrid) {
         meetingLink = _meetingLinkController.text.trim();
         if (meetingLink.isEmpty) {
           throw Exception('Meeting link is required for online/hybrid events');
@@ -910,8 +953,9 @@ class _CreateEventScreenState extends State<CreateEventScreen>
           time: eventTime,
           type: _selectedEventType,
           privacy: _selectedPrivacy,
-          mode: _selectedEventMode,
-          location: _locationController.text.trim().isNotEmpty
+          mode: _selectedEventMode.apiValue,
+          location: (_selectedEventMode == EventMode.inPerson ||
+                  _selectedEventMode == EventMode.hybrid)
               ? _locationController.text.trim()
               : null,
           meetingLink: meetingLink,
@@ -929,8 +973,9 @@ class _CreateEventScreenState extends State<CreateEventScreen>
           time: eventTime,
           type: _selectedEventType,
           privacy: _selectedPrivacy,
-          mode: _selectedEventMode,
-          location: _locationController.text.trim().isNotEmpty
+          mode: _selectedEventMode.apiValue,
+          location: (_selectedEventMode == EventMode.inPerson ||
+                  _selectedEventMode == EventMode.hybrid)
               ? _locationController.text.trim()
               : null,
           meetingLink: meetingLink,

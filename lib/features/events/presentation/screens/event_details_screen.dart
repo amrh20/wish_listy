@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/primary_gradient_button.dart';
-import 'package:wish_listy/core/widgets/modern_wishlist_card.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
@@ -12,6 +11,7 @@ import 'package:wish_listy/features/events/data/repository/event_repository.dart
 import 'package:wish_listy/features/events/presentation/widgets/invite_friends_bottom_sheet.dart';
 import 'package:wish_listy/features/events/presentation/widgets/wishlist_options_bottom_sheet.dart';
 import 'package:wish_listy/features/events/presentation/widgets/link_wishlist_bottom_sheet.dart';
+import 'package:wish_listy/features/events/presentation/widgets/event_wishlist_tile.dart';
 import 'package:wish_listy/core/widgets/top_overlay_toast.dart';
 
 class EventDetailsScreen extends StatefulWidget {
@@ -1529,107 +1529,114 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   Widget _buildWishlistCard(LocalizationService localization) {
-    if (_event!.wishlistId == null && widget.isOwner) {
-      // Create Event Wishlist placeholder
-      return Container(
-        width: double.infinity, // Full width to match main sheet
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: AppColors.secondary.withOpacity(0.3), // Teal border
-            width: 1,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header
+        Text(
+          '🎁 Gift Registry',
+          style: AppStyles.headingSmall.copyWith(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.12),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
-        child: Column(
-          children: [
-            Icon(
-              Icons.card_giftcard_outlined,
-              color: AppColors.secondary, // Teal icon
-              size: 48,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Create Event Wishlist',
-              style: AppStyles.headingSmall.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+        const SizedBox(height: 16),
+        // Wishlist Content
+        if (_event!.wishlistId == null && widget.isOwner)
+          // Create Event Wishlist placeholder
+          Container(
+            width: double.infinity, // Full width to match main sheet
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: AppColors.secondary.withOpacity(0.3), // Teal border
+                width: 1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.12),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Link a wishlist to this event so guests can see what to gift',
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  _showWishlistOptionsBottomSheet();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.secondary, // Teal background
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.card_giftcard_outlined,
+                  color: AppColors.secondary, // Teal icon
+                  size: 48,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Create Event Wishlist',
+                  style: AppStyles.headingSmall.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
-                  elevation: 0,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.add, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Create Wishlist',
-                      style: AppStyles.button.copyWith(color: Colors.white),
+                const SizedBox(height: 8),
+                Text(
+                  'Link a wishlist to this event so guests can see what to gift',
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _showWishlistOptionsBottomSheet();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.secondary, // Teal background
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
                     ),
-                  ],
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.add, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Create Wishlist',
+                          style: AppStyles.button.copyWith(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      );
-    } else if (_event!.wishlistId != null) {
-      // Show mini wishlist card with full width
-      return Container(
-        width: double.infinity, // Full width to match main sheet
-        child: ModernWishlistCard(
-          title: 'Event Wishlist', // TODO: Get wishlist name from API
-          totalItems: 0, // TODO: Get from API
-          giftedItems: 0, // TODO: Get from API
-          completionPercentage: 0.0, // TODO: Calculate
-          onView: () {
-            Navigator.pushNamed(
-              context,
-              AppRoutes.wishlistItems,
-              arguments: {
-                'wishlistId': _event!.wishlistId,
-                'wishlistName': 'Event Wishlist',
-              },
-            );
-          },
-          onAddItem: () {
-            // TODO: Navigate to add item
-          },
-          onMenu: widget.isOwner ? _showWishlistMenu : null,
-        ),
-      );
-    }
-    return const SizedBox.shrink();
+          )
+        else if (_event!.wishlistId != null)
+          // Show compact wishlist tile
+          EventWishlistTile(
+            wishlistName: _event!.wishlistName ?? 'Event Wishlist',
+            itemCount: _event!.wishlistItemCount ?? 0,
+            reservedCount: 0, // TODO: Get from API if available
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                AppRoutes.wishlistItems,
+                arguments: {
+                  'wishlistId': _event!.wishlistId,
+                  'wishlistName': _event!.wishlistName ?? 'Event Wishlist',
+                },
+              );
+            },
+          )
+        else
+          const SizedBox.shrink(),
+      ],
+    );
   }
 }

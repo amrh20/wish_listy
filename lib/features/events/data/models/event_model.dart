@@ -11,6 +11,8 @@ class Event {
   final EventType type;
   final EventStatus status;
   final String? wishlistId;
+  final String? wishlistName;
+  final int? wishlistItemCount;
   final List<EventInvitation> invitations;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -34,6 +36,8 @@ class Event {
     required this.type,
     this.status = EventStatus.upcoming,
     this.wishlistId,
+    this.wishlistName,
+    this.wishlistItemCount,
     this.invitations = const [],
     required this.createdAt,
     required this.updatedAt,
@@ -72,11 +76,18 @@ class Event {
 
     // Get wishlist ID - support both wishlist object and wishlist_id
     String? wishlistId;
+    String? wishlistName;
+    int? wishlistItemCount;
     if (json['wishlist'] != null) {
       if (json['wishlist'] is Map) {
+        final wishlistMap = json['wishlist'] as Map<String, dynamic>;
         wishlistId =
-            json['wishlist']['_id']?.toString() ??
-            json['wishlist']['id']?.toString();
+            wishlistMap['_id']?.toString() ??
+            wishlistMap['id']?.toString();
+        wishlistName = wishlistMap['name']?.toString();
+        if (wishlistMap['items'] != null && wishlistMap['items'] is List) {
+          wishlistItemCount = (wishlistMap['items'] as List).length;
+        }
       } else if (json['wishlist'] is String) {
         wishlistId = json['wishlist'];
       }
@@ -219,6 +230,8 @@ class Event {
         orElse: () => EventStatus.upcoming,
       ),
       wishlistId: wishlistId,
+      wishlistName: wishlistName,
+      wishlistItemCount: wishlistItemCount,
       invitations:
           invitationsList
               ?.map((invitation) {
@@ -283,6 +296,8 @@ class Event {
     EventType? type,
     EventStatus? status,
     String? wishlistId,
+    String? wishlistName,
+    int? wishlistItemCount,
     List<EventInvitation>? invitations,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -306,6 +321,8 @@ class Event {
       type: type ?? this.type,
       status: status ?? this.status,
       wishlistId: wishlistId ?? this.wishlistId,
+      wishlistName: wishlistName ?? this.wishlistName,
+      wishlistItemCount: wishlistItemCount ?? this.wishlistItemCount,
       invitations: invitations ?? this.invitations,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -464,6 +481,8 @@ enum EventType {
 enum EventStatus { upcoming, ongoing, completed, cancelled }
 
 enum InvitationStatus { pending, accepted, declined, maybe }
+
+enum EventMode { inPerson, online, hybrid }
 
 /// Model for invited friend data from API
 class InvitedFriend {
@@ -626,6 +645,31 @@ extension EventTypeExtension on EventType {
   }
 }
 
+extension EventModeExtension on EventMode {
+  String get apiValue {
+    switch (this) {
+      case EventMode.inPerson:
+        return 'in_person';
+      case EventMode.online:
+        return 'online';
+      case EventMode.hybrid:
+        return 'hybrid';
+    }
+  }
+  
+  static EventMode fromString(String value) {
+    switch (value.toLowerCase()) {
+      case 'online':
+        return EventMode.online;
+      case 'hybrid':
+        return EventMode.hybrid;
+      case 'in_person':
+      default:
+        return EventMode.inPerson;
+    }
+  }
+}
+
 // Summary class for displaying events in lists
 class EventSummary {
   final String id;
@@ -719,7 +763,7 @@ class EventSummary {
       acceptedCount: event.statsAccepted ??
           acceptedFromInvitedFriends ??
           event.acceptedInvitations, // Fallback: invited_friends status count, then invitations count
-      wishlistItemCount: 0, // Would be calculated from backend
+      wishlistItemCount: event.wishlistItemCount ?? 0,
       wishlistId: event.wishlistId,
       isCreatedByMe: isCreatedByMe,
       status: event.status,
