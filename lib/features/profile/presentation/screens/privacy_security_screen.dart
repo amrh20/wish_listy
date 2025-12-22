@@ -15,20 +15,12 @@ class PrivacySecurityScreen extends StatefulWidget {
 }
 
 class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
-  bool _showOnlineStatus = true;
-  bool _allowFriendRequests = true;
-  bool _showWishlistActivity = true;
   bool _showProfileToPublic = false;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _showOnlineStatus = widget.privacySettings['showOnlineStatus'] ?? true;
-    _allowFriendRequests =
-        widget.privacySettings['allowFriendRequests'] ?? true;
-    _showWishlistActivity =
-        widget.privacySettings['showWishlistActivity'] ?? true;
     _showProfileToPublic =
         widget.privacySettings['showProfileToPublic'] ?? false;
   }
@@ -66,10 +58,6 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                   children: [
                     // Profile Visibility Section
                     _buildProfileVisibilitySection(localization),
-                    const SizedBox(height: 32),
-
-                    // Privacy Options Section
-                    _buildPrivacyOptionsSection(localization),
                     const SizedBox(height: 32),
 
                     // Security Section
@@ -142,71 +130,6 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
     );
   }
 
-  Widget _buildPrivacyOptionsSection(LocalizationService localization) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Privacy Options',
-          style: AppStyles.headingSmall.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                offset: const Offset(0, 2),
-                blurRadius: 8,
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              _buildSwitchOption(
-                title: 'Show Online Status',
-                subtitle: 'Let friends know when you\'re online',
-                value: _showOnlineStatus,
-                onChanged: (value) {
-                  setState(() {
-                    _showOnlineStatus = value;
-                  });
-                },
-              ),
-              Divider(height: 1, color: AppColors.surfaceVariant),
-              _buildSwitchOption(
-                title: 'Allow Friend Requests',
-                subtitle: 'Let others send you friend requests',
-                value: _allowFriendRequests,
-                onChanged: (value) {
-                  setState(() {
-                    _allowFriendRequests = value;
-                  });
-                },
-              ),
-              Divider(height: 1, color: AppColors.surfaceVariant),
-              _buildSwitchOption(
-                title: 'Show Wishlist Activity',
-                subtitle: 'Share your wishlist updates with friends',
-                value: _showWishlistActivity,
-                onChanged: (value) {
-                  setState(() {
-                    _showWishlistActivity = value;
-                  });
-                },
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildSecuritySection(LocalizationService localization) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,20 +161,6 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                 subtitle: 'Update your account password',
                 icon: Icons.lock_outline,
                 onTap: _changePassword,
-              ),
-              Divider(height: 1, color: AppColors.surfaceVariant),
-              _buildActionOption(
-                title: 'Two-Factor Authentication',
-                subtitle: 'Add an extra layer of security',
-                icon: Icons.security_outlined,
-                onTap: _setupTwoFactor,
-              ),
-              Divider(height: 1, color: AppColors.surfaceVariant),
-              _buildActionOption(
-                title: 'Login Sessions',
-                subtitle: 'Manage your active sessions',
-                icon: Icons.devices_outlined,
-                onTap: _manageSessions,
               ),
             ],
           ),
@@ -404,14 +313,6 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
     );
   }
 
-  void _setupTwoFactor() {
-    Navigator.pushNamed(context, '/two-factor-setup');
-  }
-
-  void _manageSessions() {
-    Navigator.pushNamed(context, '/login-sessions');
-  }
-
   Future<void> _savePrivacySettings() async {
     setState(() {
       _isLoading = true;
@@ -429,9 +330,6 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
           ),
         );
         Navigator.pop(context, {
-          'showOnlineStatus': _showOnlineStatus,
-          'allowFriendRequests': _allowFriendRequests,
-          'showWishlistActivity': _showWishlistActivity,
           'showProfileToPublic': _showProfileToPublic,
         });
       }

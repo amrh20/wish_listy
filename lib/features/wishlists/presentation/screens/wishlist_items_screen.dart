@@ -358,17 +358,22 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
     }
 
     // Parse status
+    // API can return isPurchased: true (boolean) OR status: "purchased"
     ItemStatus status = ItemStatus.desired;
-    final statusStr = data['status']?.toString().toLowerCase() ?? 'desired';
-    switch (statusStr) {
-      case 'purchased':
-        status = ItemStatus.purchased;
-        break;
-      case 'reserved':
-        status = ItemStatus.reserved;
-        break;
-      default:
-        status = ItemStatus.desired;
+    if (data['isPurchased'] == true) {
+      status = ItemStatus.purchased;
+    } else {
+      final statusStr = data['status']?.toString().toLowerCase() ?? 'desired';
+      switch (statusStr) {
+        case 'purchased':
+          status = ItemStatus.purchased;
+          break;
+        case 'reserved':
+          status = ItemStatus.reserved;
+          break;
+        default:
+          status = ItemStatus.desired;
+      }
     }
 
     // Parse dates
@@ -423,11 +428,18 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       name: data['name']?.toString() ?? 'Unnamed Item',
       description: data['description']?.toString(),
       link: data['link']?.toString() ?? data['url']?.toString(),
-      imageUrl: data['imageUrl']?.toString() ?? data['image_url']?.toString(),
+      imageUrl: data['imageUrl']?.toString() ??
+          data['image_url']?.toString() ??
+          data['image']?.toString(),
       priority: priority,
       status: status,
-      purchasedBy:
-          data['purchasedBy']?.toString() ?? data['purchased_by']?.toString(),
+      purchasedBy: () {
+        final v = data['purchasedBy'] ?? data['purchased_by'];
+        if (v is Map) {
+          return v['_id']?.toString() ?? v['id']?.toString();
+        }
+        return v?.toString();
+      }(),
       purchasedAt: purchasedAt,
       createdAt: createdAt,
       updatedAt: updatedAt,
@@ -955,12 +967,79 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
           return; // Exit early on error
         }
       } else {
-        // TODO: Implement API call to update item status for authenticated users
-        // await _wishlistRepository.updateItemStatus(item.id, newStatus);
+        // Call API to mark item as purchased for authenticated users
+        WishlistItem? updatedItem;
+        
+        if (newStatus == ItemStatus.purchased) {
+          try {
+            final updatedItemData = await _wishlistRepository.markItemAsPurchased(
+              itemId: item.id,
+              // purchasedBy is optional, defaults to current user
+            );
+
+            // Parse the updated item from API response
+            updatedItem = WishlistItem.fromJson(updatedItemData);
+          } catch (e) {
+            // Handle API error
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Failed to mark item as gifted: ${e.toString()}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: AppColors.error,
+                  duration: const Duration(seconds: 3),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+            return; // Exit early on error
+          }
+        } else {
+          // For unmarking as purchased, update local state
+          // TODO: Add API endpoint to unmark as purchased if needed
+          updatedItem = item.copyWith(
+            status: newStatus,
+            purchasedBy: null,
+            purchasedAt: null,
+            updatedAt: DateTime.now(),
+          );
+        }
+
+        // Update local state with API response for authenticated users
+        if (mounted && updatedItem != null) {
+          setState(() {
+            final index = _items.indexWhere((i) => i.id == item.id);
+            if (index != -1) {
+              _items[index] = updatedItem!;
+              if (newStatus == ItemStatus.purchased) {
+                _purchasedItems++;
+              } else {
+                _purchasedItems = _purchasedItems > 0 ? _purchasedItems - 1 : 0;
+              }
+            }
+          });
+        }
       }
 
-      // Update local state immediately for better UX
-      if (mounted) {
+      // Update local state for guest users
+      if (authService.isGuest && mounted) {
         setState(() {
           final index = _items.indexWhere((i) => i.id == item.id);
           if (index != -1) {

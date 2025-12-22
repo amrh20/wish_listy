@@ -244,8 +244,24 @@ class WishlistItem {
                      json['image']?.toString();
     
     // Parse purchasedBy: support both camelCase and snake_case
-    final purchasedBy = json['purchasedBy']?.toString() ?? 
-                        json['purchased_by']?.toString();
+    // Can be a string (user ID) or an object with _id, fullName, username
+    String? purchasedBy;
+    if (json['purchasedBy'] != null) {
+      if (json['purchasedBy'] is Map) {
+        // If it's an object, extract the _id
+        purchasedBy = json['purchasedBy']['_id']?.toString() ?? 
+                      json['purchasedBy']['id']?.toString();
+      } else {
+        purchasedBy = json['purchasedBy']?.toString();
+      }
+    } else if (json['purchased_by'] != null) {
+      if (json['purchased_by'] is Map) {
+        purchasedBy = json['purchased_by']['_id']?.toString() ?? 
+                      json['purchased_by']['id']?.toString();
+      } else {
+        purchasedBy = json['purchased_by']?.toString();
+      }
+    }
     
     // Parse priceRange: support both camelCase and snake_case
     PriceRange? priceRange;

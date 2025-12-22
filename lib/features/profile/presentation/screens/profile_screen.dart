@@ -162,6 +162,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                 const SizedBox(height: 16),
                                                 // App Settings
                                                 _buildAppSettings(),
+                                                const SizedBox(height: 16),
+                                                // Logout (last item)
+                                                _buildLogoutSection(),
                                                 const SizedBox(height: 80),
                                               ],
                                             ),
@@ -409,9 +412,6 @@ class _ProfileScreenState extends State<ProfileScreen>
             onTap: _notificationSettings,
             color: AppColors.accent,
           ),
-
-          // Logout button
-          _buildLogoutItem(),
         ],
       ),
     );
@@ -462,14 +462,6 @@ class _ProfileScreenState extends State<ProfileScreen>
           const SizedBox(height: 20),
 
           _buildSettingItem(
-            icon: Icons.palette_outlined,
-            title: 'Theme',
-            subtitle: 'Light, dark, system',
-            onTap: _themeSettings,
-            color: AppColors.info,
-          ),
-
-          _buildSettingItem(
             icon: Icons.language_outlined,
             title: 'Language',
             subtitle: _currentLanguage == 'en' ? 'English' : 'العربية',
@@ -479,6 +471,25 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLogoutSection() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textTertiary.withOpacity(0.1),
+            offset: const Offset(0, 4),
+            blurRadius: 20,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: _buildLogoutItem(),
     );
   }
 

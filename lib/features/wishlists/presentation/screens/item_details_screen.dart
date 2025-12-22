@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
@@ -32,6 +35,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   bool _isLoading = true;
   String? _errorMessage;
   String? _wishlistName; // Store wishlist name for navigation
+  Map<String, dynamic>? _rawItemData; // keep raw API data (price/url/purchasedBy object)
 
   @override
   void initState() {
@@ -82,6 +86,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         // Load from API for authenticated users
 
         final itemData = await _wishlistRepository.getItemById(widget.item.id);
+        _rawItemData = itemData;
 
         // Parse the item data to WishlistItem model
         final updatedItem = WishlistItem.fromJson(itemData);
@@ -168,39 +173,528 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final item = _currentItem ?? widget.item;
+
     return Scaffold(
       body: DecorativeBackground(
         showGifts: true,
         child: SafeArea(
-          child: Column(
-            children: [
-              // Minimal Header
-              _buildHeader(),
-
-              // Content
-              Expanded(
-                child: _isLoading
-                    ? Center(
-                        child: CircularProgressIndicator(color: AppColors.primary),
-                      )
-                    : _errorMessage != null
-                        ? _buildErrorState()
-                        : _currentItem == null
-                            ? Center(
-                                child: Text(
-                                  'Item not found',
-                                  style: AppStyles.bodyMedium.copyWith(
-                                    color: AppColors.textSecondary,
-                                  ),
+          child: _isLoading
+              ? Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                )
+              : _errorMessage != null
+                  ? _buildErrorState()
+                  : _currentItem == null
+                      ? Center(
+                          child: Text(
+                            'Item not found',
+                            style: AppStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        )
+                      : Column(
+                          children: [
+                            _buildCleanTopBar(item),
+                            Expanded(
+                              child: SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildTitleSection(item),
+                                    const SizedBox(height: 14),
+                                    if (item.imageUrl != null &&
+                                        item.imageUrl!.trim().isNotEmpty)
+                                      _buildImageCard(item),
+                                    if (item.imageUrl != null &&
+                                        item.imageUrl!.trim().isNotEmpty)
+                                      const SizedBox(height: 14),
+                                    if (_isPurchased(item)) ...[
+                                      _buildGiftedBanner(item),
+                                      const SizedBox(height: 14),
+                                    ],
+                                    if (_getItemUrl(item) != null) ...[
+                                      _buildVisitStoreButton(item),
+                                      const SizedBox(height: 16),
+                                    ],
+                                    _buildSoftInfoGrid(item),
+                                    const SizedBox(height: 18),
+                                    _buildDescriptionSection(item),
+                                  ],
                                 ),
-                              )
-                            : _buildContent(),
+                              ),
+                            ),
+                          ],
+                        ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCleanTopBar(WishlistItem item) {
+    final isPurchased = _isPurchased(item);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back_ios, size: 20),
+            color: AppColors.textPrimary,
+            style: IconButton.styleFrom(
+              padding: const EdgeInsets.all(8),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            tooltip: 'Share',
+            onPressed: () => _shareItem(item),
+            icon: const Icon(Icons.share_outlined, size: 22),
+            color: AppColors.textPrimary,
+            style: IconButton.styleFrom(
+              padding: const EdgeInsets.all(8),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+          if (!isPurchased)
+            IconButton(
+              tooltip: 'Edit',
+              onPressed: _editItem,
+              icon: const Icon(Icons.edit_outlined, size: 22),
+              color: AppColors.textPrimary,
+              style: IconButton.styleFrom(
+                padding: const EdgeInsets.all(8),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTitleSection(WishlistItem item) {
+    final priceText = _getDisplayPrice(item);
+    final priorityText = _getPriorityText(item.priority);
+    final subtitle =
+        (priceText != null && priceText.trim().isNotEmpty)
+            ? '${priceText.trim()} • $priorityText'
+            : priorityText;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          item.name,
+          style: AppStyles.headingLarge.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: 28,
+            color: AppColors.textPrimary,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          subtitle,
+          style: AppStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImageCard(WishlistItem item) {
+    final url = item.imageUrl!.trim();
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 14,
+                offset: const Offset(0, 8),
               ),
             ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: AspectRatio(
+              aspectRatio: 16 / 10,
+              child: CachedNetworkImage(
+                imageUrl: url,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => Container(
+                  color: AppColors.surfaceVariant.withOpacity(0.6),
+                ),
+                errorWidget: (_, __, ___) => Container(
+                  color: AppColors.surfaceVariant.withOpacity(0.6),
+                  child: const Icon(Icons.image_not_supported_outlined),
+                ),
+              ),
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildGiftedBanner(WishlistItem item) {
+    final buyerName = _getPurchasedByName();
+    final text = (buyerName != null && buyerName.isNotEmpty)
+        ? 'Gifted by $buyerName'
+        : 'Gifted by a friend';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.purple.shade50,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.14),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.check_circle, color: AppColors.primary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVisitStoreButton(WishlistItem item) {
+    return SizedBox(
+      width: double.infinity,
+      child: CustomButton(
+        text: 'Visit Store 🌐',
+        onPressed: () => _openStoreUrl(item),
+        variant: ButtonVariant.primary,
+      ),
+    );
+  }
+
+  Widget _buildSoftInfoGrid(WishlistItem item) {
+    final w = (MediaQuery.of(context).size.width - 20 * 2 - 12) / 2;
+
+    final priorityColor = _getPriorityColor(item.priority);
+    final store = _rawItemData?['storeName']?.toString() ??
+        _rawItemData?['store']?.toString() ??
+        '—';
+
+    return Wrap(
+      runSpacing: 12,
+      spacing: 12,
+      children: [
+        _InfoTile(
+          width: w,
+          title: 'Date Added',
+          value: _formatDate(item.createdAt),
+          icon: Icons.calendar_today_outlined,
+          iconColor: AppColors.textSecondary,
+          chipColor: AppColors.surfaceVariant.withOpacity(0.6),
+        ),
+        _InfoTile(
+          width: w,
+          title: 'Store',
+          value: (store.trim().isEmpty || store.trim() == 'null') ? '—' : store,
+          icon: Icons.storefront_outlined,
+          iconColor: AppColors.primary,
+          chipColor: AppColors.primary.withOpacity(0.10),
+        ),
+        _InfoTile(
+          width: w,
+          title: 'Priority',
+          value: _getPriorityText(item.priority),
+          icon: Icons.priority_high,
+          iconColor: priorityColor,
+          chipColor: priorityColor.withOpacity(0.12),
+        ),
+      ],
+    );
+  }
+
+  bool _isPurchased(WishlistItem item) {
+    return item.status == ItemStatus.purchased;
+  }
+
+  String? _getItemUrl(WishlistItem item) {
+    final rawUrl = _rawItemData?['url']?.toString();
+    final fromModel = item.link;
+    final url = (rawUrl != null && rawUrl.trim().isNotEmpty) ? rawUrl : fromModel;
+    if (url == null || url.trim().isEmpty) return null;
+    return url.trim();
+  }
+
+  String? _getDisplayPrice(WishlistItem item) {
+    final rawPrice = _rawItemData?['price']?.toString();
+    if (rawPrice != null && rawPrice.trim().isNotEmpty) return rawPrice.trim();
+
+    // Fallback to model's priceRange string if available
+    final pr = item.priceRange?.toString();
+    if (pr != null && pr.trim().isNotEmpty && pr != 'Price not specified') {
+      return pr.trim();
+    }
+    return null;
+  }
+
+  String? _getPurchasedByName() {
+    final pb = _rawItemData?['purchasedBy'];
+    if (pb is Map) {
+      final fullName = pb['fullName']?.toString();
+      if (fullName != null && fullName.trim().isNotEmpty) return fullName.trim();
+      final username = pb['username']?.toString();
+      if (username != null && username.trim().isNotEmpty) return username.trim();
+    }
+    return null;
+  }
+
+  Future<void> _openStoreUrl(WishlistItem item) async {
+    final url = _getItemUrl(item);
+    if (url == null) return;
+
+    Uri uri;
+    try {
+      uri = Uri.parse(url);
+      if (uri.scheme.isEmpty) {
+        uri = Uri.parse('https://$url');
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid URL'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open link'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Widget _buildGiftedStatusCard(WishlistItem item) {
+    final buyerName = _getPurchasedByName();
+    final byText = (buyerName != null && buyerName.isNotEmpty)
+        ? 'By $buyerName'
+        : 'By a Secret Friend 🤫';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withOpacity(0.14),
+            Colors.white.withOpacity(0.85),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.12),
+          width: 1,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withOpacity(0.10),
+              ),
+            ),
+          ),
+          Positioned(
+            left: -18,
+            bottom: -22,
+            child: Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.secondary.withOpacity(0.08),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.card_giftcard, color: AppColors.primary),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '🎁 Gifted!',
+                      style: AppStyles.bodyLarge.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      byText,
+                      style: AppStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoGrid(WishlistItem item) {
+    final priorityColor = _getPriorityColor(item.priority);
+    final store = _rawItemData?['storeName']?.toString() ??
+        _rawItemData?['store']?.toString() ??
+        '—';
+    final createdAt = item.createdAt;
+
+    return Wrap(
+      runSpacing: 12,
+      spacing: 12,
+      children: [
+        _InfoTile(
+          width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
+          title: 'Priority',
+          value: _getPriorityText(item.priority),
+          icon: Icons.priority_high,
+          iconColor: priorityColor,
+          chipColor: priorityColor.withOpacity(0.12),
+        ),
+        _InfoTile(
+          width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
+          title: 'Status',
+          value: _isPurchased(item) ? 'Gifted' : 'Available',
+          icon: _isPurchased(item) ? Icons.check_circle : Icons.inventory_2_outlined,
+          iconColor: _isPurchased(item) ? AppColors.success : AppColors.info,
+          chipColor: (_isPurchased(item) ? AppColors.success : AppColors.info)
+              .withOpacity(0.12),
+        ),
+        _InfoTile(
+          width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
+          title: 'Store',
+          value: (store.trim().isEmpty || store.trim() == 'null') ? '—' : store,
+          icon: Icons.storefront_outlined,
+          iconColor: AppColors.primary,
+          chipColor: AppColors.primary.withOpacity(0.12),
+        ),
+        _InfoTile(
+          width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
+          title: 'Added',
+          value: _formatDate(createdAt),
+          icon: Icons.calendar_today_outlined,
+          iconColor: AppColors.textSecondary,
+          chipColor: AppColors.surfaceVariant.withOpacity(0.6),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDescriptionSection(WishlistItem item) {
+    final desc = item.description?.trim();
+    if (desc == null || desc.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Description',
+          style: AppStyles.headingSmall.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Text(
+            desc,
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textPrimary,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatDate(DateTime dt) {
+    // lightweight formatting without intl
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    return '${dt.year}-$m-$d';
   }
 
   Widget _buildHeader() {
@@ -695,23 +1189,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     }
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
-  }
+  // NOTE: _formatDate already exists above (yyyy-mm-dd). Keep one implementation only.
 
   // Action Handlers
   void _togglePurchaseStatus() {
@@ -764,14 +1242,22 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     });
   }
 
-  void _shareItem() {
-    // Share item functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Share functionality coming soon!'),
-        backgroundColor: AppColors.info,
-      ),
-    );
+  void _shareItem([WishlistItem? item]) {
+    // Lightweight "share": copy link (if any) or item name to clipboard
+    final it = item ?? _currentItem ?? widget.item;
+    final url = _getItemUrl(it);
+    final text = (url != null && url.isNotEmpty) ? url : it.name;
+
+    Clipboard.setData(ClipboardData(text: text));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Copied to clipboard'),
+          behavior: SnackBarBehavior.floating,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _deleteItem() {
@@ -984,5 +1470,86 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         );
       }
     }
+  }
+}
+
+class _InfoTile extends StatelessWidget {
+  final double width;
+  final String title;
+  final String value;
+  final IconData icon;
+  final Color iconColor;
+  final Color chipColor;
+
+  const _InfoTile({
+    required this.width,
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.iconColor,
+    required this.chipColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(
+          color: Colors.black.withOpacity(0.04),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: chipColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

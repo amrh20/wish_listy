@@ -408,4 +408,44 @@ class WishlistRepository {
       throw Exception('Failed to delete item. Please try again.');
     }
   }
+
+  /// Mark an item as purchased/gifted
+  ///
+  /// [itemId] - Item ID (required)
+  /// [purchasedBy] - Optional user ID who purchased the item (defaults to current user)
+  ///
+  /// Returns the updated item data
+  /// Uses API: PUT /api/items/:id/purchase
+  Future<Map<String, dynamic>> markItemAsPurchased({
+    required String itemId,
+    String? purchasedBy,
+  }) async {
+    try {
+      // Prepare request body
+      final requestData = <String, dynamic>{};
+      if (purchasedBy != null && purchasedBy.isNotEmpty) {
+        requestData['purchasedBy'] = purchasedBy;
+      }
+
+      // Make API call to mark item as purchased
+      // Endpoint: PUT /api/items/:id/purchase
+      final response = await _apiService.put(
+        '/items/$itemId/purchase',
+        data: requestData.isNotEmpty ? requestData : null,
+      );
+
+      // Parse response
+      // API response structure: {success: true, item: {...}}
+      final itemData = response['item'] ?? response;
+
+      return itemData is Map<String, dynamic> ? itemData : response;
+    } on ApiException {
+      // Re-throw ApiException to preserve error details
+      rethrow;
+    } catch (e) {
+      // Handle any unexpected errors
+
+      throw Exception('Failed to mark item as purchased. Please try again.');
+    }
+  }
 }
