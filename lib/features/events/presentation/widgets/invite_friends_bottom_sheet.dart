@@ -580,14 +580,14 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
             ? AppColors.primary.withOpacity(0.1)
             : hasResponded
                 ? AppColors.background.withOpacity(0.5)
-                : AppColors.background,
+            : AppColors.background,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isSelected
               ? AppColors.primary
               : hasResponded
                   ? AppColors.border.withOpacity(0.2)
-                  : AppColors.border.withOpacity(0.3),
+              : AppColors.border.withOpacity(0.3),
           width: isSelected ? 2 : 1,
         ),
       ),
@@ -598,13 +598,13 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
           borderRadius: BorderRadius.circular(12),
           child: Opacity(
             opacity: hasResponded ? 0.6 : 1.0,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: AppColors.primary.withOpacity(0.1),
                     backgroundImage: friend.profileImage != null &&
                             friend.profileImage!.isNotEmpty
                         ? NetworkImage(friend.profileImage!)
@@ -613,13 +613,13 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
                             friend.profileImage!.isEmpty
                         ? Text(
                             _getInitials(friend.fullName),
-                            style: AppStyles.headingSmall.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: AppStyles.headingSmall.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
                           )
                         : null,
-                  ),
+                    ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -659,10 +659,10 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
                                   color: _getStatusColor(status),
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
+                        ),
+                      ),
+                  ],
+                ),
                         ],
                       ],
                     ),
@@ -673,24 +673,24 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
                             'Already responded')
                         : '',
                     child: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
                           color: hasResponded
                               ? AppColors.border.withOpacity(0.3)
                               : isSelected
-                                  ? AppColors.primary
-                                  : AppColors.border,
-                          width: 2,
-                        ),
+                          ? AppColors.primary
+                          : AppColors.border,
+                      width: 2,
+                    ),
                         color: hasResponded
                             ? AppColors.background
                             : isSelected
-                                ? AppColors.primary
-                                : Colors.transparent,
-                      ),
+                        ? AppColors.primary
+                        : Colors.transparent,
+                  ),
                       child: hasResponded
                           ? Icon(
                               Icons.lock_outline,
@@ -698,15 +698,15 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
                               color: AppColors.textSecondary,
                             )
                           : isSelected
-                              ? const Icon(
-                                  Icons.check,
-                                  size: 16,
-                                  color: Colors.white,
-                                )
-                              : null,
+                      ? const Icon(
+                          Icons.check,
+                          size: 16,
+                          color: Colors.white,
+                        )
+                      : null,
                     ),
-                  ),
-                ],
+                ),
+              ],
               ),
             ),
           ),

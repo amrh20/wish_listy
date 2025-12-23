@@ -180,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen>
         String errorMessage = e.message.isNotEmpty
             ? e.message
             : 'An error occurred';
-        
+
         String title = localization.translate('auth.loginFailed');
 
         // For 400, 401, 404, 422 errors: Show the actual API message from backend

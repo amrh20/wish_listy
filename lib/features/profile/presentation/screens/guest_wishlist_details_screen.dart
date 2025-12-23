@@ -65,6 +65,7 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
 
   late List<WishItemModel> _items;
   bool _loading = false;
+  bool _hasLoadedOnce = false;
   String _selectedFilter = 'all';
   String _searchQuery = '';
   final _searchController = TextEditingController();
@@ -75,6 +76,24 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
     _items = List<WishItemModel>.from(widget.items);
     if (!widget.isDummy) {
       _reloadFromLocal();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Reload data when screen becomes visible (e.g., returning from AddItemScreen)
+    if (!widget.isDummy && widget.wishlistId != null && _hasLoadedOnce) {
+      final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+      if (isCurrent) {
+        // Screen is now visible and we've loaded before, reload data to sync with local storage
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _reloadFromLocal();
+          }
+        });
+      }
     }
   }
 
@@ -95,6 +114,7 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
       setState(() {
         _items = localItems.map(_mapWishlistItemToUi).toList();
         _loading = false;
+        _hasLoadedOnce = true;
       });
     } catch (_) {
       if (!mounted) return;
@@ -208,7 +228,9 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
     );
 
     // Refresh from local after returning (guest add flow persists in Hive)
+    // Add a small delay to ensure Hive write is complete
     if (!mounted) return;
+    await Future.delayed(const Duration(milliseconds: 200));
     await _reloadFromLocal();
   }
 
@@ -369,7 +391,6 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
   Widget build(BuildContext context) {
     final categoryColor = _getCategoryColor(widget.category);
     final total = _items.length;
-    final gifted = _items.where((i) => i.status == ItemStatus.purchased).length;
     final filteredItems = _filteredItems();
 
     return Scaffold(
@@ -578,21 +599,8 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
       return inName || inDesc || inNote;
     }
 
-    return _items.where((item) {
-      final ok = matchesSearch(item);
-      if (!ok) return false;
-
-      final isGifted = item.status == ItemStatus.purchased;
-      switch (_selectedFilter) {
-        case 'available':
-          return !isGifted;
-        case 'gifted':
-          return isGifted;
-        case 'all':
-        default:
-          return true;
-      }
-    }).toList();
+    // For guest users, only apply search filter (no status/gifted filter)
+    return _items.where((item) => matchesSearch(item)).toList();
   }
 
   Future<_EditResult?> _showEditDialog({

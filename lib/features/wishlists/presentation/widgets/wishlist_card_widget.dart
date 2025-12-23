@@ -69,6 +69,8 @@ class WishlistCardWidget extends StatelessWidget {
     String? description;
     if (isEvent && wishlist.eventName != null) {
       description = wishlist.eventName;
+    } else {
+      description = wishlist.description;
     }
 
     // Determine accent color based on type
@@ -84,6 +86,8 @@ class WishlistCardWidget extends StatelessWidget {
       completionPercentage: progress,
       accentColor: accentColor,
       category: wishlist.category, // Pass category for image display
+      eventDate: wishlist.eventDate, // Pass eventDate for days left calculation
+      previewItemNames: wishlist.previewItems.map((e) => e.name).toList(),
       onView: onTap,
       onAddItem: onAddItem,
       onEdit: () => onMenuAction('edit'),

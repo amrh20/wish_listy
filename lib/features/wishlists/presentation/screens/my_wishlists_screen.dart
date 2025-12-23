@@ -318,8 +318,14 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     );
   }
 
-  void _navigateToAddItem(WishlistSummary wishlist) {
-    Navigator.pushNamed(context, AppRoutes.addItem, arguments: wishlist.id);
+  void _navigateToAddItem(WishlistSummary wishlist) async {
+    await Navigator.pushNamed(context, AppRoutes.addItem, arguments: wishlist.id);
+    
+    // Reload wishlists after returning from AddItemScreen to show new items
+    // Add a small delay to ensure Hive write is complete for guest users
+    if (!mounted) return;
+    await Future.delayed(const Duration(milliseconds: 200));
+    await _loadWishlists();
   }
 
   void _navigateToCreateWishlist({bool isEvent = false}) {
@@ -952,12 +958,22 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     // Get item counts from stats if available, otherwise calculate from items
     int itemCount = 0;
     int purchasedCount = 0;
+    List<WishlistItem> previewItems = const <WishlistItem>[];
 
     if (data['stats'] != null && data['stats'] is Map) {
       // Use stats from API if available
       final stats = data['stats'] as Map<String, dynamic>;
       itemCount = stats['totalItems'] as int? ?? 0;
       purchasedCount = stats['purchasedItems'] as int? ?? 0;
+      // Still try to build preview items from items array if present.
+      final rawItems = data['items'] as List<dynamic>? ?? const [];
+      final parsed = <WishlistItem>[];
+      for (final it in rawItems) {
+        if (it is Map<String, dynamic>) {
+          parsed.add(WishlistItem.fromJson(it));
+        }
+      }
+      previewItems = parsed.take(3).toList();
     } else {
       // Fallback: calculate from items array
       final items = data['items'] as List<dynamic>? ?? [];
@@ -966,6 +982,15 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         final status = item['status']?.toString().toLowerCase() ?? '';
         return status == 'purchased' || status == 'reserved';
       }).length;
+
+      // Build preview items from the first 3 items (for wishlist cards bubbles).
+      final parsed = <WishlistItem>[];
+      for (final it in items) {
+        if (it is Map<String, dynamic>) {
+          parsed.add(WishlistItem.fromJson(it));
+        }
+      }
+      previewItems = parsed.take(3).toList();
     }
 
     return WishlistSummary(
@@ -981,6 +1006,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
           data['eventName']?.toString() ?? data['event_name']?.toString(),
       eventDate: eventDate,
       category: data['category']?.toString(), // Added category field
+      previewItems: previewItems,
     );
   }
 

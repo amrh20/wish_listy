@@ -93,31 +93,31 @@ class InviteGuestsWidget extends StatelessWidget {
               const SizedBox(height: 16),
             ] else ...[
               // Fallback: Show count only if friend data is not available
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.check_circle, color: AppColors.primary, size: 16),
-                    const SizedBox(width: 8),
-                    Text(
-                      localization.translate(
-                        'events.friendsInvited',
-                        args: {'count': invitedFriends.length.toString()},
-                      ),
-                      style: AppStyles.bodySmall.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
               ),
-              const SizedBox(height: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: AppColors.primary, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    localization.translate(
+                      'events.friendsInvited',
+                      args: {'count': invitedFriends.length.toString()},
+                    ),
+                    style: AppStyles.bodySmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             ],
           ],
 

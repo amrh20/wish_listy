@@ -622,8 +622,8 @@ class EventsScreenState extends State<EventsScreen>
   }
 
   Future<void> _handleRSVP(EventSummary event, String status) async {
-    if (!mounted) return;
-
+      if (!mounted) return;
+      
     // Convert string to InvitationStatus enum
     final invitationStatus = status == 'accepted'
         ? InvitationStatus.accepted
@@ -649,8 +649,8 @@ class EventsScreenState extends State<EventsScreen>
               status == 'accepted'
                   ? 'You accepted the invitation'
                   : status == 'declined'
-                      ? 'You declined the invitation'
-                      : 'You marked as maybe',
+                  ? 'You declined the invitation'
+                  : 'You marked as maybe',
             ),
             backgroundColor: AppColors.success,
             duration: const Duration(seconds: 2),
@@ -664,7 +664,7 @@ class EventsScreenState extends State<EventsScreen>
       // On error, revert optimistic update and reload to sync with server
       _updateEventInvitationStatus(event.id, event.invitationStatus ?? InvitationStatus.pending);
       await _loadEvents(); // Full reload to ensure consistency
-
+      
       // Show error message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

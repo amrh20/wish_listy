@@ -1,8 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
-import 'package:wish_listy/core/utils/category_images.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/features/wishlists/presentation/widgets/wishlist_card_widget.dart';
+
+/// Helper class for category visual styling
+class _CategoryVisual {
+  final IconData icon;
+  final Color backgroundColor;
+  final Color foregroundColor;
+
+  const _CategoryVisual({
+    required this.icon,
+    required this.backgroundColor,
+    required this.foregroundColor,
+  });
+}
+
+/// Get category visual styling
+_CategoryVisual _getCategoryVisual(String? categoryRaw) {
+  final category = (categoryRaw ?? 'Other').trim();
+  final normalized = category.toLowerCase();
+
+  // Normalize a few common values
+  final effective = (normalized == 'general' || normalized == 'other')
+      ? 'other'
+      : normalized;
+
+  switch (effective) {
+    case 'birthday':
+      return _CategoryVisual(
+        icon: Icons.cake_rounded,
+        backgroundColor: Colors.orange.shade50,
+        foregroundColor: Colors.orange.shade700,
+      );
+    case 'wedding':
+      return _CategoryVisual(
+        icon: Icons.favorite_rounded,
+        backgroundColor: Colors.teal.shade50,
+        foregroundColor: Colors.teal.shade700,
+      );
+    case 'graduation':
+      return _CategoryVisual(
+        icon: Icons.school_rounded,
+        backgroundColor: Colors.lightBlue.shade50,
+        foregroundColor: Colors.lightBlue.shade700,
+      );
+    default:
+      return _CategoryVisual(
+        icon: Icons.star_rounded,
+        backgroundColor: Colors.grey.shade100,
+        foregroundColor: Colors.grey.shade700,
+      );
+  }
+}
+
+/// Format category label
+String _formatCategoryLabel(String? categoryRaw) {
+  final category = (categoryRaw ?? 'Other').trim();
+  if (category.isEmpty) return 'Other';
+  if (category.toLowerCase() == 'general') return 'Other';
+  // Capitalize first letter
+  return category[0].toUpperCase() + category.substring(1);
+}
 
 /// Modern 2025 wishlist card - Clean, minimal, and trendy
 class ModernWishlistCard extends StatefulWidget {
@@ -20,6 +79,8 @@ class ModernWishlistCard extends StatefulWidget {
   final Color? accentColor;
   final String? imageUrl;
   final String? category; // Added for category images
+  final DateTime? eventDate; // For days left calculation
+  final List<String> previewItemNames; // For guest-style bubbles preview
 
   const ModernWishlistCard({
     super.key,
@@ -36,7 +97,9 @@ class ModernWishlistCard extends StatefulWidget {
     this.onEdit,
     this.accentColor,
     this.imageUrl,
-    this.category, // Added for category images
+    this.category,
+    this.eventDate,
+    this.previewItemNames = const [],
   });
 
   @override
@@ -45,456 +108,411 @@ class ModernWishlistCard extends StatefulWidget {
 
 class _ModernWishlistCardState extends State<ModernWishlistCard>
     with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-  late Animation<double> _progressAnimation;
-
-  bool _isHovered = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeAnimations();
-    _animationController.forward();
-  }
-
-  void _initializeAnimations() {
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-
-    // Fade in animation
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
-      ),
-    );
-
-    // Slide up animation
-    _slideAnimation =
-        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
-          ),
-        );
-
-    // Progress bar animation
-    _progressAnimation =
-        Tween<double>(
-          begin: 0.0,
-          end: widget.completionPercentage / 100,
-        ).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: const Interval(0.3, 1.0, curve: Curves.easeOutCubic),
-          ),
-        );
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  Color get _accentColor => widget.accentColor ?? AppColors.primary;
-
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: MouseRegion(
-          onEnter: (_) => setState(() => _isHovered = true),
-          onExit: (_) => setState(() => _isHovered = false),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            transform: Matrix4.identity()
-              ..translate(0.0, _isHovered ? -4.0 : 0.0),
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: _buildCard(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCard() {
-    return GestureDetector(
-      onTap: widget.onView,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        clipBehavior: Clip.antiAlias,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface, // White background
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.grey.shade200,
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top Section (Header) - Pastel Purple Background
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.04),
-                ),
-                child: _buildHeader(),
-              ),
-              // Bottom Section (Body) - White Background
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: AppColors.surface,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildCleanStats(),
-                    const SizedBox(height: 12),
-                    // Progress Bar below stats
-                    _buildProgressIndicator(),
-                    const SizedBox(height: 16),
-                    _buildActionRow(),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    final categoryImagePath = CategoryImages.getCategoryImagePath(
-      widget.category,
-    );
-
-    return Row(
-      children: [
-        // Category Avatar (Left) - Squircle Style
-        Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: AppColors.surface, // Surface background for contrast
-            borderRadius: BorderRadius.circular(20), // Squircle
-            boxShadow: [
-              BoxShadow(
-                color: _accentColor.withOpacity(0.15),
-                offset: const Offset(0, 2),
-                blurRadius: 8,
-              ),
-            ],
-          ),
-          child: categoryImagePath != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(20), // Squircle
-                  child: Image.asset(
-                    categoryImagePath,
-                    width: 64,
-                    height: 64,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
-                        CategoryImages.getCategoryIcon(widget.category),
-                        color: _accentColor,
-                        size: 32,
-                      );
-                    },
-                  ),
-                )
-              : Icon(
-                  CategoryImages.getCategoryIcon(widget.category),
-                  color: _accentColor,
-                  size: 32,
-                ),
-        ),
-
-        const SizedBox(width: 16),
-
-        // Title & Subtitle (Middle)
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.title,
-                style: GoogleFonts.readexPro(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                  height: 1.2,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                widget.description ??
-                    '${widget.totalItems} ${widget.totalItems == 1 ? 'wish' : 'wishes'}',
-                style: GoogleFonts.readexPro(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.textSecondary,
-                  height: 1.3,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(width: 8),
-
-        // Status Pill & Menu (Right)
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildStatusPill(),
-            if (widget.onMenu != null) ...[
-              const SizedBox(width: 8),
-              IconButton(
-                onPressed: widget.onMenu,
-                icon: Icon(
-                  Icons.more_vert_rounded,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                tooltip: 'More options',
-              ),
-            ],
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatusPill() {
-    Color backgroundColor;
-    Color textColor;
-    String label;
-    
-    switch (widget.privacy) {
-      case WishlistPrivacy.public:
-        backgroundColor = AppColors.success.withOpacity(0.15);
-        textColor = AppColors.success;
-        label = 'Public';
-        break;
-      case WishlistPrivacy.onlyInvited:
-        backgroundColor = AppColors.warning.withOpacity(0.15);
-        textColor = AppColors.warning;
-        label = 'Friends';
-        break;
-      case WishlistPrivacy.private:
-        backgroundColor = AppColors.info.withOpacity(0.15);
-        textColor = AppColors.info;
-        label = 'Private';
-        break;
-    }
+    final categoryVisual = _getCategoryVisual(widget.category);
+    final categoryColor = categoryVisual.foregroundColor;
+    final categoryName = _formatCategoryLabel(widget.category);
+    final hasItems = widget.totalItems > 0;
+    final hasDescription =
+        widget.description != null && widget.description!.trim().isNotEmpty;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(30), // Pill-shaped
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Text(
-        label,
-        style: GoogleFonts.readexPro(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: textColor,
-          height: 1.2,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCleanStats() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        _buildStatItem(
-          icon: Icons.card_giftcard_rounded,
-          value: widget.totalItems.toString(),
-          label: 'Wishes',
-          color: AppColors.primary, // Match header theme (Purple)
-        ),
-        _buildStatItem(
-          icon: Icons.check_circle_rounded,
-          value: widget.giftedItems.toString(),
-          label: 'Gifted',
-          color: AppColors.primary, // Match header theme (Purple)
-        ),
-        _buildStatItem(
-          icon: Icons.access_time_rounded,
-          value: widget.todayItems.toString(),
-          label: 'Today',
-          color: AppColors.primary, // Match header theme (Purple)
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatItem({
-    required IconData icon,
-    required String value,
-    required String label,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        // Icon Container with pastel background
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(height: 8),
-        // Bold number in middle
-        Text(
-          value,
-          style: GoogleFonts.readexPro(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-            height: 1.1,
-          ),
-        ),
-        const SizedBox(height: 4),
-        // Small label at bottom
-        Text(
-          label,
-          style: GoogleFonts.readexPro(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary,
-            height: 1.2,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionRow() {
-    return _AnimatedButton(
-      onPressed: widget.onAddItem,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [_accentColor, _accentColor.withOpacity(0.8)],
-          ),
-          borderRadius: BorderRadius.circular(16), // Unified button radius
-          boxShadow: [
-            BoxShadow(
-              color: _accentColor.withOpacity(0.4),
-              offset: const Offset(0, 4),
-              blurRadius: 12,
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_rounded, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Add Wish',
-              style: GoogleFonts.readexPro(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-                height: 1.2,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onView,
+          borderRadius: BorderRadius.circular(20),
+          child: Column(
+            children: [
+              // 1. Top Section: Header
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // A. The Hero Icon (Left Side) - LARGE & COLORFUL
+                  Container(
+                    height: 60,
+                    width: 60,
+                    decoration: BoxDecoration(
+                      color: categoryColor.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      categoryVisual.icon,
+                      size: 30,
+                      color: categoryColor,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // B. Title & Metadata (Right Side)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                widget.title,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (widget.onMenu != null)
+                              IconButton(
+                                onPressed: widget.onMenu,
+                                icon: const Icon(
+                                  Icons.more_vert,
+                                  color: Colors.grey,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                  minWidth: 40,
+                                  minHeight: 40,
+                                ),
+                                tooltip: 'Options',
+                              )
+                            else
+                              const Icon(Icons.more_vert, color: Colors.grey),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        // Metadata Row
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: categoryColor.withOpacity(0.10),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                categoryName,
+                                style: TextStyle(
+                                  color: categoryColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '• ${widget.totalItems} ${widget.totalItems == 1 ? 'Wish' : 'Wishes'}',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
+                        if (hasDescription) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            widget.description!.trim(),
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 13,
+                              height: 1.35,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+
+              const SizedBox(height: 16),
+
+              // 2. Middle Section: Bubbles Preview (only if has items)
+              if (hasItems) ...[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: _buildPreviewBubbles(),
+                  ),
+                ),
+              ],
+
+              // 3. Bottom Section: Action Button (Only if 0 items)
+              if (!hasItems) ...[
+                const SizedBox(height: 16),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: widget.onAddItem,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: double.infinity,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add, color: Colors.white, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Add Your First Wish',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildProgressIndicator() {
-    return AnimatedBuilder(
-      animation: _progressAnimation,
-      builder: (context, child) {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: _progressAnimation.value,
-            backgroundColor: _accentColor.withOpacity(0.15),
-            minHeight: 4,
-            valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
-          ),
-        );
-      },
-    );
+  List<Widget> _buildPreviewBubbles() {
+    final preview = widget.previewItemNames.take(3).toList();
+    final bubbles = <Widget>[
+      for (final name in preview)
+        _IconBubble(
+          itemName: name,
+          background: Colors.purple.shade50,
+        ),
+    ];
+
+    if (widget.totalItems > 3) {
+      bubbles.add(_MoreCountBubble(count: widget.totalItems - 3));
+    } else {
+      final remaining = 3 - bubbles.length;
+      for (var i = 0; i < remaining; i++) {
+        bubbles.add(const _PlaceholderBubble());
+      }
+    }
+
+    final spaced = <Widget>[];
+    for (int i = 0; i < bubbles.length; i++) {
+      spaced.add(bubbles[i]);
+      if (i != bubbles.length - 1) spaced.add(const SizedBox(width: 12));
+    }
+    return spaced;
   }
 }
 
-/// Animated button with scale effect
-class _AnimatedButton extends StatefulWidget {
-  final VoidCallback onPressed;
-  final Widget child;
+/// Category chip widget
+class _CategoryChip extends StatelessWidget {
+  final IconData icon;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final String label;
 
-  const _AnimatedButton({required this.onPressed, required this.child});
-
-  @override
-  State<_AnimatedButton> createState() => _AnimatedButtonState();
-}
-
-class _AnimatedButtonState extends State<_AnimatedButton> {
-  bool _isHovered = false;
-  bool _isPressed = false;
+  const _CategoryChip({
+    required this.icon,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) {
-          setState(() => _isPressed = false);
-          widget.onPressed();
-        },
-        onTapCancel: () => setState(() => _isPressed = false),
-        child: AnimatedScale(
-          scale: _isPressed ? 0.95 : (_isHovered ? 1.02 : 1.0),
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeOutCubic,
-          child: widget.child,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: foregroundColor),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: AppStyles.caption.copyWith(
+              fontSize: 12,
+              color: foregroundColor,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IconBubble extends StatelessWidget {
+  final String itemName;
+  final Color background;
+
+  const _IconBubble({
+    required this.itemName,
+    required this.background,
+  });
+
+  String _getInitial(String name) {
+    if (name.isEmpty) return '';
+    return name.trim()[0].toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = _getInitial(itemName);
+    final hasInitial = initial.isNotEmpty;
+
+    return Container(
+      height: 48,
+      width: 48,
+      decoration: BoxDecoration(
+        color: background,
+        shape: BoxShape.circle,
+      ),
+      child: hasInitial
+          ? Center(
+              child: Text(
+                initial,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                ),
+              ),
+            )
+          : const Icon(
+              Icons.card_giftcard,
+              size: 18,
+              color: AppColors.primary,
+            ),
+    );
+  }
+}
+
+class _PlaceholderBubble extends StatelessWidget {
+  const _PlaceholderBubble();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 48,
+      height: 48,
+      child: CustomPaint(
+        painter: _DashedCirclePainter(
+          color: Colors.grey.withOpacity(0.45),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.add,
+            size: 16,
+            color: Colors.grey.withOpacity(0.7),
+          ),
         ),
       ),
     );
   }
+}
+
+class _MoreCountBubble extends StatelessWidget {
+  final int count;
+
+  const _MoreCountBubble({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.10),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.20),
+          width: 1,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '+$count',
+        style: AppStyles.caption.copyWith(
+          color: AppColors.primary,
+          fontWeight: FontWeight.w800,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _DashedCirclePainter extends CustomPainter {
+  final Color color;
+
+  _DashedCirclePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4;
+
+    final fill = Paint()
+      ..color = Colors.grey.withOpacity(0.06)
+      ..style = PaintingStyle.fill;
+
+    final rect = Offset.zero & size;
+    final center = rect.center;
+    final radius = size.shortestSide / 2;
+
+    canvas.drawCircle(center, radius, fill);
+
+    final path = Path()
+      ..addOval(Rect.fromCircle(center: center, radius: radius - 1));
+    final metrics = path.computeMetrics().toList();
+    if (metrics.isEmpty) return;
+    final metric = metrics.first;
+    const dashLength = 4.0;
+    const gapLength = 3.0;
+    double distance = 0.0;
+    while (distance < metric.length) {
+      final next = distance + dashLength;
+      final extract = metric.extractPath(
+        distance,
+        next.clamp(0.0, metric.length),
+      );
+      canvas.drawPath(extract, paint);
+      distance += dashLength + gapLength;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

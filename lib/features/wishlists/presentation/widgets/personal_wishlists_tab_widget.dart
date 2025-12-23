@@ -57,6 +57,8 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
             return GuestWishlistCardWidget(
               wishlist: wishlist,
               onTap: () => onWishlistTap(wishlist),
+              onEdit: () => onMenuAction('edit', wishlist),
+              onDelete: () => onMenuAction('delete', wishlist),
             );
           }
 

@@ -15,6 +15,7 @@ import '../widgets/wishlist_item_card_widget.dart';
 import '../widgets/empty_wishlist_state_widget.dart';
 import '../widgets/empty_search_state_widget.dart';
 import '../widgets/wishlist_filter_chip_widget.dart';
+import 'package:wish_listy/features/profile/presentation/screens/guest_login_prompt_dialog.dart';
 
 class WishlistItemsScreen extends StatefulWidget {
   final String wishlistName;
@@ -453,6 +454,9 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
   }
 
   List<WishlistItem> get _filteredItems {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    final isGuest = authService.isGuest;
+    
     return _items.where((item) {
       final matchesSearch =
           item.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -460,6 +464,11 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                 _searchQuery.toLowerCase(),
               ) ??
               false);
+
+      // For guest users, only apply search filter (no status/gifted filter)
+      if (isGuest) {
+        return matchesSearch;
+      }
 
       switch (_selectedFilter) {
         case 'all':
@@ -568,36 +577,64 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                               constraints: const BoxConstraints(),
                             ),
                             const Spacer(),
-                            if (!widget.isFriendWishlist)
-                              IconButton(
-                                onPressed: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.addItem,
-                                    arguments: {
-                                      'wishlistId': widget.wishlistId,
-                                      'wishlistName': _wishlistName.isNotEmpty
-                                          ? _wishlistName
-                                          : widget.wishlistName,
-                                    },
-                                  ).then((_) {
-                                    _loadWishlistDetails();
-                                  });
-                                },
-                                icon: Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.add,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                ),
-                              ),
+                            Builder(
+                              builder: (context) {
+                                final authService = Provider.of<AuthRepository>(context, listen: false);
+                                final isGuest = authService.isGuest;
+                                
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Share icon for guest users
+                                    if (isGuest && !widget.isFriendWishlist)
+                                      IconButton(
+                                        tooltip: 'Share',
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (_) => const GuestLoginPromptDialog(),
+                                          );
+                                        },
+                                        icon: Icon(
+                                          Icons.share,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    // Add item button (for non-friend wishlists)
+                                    if (!widget.isFriendWishlist)
+                                      IconButton(
+                                        onPressed: () {
+                                          Navigator.pushNamed(
+                                            context,
+                                            AppRoutes.addItem,
+                                            arguments: {
+                                              'wishlistId': widget.wishlistId,
+                                              'wishlistName': _wishlistName.isNotEmpty
+                                                  ? _wishlistName
+                                                  : widget.wishlistName,
+                                            },
+                                          ).then((_) {
+                                            _loadWishlistDetails();
+                                          });
+                                        },
+                                        icon: Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.add,
+                                            color: Colors.white,
+                                            size: 24,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                );
+                              },
+                            ),
                           ],
                         ),
 
@@ -620,12 +657,27 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                         const SizedBox(height: 8),
 
                         // Stats Subtitle
-                        Text(
-                          '$_totalItems Wishes • $_purchasedItems Gifted',
-                          style: AppStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                            fontSize: 14,
-                          ),
+                        Builder(
+                          builder: (context) {
+                            final authService = Provider.of<AuthRepository>(context, listen: false);
+                            // Hide "Gifted" for guest users
+                            if (authService.isGuest) {
+                              return Text(
+                                '$_totalItems Wishes',
+                                style: AppStyles.bodyMedium.copyWith(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 14,
+                                ),
+                              );
+                            }
+                            return Text(
+                              '$_totalItems Wishes • $_purchasedItems Gifted',
+                              style: AppStyles.bodyMedium.copyWith(
+                                color: AppColors.textSecondary,
+                                fontSize: 14,
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -693,45 +745,54 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
                         const SizedBox(height: 16),
 
-                        // Filter Chips
-                        Row(
-                          children: [
-                            WishlistFilterChipWidget(
-                              value: 'all',
-                              label: 'All',
-                              icon: Icons.all_inclusive,
-                              isSelected: _selectedFilter == 'all',
-                              onTap: () {
-                                setState(() {
-                                  _selectedFilter = 'all';
-                                });
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            WishlistFilterChipWidget(
-                              value: 'available',
-                              label: 'Available',
-                              icon: Icons.shopping_bag_outlined,
-                              isSelected: _selectedFilter == 'available',
-                              onTap: () {
-                                setState(() {
-                                  _selectedFilter = 'available';
-                                });
-                              },
-                            ),
-                            const SizedBox(width: 8),
-                            WishlistFilterChipWidget(
-                              value: 'purchased',
-                              label: 'Gifted',
-                              icon: Icons.check_circle_outline,
-                              isSelected: _selectedFilter == 'purchased',
-                              onTap: () {
-                                setState(() {
-                                  _selectedFilter = 'purchased';
-                                });
-                              },
-                            ),
-                          ],
+                        // Filter Chips (Hide for guest users)
+                        Builder(
+                          builder: (context) {
+                            final authService = Provider.of<AuthRepository>(context, listen: false);
+                            // Hide filter chips for guest users
+                            if (authService.isGuest) {
+                              return const SizedBox.shrink();
+                            }
+                            return Row(
+                              children: [
+                                WishlistFilterChipWidget(
+                                  value: 'all',
+                                  label: 'All',
+                                  icon: Icons.all_inclusive,
+                                  isSelected: _selectedFilter == 'all',
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedFilter = 'all';
+                                    });
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                WishlistFilterChipWidget(
+                                  value: 'available',
+                                  label: 'Available',
+                                  icon: Icons.shopping_bag_outlined,
+                                  isSelected: _selectedFilter == 'available',
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedFilter = 'available';
+                                    });
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                WishlistFilterChipWidget(
+                                  value: 'purchased',
+                                  label: 'Gifted',
+                                  icon: Icons.check_circle_outline,
+                                  isSelected: _selectedFilter == 'purchased',
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedFilter = 'purchased';
+                                    });
+                                  },
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ),
