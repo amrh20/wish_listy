@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 class LocalizationService extends ChangeNotifier {
   static const String _languageKey = 'selected_language';
   static const String _defaultLanguage = 'en';
-
   Map<String, dynamic> _translations = {};
   String _currentLanguage = _defaultLanguage;
   bool _isLoading = false;
