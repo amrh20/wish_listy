@@ -491,7 +491,11 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                  item.reservedBy == null && 
                  !item.isReceived;
         case 'purchased':
+          // Owner filter: Show received items
           return matchesSearch && item.isReceived;
+        case 'reserved':
+          // Guest filter: Show reserved items (by me or others)
+          return matchesSearch && item.reservedBy != null && !item.isReceived;
         default:
           return matchesSearch;
       }
@@ -760,53 +764,100 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
                         const SizedBox(height: 16),
 
-                        // Filter Chips (Hide for guest users)
+                        // Filter Chips
                         Builder(
                           builder: (context) {
                             final authService = Provider.of<AuthRepository>(context, listen: false);
-                            // Hide filter chips for guest users
-                            if (authService.isGuest) {
+                            final isGuest = authService.isGuest;
+                            final isOwner = _isOwner();
+                            
+                            // Show different filters for owner vs guest
+                            if (isOwner) {
+                              // Owner filters: All, Available, Received
+                              return Row(
+                                children: [
+                                  WishlistFilterChipWidget(
+                                    value: 'all',
+                                    label: 'All',
+                                    icon: Icons.all_inclusive,
+                                    isSelected: _selectedFilter == 'all',
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedFilter = 'all';
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
+                                  WishlistFilterChipWidget(
+                                    value: 'available',
+                                    label: 'Available',
+                                    icon: Icons.shopping_bag_outlined,
+                                    isSelected: _selectedFilter == 'available',
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedFilter = 'available';
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
+                                  WishlistFilterChipWidget(
+                                    value: 'purchased',
+                                    label: 'Received',
+                                    icon: Icons.check_circle_outline,
+                                    isSelected: _selectedFilter == 'purchased',
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedFilter = 'purchased';
+                                      });
+                                    },
+                                  ),
+                                ],
+                              );
+                            } else if (!isGuest) {
+                              // Guest filters: All, Available, Reserved
+                              return Row(
+                                children: [
+                                  WishlistFilterChipWidget(
+                                    value: 'all',
+                                    label: 'All',
+                                    icon: Icons.all_inclusive,
+                                    isSelected: _selectedFilter == 'all',
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedFilter = 'all';
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
+                                  WishlistFilterChipWidget(
+                                    value: 'available',
+                                    label: 'Available',
+                                    icon: Icons.shopping_bag_outlined,
+                                    isSelected: _selectedFilter == 'available',
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedFilter = 'available';
+                                      });
+                                    },
+                                  ),
+                                  const SizedBox(width: 8),
+                                  WishlistFilterChipWidget(
+                                    value: 'reserved',
+                                    label: 'Reserved',
+                                    icon: Icons.lock_outline,
+                                    isSelected: _selectedFilter == 'reserved',
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedFilter = 'reserved';
+                                      });
+                                    },
+                                  ),
+                                ],
+                              );
+                            } else {
+                              // Hide for guest users (unauthenticated)
                               return const SizedBox.shrink();
                             }
-                            return Row(
-                              children: [
-                                WishlistFilterChipWidget(
-                                  value: 'all',
-                                  label: 'All',
-                                  icon: Icons.all_inclusive,
-                                  isSelected: _selectedFilter == 'all',
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedFilter = 'all';
-                                    });
-                                  },
-                                ),
-                                const SizedBox(width: 8),
-                                WishlistFilterChipWidget(
-                                  value: 'available',
-                                  label: 'Available',
-                                  icon: Icons.shopping_bag_outlined,
-                                  isSelected: _selectedFilter == 'available',
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedFilter = 'available';
-                                    });
-                                  },
-                                ),
-                                const SizedBox(width: 8),
-                                WishlistFilterChipWidget(
-                                  value: 'purchased',
-                                  label: 'Gifted',
-                                  icon: Icons.check_circle_outline,
-                                  isSelected: _selectedFilter == 'purchased',
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedFilter = 'purchased';
-                                    });
-                                  },
-                                ),
-                              ],
-                            );
                           },
                         ),
                       ],
@@ -896,7 +947,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                                       // New parameters for Gift Lifecycle
                                       isOwner: _isOwner(),
                                       currentUserId: currentUserId,
-                                      onToggleReservation: (!_isOwner() && !isGuest && !widget.isFriendWishlist)
+                                      // Guest can reserve items in friend wishlists
+                                      onToggleReservation: (!_isOwner() && !isGuest)
                                           ? () => _toggleReservation(item)
                                           : null,
                                       onToggleReceivedStatus: (_isOwner() && !isGuest)

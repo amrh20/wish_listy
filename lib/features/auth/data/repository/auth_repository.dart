@@ -61,10 +61,17 @@ class AuthRepository extends ChangeNotifier {
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Email: $_userEmail');
           
           try {
-            await SocketService().connect();
+            // Use timeout to prevent hanging
+            await SocketService().connect().timeout(
+              const Duration(seconds: 5),
+              onTimeout: () {
+                print('⚠️ Socket connection timeout - continuing anyway');
+              },
+            );
             print('✅ SocketService().connect() completed');
           } catch (e) {
             print('❌ ERROR calling SocketService().connect(): $e');
+            // Continue anyway - don't block app initialization
           }
         } else {
           print('⚠️ No auth token found in initialize()');

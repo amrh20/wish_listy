@@ -43,7 +43,16 @@ void main() async {
 
   // Initialize services
   await localizationService.initialize();
-  await authRepository.initialize();
+  try {
+    await authRepository.initialize().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        debugPrint('⚠️ Auth initialization timeout - continuing anyway');
+      },
+    );
+  } catch (e) {
+    debugPrint('❌ Error during auth initialization: $e - continuing anyway');
+  }
 
   // Create NotificationsCubit instance immediately to ensure listener is registered
   // This must be done before runApp to ensure it's available when Socket connects

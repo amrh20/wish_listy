@@ -241,9 +241,10 @@ class _ModernWishlistItemContent extends StatelessWidget {
   Widget _buildOwnerCard(BuildContext context, bool isReceived) {
     final hasMenu = onEdit != null || onDelete != null;
     final shouldShowEdit = onEdit != null && !isReceived; // Hide edit if received
+    final theme = Theme.of(context);
 
     return Opacity(
-      opacity: isReceived ? 0.7 : 1.0,
+      opacity: isReceived ? 0.6 : 1.0,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
         decoration: BoxDecoration(
@@ -258,213 +259,357 @@ class _ModernWishlistItemContent extends StatelessWidget {
             ),
           ],
         ),
-        child: Stack(
-          children: [
-            // Main content
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: isReceived
-                      ? AppColors.success.withOpacity(0.15)
-                      : priorityColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  getCategoryIcon('General'),
-                  color: isReceived ? AppColors.success : priorityColor,
-                  size: 24,
-                ),
-              ),
-              title: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 300),
-                style: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  decoration: isReceived
-                      ? TextDecoration.lineThrough
-                      : TextDecoration.none,
-                  color: isReceived
-                      ? AppColors.textTertiary
-                      : AppColors.textPrimary,
-                ),
-                child: Text(item.name),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: priorityColor,
-                          shape: BoxShape.circle,
-                        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Main Content Row (Image + Title/Category + Menu)
+              InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Icon/Image
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isReceived
+                            ? AppColors.success.withOpacity(0.15)
+                            : priorityColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        getPriorityText(item.priority),
-                        style: AppStyles.caption.copyWith(
-                          color: priorityColor,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      child: Icon(
+                        getCategoryIcon('General'),
+                        color: isReceived ? AppColors.success : priorityColor,
+                        size: 24,
                       ),
-                    ],
-                  ),
-                ],
-              ),
-              onTap: onTap,
-            ),
-            // Received tag
-            if (isReceived)
-              Positioned(
-                top: 10,
-                right: (hasMenu && shouldShowEdit) ? 44 : 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: AppColors.success.withOpacity(0.25),
-                      width: 1,
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.check_circle,
-                        size: 14,
-                        color: AppColors.success,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Received',
-                        style: AppStyles.caption.copyWith(
-                          color: AppColors.success,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            // 3-dots menu (hide edit if received)
-            if (hasMenu && shouldShowEdit)
-              Positioned(
-                top: 8,
-                right: 8,
-                child: PopupMenuButton<String>(
-                  color: Colors.white,
-                  icon: Icon(
-                    Icons.more_vert,
-                    color: AppColors.textTertiary,
-                    size: 20,
-                  ),
-                  iconSize: 20,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(
-                    minWidth: 44,
-                    minHeight: 44,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  onSelected: (value) {
-                    if (value == 'edit') {
-                      onEdit?.call();
-                    } else if (value == 'delete') {
-                      onDelete?.call();
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    if (onEdit != null)
-                      PopupMenuItem<String>(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.edit,
-                              color: AppColors.textPrimary,
-                              size: 20,
+                    const SizedBox(width: 12),
+                    // Title & Category Column
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 300),
+                            style: AppStyles.bodyMedium.copyWith(
+                              fontWeight: FontWeight.bold,
+                              decoration: isReceived
+                                  ? TextDecoration.lineThrough
+                                  : TextDecoration.none,
+                              color: isReceived
+                                  ? AppColors.textTertiary
+                                  : AppColors.textPrimary,
                             ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Edit',
-                              style: AppStyles.bodyMedium.copyWith(
-                                color: AppColors.textPrimary,
+                            child: Text(item.name),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: priorityColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                getPriorityText(item.priority),
+                                style: AppStyles.caption.copyWith(
+                                  color: priorityColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // 3-Dots Menu (Top Right)
+                    if (hasMenu && shouldShowEdit)
+                      PopupMenuButton<String>(
+                        color: Colors.white,
+                        icon: Icon(
+                          Icons.more_vert,
+                          color: AppColors.textTertiary,
+                          size: 20,
+                        ),
+                        iconSize: 20,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 44,
+                          minHeight: 44,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            onEdit?.call();
+                          } else if (value == 'delete') {
+                            onDelete?.call();
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          if (onEdit != null)
+                            PopupMenuItem<String>(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.edit,
+                                    color: AppColors.textPrimary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Edit',
+                                    style: AppStyles.bodyMedium.copyWith(
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    if (onDelete != null)
-                      PopupMenuItem<String>(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete, color: AppColors.error, size: 20),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Delete',
-                              style: AppStyles.bodyMedium.copyWith(
-                                color: AppColors.error,
-                                fontWeight: FontWeight.w600,
+                          if (onDelete != null)
+                            PopupMenuItem<String>(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete, color: AppColors.error, size: 20),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Delete',
+                                    style: AppStyles.bodyMedium.copyWith(
+                                      color: AppColors.error,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                        ],
                       ),
                   ],
                 ),
               ),
-            // Toggle Received Status Button (Owner only)
-            if (onToggleReceivedStatus != null)
-              Positioned(
-                bottom: 8,
-                right: 8,
-                child: ElevatedButton(
-                  onPressed: onToggleReceivedStatus,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isReceived
-                        ? AppColors.textSecondary
-                        : AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    isReceived ? 'Undo Received' : 'Mark as Received',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+              // 2. Spacing
+              if (onToggleReceivedStatus != null)
+                const SizedBox(height: 8),
+              // 3. Status Toggle (Bottom Right)
+              if (onToggleReceivedStatus != null)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _buildReceivedStatusToggle(context, isReceived, theme),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildGuestCard(BuildContext context, bool isReceived, bool isReservedByMe, bool isReservedByOther) {
-    final hasMenu = onEdit != null || onDelete != null;
+  /// Show confirmation dialog before toggling reservation status
+  void _confirmToggleReservation(BuildContext context, bool isReservedByMe) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(
+            isReservedByMe ? 'Cancel Reservation?' : 'Reserve Gift?',
+            style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            isReservedByMe
+                ? 'This will release the item so others can reserve it. Are you sure?'
+                : 'This will mark the item as reserved by you, preventing others from reserving it. Continue?',
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                'Cancel',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                onToggleReservation?.call();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: Text(
+                'Confirm',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
+  /// Show confirmation dialog before toggling received status
+  void _confirmToggleStatus(BuildContext context, bool isReceived) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(
+            isReceived ? 'Undo Received Status?' : 'Mark as Received?',
+            style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            isReceived
+                ? 'This will mark the item as active again.'
+                : 'This will mark the item as purchased and received. Are you sure you got this gift?',
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                'Cancel',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                onToggleReceivedStatus?.call();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: Text(
+                'Confirm',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Build the sleek interactive status toggle widget
+  Widget _buildReceivedStatusToggle(BuildContext context, bool isReceived, ThemeData theme) {
+    if (isReceived) {
+      // State B: Item IS Received
+      return InkWell(
+        onTap: () => _confirmToggleStatus(context, isReceived),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            border: Border.all(color: Colors.green.shade200),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle,
+                color: Colors.green,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Received',
+                style: TextStyle(
+                  color: Colors.green.shade700,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      // State A: Item is NOT Received
+      return InkWell(
+        onTap: () => _confirmToggleStatus(context, isReceived),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle_outline,
+                color: AppColors.primary,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Mark Received',
+                style: TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  Widget _buildGuestCard(BuildContext context, bool isReceived, bool isReservedByMe, bool isReservedByOther) {
     // Case B1: Received
     if (isReceived) {
       return Opacity(
-        opacity: 0.7,
+        opacity: 0.6,
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
           decoration: BoxDecoration(
@@ -479,41 +624,57 @@ class _ModernWishlistItemContent extends StatelessWidget {
               ),
             ],
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.textTertiary.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                getCategoryIcon('General'),
-                color: AppColors.textTertiary,
-                size: 24,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Icon
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.textTertiary.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      getCategoryIcon('General'),
+                      color: AppColors.textTertiary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Title & Status Column
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          item.name,
+                          style: AppStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.lineThrough,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Already Gifted',
+                          style: AppStyles.caption.copyWith(
+                            color: AppColors.textTertiary,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            title: Text(
-              item.name,
-              style: AppStyles.bodyMedium.copyWith(
-                fontWeight: FontWeight.bold,
-                decoration: TextDecoration.lineThrough,
-                color: AppColors.textTertiary,
-              ),
-            ),
-            subtitle: const Padding(
-              padding: EdgeInsets.only(top: 4),
-              child: Text(
-                'Already Gifted',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textTertiary,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-            onTap: onTap,
           ),
         ),
       );
@@ -539,78 +700,100 @@ class _ModernWishlistItemContent extends StatelessWidget {
             ),
           ],
         ),
-        child: Stack(
-          children: [
-            ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  getCategoryIcon('General'),
-                  color: AppColors.success,
-                  size: 24,
-                ),
-              ),
-              title: Text(
-                item.name,
-                style: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 4),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Main Content Row
+              InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(12),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.check_circle,
-                      size: 14,
-                      color: AppColors.success,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Reserved by You',
-                      style: AppStyles.caption.copyWith(
+                    // Icon
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        getCategoryIcon('General'),
                         color: AppColors.success,
-                        fontWeight: FontWeight.w600,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Title & Status Column
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            item.name,
+                            style: AppStyles.bodyMedium.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                size: 14,
+                                color: AppColors.success,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Reserved by You',
+                                style: AppStyles.caption.copyWith(
+                                  color: AppColors.success,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
               ),
-              onTap: onTap,
-            ),
-            // Cancel Reservation Button
-            if (onToggleReservation != null)
-              Positioned(
-                bottom: 8,
-                right: 8,
-                child: TextButton.icon(
-                  onPressed: onToggleReservation,
-                  icon: Icon(
-                    Icons.cancel_outlined,
-                    size: 16,
-                    color: AppColors.error,
-                  ),
-                  label: Text(
-                    'Cancel',
-                    style: TextStyle(
-                      fontSize: 12,
+              // Spacing
+              if (onToggleReservation != null)
+                const SizedBox(height: 8),
+              // Cancel Reservation Button
+              if (onToggleReservation != null)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => _confirmToggleReservation(context, true),
+                    icon: Icon(
+                      Icons.cancel_outlined,
+                      size: 16,
                       color: AppColors.error,
-                      fontWeight: FontWeight.w600,
+                    ),
+                    label: Text(
+                      'Cancel Reservation',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     ),
                   ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       );
     }
@@ -618,7 +801,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
     // Case B3: Reserved by Someone Else
     if (isReservedByOther) {
       return Opacity(
-        opacity: 0.6,
+        opacity: 0.5,
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
           decoration: BoxDecoration(
@@ -633,77 +816,91 @@ class _ModernWishlistItemContent extends StatelessWidget {
               ),
             ],
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppColors.textTertiary.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                getCategoryIcon('General'),
-                color: AppColors.textTertiary,
-                size: 24,
-              ),
-            ),
-            title: Text(
-              item.name,
-              style: AppStyles.bodyMedium.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Row(
-                children: [
-                  if (item.reservedBy?.profileImage != null)
-                    CircleAvatar(
-                      radius: 8,
-                      backgroundImage: NetworkImage(item.reservedBy!.profileImage!),
-                    )
-                  else
-                    Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          item.reservedBy?.fullName.substring(0, 1).toUpperCase() ?? '?',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icon
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.textTertiary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    getCategoryIcon('General'),
+                    color: AppColors.textTertiary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Title & Status Column
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        item.name,
+                        style: AppStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                    ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Reserved by ${item.reservedBy?.fullName ?? 'Someone'}',
-                      style: AppStyles.caption.copyWith(
-                        color: AppColors.textTertiary,
-                        fontSize: 11,
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          if (item.reservedBy?.profileImage != null)
+                            CircleAvatar(
+                              radius: 8,
+                              backgroundImage: NetworkImage(item.reservedBy!.profileImage!),
+                            )
+                          else
+                            Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  item.reservedBy?.fullName.substring(0, 1).toUpperCase() ?? '?',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Reserved by ${item.reservedBy?.fullName ?? 'Someone'}',
+                              style: AppStyles.caption.copyWith(
+                                color: AppColors.textTertiary,
+                                fontSize: 11,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                // Lock icon
+                Icon(
+                  Icons.lock_outline,
+                  color: AppColors.textTertiary,
+                  size: 18,
+                ),
+              ],
             ),
-            trailing: Icon(
-              Icons.lock_outline,
-              color: AppColors.textTertiary,
-              size: 18,
-            ),
-            onTap: null, // Disabled
           ),
         ),
       );
@@ -724,85 +921,104 @@ class _ModernWishlistItemContent extends StatelessWidget {
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            leading: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: priorityColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                getCategoryIcon('General'),
-                color: priorityColor,
-                size: 24,
-              ),
-            ),
-            title: Text(
-              item.name,
-              style: AppStyles.bodyMedium.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: priorityColor,
-                        shape: BoxShape.circle,
-                      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Main Content Row
+            InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Icon
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: priorityColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      getPriorityText(item.priority),
-                      style: AppStyles.caption.copyWith(
-                        color: priorityColor,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    child: Icon(
+                      getCategoryIcon('General'),
+                      color: priorityColor,
+                      size: 24,
                     ),
-                  ],
-                ),
-              ],
-            ),
-            onTap: onTap,
-          ),
-          // Reserve Gift Button
-          if (onToggleReservation != null)
-            Positioned(
-              bottom: 8,
-              right: 8,
-              child: ElevatedButton(
-                onPressed: onToggleReservation,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
                   ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'Reserve Gift',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(width: 12),
+                  // Title & Priority Column
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          item.name,
+                          style: AppStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: priorityColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              getPriorityText(item.priority),
+                              style: AppStyles.caption.copyWith(
+                                color: priorityColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Spacing
+            if (onToggleReservation != null)
+              const SizedBox(height: 8),
+            // Reserve Gift Button
+            if (onToggleReservation != null)
+              Align(
+                alignment: Alignment.centerRight,
+                child: ElevatedButton(
+                  onPressed: () => _confirmToggleReservation(context, false),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Reserve This Gift',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
