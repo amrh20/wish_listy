@@ -426,6 +426,13 @@ class FriendsScreenState extends State<FriendsScreen>
                     ],
                   ),
                 ),
+                // Arrow icon to indicate clickable
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: AppColors.textTertiary,
+                ),
               ],
             ),
           ),

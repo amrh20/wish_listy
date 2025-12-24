@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
+import 'package:wish_listy/features/events/data/models/event_attendee_model.dart';
+import 'package:wish_listy/features/events/data/models/event_linked_wishlist_model.dart';
 
 /// Event Repository
 /// Handles all event-related API operations
@@ -399,8 +401,8 @@ class EventRepository {
       };
 
       // Make API call to respond to invitation
-      // Endpoint: PATCH /api/events/:id/respond
-      final response = await _apiService.patch(
+      // Endpoint: PUT /api/events/:id/respond
+      final response = await _apiService.put(
         '/events/$eventId/respond',
         data: requestData,
       );
@@ -423,6 +425,60 @@ class EventRepository {
     } catch (e) {
       // Handle any unexpected errors
       throw Exception('Failed to respond to event invitation. Please try again.');
+    }
+  }
+
+  /// Event attendees (details screen)
+  /// GET /api/events/:eventId/attendees
+  Future<(List<EventAttendeeModel>, EventAttendeeStatsModel)> getEventAttendees(
+    String eventId,
+  ) async {
+    try {
+      if (eventId.isEmpty) {
+        return (const <EventAttendeeModel>[], const EventAttendeeStatsModel(totalCount: 0, accepted: 0, declined: 0, maybe: 0, pending: 0));
+      }
+
+      final response = await _apiService.get('/events/$eventId/attendees');
+      final data = response['data'] as Map<String, dynamic>? ?? const {};
+      final list = data['attendees'] as List<dynamic>? ?? const [];
+      final attendees = list
+          .whereType<Map>()
+          .map((e) => EventAttendeeModel.fromJson(e.cast<String, dynamic>()))
+          .toList();
+
+      final stats = EventAttendeeStatsModel.fromJson(
+        totalCount: data['totalCount'],
+        statusCounts: data['statusCounts'],
+      );
+
+      return (attendees, stats);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Failed to load event attendees. Please try again.');
+    }
+  }
+
+  /// Event linked wishlists (details screen)
+  /// GET /api/events/:eventId/wishlists
+  Future<List<EventLinkedWishlistModel>> getEventLinkedWishlists(
+    String eventId,
+  ) async {
+    try {
+      if (eventId.isEmpty) return [];
+
+      final response = await _apiService.get('/events/$eventId/wishlists');
+      final data = response['data'] as Map<String, dynamic>? ?? const {};
+      final list = data['wishlists'] as List<dynamic>? ?? const [];
+
+      return list
+          .whereType<Map>()
+          .map((e) => EventLinkedWishlistModel.fromJson(e.cast<String, dynamic>()))
+          .toList();
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Failed to load event wishlists. Please try again.');
     }
   }
 }

@@ -11,6 +11,7 @@ import 'package:wish_listy/features/wishlists/data/repository/wishlist_repositor
 import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/features/friends/data/models/user_model.dart' as friends;
 import '../widgets/wishlist_item_card_widget.dart';
 import '../widgets/empty_wishlist_state_widget.dart';
 import '../widgets/empty_search_state_widget.dart';
@@ -54,8 +55,16 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
   String _category = '';
   String _privacy = '';
   DateTime? _createdAt;
+  String? _ownerId; // Owner ID of the wishlist
 
   final WishlistRepository _wishlistRepository = WishlistRepository();
+  
+  // Check if current user is the owner
+  bool _isOwner() {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest || _ownerId == null) return false;
+    return authService.userId == _ownerId;
+  }
 
   @override
   void initState() {
@@ -133,7 +142,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
           'stats': {
             'totalItems': items.length,
             'purchasedItems': items
-                .where((item) => item.status == ItemStatus.purchased)
+                .where((item) => item.isReceived)
                 .length,
           },
         };
@@ -215,7 +224,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       } else {
         totalItems = items.length;
         purchasedItems = items
-            .where((item) => item.status == ItemStatus.purchased)
+            .where((item) => item.isReceived)
             .length;
       }
 
@@ -231,6 +240,13 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         }
       }
 
+      // Get owner ID from wishlist data
+      final ownerId = data['owner']?['_id']?.toString() ?? 
+                      data['owner']?['id']?.toString() ??
+                      data['ownerId']?.toString() ??
+                      data['user_id']?.toString() ??
+                      data['userId']?.toString();
+
       if (mounted) {
         setState(() {
           _items = items;
@@ -240,6 +256,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
           _category = category;
           _privacy = privacy;
           _createdAt = createdAt;
+          _ownerId = ownerId;
           _isLoading = false; // CRITICAL: Set loading to false
           _errorMessage = null; // Clear any previous errors
         });
@@ -359,22 +376,17 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
     }
 
     // Parse status
-    // API can return isPurchased: true (boolean) OR status: "purchased"
     ItemStatus status = ItemStatus.desired;
-    if (data['isPurchased'] == true) {
-      status = ItemStatus.purchased;
-    } else {
-      final statusStr = data['status']?.toString().toLowerCase() ?? 'desired';
-      switch (statusStr) {
-        case 'purchased':
-          status = ItemStatus.purchased;
-          break;
-        case 'reserved':
-          status = ItemStatus.reserved;
-          break;
-        default:
-          status = ItemStatus.desired;
-      }
+    final statusStr = data['status']?.toString().toLowerCase() ?? 'desired';
+    switch (statusStr) {
+      case 'purchased':
+        status = ItemStatus.purchased;
+        break;
+      case 'reserved':
+        status = ItemStatus.reserved;
+        break;
+      default:
+        status = ItemStatus.desired;
     }
 
     // Parse dates
@@ -408,18 +420,24 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       }
     }
 
-    DateTime? purchasedAt;
-    if (data['purchasedAt'] != null) {
+    // Parse isReceived and reservedBy
+    final isReceived = data['isReceived'] as bool? ?? 
+                      data['is_received'] as bool? ?? 
+                      false;
+    
+    // Parse reservedBy
+    friends.User? reservedBy;
+    if (data['reservedBy'] != null && data['reservedBy'] is Map) {
       try {
-        purchasedAt = DateTime.parse(data['purchasedAt'].toString());
+        reservedBy = friends.User.fromJson(data['reservedBy'] as Map<String, dynamic>);
       } catch (e) {
-        // Ignore
+        reservedBy = null;
       }
-    } else if (data['purchased_at'] != null) {
+    } else if (data['reserved_by'] != null && data['reserved_by'] is Map) {
       try {
-        purchasedAt = DateTime.parse(data['purchased_at'].toString());
+        reservedBy = friends.User.fromJson(data['reserved_by'] as Map<String, dynamic>);
       } catch (e) {
-        // Ignore
+        reservedBy = null;
       }
     }
 
@@ -434,16 +452,10 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
           data['image']?.toString(),
       priority: priority,
       status: status,
-      purchasedBy: () {
-        final v = data['purchasedBy'] ?? data['purchased_by'];
-        if (v is Map) {
-          return v['_id']?.toString() ?? v['id']?.toString();
-        }
-        return v?.toString();
-      }(),
-      purchasedAt: purchasedAt,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      isReceived: isReceived,
+      reservedBy: reservedBy,
     );
   }
 
@@ -474,9 +486,12 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         case 'all':
           return matchesSearch;
         case 'available':
-          return matchesSearch && item.status != ItemStatus.purchased;
+          // Available = reservedBy == null AND isReceived == false
+          return matchesSearch && 
+                 item.reservedBy == null && 
+                 !item.isReceived;
         case 'purchased':
-          return matchesSearch && item.status == ItemStatus.purchased;
+          return matchesSearch && item.isReceived;
         default:
           return matchesSearch;
       }
@@ -849,8 +864,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                                     index,
                                   ) {
                                     final item = _filteredItems[index];
-                                    final isPurchased =
-                                        item.status == ItemStatus.purchased;
                                     final priorityColor = _getPriorityColor(
                                       item.priority,
                                     );
@@ -863,26 +876,32 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                                         );
                                     final isGuest = authService.isGuest;
 
+                                    // Get current user ID
+                                    final currentUserId = authService.userId;
+
                                     return WishlistItemCardWidget(
                                       item: item,
-                                      isPurchased: isPurchased,
                                       priorityColor: priorityColor,
                                       onTap: () => _openItemDetails(item),
-                                      // Hide "Mark as Gifted" for guest users and friend wishlists
-                                      onToggleGifted:
-                                          (widget.isFriendWishlist || isGuest)
-                                          ? null
-                                          : () => _togglePurchaseStatus(item),
-                                      // Show edit/delete menu for guest users (not for friend wishlists)
-                                      onEdit: widget.isFriendWishlist
+                                      // Show edit/delete menu for owner only (not for friend wishlists)
+                                      onEdit: (widget.isFriendWishlist || !_isOwner())
                                           ? null
                                           : () => _editItem(item),
-                                      onDelete: widget.isFriendWishlist
+                                      onDelete: (widget.isFriendWishlist || !_isOwner())
                                           ? null
                                           : () => _deleteItem(item),
                                       // Disable swipe for friend wishlists and guest users
                                       enableSwipe:
                                           !widget.isFriendWishlist && !isGuest,
+                                      // New parameters for Gift Lifecycle
+                                      isOwner: _isOwner(),
+                                      currentUserId: currentUserId,
+                                      onToggleReservation: (!_isOwner() && !isGuest && !widget.isFriendWishlist)
+                                          ? () => _toggleReservation(item)
+                                          : null,
+                                      onToggleReceivedStatus: (_isOwner() && !isGuest)
+                                          ? () => _toggleReceivedStatus(item)
+                                          : null,
                                     );
                                   }, childCount: _filteredItems.length),
                                 ),
@@ -901,238 +920,61 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
     );
   }
 
-  void _togglePurchaseStatus(WishlistItem item) async {
-    final currentStatus = item.status == ItemStatus.purchased;
-    final newStatus = currentStatus ? ItemStatus.desired : ItemStatus.purchased;
-
-    // Show confirmation dialog before marking as gifted
-    if (newStatus == ItemStatus.purchased) {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Mark as Gifted?',
-                style: AppStyles.bodyLarge.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Are you sure you want to mark "${item.name}" as gifted?',
-                style: AppStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                  fontSize: 13,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-              child: Text(
-                'Cancel',
-                style: AppStyles.caption.copyWith(
-                  color: AppColors.textSecondary,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-              child: Text(
-                'Confirm',
-                style: AppStyles.caption.copyWith(
-                  color: AppColors.success,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-
-      if (confirmed != true) {
-        return; // User cancelled
-      }
-    }
-
-    // Proceed with status update
+  /// Toggle reservation for an item
+  Future<void> _toggleReservation(WishlistItem item) async {
     try {
-      final newStatus = item.status == ItemStatus.purchased
-          ? ItemStatus.desired
-          : ItemStatus.purchased;
-
-      // Check if user is guest
+      // Optimistic update
+      final currentReservedBy = item.reservedBy;
       final authService = Provider.of<AuthRepository>(context, listen: false);
+      final currentUserId = authService.userId;
 
-      if (authService.isGuest) {
-        // Update in local storage for guests
-        try {
-          final guestDataRepo = Provider.of<GuestDataRepository>(
-            context,
-            listen: false,
-          );
-          final updatedItem = item.copyWith(
-            status: newStatus,
-            updatedAt: DateTime.now(),
-          );
-          await guestDataRepo.updateWishlistItem(updatedItem);
-
-        } catch (e) {
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Failed to update item: ${e.toString()}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                backgroundColor: AppColors.error,
-                duration: const Duration(seconds: 3),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+      // If already reserved by current user, remove reservation
+      // Otherwise, reserve it
+      setState(() {
+        final index = _items.indexWhere((i) => i.id == item.id);
+        if (index != -1) {
+          if (currentReservedBy?.id == currentUserId) {
+            // Cancel reservation
+            _items[index] = item.copyWith(reservedBy: null);
+          } else {
+            // Reserve item (will be updated from API response)
+            _items[index] = item;
           }
-          return; // Exit early on error
         }
-      } else {
-        // Call API to mark item as purchased for authenticated users
-        WishlistItem? updatedItem;
-        
-        if (newStatus == ItemStatus.purchased) {
-          try {
-            final updatedItemData = await _wishlistRepository.markItemAsPurchased(
-              itemId: item.id,
-              // purchasedBy is optional, defaults to current user
-            );
+      });
 
-            // Parse the updated item from API response
-            updatedItem = WishlistItem.fromJson(updatedItemData);
-          } catch (e) {
-            // Handle API error
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Failed to mark item as gifted: ${e.toString()}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  backgroundColor: AppColors.error,
-                  duration: const Duration(seconds: 3),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
-            return; // Exit early on error
-          }
-        } else {
-          // For unmarking as purchased, update local state
-          // TODO: Add API endpoint to unmark as purchased if needed
-          updatedItem = item.copyWith(
-            status: newStatus,
-            purchasedBy: null,
-            purchasedAt: null,
-            updatedAt: DateTime.now(),
-          );
+      // Call API
+      final updatedItemData = await _wishlistRepository.toggleReservation(item.id);
+      final updatedItem = WishlistItem.fromJson(updatedItemData);
+
+      if (!mounted) return;
+
+      // Update with server response
+      setState(() {
+        final index = _items.indexWhere((i) => i.id == item.id);
+        if (index != -1) {
+          _items[index] = updatedItem;
         }
+      });
 
-        // Update local state with API response for authenticated users
-        if (mounted && updatedItem != null) {
-          setState(() {
-            final index = _items.indexWhere((i) => i.id == item.id);
-            if (index != -1) {
-              _items[index] = updatedItem!;
-              if (newStatus == ItemStatus.purchased) {
-                _purchasedItems++;
-              } else {
-                _purchasedItems = _purchasedItems > 0 ? _purchasedItems - 1 : 0;
-              }
-            }
-          });
-        }
-      }
-
-      // Update local state for guest users
-      if (authService.isGuest && mounted) {
-        setState(() {
-          final index = _items.indexWhere((i) => i.id == item.id);
-          if (index != -1) {
-            _items[index] = item.copyWith(status: newStatus);
-            if (newStatus == ItemStatus.purchased) {
-              _purchasedItems++;
-            } else {
-              _purchasedItems = _purchasedItems > 0 ? _purchasedItems - 1 : 0;
-            }
-          }
-        });
-      }
-
+      // Show success snackbar
       if (mounted) {
-        // Show light snackbar instead of dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  newStatus == ItemStatus.purchased
+                  updatedItem.reservedBy?.id == currentUserId
                       ? Icons.check_circle
-                      : Icons.shopping_bag_outlined,
+                      : Icons.cancel_outlined,
                   color: Colors.white,
                   size: 18,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  newStatus == ItemStatus.purchased
-                      ? 'Marked as Gifted! 🎉'
-                      : 'Marked as Available',
+                  updatedItem.reservedBy?.id == currentUserId
+                      ? 'Item reserved! 🎁'
+                      : 'Reservation cancelled',
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -1140,7 +982,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                 ),
               ],
             ),
-            backgroundColor: newStatus == ItemStatus.purchased
+            backgroundColor: updatedItem.reservedBy?.id == currentUserId
                 ? AppColors.success
                 : AppColors.info,
             behavior: SnackBarBehavior.floating,
@@ -1154,7 +996,131 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
 
+      // Revert optimistic update on error
+      setState(() {
+        final index = _items.indexWhere((i) => i.id == item.id);
+        if (index != -1) {
+          _items[index] = item;
+        }
+      });
+
+      // Show error snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Failed to update reservation. Please try again.',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(
+              top: 60,
+              left: 16,
+              right: 16,
+              bottom: 0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            elevation: 2,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Toggle received status for an item (Owner only)
+  Future<void> _toggleReceivedStatus(WishlistItem item) async {
+    try {
+      // Optimistic update
+      final currentStatus = item.isReceived;
+      setState(() {
+        final index = _items.indexWhere((i) => i.id == item.id);
+        if (index != -1) {
+          _items[index] = item.copyWith(isReceived: !currentStatus);
+        }
+      });
+
+      // Call API
+      final updatedItemData = await _wishlistRepository.toggleReceivedStatus(
+        itemId: item.id,
+        isReceived: !currentStatus,
+      );
+      final updatedItem = WishlistItem.fromJson(updatedItemData);
+
+      if (!mounted) return;
+
+      // Update with server response
+      setState(() {
+        final index = _items.indexWhere((i) => i.id == item.id);
+        if (index != -1) {
+          _items[index] = updatedItem;
+        }
+      });
+
+      // Show success snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  updatedItem.isReceived ? Icons.check_circle : Icons.undo,
+                  color: Colors.white,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  updatedItem.isReceived
+                      ? 'Marked as Received! ✅'
+                      : 'Marked as Not Received',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: updatedItem.isReceived
+                ? AppColors.success
+                : AppColors.info,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(16),
+            elevation: 2,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      // Revert optimistic update on error
+      setState(() {
+        final index = _items.indexWhere((i) => i.id == item.id);
+        if (index != -1) {
+          _items[index] = item;
+        }
+      });
+
+      // Show error snackbar
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1183,13 +1149,15 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
               bottom: 0,
             ),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
             ),
+            elevation: 2,
           ),
         );
       }
     }
   }
+
 
   void _editItem(WishlistItem item) {
     // Navigate to edit item screen

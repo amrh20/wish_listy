@@ -24,6 +24,9 @@ class Event {
   final String? creatorImage; // Creator's profile image from API
   final InvitationStatus? invitationStatus; // User's RSVP status (from API invitation_status field)
   final int? statsAccepted; // Accepted count from API stats.accepted field
+  final bool isCreator; // Whether current user is the creator of the event
+  final String myInvitationStatus; // Current user's invitation status: 'pending', 'accepted', 'declined', 'maybe', 'not_invited'
+  final List<InvitedFriend> attendees; // List of accepted users for social proof
 
   Event({
     required this.id,
@@ -49,6 +52,9 @@ class Event {
     this.creatorImage,
     this.invitationStatus,
     this.statsAccepted,
+    this.isCreator = false,
+    this.myInvitationStatus = 'not_invited',
+    this.attendees = const [],
   });
 
   factory Event.fromJson(Map<String, dynamic> json) {
@@ -205,6 +211,31 @@ class Event {
       statsAccepted = stats['accepted'] as int?;
     }
 
+    // Parse isCreator from API response
+    final isCreator = json['isCreator'] as bool? ?? false;
+
+    // Parse myInvitationStatus from API response
+    final myInvitationStatus = json['myInvitationStatus']?.toString() ?? 'not_invited';
+
+    // Parse attendees array from API response (list of accepted users)
+    List<InvitedFriend> attendeesList = [];
+    if (json['attendees'] != null && json['attendees'] is List) {
+      final attendeesData = json['attendees'] as List<dynamic>;
+      attendeesList = attendeesData
+          .map((item) {
+            try {
+              if (item is Map<String, dynamic>) {
+                return InvitedFriend.fromJson(item);
+              }
+              return null;
+            } catch (e) {
+              return null;
+            }
+          })
+          .whereType<InvitedFriend>()
+          .toList();
+    }
+
     // Parse invitations - support both 'invitations' and 'invited'
     List<dynamic>? invitationsList;
     if (json['invitations'] != null && json['invitations'] is List) {
@@ -258,6 +289,9 @@ class Event {
       creatorImage: creatorImage,
       invitationStatus: invitationStatus,
       statsAccepted: statsAccepted,
+      isCreator: isCreator,
+      myInvitationStatus: myInvitationStatus,
+      attendees: attendeesList,
     );
   }
 
@@ -309,6 +343,9 @@ class Event {
     String? creatorImage,
     InvitationStatus? invitationStatus,
     int? statsAccepted,
+    bool? isCreator,
+    String? myInvitationStatus,
+    List<InvitedFriend>? attendees,
   }) {
     return Event(
       id: id ?? this.id,
@@ -334,6 +371,9 @@ class Event {
       creatorImage: creatorImage ?? this.creatorImage,
       invitationStatus: invitationStatus ?? this.invitationStatus,
       statsAccepted: statsAccepted ?? this.statsAccepted,
+      isCreator: isCreator ?? this.isCreator,
+      myInvitationStatus: myInvitationStatus ?? this.myInvitationStatus,
+      attendees: attendees ?? this.attendees,
     );
   }
 

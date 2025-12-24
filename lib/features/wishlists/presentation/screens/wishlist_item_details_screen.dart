@@ -201,17 +201,17 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              widget.item.isPurchased
+              widget.item.isReceived
                   ? Icons.check_circle_outline
                   : Icons.card_giftcard_outlined,
               size: 64,
-              color: widget.item.isPurchased
+              color: widget.item.isReceived
                   ? AppColors.success
                   : AppColors.secondary,
             ),
             const SizedBox(height: 16),
             Text(
-              widget.item.isPurchased ? 'Wish Gifted' : 'Wish Image',
+              widget.item.isReceived ? 'Wish Received' : 'Wish Image',
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -252,8 +252,8 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
           _buildDetailRow(
             icon: Icons.info_outline,
             label: 'Status',
-            value: widget.item.isPurchased ? 'Gifted' : 'Available',
-            iconColor: widget.item.isPurchased
+            value: widget.item.isReceived ? 'Received' : 'Available',
+            iconColor: widget.item.isReceived
                 ? AppColors.success
                 : AppColors.info,
           ),
@@ -297,10 +297,10 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
                 value,
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
-                  decoration: widget.item.isPurchased
+                  decoration: widget.item.isReceived
                       ? TextDecoration.lineThrough
                       : null,
-                  color: widget.item.isPurchased
+                  color: widget.item.isReceived
                       ? AppColors.textTertiary
                       : AppColors.textPrimary,
                 ),
@@ -316,12 +316,12 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: widget.item.isPurchased
+        color: widget.item.isReceived
             ? AppColors.success.withOpacity(0.1)
             : AppColors.info.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: widget.item.isPurchased
+          color: widget.item.isReceived
               ? AppColors.success.withOpacity(0.3)
               : AppColors.info.withOpacity(0.3),
           width: 1,
@@ -330,10 +330,10 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
       child: Row(
         children: [
           Icon(
-            widget.item.isPurchased
+            widget.item.isReceived
                 ? Icons.check_circle_outline
                 : Icons.info_outline,
-            color: widget.item.isPurchased ? AppColors.success : AppColors.info,
+            color: widget.item.isReceived ? AppColors.success : AppColors.info,
             size: 24,
           ),
           const SizedBox(width: 16),
@@ -342,19 +342,19 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.item.isPurchased ? 'Item Purchased' : 'Item Available',
+                  widget.item.isReceived ? 'Item Received' : 'Item Available',
                   style: AppStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: widget.item.isPurchased
+                    color: widget.item.isReceived
                         ? AppColors.success
                         : AppColors.info,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  widget.item.isPurchased
-                      ? 'This wish has been gifted for the event'
-                      : 'This item is still available for purchase',
+                  widget.item.isReceived
+                      ? 'This wish has been received'
+                      : 'This item is still available',
                   style: AppStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -370,8 +370,8 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
   Widget _buildActionButtons() {
     return Column(
       children: [
-        // Reserve Wish Button (only if not purchased)
-        if (!widget.item.isPurchased)
+        // Reserve Wish Button (only if not received)
+        if (!widget.item.isReceived)
           CustomButton(
             text: 'Reserve Item',
             onPressed: _reserveItem,
@@ -380,7 +380,7 @@ class _WishlistItemDetailsScreenState extends State<WishlistItemDetailsScreen>
             icon: Icons.bookmark_outline,
           ),
 
-        if (!widget.item.isPurchased) const SizedBox(height: 12),
+        if (!widget.item.isReceived) const SizedBox(height: 12),
 
         // View Similar Wishes Button
         CustomButton(

@@ -8,7 +8,7 @@ import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 
-/// Bottom sheet widget for inviting friends to an event
+/// Bottom sheet widget for inviting friends to an event.
 class InviteFriendsBottomSheet extends StatefulWidget {
   final List<String> initiallySelectedIds; // Pre-selected friend IDs (for edit mode)
   final Map<String, InvitationStatus>? friendStatuses; // Map of friend ID to their response status (for disabling responded friends)

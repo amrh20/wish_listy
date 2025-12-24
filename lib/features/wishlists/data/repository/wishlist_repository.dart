@@ -409,43 +409,71 @@ class WishlistRepository {
     }
   }
 
-  /// Mark an item as purchased/gifted
+  /// Toggle reservation for an item
   ///
   /// [itemId] - Item ID (required)
-  /// [purchasedBy] - Optional user ID who purchased the item (defaults to current user)
   ///
   /// Returns the updated item data
-  /// Uses API: PUT /api/items/:id/purchase
-  Future<Map<String, dynamic>> markItemAsPurchased({
-    required String itemId,
-    String? purchasedBy,
-  }) async {
+  /// Uses API: PUT /api/items/:id/reserve
+  Future<Map<String, dynamic>> toggleReservation(String itemId) async {
     try {
-      // Prepare request body
-      final requestData = <String, dynamic>{};
-      if (purchasedBy != null && purchasedBy.isNotEmpty) {
-        requestData['purchasedBy'] = purchasedBy;
+      final response = await _apiService.put('/items/$itemId/reserve');
+
+      // API might return: {success: true, item: {...}} or {success: true, data: {...}} or directly the item object
+      final itemData =
+          response['item'] as Map<String, dynamic>? ??
+          response['data'] as Map<String, dynamic>? ??
+          response;
+
+      if (itemData == null || itemData.isEmpty) {
+        throw Exception('Item data not found in response');
       }
 
-      // Make API call to mark item as purchased
-      // Endpoint: PUT /api/items/:id/purchase
-      final response = await _apiService.put(
-        '/items/$itemId/purchase',
-        data: requestData.isNotEmpty ? requestData : null,
-      );
-
-      // Parse response
-      // API response structure: {success: true, item: {...}}
-      final itemData = response['item'] ?? response;
-
-      return itemData is Map<String, dynamic> ? itemData : response;
+      return itemData;
     } on ApiException {
-      // Re-throw ApiException to preserve error details
       rethrow;
     } catch (e) {
-      // Handle any unexpected errors
-
-      throw Exception('Failed to mark item as purchased. Please try again.');
+      throw Exception('Failed to toggle reservation. Please try again.');
     }
   }
+
+  /// Toggle received status for an item
+  ///
+  /// [itemId] - Item ID (required)
+  /// [isReceived] - New received status (required)
+  ///
+  /// Returns the updated item data
+  /// Uses API: PUT /api/items/:id/status
+  Future<Map<String, dynamic>> toggleReceivedStatus({
+    required String itemId,
+    required bool isReceived,
+  }) async {
+    try {
+      final requestData = <String, dynamic>{
+        'isReceived': isReceived,
+      };
+
+      final response = await _apiService.put(
+        '/items/$itemId/status',
+        data: requestData,
+      );
+
+      // API might return: {success: true, item: {...}} or {success: true, data: {...}} or directly the item object
+      final itemData =
+          response['item'] as Map<String, dynamic>? ??
+          response['data'] as Map<String, dynamic>? ??
+          response;
+
+      if (itemData == null || itemData.isEmpty) {
+        throw Exception('Item data not found in response');
+      }
+
+      return itemData;
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Failed to update received status. Please try again.');
+    }
+  }
+
 }

@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
+import 'package:wish_listy/features/friends/data/models/user_model.dart' as friends;
 
 class WishlistItemAdapter extends TypeAdapter<WishlistItem> {
   @override
@@ -22,10 +23,10 @@ class WishlistItemAdapter extends TypeAdapter<WishlistItem> {
       imageUrl: fields[6] as String?,
       priority: fields[7] as ItemPriority? ?? ItemPriority.medium,
       status: fields[8] as ItemStatus? ?? ItemStatus.desired,
-      purchasedBy: fields[9] as String?,
-      purchasedAt: fields[10] as DateTime?,
-      createdAt: fields[11] as DateTime,
-      updatedAt: fields[12] as DateTime,
+      createdAt: fields[9] as DateTime,
+      updatedAt: fields[10] as DateTime,
+      isReceived: fields[11] as bool? ?? false,
+      reservedBy: fields[12] as friends.User?,
     );
   }
 
@@ -52,13 +53,13 @@ class WishlistItemAdapter extends TypeAdapter<WishlistItem> {
       ..writeByte(8)
       ..write(obj.status)
       ..writeByte(9)
-      ..write(obj.purchasedBy)
-      ..writeByte(10)
-      ..write(obj.purchasedAt)
-      ..writeByte(11)
       ..write(obj.createdAt)
+      ..writeByte(10)
+      ..write(obj.updatedAt)
+      ..writeByte(11)
+      ..write(obj.isReceived)
       ..writeByte(12)
-      ..write(obj.updatedAt);
+      ..write(obj.reservedBy);
   }
 
   @override

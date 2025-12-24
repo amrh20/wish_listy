@@ -212,7 +212,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                                     if (item.imageUrl != null &&
                                         item.imageUrl!.trim().isNotEmpty)
                                       const SizedBox(height: 14),
-                                    if (_isPurchased(item)) ...[
+                                    if (_isReceived(item)) ...[
                                       _buildGiftedBanner(item),
                                       const SizedBox(height: 14),
                                     ],
@@ -235,7 +235,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   Widget _buildCleanTopBar(WishlistItem item) {
-    final isPurchased = _isPurchased(item);
+    final isReceived = _isReceived(item);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       child: Row(
@@ -260,7 +260,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
-          if (!isPurchased)
+          if (!isReceived)
             IconButton(
               tooltip: 'Edit',
               onPressed: _editItem,
@@ -349,10 +349,12 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   Widget _buildGiftedBanner(WishlistItem item) {
-    final buyerName = _getPurchasedByName();
-    final text = (buyerName != null && buyerName.isNotEmpty)
-        ? 'Gifted by $buyerName'
-        : 'Gifted by a friend';
+    // For Owner: Don't show who reserved (Spoiler Protection)
+    // For Guest: Show who reserved if available
+    final reservedByName = item.reservedBy?.fullName;
+    final text = (reservedByName != null && reservedByName.isNotEmpty)
+        ? 'Reserved by $reservedByName'
+        : 'Reserved by a friend';
 
     return Container(
       width: double.infinity,
@@ -434,8 +436,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     );
   }
 
-  bool _isPurchased(WishlistItem item) {
-    return item.status == ItemStatus.purchased;
+  bool _isReceived(WishlistItem item) {
+    return item.isReceived;
   }
 
   String? _getItemUrl(WishlistItem item) {
@@ -458,12 +460,12 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     return null;
   }
 
-  String? _getPurchasedByName() {
-    final pb = _rawItemData?['purchasedBy'];
-    if (pb is Map) {
-      final fullName = pb['fullName']?.toString();
+  String? _getReservedByName() {
+    final rb = _rawItemData?['reservedBy'] ?? _rawItemData?['reserved_by'];
+    if (rb is Map) {
+      final fullName = rb['fullName']?.toString();
       if (fullName != null && fullName.trim().isNotEmpty) return fullName.trim();
-      final username = pb['username']?.toString();
+      final username = rb['username']?.toString();
       if (username != null && username.trim().isNotEmpty) return username.trim();
     }
     return null;
@@ -503,9 +505,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   Widget _buildGiftedStatusCard(WishlistItem item) {
-    final buyerName = _getPurchasedByName();
-    final byText = (buyerName != null && buyerName.isNotEmpty)
-        ? 'By $buyerName'
+    final reservedByName = _getReservedByName();
+    final byText = (reservedByName != null && reservedByName.isNotEmpty)
+        ? 'By $reservedByName'
         : 'By a Secret Friend 🤫';
 
     return Container(
@@ -621,10 +623,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         _InfoTile(
           width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
           title: 'Status',
-          value: _isPurchased(item) ? 'Gifted' : 'Available',
-          icon: _isPurchased(item) ? Icons.check_circle : Icons.inventory_2_outlined,
-          iconColor: _isPurchased(item) ? AppColors.success : AppColors.info,
-          chipColor: (_isPurchased(item) ? AppColors.success : AppColors.info)
+          value: _isReceived(item) ? 'Received' : 'Available',
+          icon: _isReceived(item) ? Icons.check_circle : Icons.inventory_2_outlined,
+          iconColor: _isReceived(item) ? AppColors.success : AppColors.info,
+          chipColor: (_isReceived(item) ? AppColors.success : AppColors.info)
               .withOpacity(0.12),
         ),
         _InfoTile(
@@ -698,8 +700,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   Widget _buildHeader() {
-    final isPurchased =
-        (_currentItem?.status ?? widget.item.status) == ItemStatus.purchased;
+    final isReceived =
+        (_currentItem?.isReceived ?? widget.item.isReceived);
     
     // Check if user is guest
     final authService = Provider.of<AuthRepository>(context, listen: false);
@@ -725,10 +727,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                isPurchased ? 'Mark as Available' : 'Mark as Gifted',
+                isReceived ? 'Mark as Not Received' : 'Mark as Received',
                 style: AppStyles.caption.copyWith(
                   fontSize: 12,
-                  color: isPurchased ? AppColors.textSecondary : AppColors.success,
+                  color: isReceived ? AppColors.textSecondary : AppColors.success,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -942,8 +944,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   Widget _buildUnifiedInfoSection() {
-    final isPurchased =
-        (_currentItem?.status ?? widget.item.status) == ItemStatus.purchased;
+    final isReceived =
+        (_currentItem?.isReceived ?? widget.item.isReceived);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -959,11 +961,11 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
         // Status Label - Integrated
         _buildInfoRow(
-          icon: isPurchased ? Icons.check_circle : Icons.shopping_bag_outlined,
+          icon: isReceived ? Icons.check_circle : Icons.shopping_bag_outlined,
           label: 'Status',
-          value: isPurchased ? 'Gifted' : 'Available',
-          iconColor: isPurchased ? AppColors.success : AppColors.warning,
-          valueColor: isPurchased ? AppColors.success : AppColors.warning,
+          value: isReceived ? 'Received' : 'Available',
+          iconColor: isReceived ? AppColors.success : AppColors.warning,
+          valueColor: isReceived ? AppColors.success : AppColors.warning,
         ),
 
         const SizedBox(height: 16),
@@ -1072,8 +1074,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   Widget _buildActionButtons() {
-    final isPurchased =
-        (_currentItem?.status ?? widget.item.status) == ItemStatus.purchased;
+    final isReceived =
+        (_currentItem?.isReceived ?? widget.item.isReceived);
     
     // Check if user is guest
     final authService = Provider.of<AuthRepository>(context, listen: false);

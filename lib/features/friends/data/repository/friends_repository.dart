@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/friends/data/models/user_model.dart';
 import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
+import 'package:wish_listy/features/friends/data/models/friend_wishlist_model.dart';
+import 'package:wish_listy/features/friends/data/models/friend_event_model.dart';
+import 'package:wish_listy/features/friends/data/models/friend_profile_model.dart';
 
 /// Friends Repository
 /// Handles all friends-related API operations
@@ -71,6 +74,58 @@ class FriendsRepository {
     } catch (e) {
 
       throw Exception('Failed to load user profile. Please try again.');
+    }
+  }
+
+  /// Friend profile (screen header + counts)
+  /// GET /api/users/:friendUserId/profile
+  Future<FriendProfileModel> getFriendProfile(String friendUserId) async {
+    try {
+      final response = await _apiService.get('/users/$friendUserId/profile');
+      final data = (response['data'] as Map<String, dynamic>?) ?? response;
+      return FriendProfileModel.fromJson(data as Map<String, dynamic>);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Failed to load friend profile. Please try again.');
+    }
+  }
+
+  /// Friend wishlists (profile tab)
+  /// GET /api/users/:friendUserId/wishlists
+  Future<List<FriendWishlistModel>> getFriendWishlists(String friendUserId) async {
+    try {
+      if (friendUserId.isEmpty) return [];
+      final response = await _apiService.get('/users/$friendUserId/wishlists');
+      final data = response['data'] as Map<String, dynamic>? ?? const {};
+      final list = data['wishlists'] as List<dynamic>? ?? const [];
+      return list
+          .whereType<Map>()
+          .map((e) => FriendWishlistModel.fromJson(e.cast<String, dynamic>()))
+          .toList();
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Failed to load friend wishlists. Please try again.');
+    }
+  }
+
+  /// Friend events (profile tab)
+  /// GET /api/users/:friendUserId/events
+  Future<List<FriendEventModel>> getFriendEvents(String friendUserId) async {
+    try {
+      if (friendUserId.isEmpty) return [];
+      final response = await _apiService.get('/users/$friendUserId/events');
+      final data = response['data'] as Map<String, dynamic>? ?? const {};
+      final list = data['events'] as List<dynamic>? ?? const [];
+      return list
+          .whereType<Map>()
+          .map((e) => FriendEventModel.fromJson(e.cast<String, dynamic>()))
+          .toList();
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Failed to load friend events. Please try again.');
     }
   }
 

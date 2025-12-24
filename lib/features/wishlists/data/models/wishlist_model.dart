@@ -1,3 +1,6 @@
+// Import User model for reservedBy
+import 'package:wish_listy/features/friends/data/models/user_model.dart' as friends;
+
 class Wishlist {
   final String id;
   final String userId;
@@ -97,11 +100,11 @@ class Wishlist {
 
   int get totalItems => items.length;
   int get purchasedItems =>
-      items.where((item) => item.status == ItemStatus.purchased).length;
+      items.where((item) => item.isReceived).length;
   int get reservedItems =>
-      items.where((item) => item.status == ItemStatus.reserved).length;
+      items.where((item) => item.isReserved).length;
   int get availableItems =>
-      items.where((item) => item.status == ItemStatus.desired).length;
+      items.where((item) => !item.isReceived && !item.isReserved).length;
 
   @override
   String toString() {
@@ -128,13 +131,13 @@ class WishlistItem {
   final String? imageUrl;
   final ItemPriority priority;
   final ItemStatus status;
-  final String? purchasedBy;
-  final DateTime? purchasedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool isReceived; // Whether the item has been received
+  final friends.User? reservedBy; // User who reserved the item (nullable)
 
   // Computed properties
-  bool get isPurchased => status == ItemStatus.purchased;
+  bool get isReserved => reservedBy != null;
   String get price => priceRange?.toString() ?? 'Price not specified';
 
   WishlistItem({
@@ -147,10 +150,10 @@ class WishlistItem {
     this.imageUrl,
     this.priority = ItemPriority.medium,
     this.status = ItemStatus.desired,
-    this.purchasedBy,
-    this.purchasedAt,
     required this.createdAt,
     required this.updatedAt,
+    this.isReceived = false,
+    this.reservedBy,
   });
 
   factory WishlistItem.fromJson(Map<String, dynamic> json) {
@@ -164,11 +167,9 @@ class WishlistItem {
                        json['wishlist']?.toString() ?? 
                        '';
     
-    // Parse status: support both isPurchased (boolean) and status (string)
+    // Parse status
     ItemStatus status = ItemStatus.desired;
-    if (json['isPurchased'] == true) {
-      status = ItemStatus.purchased;
-    } else if (json['status'] != null) {
+    if (json['status'] != null) {
       final statusStr = json['status'].toString().toLowerCase();
       status = ItemStatus.values.firstWhere(
         (e) => e.toString().split('.').last.toLowerCase() == statusStr,
@@ -218,22 +219,6 @@ class WishlistItem {
       updatedAt = DateTime.now();
     }
     
-    // Parse purchasedAt
-    DateTime? purchasedAt;
-    if (json['purchasedAt'] != null) {
-      try {
-        purchasedAt = DateTime.parse(json['purchasedAt'].toString());
-      } catch (e) {
-        purchasedAt = null;
-      }
-    } else if (json['purchased_at'] != null) {
-      try {
-        purchasedAt = DateTime.parse(json['purchased_at'].toString());
-      } catch (e) {
-        purchasedAt = null;
-      }
-    }
-    
     // Parse link: support both 'url' and 'link'
     final link = json['link']?.toString() ?? 
                  json['url']?.toString();
@@ -242,26 +227,6 @@ class WishlistItem {
     final imageUrl = json['imageUrl']?.toString() ?? 
                      json['image_url']?.toString() ?? 
                      json['image']?.toString();
-    
-    // Parse purchasedBy: support both camelCase and snake_case
-    // Can be a string (user ID) or an object with _id, fullName, username
-    String? purchasedBy;
-    if (json['purchasedBy'] != null) {
-      if (json['purchasedBy'] is Map) {
-        // If it's an object, extract the _id
-        purchasedBy = json['purchasedBy']['_id']?.toString() ?? 
-                      json['purchasedBy']['id']?.toString();
-      } else {
-        purchasedBy = json['purchasedBy']?.toString();
-      }
-    } else if (json['purchased_by'] != null) {
-      if (json['purchased_by'] is Map) {
-        purchasedBy = json['purchased_by']['_id']?.toString() ?? 
-                      json['purchased_by']['id']?.toString();
-      } else {
-        purchasedBy = json['purchased_by']?.toString();
-      }
-    }
     
     // Parse priceRange: support both camelCase and snake_case
     PriceRange? priceRange;
@@ -279,6 +244,27 @@ class WishlistItem {
       }
     }
     
+    // Parse isReceived: support both camelCase and snake_case
+    final isReceived = json['isReceived'] as bool? ?? 
+                      json['is_received'] as bool? ?? 
+                      false;
+    
+    // Parse reservedBy: support both camelCase and snake_case
+    friends.User? reservedBy;
+    if (json['reservedBy'] != null && json['reservedBy'] is Map) {
+      try {
+        reservedBy = friends.User.fromJson(json['reservedBy'] as Map<String, dynamic>);
+      } catch (e) {
+        reservedBy = null;
+      }
+    } else if (json['reserved_by'] != null && json['reserved_by'] is Map) {
+      try {
+        reservedBy = friends.User.fromJson(json['reserved_by'] as Map<String, dynamic>);
+      } catch (e) {
+        reservedBy = null;
+      }
+    }
+    
     return WishlistItem(
       id: id,
       wishlistId: wishlistId,
@@ -289,10 +275,10 @@ class WishlistItem {
       imageUrl: imageUrl,
       priority: priority,
       status: status,
-      purchasedBy: purchasedBy,
-      purchasedAt: purchasedAt,
       createdAt: createdAt,
       updatedAt: updatedAt,
+      isReceived: isReceived,
+      reservedBy: reservedBy,
     );
   }
 
@@ -307,8 +293,6 @@ class WishlistItem {
       'image_url': imageUrl,
       'priority': priority.toString().split('.').last,
       'status': status.toString().split('.').last,
-      'purchased_by': purchasedBy,
-      'purchased_at': purchasedAt?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -324,10 +308,10 @@ class WishlistItem {
     String? imageUrl,
     ItemPriority? priority,
     ItemStatus? status,
-    String? purchasedBy,
-    DateTime? purchasedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isReceived,
+    friends.User? reservedBy,
   }) {
     return WishlistItem(
       id: id ?? this.id,
@@ -339,10 +323,10 @@ class WishlistItem {
       imageUrl: imageUrl ?? this.imageUrl,
       priority: priority ?? this.priority,
       status: status ?? this.status,
-      purchasedBy: purchasedBy ?? this.purchasedBy,
-      purchasedAt: purchasedAt ?? this.purchasedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isReceived: isReceived ?? this.isReceived,
+      reservedBy: reservedBy ?? this.reservedBy,
     );
   }
 
