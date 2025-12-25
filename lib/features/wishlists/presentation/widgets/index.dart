@@ -18,3 +18,5 @@ export 'category_selection_widget.dart';
 export 'create_wishlist_action_buttons_widget.dart';
 export 'wishlist_form_helpers.dart';
 export 'wishlist_success_dialog_helper.dart';
+export 'reservations_tab_widget.dart';
+export 'reserved_item_card_widget.dart';

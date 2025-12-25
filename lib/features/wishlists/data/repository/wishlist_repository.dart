@@ -437,6 +437,33 @@ class WishlistRepository {
     }
   }
 
+  /// Get all items reserved by the current user
+  ///
+  /// Uses API: GET /api/items/reserved
+  Future<List<Map<String, dynamic>>> fetchMyReservations() async {
+    try {
+      final response = await _apiService.get('/items/reserved');
+
+      // API returns: {success: true, data: [...]}
+      final itemsList =
+          response['data'] as List<dynamic>? ??
+          response['items'] as List<dynamic>? ??
+          (response is List ? response as List<dynamic> : []);
+
+      if (itemsList == null) {
+        return [];
+      }
+
+      return itemsList
+          .map((item) => item as Map<String, dynamic>)
+          .toList();
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Failed to load reservations. Please try again.');
+    }
+  }
+
   /// Toggle received status for an item
   ///
   /// [itemId] - Item ID (required)

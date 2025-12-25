@@ -249,8 +249,8 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
 
               const SizedBox(height: 16),
 
-              // 2. Middle Section: Bubbles Preview (only if has items)
-              if (hasItems) ...[
+              // 2. Middle Section: Bubbles Preview (only if has items AND previewItemNames is not empty)
+              if (hasItems && widget.previewItemNames.isNotEmpty) ...[
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Row(

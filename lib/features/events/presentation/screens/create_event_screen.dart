@@ -770,10 +770,14 @@ class _CreateEventScreenState extends State<CreateEventScreen>
 
   // Action Handlers
   Future<void> _selectDate() async {
+    // Get today's date at midnight to compare dates only (not time)
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    
     final date = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? DateTime.now().add(Duration(days: 7)),
-      firstDate: DateTime.now(),
+      firstDate: todayDate, // Prevent past dates
       lastDate: DateTime.now().add(Duration(days: 365)),
       builder: (context, child) {
         return Theme(
@@ -790,14 +794,65 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     if (date != null) {
       setState(() {
         _selectedDate = date;
+        // If the selected date is today and the current time is in the past, reset time
+        final selectedDateOnly = DateTime(date.year, date.month, date.day);
+        if (selectedDateOnly == todayDate && _selectedTime != null) {
+          final now = DateTime.now();
+          final currentTime = TimeOfDay.fromDateTime(now);
+          final selectedDateTime = DateTime(
+            date.year,
+            date.month,
+            date.day,
+            _selectedTime!.hour,
+            _selectedTime!.minute,
+          );
+          if (selectedDateTime.isBefore(now)) {
+            // Reset to current time + 1 hour if past time was selected
+            _selectedTime = TimeOfDay(
+              hour: (currentTime.hour + 1) % 24,
+              minute: 0,
+            );
+          }
+        }
       });
     }
   }
 
   Future<void> _selectTime() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    // Check if selected date is today
+    final isToday = _selectedDate != null &&
+        DateTime(_selectedDate!.year, _selectedDate!.month, _selectedDate!.day) == today;
+    
+    // If today, set initial time to current time or later
+    TimeOfDay initialTime;
+    if (isToday && _selectedTime != null) {
+      final currentTime = TimeOfDay.fromDateTime(now);
+      final selectedDateTime = DateTime(
+        _selectedDate!.year,
+        _selectedDate!.month,
+        _selectedDate!.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      );
+      // If current selected time is in the past, use current time + 1 hour
+      if (selectedDateTime.isBefore(now)) {
+        initialTime = TimeOfDay(
+          hour: (currentTime.hour + 1) % 24,
+          minute: 0,
+        );
+      } else {
+        initialTime = _selectedTime!;
+      }
+    } else {
+      initialTime = _selectedTime ?? TimeOfDay(hour: 18, minute: 0);
+    }
+    
     final time = await showTimePicker(
       context: context,
-      initialTime: _selectedTime ?? TimeOfDay(hour: 18, minute: 0),
+      initialTime: initialTime,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -811,6 +866,42 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     );
 
     if (time != null) {
+      // Validate that the selected time is not in the past if date is today
+      if (isToday) {
+        final selectedDateTime = DateTime(
+          _selectedDate!.year,
+          _selectedDate!.month,
+          _selectedDate!.day,
+          time.hour,
+          time.minute,
+        );
+        
+        if (selectedDateTime.isBefore(now)) {
+          // Show error message and don't update time
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Please select a time in the future',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return;
+        }
+      }
+      
       setState(() {
         _selectedTime = time;
       });
@@ -859,6 +950,38 @@ class _CreateEventScreenState extends State<CreateEventScreen>
         SnackBar(
           content: Text('Please select event time'),
           backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    // Validate that date and time are not in the past
+    final now = DateTime.now();
+    final selectedDateTime = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _selectedTime!.hour,
+      _selectedTime!.minute,
+    );
+    
+    if (selectedDateTime.isBefore(now)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Event date and time must be in the future',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
       return;

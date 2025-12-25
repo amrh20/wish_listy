@@ -35,432 +35,544 @@ class EventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPast = event.status == EventStatus.completed;
-    final daysUntil = event.date.difference(DateTime.now()).inDays;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        clipBehavior: Clip.antiAlias,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface, // White background
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.grey.shade200,
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-                spreadRadius: 0,
-              ),
-            ],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(24),
-              child: Column(
-                children: [
-                  _buildHeader(context, event, isPast, daysUntil),
-                  _buildContent(event, isPast),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(
-    BuildContext context,
-    EventSummary event,
-    bool isPast,
-    int daysUntil,
-  ) {
-    final eventColor = _getEventTypeColor(event.type);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.secondary.withOpacity(0.06), // Soft Teal Tint
-      ),
-      child: Row(
-        children: [
-          // Event Icon - Squircle Style
-          Container(
-            width: 64,
-            height: 64,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surface, // Surface background for contrast
-              borderRadius: BorderRadius.circular(20), // Squircle
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200, width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: (isPast ? AppColors.textTertiary : eventColor)
-                      .withOpacity(0.15),
-                  offset: const Offset(0, 2),
-                  blurRadius: 8,
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
-            child: Icon(
-              _getEventTypeIcon(event.type),
-              color: isPast ? AppColors.textTertiary : eventColor,
-              size: 32,
-            ),
-          ),
-
-          const SizedBox(width: 16),
-
-          // Event Info
-          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  event.name,
-                  style: AppStyles.headingSmall.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isPast
-                        ? AppColors.textSecondary
-                        : AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                if (event.hostName != null)
-                  Text(
-                    'by ${event.hostName}',
-                    style: AppStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                const SizedBox(height: 8),
+                // Main Row: Date Badge + Content
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      size: 16,
-                      color: AppColors.textTertiary,
-                    ),
-                    const SizedBox(width: 4),
+                    // Date Badge (Left)
+                    _buildDateBadge(),
+                    const SizedBox(width: 12),
+                    // Content (Expanded)
                     Expanded(
-                      child: Text(
-                        event.location ?? 'Location TBD',
-                        style: AppStyles.bodySmall.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header Row: Title + Spacer + more_vert
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  event.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (event.isCreatedByMe)
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.more_vert,
+                                    size: 20,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  onPressed: () => _showContextMenu(context),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          // Location Row
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on_outlined,
+                                size: 14,
+                                color: AppColors.textTertiary,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  event.location ?? '—',
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          // Badges Row: Category + Status
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              _buildCategoryBadge(),
+                              _buildStatusBadge(isPast),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-
-          // Date Badge - Rounded rectangle
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: isPast
-                  ? AppColors.textTertiary.withOpacity(0.15)
-                  : daysUntil <= 7
-                  ? AppColors.warning.withOpacity(0.15)
-                  : AppColors.info.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(
-                12,
-              ), // Rounded rectangle instead of pill
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  '${event.date.day} ${_getMonthName(event.date.month)}',
-                  style: AppStyles.headingSmall.copyWith(
-                    color: isPast
-                        ? AppColors.textTertiary
-                        : daysUntil <= 7
-                        ? AppColors.warning
-                        : AppColors.info,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (event.time != null && event.time!.isNotEmpty) ...[
-                  const SizedBox(height: 2),
+                // Description (if exists)
+                if (event.description != null &&
+                    event.description!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 8),
                   Text(
-                    event.time!,
-                    style: AppStyles.caption.copyWith(
-                      color: isPast
-                          ? AppColors.textTertiary
-                          : daysUntil <= 7
-                          ? AppColors.warning
-                          : AppColors.info,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
+                    event.description!.trim(),
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 13,
+                      height: 1.4,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
+                ],
+                // Wishlist Section
+                if (event.wishlistId != null) ...[
+                  const SizedBox(height: 12),
+                  _buildWishlistStrip(true),
+                ] else ...[
+                  const SizedBox(height: 12),
+                  _buildWishlistStrip(false),
+                ],
+                // Footer: Avatar Stack (Guests)
+                if (event.invitedCount > 0) ...[
+                  const SizedBox(height: 12),
+                  _buildGuestsFooter(),
                 ],
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
 
-          // MoreVert Menu Button
-          if (event.isCreatedByMe)
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _showContextMenu(context),
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Icon(
-                    Icons.more_vert,
-                    size: 20,
-                    color: AppColors.textSecondary,
+  /// Builds the Date Badge on the left side
+  Widget _buildDateBadge() {
+    final month = _getMonthNameShort(event.date.month);
+    final day = event.date.day.toString();
+
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            month,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            day,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the Category Badge
+  Widget _buildCategoryBadge() {
+    final style = _getEventTypeStyle(event.type);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: style.color,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(style.icon, size: 14, color: style.textColor),
+          const SizedBox(width: 4),
+          Text(
+            style.label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: style.textColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the Status Badge
+  Widget _buildStatusBadge(bool isPast) {
+    String statusText = 'Upcoming';
+    if (isPast) {
+      statusText = 'Completed';
+    } else {
+      switch (event.status) {
+        case EventStatus.upcoming:
+          statusText = 'Upcoming';
+          break;
+        case EventStatus.completed:
+          statusText = 'Completed';
+          break;
+        case EventStatus.cancelled:
+          statusText = 'Cancelled';
+          break;
+        case EventStatus.ongoing:
+          statusText = 'Ongoing';
+          break;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        statusText,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: Colors.grey.shade700,
+        ),
+      ),
+    );
+  }
+
+  /// Builds the Wishlist Strip (purple section)
+  Widget _buildWishlistStrip(bool hasWishlist) {
+    if (hasWishlist) {
+      return InkWell(
+        onTap: onViewWishlist,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.card_giftcard,
+                color: AppColors.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.wishlistName ?? 'Wishlist Created',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: AppColors.primary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Tap to view',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: AppColors.primary,
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      return InkWell(
+        onTap: onAddWishlist,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.add_circle_outline,
+                color: AppColors.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Add Wishlist',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Builds the Guests Footer with Avatar Stack
+  Widget _buildGuestsFooter() {
+    // Use actual invited friends list if available
+    final friendsList = event.invitedFriends.isNotEmpty
+        ? event.invitedFriends
+        : [];
+    
+    // If no friends list, use count as fallback
+    final displayCount = friendsList.isNotEmpty
+        ? friendsList.length
+        : (event.acceptedCount > 0 ? event.acceptedCount : event.invitedCount);
+    
+    final maxAvatars = 3;
+    final displayFriends = friendsList.take(maxAvatars).toList();
+    final avatarCount = displayFriends.length > 0
+        ? displayFriends.length
+        : (displayCount > maxAvatars ? maxAvatars : displayCount);
+    final overflowCount = friendsList.length > maxAvatars
+        ? friendsList.length - maxAvatars
+        : (displayCount > maxAvatars ? displayCount - maxAvatars : 0);
+
+    // Helper to get initials from fullName
+    String getInitials(String fullName) {
+      if (fullName.isEmpty) return '?';
+      final parts = fullName.trim().split(' ');
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[1][0]).toUpperCase();
+      }
+      return fullName[0].toUpperCase();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            'Invited Guests',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        // Avatars Row
+        Row(
+          children: [
+            // Display actual friend avatars if available
+            if (displayFriends.isNotEmpty)
+              ...displayFriends.asMap().entries.map((entry) {
+                final index = entry.key;
+                final friend = entry.value;
+                final hasImage = friend.profileImage != null &&
+                    friend.profileImage!.isNotEmpty;
+                final initials = getInitials(friend.fullName ?? friend.username ?? friend.id);
+                
+                return Transform.translate(
+                  offset: Offset(index > 0 ? -6.0 : 0.0, 0.0),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.white,
+                    child: CircleAvatar(
+                      radius: 17,
+                      backgroundImage: hasImage
+                          ? NetworkImage(friend.profileImage!)
+                          : null,
+                      onBackgroundImageError: hasImage ? (_, __) {} : null,
+                      backgroundColor: AppColors.primary.withOpacity(0.2),
+                      child: !hasImage
+                          ? Text(
+                              initials,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
+                );
+              })
+            else
+              // Fallback: Placeholder avatars (if no friend data)
+              ...List.generate(avatarCount, (index) {
+                return Transform.translate(
+                  offset: Offset(index > 0 ? -6.0 : 0.0, 0.0),
+                  child: CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Colors.white,
+                    child: CircleAvatar(
+                      radius: 17,
+                      backgroundColor: AppColors.primary.withOpacity(0.2),
+                      child: Icon(
+                        Icons.person,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            // Overflow Badge
+            if (overflowCount > 0)
+              Transform.translate(
+                offset: const Offset(-6.0, 0.0),
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Colors.grey.shade400,
+                  child: Text(
+                    '+$overflowCount',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContent(EventSummary event, bool isPast) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: AppColors.surface, // White background for body
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Description
-          if (event.description != null)
-            Text(
-              event.description!,
-              style: AppStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-
-          const SizedBox(height: 16),
-
-          // Stats Row - Unified 3-column structure like Wishlist
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildEventStatColumn(
-                icon: Icons.people_outline,
-                label: 'Invited',
-                value: '${event.invitedCount}',
-                color: AppColors.secondary, // Match header theme (Teal)
-              ),
-              _buildEventStatColumn(
-                icon: Icons.check_circle_outline,
-                label: 'Accepted',
-                value: '${event.acceptedCount}',
-                color: AppColors.secondary, // Match header theme (Teal)
-              ),
-              if (event.wishlistId != null)
-                _buildEventStatColumn(
-                  icon: Icons.card_giftcard_outlined,
-                  label: 'Wishlist',
-                  value:
-                      '1', // Show 1 if wishlist exists (one wishlist linked to event)
-                  color: AppColors.secondary, // Match header theme (Teal)
-                )
-              else
-                _buildEventStatColumn(
-                  icon: Icons.warning_outlined,
-                  label: 'No Wishlist',
-                  value: '—',
-                  color: AppColors.secondary, // Match header theme (Teal)
-                ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          const SizedBox(height: 16),
-
-          // Single Sleek Primary Button
-          if (!isPast) ...[
-            if (event.isCreatedByMe)
-              _buildSleekButton(
-                text: event.wishlistId != null
-                    ? localization.translate('ui.manageEvent')
-                    : localization.translate('ui.addWishlist'),
-                onPressed: event.wishlistId != null
-                    ? onManageEvent
-                    : onAddWishlist,
-              )
-            else
-              _buildSleekButton(
-                text: event.wishlistId != null
-                    ? localization.translate('ui.viewWishlist')
-                    : 'View Details',
-                onPressed: event.wishlistId != null
-                    ? onViewWishlist
-                    : onViewDetails,
-              ),
-          ] else ...[
-            // Past event actions
-            _buildSleekButton(
-              text: 'View Event Details',
-              onPressed: onViewDetails,
-            ),
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEventStatColumn({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Column(
-      children: [
-        // Icon Container with pastel background
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(height: 8),
-        // Bold number in middle
-        Text(
-          value,
-          style: AppStyles.headingSmall.copyWith(
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-            height: 1.1,
-          ),
-        ),
-        const SizedBox(height: 4),
-        // Small label at bottom
-        Text(
-          label,
-          style: AppStyles.caption.copyWith(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-          textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
-  Color _getEventTypeColor(EventType type) {
+  /// Gets event type style (icon, color, textColor, label)
+  ({IconData icon, Color color, Color textColor, String label})
+      _getEventTypeStyle(EventType type) {
     switch (type) {
       case EventType.birthday:
-        return AppColors.secondary;
-      case EventType.wedding:
-        return AppColors.primary;
+        return (
+          icon: Icons.cake,
+          color: Colors.pink.shade100,
+          textColor: Colors.pink.shade700,
+          label: 'Birthday',
+        );
       case EventType.anniversary:
-        return AppColors.error;
+        return (
+          icon: Icons.favorite,
+          color: Colors.red.shade100,
+          textColor: Colors.red.shade700,
+          label: 'Anniversary',
+        );
       case EventType.graduation:
-        return AppColors.accent;
+        return (
+          icon: Icons.school,
+          color: Colors.blue.shade100,
+          textColor: Colors.blue.shade700,
+          label: 'Graduation',
+        );
+      case EventType.wedding:
+        return (
+          icon: Icons.favorite,
+          color: Colors.pink.shade100,
+          textColor: Colors.pink.shade700,
+          label: 'Wedding',
+        );
       case EventType.holiday:
-        return AppColors.success;
+        return (
+          icon: Icons.celebration,
+          color: Colors.orange.shade100,
+          textColor: Colors.orange.shade700,
+          label: 'Holiday',
+        );
       case EventType.babyShower:
-        return AppColors.info;
+        return (
+          icon: Icons.child_care,
+          color: Colors.purple.shade100,
+          textColor: Colors.purple.shade700,
+          label: 'Baby Shower',
+        );
       case EventType.houseWarming:
-        return AppColors.warning;
+        return (
+          icon: Icons.home,
+          color: Colors.green.shade100,
+          textColor: Colors.green.shade700,
+          label: 'House Warming',
+        );
       default:
-        return AppColors.primary;
+        return (
+          icon: Icons.event,
+          color: Colors.purple.shade50,
+          textColor: Colors.purple.shade700,
+          label: 'Event',
+        );
     }
   }
 
-  IconData _getEventTypeIcon(EventType type) {
-    switch (type) {
-      case EventType.birthday:
-        return Icons.cake_outlined;
-      case EventType.wedding:
-        return Icons.favorite_outline;
-      case EventType.anniversary:
-        return Icons.favorite_border;
-      case EventType.graduation:
-        return Icons.school_outlined;
-      case EventType.holiday:
-        return Icons.celebration_outlined;
-      case EventType.babyShower:
-        return Icons.child_friendly_outlined;
-      case EventType.houseWarming:
-        return Icons.home_outlined;
-      default:
-        return Icons.event_outlined;
-    }
-  }
-
-  String _getMonthName(int month) {
+  /// Gets short month name (JAN, FEB, etc.)
+  String _getMonthNameShort(int month) {
     const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
     ];
     return months[month - 1];
   }
 
-  /// Builds a sleek, compact button with 44px height and 14px font
-  Widget _buildSleekButton({
-    required String text,
-    required VoidCallback? onPressed,
-  }) {
-    final isEnabled = onPressed != null;
-
-    return SizedBox(
-      height: 44,
-      width: double.infinity,
-      child: Material(
-        color: isEnabled
-            ? AppColors.primary
-            : AppColors.primary.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 14.0,
-                fontWeight: FontWeight.w600,
-                color: isEnabled ? Colors.white : Colors.white.withOpacity(0.6),
-                letterSpacing: 0.2,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   /// Shows the context menu bottom sheet with event actions
   void _showContextMenu(BuildContext context) {

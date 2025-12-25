@@ -37,6 +37,10 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
       []; // Store all personal wishlists for filtering
   bool _isLoading = false;
   String? _errorMessage;
+  
+  // Reservations data
+  List<WishlistItem> _myReservations = [];
+  bool _isLoadingReservations = false;
 
   // Category filtering
   List<String> _availableCategories = [];
@@ -65,6 +69,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     _initializeAnimations();
     _startAnimations();
     _loadWishlists();
+    _fetchMyReservations();
   }
 
   @override
@@ -173,10 +178,9 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                               badgeCount: _personalWishlists.length,
                             ),
                             UnifiedTab(
-                              label: localization.translate(
-                                'wishlists.friendsWishlists',
-                              ),
-                              icon: Icons.people_rounded,
+                              label: 'Reservations',
+                              icon: Icons.shopping_bag_outlined,
+                              badgeCount: _myReservations.length,
                             ),
                           ],
                     selectedTabIndex: authService.isGuest
@@ -286,7 +290,20 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                                             ),
                                         onRefresh: _refreshWishlists,
                                       ),
-                                      FriendsWishlistsTabWidget(),
+                                      ReservationsTabWidget(
+                                        reservations: _myReservations,
+                                        isLoading: _isLoadingReservations,
+                                        onCancelReservation: _cancelReservation,
+                                        onItemTap: (item) {
+                                          // Navigate to ItemDetailsScreen (the main one with all logic)
+                                          Navigator.pushNamed(
+                                            context,
+                                            AppRoutes.itemDetails,
+                                            arguments: item,
+                                          );
+                                        },
+                                        onRefresh: _fetchMyReservations,
+                                      ),
                                     ],
                                   ),
                           ),
@@ -903,6 +920,94 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     }
   }
 
+  /// Fetch my reservations (items I reserved from other wishlists)
+  Future<void> _fetchMyReservations() async {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest) {
+      return; // Guests don't have reservations
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingReservations = true;
+      });
+    }
+
+    try {
+      final reservationsData = await _wishlistRepository.fetchMyReservations();
+      
+      final reservations = reservationsData
+          .map((itemData) => WishlistItem.fromJson(itemData))
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _myReservations = reservations;
+          _isLoadingReservations = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingReservations = false;
+        });
+      }
+      // Silently fail - reservations are not critical
+    }
+  }
+
+  /// Cancel a reservation (un-reserve an item)
+  Future<void> _cancelReservation(WishlistItem item) async {
+    // Optimistic update
+    setState(() {
+      _myReservations.removeWhere((i) => i.id == item.id);
+    });
+
+    try {
+      await _wishlistRepository.toggleReservation(item.id);
+      
+      // Refresh reservations to ensure consistency
+      await _fetchMyReservations();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Reservation cancelled',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      // Revert optimistic update on error
+      if (mounted) {
+        setState(() {
+          _myReservations.add(item);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to cancel reservation: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   /// Convert API response data to WishlistSummary
   WishlistSummary _convertToWishlistSummary(Map<String, dynamic> data) {
     // Parse privacy
@@ -1012,6 +1117,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
   Future<void> _refreshWishlists() async {
     await _loadWishlists();
+    await _fetchMyReservations();
   }
 
   /// Handle search query change (works for both guest and authenticated users)

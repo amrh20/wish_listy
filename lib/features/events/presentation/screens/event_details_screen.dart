@@ -1135,15 +1135,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   /// Builds the Who's Coming section with invited friends
   Widget _buildWhosComingSection() {
-    // Use attendees list if available, otherwise filter invitedFriends for accepted
-    final attendeesList = _event?.attendees.isNotEmpty == true
-        ? _event!.attendees
-        : (_event?.invitedFriends ?? [])
-            .where((friend) => friend.status == InvitationStatus.accepted)
-            .toList();
+    // Get all invited friends (not just accepted ones)
+    final allInvitedFriends = _event?.invitedFriends ?? [];
     
-    // If no attendees and user is creator, show invite widget
-    if (attendeesList.isEmpty) {
+    // If no invited friends and user is creator, show invite widget
+    if (allInvitedFriends.isEmpty) {
       if (_event?.isCreator == true) {
         return _buildQuickInviteWidget();
       }
@@ -1152,7 +1148,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            'No one has accepted yet',
+            'No one has been invited yet',
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -1161,58 +1157,80 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       );
     }
 
+    // Group friends by status for better organization
+    final acceptedFriends = allInvitedFriends
+        .where((f) => f.status == InvitationStatus.accepted)
+        .toList();
+    final pendingFriends = allInvitedFriends
+        .where((f) => f.status == InvitationStatus.pending || f.status == null)
+        .toList();
+    final declinedFriends = allInvitedFriends
+        .where((f) => f.status == InvitationStatus.declined)
+        .toList();
+    final maybeFriends = allInvitedFriends
+        .where((f) => f.status == InvitationStatus.maybe)
+        .toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Display attendees with avatars (horizontal list)
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              ...attendeesList.take(10).map((friend) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: _buildFriendItem(friend),
-                );
-              }),
-              if (attendeesList.length > 10)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceVariant,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          '+${attendeesList.length - 10}',
-                          style: AppStyles.bodySmall.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'more',
-                        style: AppStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
+        // Display all invited friends in a vertical list grouped by status
+        ..._buildStatusGroup('Accepted', acceptedFriends, Icons.check_circle, AppColors.success),
+        if (acceptedFriends.isNotEmpty && (pendingFriends.isNotEmpty || maybeFriends.isNotEmpty || declinedFriends.isNotEmpty))
+          const SizedBox(height: 16),
+        ..._buildStatusGroup('Pending', pendingFriends, Icons.schedule, AppColors.warning),
+        if (pendingFriends.isNotEmpty && (maybeFriends.isNotEmpty || declinedFriends.isNotEmpty))
+          const SizedBox(height: 16),
+        ..._buildStatusGroup('Maybe', maybeFriends, Icons.help_outline, AppColors.info),
+        if (maybeFriends.isNotEmpty && declinedFriends.isNotEmpty)
+          const SizedBox(height: 16),
+        ..._buildStatusGroup('Declined', declinedFriends, Icons.cancel, AppColors.error),
         const SizedBox(height: 12),
         // Invite Friends button (only for creator)
         if (_event?.isCreator == true) _buildQuickInviteWidget(),
       ],
     );
+  }
+
+  /// Builds a status group section
+  List<Widget> _buildStatusGroup(
+    String title,
+    List<InvitedFriend> friends,
+    IconData icon,
+    Color color,
+  ) {
+    if (friends.isEmpty) return [];
+    
+    return [
+      Row(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 8),
+          Text(
+            '$title (${friends.length})',
+            style: AppStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      // Display friends in a horizontal scrollable list
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            ...friends.map((friend) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: _buildFriendItem(friend),
+              );
+            }),
+          ],
+        ),
+      ),
+    ];
   }
 
   /// Build friend item with avatar, status indicator, and full name

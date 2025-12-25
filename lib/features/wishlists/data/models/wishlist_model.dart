@@ -13,6 +13,7 @@ class Wishlist {
   final List<WishlistItem> items;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final friends.User? owner; // Owner of the wishlist (for nested parsing)
 
   Wishlist({
     required this.id,
@@ -26,31 +27,51 @@ class Wishlist {
     this.items = const [],
     required this.createdAt,
     required this.updatedAt,
+    this.owner,
   });
 
   factory Wishlist.fromJson(Map<String, dynamic> json) {
+    // Parse owner if available (nested object)
+    friends.User? owner;
+    if (json['owner'] != null && json['owner'] is Map<String, dynamic>) {
+      try {
+        owner = friends.User.fromJson(json['owner'] as Map<String, dynamic>);
+      } catch (e) {
+        owner = null;
+      }
+    }
+    
     return Wishlist(
-      id: json['id'] ?? '',
-      userId: json['user_id'] ?? '',
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
+      userId: json['user_id']?.toString() ?? json['userId']?.toString() ?? '',
       type: WishlistType.values.firstWhere(
-        (e) => e.toString().split('.').last == json['type'],
+        (e) => e.toString().split('.').last == json['type']?.toString(),
         orElse: () => WishlistType.public,
       ),
-      eventId: json['event_id'],
-      name: json['name'] ?? '',
-      description: json['description'],
+      eventId: json['event_id']?.toString() ?? json['eventId']?.toString(),
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString(),
       visibility: WishlistVisibility.values.firstWhere(
-        (e) => e.toString().split('.').last == json['visibility'],
+        (e) => e.toString().split('.').last == json['visibility']?.toString(),
         orElse: () => WishlistVisibility.friends,
       ),
-      category: json['category'],
+      category: json['category']?.toString(),
       items:
           (json['items'] as List<dynamic>?)
               ?.map((item) => WishlistItem.fromJson(item))
               .toList() ??
           [],
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'].toString())
+          : (json['createdAt'] != null
+              ? DateTime.parse(json['createdAt'].toString())
+              : DateTime.now()),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'].toString())
+          : (json['updatedAt'] != null
+              ? DateTime.parse(json['updatedAt'].toString())
+              : DateTime.now()),
+      owner: owner,
     );
   }
 
@@ -82,6 +103,7 @@ class Wishlist {
     List<WishlistItem>? items,
     DateTime? createdAt,
     DateTime? updatedAt,
+    friends.User? owner,
   }) {
     return Wishlist(
       id: id ?? this.id,
@@ -95,6 +117,7 @@ class Wishlist {
       items: items ?? this.items,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      owner: owner ?? this.owner,
     );
   }
 
@@ -135,6 +158,7 @@ class WishlistItem {
   final DateTime updatedAt;
   final bool isReceived; // Whether the item has been received
   final friends.User? reservedBy; // User who reserved the item (nullable)
+  final Wishlist? wishlist; // Nested wishlist object (for reservations API)
 
   // Computed properties
   bool get isReserved => reservedBy != null;
@@ -154,6 +178,7 @@ class WishlistItem {
     required this.updatedAt,
     this.isReceived = false,
     this.reservedBy,
+    this.wishlist,
   });
 
   factory WishlistItem.fromJson(Map<String, dynamic> json) {
@@ -265,6 +290,16 @@ class WishlistItem {
       }
     }
     
+    // Parse nested wishlist object (for reservations API)
+    Wishlist? wishlist;
+    if (json['wishlist'] != null && json['wishlist'] is Map<String, dynamic>) {
+      try {
+        wishlist = Wishlist.fromJson(json['wishlist'] as Map<String, dynamic>);
+      } catch (e) {
+        wishlist = null;
+      }
+    }
+    
     return WishlistItem(
       id: id,
       wishlistId: wishlistId,
@@ -279,6 +314,7 @@ class WishlistItem {
       updatedAt: updatedAt,
       isReceived: isReceived,
       reservedBy: reservedBy,
+      wishlist: wishlist,
     );
   }
 
@@ -312,6 +348,7 @@ class WishlistItem {
     DateTime? updatedAt,
     bool? isReceived,
     friends.User? reservedBy,
+    Wishlist? wishlist,
   }) {
     return WishlistItem(
       id: id ?? this.id,
@@ -327,6 +364,7 @@ class WishlistItem {
       updatedAt: updatedAt ?? this.updatedAt,
       isReceived: isReceived ?? this.isReceived,
       reservedBy: reservedBy ?? this.reservedBy,
+      wishlist: wishlist ?? this.wishlist,
     );
   }
 

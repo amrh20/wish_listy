@@ -14,6 +14,8 @@ import 'package:wish_listy/features/wishlists/data/repository/wishlist_repositor
 import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 
+enum SourceType { online, physical, anywhere }
+
 class ItemDetailsScreen extends StatefulWidget {
   final WishlistItem item;
 
@@ -36,6 +38,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   String? _errorMessage;
   String? _wishlistName; // Store wishlist name for navigation
   Map<String, dynamic>? _rawItemData; // keep raw API data (price/url/purchasedBy object)
+  String? _wishlistOwnerId; // Store wishlist owner ID for owner check
 
   @override
   void initState() {
@@ -91,19 +94,35 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         // Parse the item data to WishlistItem model
         final updatedItem = WishlistItem.fromJson(itemData);
         
-        // Try to get wishlist name from itemData or use default
-        // API may return `wishlist` as a String id OR an object {name: ...}
+        // Try to get wishlist name and ownerId from itemData or use default
+        // API may return `wishlist` as a String id OR an object {name: ..., owner: ...}
         String wishlistName = 'Wishlist';
+        String? wishlistOwnerId;
+        
         final directName = itemData['wishlistName']?.toString();
         if (directName != null && directName.isNotEmpty) {
           wishlistName = directName;
-        } else {
-          final wishlistField = itemData['wishlist'];
-          if (wishlistField is Map<String, dynamic>) {
-            final nestedName = wishlistField['name']?.toString();
-            if (nestedName != null && nestedName.isNotEmpty) {
-              wishlistName = nestedName;
-            }
+        }
+        
+        final wishlistField = itemData['wishlist'];
+        if (wishlistField is Map<String, dynamic>) {
+          final nestedName = wishlistField['name']?.toString();
+          if (nestedName != null && nestedName.isNotEmpty) {
+            wishlistName = nestedName;
+          }
+          
+          // Extract ownerId from wishlist object
+          final ownerField = wishlistField['owner'];
+          if (ownerField is Map<String, dynamic>) {
+            wishlistOwnerId = ownerField['_id']?.toString() ?? ownerField['id']?.toString();
+          } else if (ownerField is String) {
+            wishlistOwnerId = ownerField;
+          }
+          
+          // Also check for userId in wishlist object
+          if (wishlistOwnerId == null) {
+            wishlistOwnerId = wishlistField['userId']?.toString() ?? 
+                             wishlistField['user_id']?.toString();
           }
         }
 
@@ -111,6 +130,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           setState(() {
             _currentItem = updatedItem;
             _wishlistName = wishlistName;
+            _wishlistOwnerId = wishlistOwnerId;
             _isLoading = false;
           });
           _startAnimations();
@@ -178,6 +198,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     return Scaffold(
       body: DecorativeBackground(
         showGifts: true,
+        showCircles: true, // Enable gradient blobs
         child: SafeArea(
           child: _isLoading
               ? Center(
@@ -204,25 +225,27 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _buildTitleSection(item),
-                                    const SizedBox(height: 14),
+                                    // Header Section (Title + Priority + Date)
+                                    _buildHeaderSection(item),
+                                    const SizedBox(height: 16),
+                                    // Image
                                     if (item.imageUrl != null &&
-                                        item.imageUrl!.trim().isNotEmpty)
+                                        item.imageUrl!.trim().isNotEmpty) ...[
                                       _buildImageCard(item),
-                                    if (item.imageUrl != null &&
-                                        item.imageUrl!.trim().isNotEmpty)
-                                      const SizedBox(height: 14),
-                                    if (_isReceived(item)) ...[
-                                      _buildGiftedBanner(item),
-                                      const SizedBox(height: 14),
-                                    ],
-                                    if (_getItemUrl(item) != null) ...[
-                                      _buildVisitStoreButton(item),
                                       const SizedBox(height: 16),
                                     ],
-                                    _buildSoftInfoGrid(item),
-                                    const SizedBox(height: 18),
+                                    // Received Banner (if applicable)
+                                    if (_isReceived(item)) ...[
+                                      _buildGiftedBanner(item),
+                                      const SizedBox(height: 16),
+                                    ],
+                                    // Source Section (Online/Physical/Anywhere)
+                                    _buildSourceSection(item),
+                                    const SizedBox(height: 20),
+                                    // Description
                                     _buildDescriptionSection(item),
+                                    // Add bottom padding for sticky bar
+                                    if (!_isOwner()) const SizedBox(height: 80),
                                   ],
                                 ),
                               ),
@@ -231,11 +254,29 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                         ),
         ),
       ),
+      // Sticky Bottom Action Bar (Guest View only)
+      bottomNavigationBar: !_isOwner() ? _buildStickyActionBar(item) : null,
     );
+  }
+
+  bool _isOwner() {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest || authService.userId == null) {
+      return false;
+    }
+    
+    // Check if current user is the owner of the wishlist
+    if (_wishlistOwnerId == null) {
+      return false;
+    }
+    
+    return authService.userId == _wishlistOwnerId;
   }
 
   Widget _buildCleanTopBar(WishlistItem item) {
     final isReceived = _isReceived(item);
+    final isOwner = _isOwner();
+    
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       child: Row(
@@ -250,43 +291,43 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             ),
           ),
           const Spacer(),
-          IconButton(
-            tooltip: 'Share',
-            onPressed: () => _shareItem(item),
-            icon: const Icon(Icons.share_outlined, size: 22),
-            color: AppColors.textPrimary,
-            style: IconButton.styleFrom(
-              padding: const EdgeInsets.all(8),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-          ),
-          if (!isReceived)
+          // Only show Share and Edit if user is owner
+          if (isOwner) ...[
             IconButton(
-              tooltip: 'Edit',
-              onPressed: _editItem,
-              icon: const Icon(Icons.edit_outlined, size: 22),
+              tooltip: 'Share',
+              onPressed: () => _shareItem(item),
+              icon: const Icon(Icons.share_outlined, size: 22),
               color: AppColors.textPrimary,
               style: IconButton.styleFrom(
                 padding: const EdgeInsets.all(8),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
+            if (!isReceived)
+              IconButton(
+                tooltip: 'Edit',
+                onPressed: _editItem,
+                icon: const Icon(Icons.edit_outlined, size: 22),
+                color: AppColors.textPrimary,
+                style: IconButton.styleFrom(
+                  padding: const EdgeInsets.all(8),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildTitleSection(WishlistItem item) {
-    final priceText = _getDisplayPrice(item);
-    final priorityText = _getPriorityText(item.priority);
-    final subtitle =
-        (priceText != null && priceText.trim().isNotEmpty)
-            ? '${priceText.trim()} • $priorityText'
-            : priorityText;
-
+  Widget _buildHeaderSection(WishlistItem item) {
+    final priorityColor = _getPriorityColor(item.priority);
+    final dateText = _formatDate(item.createdAt);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Title
         Text(
           item.name,
           style: AppStyles.headingLarge.copyWith(
@@ -297,12 +338,361 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 12),
+        // Priority Badge + Date Row
+        Row(
+          children: [
+            // Priority Chip
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: priorityColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: priorityColor.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _getPriorityIcon(item.priority),
+                    size: 14,
+                    color: priorityColor,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _getPriorityText(item.priority),
+                    style: TextStyle(
+                      color: priorityColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Date
+            Text(
+              'Added on $dateText',
+              style: AppStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  IconData _getPriorityIcon(ItemPriority priority) {
+    switch (priority) {
+      case ItemPriority.high:
+        return Icons.local_fire_department;
+      case ItemPriority.urgent:
+        return Icons.priority_high;
+      case ItemPriority.medium:
+        return Icons.bolt;
+      case ItemPriority.low:
+        return Icons.spa;
+    }
+  }
+
+  Widget _buildSourceSection(WishlistItem item) {
+    final sourceType = _getSourceType(item);
+    
+    switch (sourceType) {
+      case SourceType.online:
+        return _buildOnlineSource(item);
+      case SourceType.physical:
+        return _buildPhysicalSource(item);
+      case SourceType.anywhere:
+        return _buildAnywhereSource();
+    }
+  }
+
+  Widget _buildOnlineSource(WishlistItem item) {
+    if (!_shouldShowVisitStore(item)) {
+      return const SizedBox.shrink();
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label
         Text(
-          subtitle,
-          style: AppStyles.bodyMedium.copyWith(
+          'Where to buy:',
+          style: AppStyles.bodySmall.copyWith(
             color: AppColors.textSecondary,
             fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Card
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _openStoreUrl(item),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // Icon Box
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.language,
+                      color: AppColors.primary,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Middle Column
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Online Store',
+                          style: AppStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Tap to visit link',
+                          style: AppStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Arrow Icon
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: AppColors.textTertiary,
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPhysicalSource(WishlistItem item) {
+    final storeName = _getStoreName();
+    final storeLocation = _getStoreLocation();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label
+        Text(
+          'Where to buy:',
+          style: AppStyles.bodySmall.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Card
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: storeLocation != null && storeLocation.isNotEmpty
+                ? _openInMaps
+                : null,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      // Icon Box
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.store,
+                          color: AppColors.primary,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Middle Column
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              storeName ?? 'Physical Store',
+                              style: AppStyles.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            if (storeLocation != null && storeLocation.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                storeLocation,
+                                style: AppStyles.bodySmall.copyWith(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      // Arrow Icon (only if location exists)
+                      if (storeLocation != null && storeLocation.isNotEmpty)
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          color: AppColors.textTertiary,
+                          size: 16,
+                        ),
+                    ],
+                  ),
+                  if (storeLocation != null && storeLocation.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: _openInMaps,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                        child: Row(
+                          children: [
+                            Icon(Icons.location_on_outlined, 
+                                 color: AppColors.primary, 
+                                 size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Open in Maps',
+                                style: AppStyles.bodySmall.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            Icon(Icons.arrow_forward_ios, 
+                                 color: AppColors.primary, 
+                                 size: 14),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnywhereSource() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Label
+        Text(
+          'Where to buy:',
+          style: AppStyles.bodySmall.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Info Card
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.public,
+                  color: AppColors.primary,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'No specific store listed. You can find this gift anywhere!',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -438,6 +828,340 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
   bool _isReceived(WishlistItem item) {
     return item.isReceived;
+  }
+
+  bool _shouldShowVisitStore(WishlistItem item) {
+    // For owner: always show if URL exists
+    if (_isOwner()) {
+      return true;
+    }
+    
+    // For guest: hide if reserved by someone else
+    if (item.reservedBy != null && !_isReservedByMe(item)) {
+      return false;
+    }
+    
+    return true;
+  }
+
+  // Helper to determine source type
+  SourceType _getSourceType(WishlistItem item) {
+    final url = _getItemUrl(item);
+    if (url != null && url.isNotEmpty) {
+      return SourceType.online;
+    }
+    
+    final storeName = _rawItemData?['storeName']?.toString()?.trim();
+    final storeLocation = _rawItemData?['storeLocation']?.toString()?.trim();
+    
+    if ((storeName != null && storeName.isNotEmpty) ||
+        (storeLocation != null && storeLocation.isNotEmpty)) {
+      return SourceType.physical;
+    }
+    
+    return SourceType.anywhere;
+  }
+
+  String? _getStoreName() {
+    return _rawItemData?['storeName']?.toString()?.trim() ?? 
+           _rawItemData?['store']?.toString()?.trim();
+  }
+
+  String? _getStoreLocation() {
+    return _rawItemData?['storeLocation']?.toString()?.trim();
+  }
+
+  Future<void> _openInMaps() async {
+    final storeLocation = _getStoreLocation();
+    if (storeLocation == null || storeLocation.isEmpty) {
+      return;
+    }
+
+    final query = Uri.encodeComponent(storeLocation);
+    final url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+    
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open maps'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open maps'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  bool _isReservedByMe(WishlistItem item) {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest || authService.userId == null) {
+      return false;
+    }
+    return item.reservedBy?.id == authService.userId;
+  }
+
+  Widget _buildStickyActionBar(WishlistItem item) {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    
+    // Case A: Item is Received
+    if (item.isReceived) {
+      return Container(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 12,
+          bottom: 12 + MediaQuery.of(context).padding.bottom,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: Colors.grey.shade300,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              const Text(
+                '🎁',
+                style: TextStyle(fontSize: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'This gift has been received/purchased.',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // Case B: Reserved by ME
+    if (_isReservedByMe(item)) {
+      return Container(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 12,
+          bottom: 12 + MediaQuery.of(context).padding.bottom,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.green.shade50,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: Colors.green.shade200,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green.shade700, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Reserved by You',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => _toggleReservation(item),
+                child: Text(
+                  'Undo',
+                  style: TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // Case C: Reserved by OTHERS
+    if (item.reservedBy != null) {
+      final reservedByName = item.reservedBy?.fullName ?? 'Someone';
+      return Container(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 12,
+          bottom: 12 + MediaQuery.of(context).padding.bottom,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: Colors.grey.shade300,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.lock_outline, color: Colors.grey.shade600, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '🔒 Reserved by $reservedByName',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // Case D: Available - Large Primary Button
+    return Container(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 12,
+        bottom: 12 + MediaQuery.of(context).padding.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        width: double.infinity,
+        child: CustomButton(
+          text: 'Reserve Gift 🎁',
+          onPressed: () => _toggleReservation(item),
+          variant: ButtonVariant.gradient,
+          gradientColors: [AppColors.primary, AppColors.secondary],
+          icon: Icons.bookmark_outline,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _toggleReservation(WishlistItem item) async {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please login to reserve items'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Optimistic update
+      final wasReserved = item.reservedBy != null;
+      setState(() {
+        if (wasReserved) {
+          _currentItem = item.copyWith(reservedBy: null);
+        } else {
+          // Will be updated from API response
+        }
+      });
+
+      // Call API
+      final updatedItemData = await _wishlistRepository.toggleReservation(item.id);
+      final updatedItem = WishlistItem.fromJson(updatedItemData);
+
+      if (mounted) {
+        setState(() {
+          _currentItem = updatedItem;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              updatedItem.reservedBy?.id == authService.userId
+                  ? 'Item reserved! 🎁'
+                  : 'Reservation cancelled',
+            ),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      // Revert optimistic update
+      if (mounted) {
+        setState(() {
+          _currentItem = item;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update reservation: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   String? _getItemUrl(WishlistItem item) {

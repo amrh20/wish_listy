@@ -692,29 +692,18 @@ class EventsScreenState extends State<EventsScreen>
     EventSummary event,
     LocalizationService localization,
   ) {
-    List<Map<String, dynamic>> associatedWishlists = _getAssociatedWishlists(
-      event,
-    );
-
-    if (associatedWishlists.length == 1) {
+    // Use wishlistId and wishlistName directly from the event
+    if (event.wishlistId != null && event.wishlistId!.isNotEmpty) {
       Navigator.pushNamed(
         context,
         AppRoutes.wishlistItems,
         arguments: {
-          'wishlistId': associatedWishlists.first['id'],
-          'wishlistName': associatedWishlists.first['name'],
-          'totalItems': associatedWishlists.first['totalItems'],
-          'purchasedItems': associatedWishlists.first['purchasedItems'],
-          'totalValue': associatedWishlists.first['totalValue'],
+          'wishlistId': event.wishlistId!,
+          'wishlistName': event.wishlistName ?? 'Wishlist',
+          'totalItems': event.wishlistItemCount,
+          'purchasedItems': 0, // Will be loaded from API
           'isFriendWishlist': false,
         },
-      );
-    } else if (associatedWishlists.length > 1) {
-      EventModals.showWishlistSelectionModal(
-        context,
-        event,
-        associatedWishlists,
-        localization,
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

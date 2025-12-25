@@ -235,7 +235,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (_userProfile == null) return const SizedBox.shrink();
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -248,62 +248,64 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          // Friends Stat
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                // Navigate to Friends tab while keeping the main navigation bar
-                MainNavigation.switchToTab(context, 3);
-              },
-              child: _buildStatItem(
-                icon: Icons.people_outline,
-                value: '${_userProfile!.friendsCount}',
-                label: 'Friends',
-                iconColor: AppColors.secondary,
-                iconBackgroundColor: AppColors.secondary.withOpacity(0.1),
+      child: IntrinsicHeight(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            // Friends Stat
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  // Navigate to Friends tab while keeping the main navigation bar
+                  MainNavigation.switchToTab(context, 3);
+                },
+                child: _buildStatItem(
+                  icon: Icons.people_outline,
+                  value: '${_userProfile!.friendsCount}',
+                  label: 'Friends',
+                  iconColor: AppColors.secondary,
+                  iconBackgroundColor: AppColors.secondary.withOpacity(0.1),
+                ),
               ),
             ),
-          ),
-          // Divider
-          Container(height: 40, width: 1, color: Colors.grey.withOpacity(0.2)),
-          // Wishlists Stat
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                // Navigate to Wishlists tab while keeping the main navigation bar
-                MainNavigation.switchToTab(context, 1);
-              },
-              child: _buildStatItem(
-                icon: Icons.favorite_outline,
-                value: '${_userProfile!.wishlistsCount}',
-                label: 'Wishlists',
-                iconColor: AppColors.primary,
-                iconBackgroundColor: AppColors.primary.withOpacity(0.1),
+            // Divider
+            Container(height: 60, width: 1, color: Colors.grey.withOpacity(0.2)),
+            // Wishlists Stat
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  // Navigate to Wishlists tab while keeping the main navigation bar
+                  MainNavigation.switchToTab(context, 1);
+                },
+                child: _buildStatItem(
+                  icon: Icons.favorite_outline,
+                  value: '${_userProfile!.wishlistsCount}',
+                  label: 'Wishlists',
+                  iconColor: AppColors.primary,
+                  iconBackgroundColor: AppColors.primary.withOpacity(0.1),
+                ),
               ),
             ),
-          ),
-          // Divider
-          Container(height: 40, width: 1, color: Colors.grey.withOpacity(0.2)),
-          // Events Stat
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                // Navigate to Events tab while keeping the main navigation bar
-                MainNavigation.switchToTab(context, 2);
-              },
-              child: _buildStatItem(
-                icon: Icons.event_outlined,
-                value: '${_userProfile!.eventsCreated}',
-                label: 'Events',
-                iconColor: AppColors.accent,
-                iconBackgroundColor: AppColors.accent.withOpacity(0.1),
+            // Divider
+            Container(height: 60, width: 1, color: Colors.grey.withOpacity(0.2)),
+            // Events Stat
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  // Navigate to Events tab while keeping the main navigation bar
+                  MainNavigation.switchToTab(context, 2);
+                },
+                child: _buildStatItem(
+                  icon: Icons.event_outlined,
+                  value: '${_userProfile!.eventsCreated}',
+                  label: 'Events',
+                  iconColor: AppColors.accent,
+                  iconBackgroundColor: AppColors.accent.withOpacity(0.1),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -317,32 +319,37 @@ class _ProfileScreenState extends State<ProfileScreen>
   }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // Icon with CircleAvatar
         CircleAvatar(
-          radius: 20,
+          radius: 18,
           backgroundColor: iconBackgroundColor,
-          child: Icon(icon, color: iconColor, size: 20),
+          child: Icon(icon, color: iconColor, size: 18),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         // Number (Large, Bold)
         Text(
           value,
           style: AppStyles.headingLarge.copyWith(
             fontWeight: FontWeight.bold,
-            fontSize: 28,
+            fontSize: 26,
             color: AppColors.textPrimary,
+            height: 1.1,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 3),
         // Label (Small, Grey)
         Text(
           label,
           style: AppStyles.bodySmall.copyWith(
             color: Colors.grey[600],
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
+            height: 1.2,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

@@ -116,28 +116,38 @@ class AppRoutes {
         ),
       );
     } else if (settings.name == itemDetails) {
-      final args = settings.arguments as Map<String, dynamic>;
-      return MaterialPageRoute(
-        builder: (context) => ItemDetailsScreen(
-          item: WishlistItem(
-            id: args['id'] ?? '',
-            wishlistId: args['wishlistId'] ?? '1',
-            name: args['title'] ?? args['name'] ?? '',
-            description: args['description'],
-            imageUrl: args['imageUrl'],
-            priority: ItemPriority.values.firstWhere(
-              (e) => e.toString().split('.').last == args['priority'],
-              orElse: () => ItemPriority.medium,
-            ),
-            status: ItemStatus.values.firstWhere(
-              (e) => e.toString().split('.').last == args['status'],
-              orElse: () => ItemStatus.desired,
-            ),
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
+      // Support both Map and WishlistItem directly
+      if (settings.arguments is WishlistItem) {
+        return MaterialPageRoute(
+          builder: (context) => ItemDetailsScreen(
+            item: settings.arguments as WishlistItem,
           ),
-        ),
-      );
+        );
+      } else {
+        // Legacy support for Map arguments
+        final args = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute(
+          builder: (context) => ItemDetailsScreen(
+            item: WishlistItem(
+              id: args['id'] ?? '',
+              wishlistId: args['wishlistId'] ?? '1',
+              name: args['title'] ?? args['name'] ?? '',
+              description: args['description'],
+              imageUrl: args['imageUrl'],
+              priority: ItemPriority.values.firstWhere(
+                (e) => e.toString().split('.').last == args['priority'],
+                orElse: () => ItemPriority.medium,
+              ),
+              status: ItemStatus.values.firstWhere(
+                (e) => e.toString().split('.').last == args['status'],
+                orElse: () => ItemStatus.desired,
+              ),
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+          ),
+        );
+      }
     } else if (settings.name == wishlistItemDetails) {
       final args = settings.arguments as WishlistItem;
       return MaterialPageRoute(

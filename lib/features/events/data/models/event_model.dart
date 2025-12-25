@@ -724,12 +724,14 @@ class EventSummary {
   final int acceptedCount;
   final int wishlistItemCount;
   final String? wishlistId;
+  final String? wishlistName;
   final bool isCreatedByMe;
   final EventStatus status;
   final InvitationStatus? invitationStatus; // User's RSVP status for invited events
   final String? creatorName; // Creator's full name
   final String? creatorImage; // Creator's profile image
   final String? creatorId; // Creator's ID for navigation
+  final List<InvitedFriend> invitedFriends; // List of invited friends for avatar display
 
   EventSummary({
     required this.id,
@@ -744,12 +746,14 @@ class EventSummary {
     required this.acceptedCount,
     required this.wishlistItemCount,
     this.wishlistId,
+    this.wishlistName,
     required this.isCreatedByMe,
     required this.status,
     this.invitationStatus,
     this.creatorName,
     this.creatorImage,
     this.creatorId,
+    this.invitedFriends = const [],
   });
 
   factory EventSummary.fromEvent(Event event, {String? currentUserId}) {
@@ -805,12 +809,14 @@ class EventSummary {
           event.acceptedInvitations, // Fallback: invited_friends status count, then invitations count
       wishlistItemCount: event.wishlistItemCount ?? 0,
       wishlistId: event.wishlistId,
+      wishlistName: event.wishlistName,
       isCreatedByMe: isCreatedByMe,
       status: event.status,
       invitationStatus: invitationStatus,
       creatorName: event.creatorName,
       creatorImage: event.creatorImage,
       creatorId: event.creatorId,
+      invitedFriends: event.invitedFriends, // Include invited friends for avatar display
     );
   }
 
@@ -827,12 +833,14 @@ class EventSummary {
     int? acceptedCount,
     int? wishlistItemCount,
     String? wishlistId,
+    String? wishlistName,
     bool? isCreatedByMe,
     EventStatus? status,
     InvitationStatus? invitationStatus,
     String? creatorName,
     String? creatorImage,
     String? creatorId,
+    List<InvitedFriend>? invitedFriends,
   }) {
     return EventSummary(
       id: id ?? this.id,
@@ -847,12 +855,14 @@ class EventSummary {
       acceptedCount: acceptedCount ?? this.acceptedCount,
       wishlistItemCount: wishlistItemCount ?? this.wishlistItemCount,
       wishlistId: wishlistId ?? this.wishlistId,
+      wishlistName: wishlistName ?? this.wishlistName,
       isCreatedByMe: isCreatedByMe ?? this.isCreatedByMe,
       status: status ?? this.status,
       invitationStatus: invitationStatus ?? this.invitationStatus,
       creatorName: creatorName ?? this.creatorName,
       creatorImage: creatorImage ?? this.creatorImage,
       creatorId: creatorId ?? this.creatorId,
+      invitedFriends: invitedFriends ?? this.invitedFriends,
     );
   }
 

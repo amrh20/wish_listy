@@ -256,8 +256,8 @@ class GuestWishlistCardWidget extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // 2. Middle Section: Bubbles Preview (only if has items)
-            if (hasItems) ...[
+            // 2. Middle Section: Bubbles Preview (only if has items AND previewItems is not empty)
+            if (hasItems && wishlist.previewItems.isNotEmpty) ...[
               Align(
                 alignment: Alignment.centerLeft,
                 child: Row(
