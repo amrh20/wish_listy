@@ -3,6 +3,7 @@ import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 
 /// Helper class for showing success dialogs after wishlist creation/update
 class WishlistSuccessDialogHelper {
@@ -47,20 +48,27 @@ class WishlistSuccessDialogHelper {
       },
       additionalActions: [
         DialogAction(
-          label: localization.translate('wishlists.viewWishlists'),
+          label: localization.translate('wishlists.myWishlists'),
           onPressed: () {
             Navigator.of(context).pop(); // Close dialog
             if (context.mounted) {
               // Close create wishlist screen
               Navigator.of(context).pop(); // Close create wishlist screen
               
-              // Navigate to MainNavigation which includes the bottom nav
+              // Navigate to Wishlists tab in MainNavigation
               if (context.mounted) {
+                // Navigate to MainNavigation and switch to Wishlists tab (index 1)
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   AppRoutes.mainNavigation,
-                  (route) => route.isFirst, // Keep only the initial route (splash/home)
+                  (route) => route.isFirst,
                 );
+                // Use post frame callback to ensure MainNavigation is built before switching tabs
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted) {
+                    MainNavigation.switchToTab(context, 1);
+                  }
+                });
               }
             }
           },

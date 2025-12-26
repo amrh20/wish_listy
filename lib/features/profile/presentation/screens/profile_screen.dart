@@ -113,75 +113,272 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
-          backgroundColor: Colors.white,
-          body: DecorativeBackground(
-            showGifts: false, // Less busy for profile
-            child: Column(
-              children: [
-                // Profile Header with UnifiedPageHeader
-                UnifiedPageHeader(
-                  title: localization.translate('navigation.profile'),
-                  subtitle: _userProfile?.name ?? '',
-                  showSearch: false,
-                  actions: [],
-                  bottomMargin: 0.0, // Remove gap between header and container
-                ),
-
-                // Profile Content in rounded container
-                Expanded(
-                  child: UnifiedPageContainer(
-                    showTopRadius: false,
-                    child: RefreshIndicator(
-                      onRefresh: _refreshProfile,
-                      color: AppColors.primary,
-                      child: _isLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          : _errorMessage != null
-                              ? _buildErrorState()
-                              : SingleChildScrollView(
-                                  physics: const AlwaysScrollableScrollPhysics(),
-                                  child: AnimatedBuilder(
-                                    animation: _animationController,
-                                    builder: (context, child) {
-                                      return FadeTransition(
-                                        opacity: _fadeAnimation,
-                                        child: SlideTransition(
-                                          position: _slideAnimation,
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(16.0),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                // Stats Cards
-                                                _buildStatsSection(),
-                                                const SizedBox(height: 16),
-
-                                                // Account Settings
-                                                _buildAccountSettings(),
-                                                const SizedBox(height: 16),
-                                                // App Settings
-                                                _buildAppSettings(),
-                                                const SizedBox(height: 16),
-                                                // Logout (last item)
-                                                _buildLogoutSection(),
-                                                const SizedBox(height: 80),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            children: [
+              // Full-height colorful pattern background (bottom layer)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 350, // Fixed height to cover header area
+                child: Container(
+                  margin: const EdgeInsets.only(left: 8, right: 8, top: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardPurple,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(36),
+                      topRight: Radius.circular(36),
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(36),
+                      topRight: Radius.circular(36),
+                    ),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        _buildDecorativeElements(),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              // Main content column
+              Column(
+                children: [
+                  // Profile Header with Avatar and Name
+                  _buildProfileHeader(localization),
+
+                  // Profile Content in rounded container
+                  Expanded(
+                    child: Transform(
+                      transform: Matrix4.translationValues(0.0, -20.0, 0.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(32),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.06),
+                              blurRadius: 18,
+                              offset: const Offset(0, -2),
+                            ),
+                          ],
+                        ),
+                        child: RefreshIndicator(
+                          onRefresh: _refreshProfile,
+                          color: AppColors.primary,
+                          child: _isLoading
+                              ? const Center(child: CircularProgressIndicator())
+                              : _errorMessage != null
+                                  ? _buildErrorState()
+                                  : SingleChildScrollView(
+                                      physics: const AlwaysScrollableScrollPhysics(),
+                                      child: AnimatedBuilder(
+                                        animation: _animationController,
+                                        builder: (context, child) {
+                                          return FadeTransition(
+                                            opacity: _fadeAnimation,
+                                            child: SlideTransition(
+                                              position: _slideAnimation,
+                                              child: Padding(
+                                                padding: const EdgeInsets.all(16.0),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    // Stats Cards
+                                                    _buildStatsSection(),
+                                                    const SizedBox(height: 16),
+
+                                                    // Account Settings
+                                                    _buildAccountSettings(),
+                                                    const SizedBox(height: 16),
+                                                    // App Settings
+                                                    _buildAppSettings(),
+                                                    const SizedBox(height: 16),
+                                                    // Logout (last item)
+                                                    _buildLogoutSection(),
+                                                    const SizedBox(height: 80),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+
+  /// Build profile header with avatar circle and name
+  Widget _buildProfileHeader(LocalizationService localization) {
+    final userName = _userProfile?.name ?? '';
+    final userInitial = userName.isNotEmpty
+        ? userName[0].toUpperCase()
+        : '?';
+    final profileImage = _userProfile?.profilePicture;
+
+    return Container(
+      margin: const EdgeInsets.only(left: 8, right: 8, top: 12, bottom: 0),
+      decoration: BoxDecoration(
+        color: Colors.transparent, // Transparent to show background pattern
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(36),
+          topRight: Radius.circular(36),
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // White Circle with Initial
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 4),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.white,
+                  backgroundImage: profileImage != null && profileImage.isNotEmpty
+                      ? NetworkImage(profileImage)
+                      : null,
+                  child: profileImage == null || profileImage.isEmpty
+                      ? Text(
+                          userInitial,
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Name below circle
+              Text(
+                userName.isNotEmpty ? userName : 'User',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Build decorative background elements (same as unified header)
+  Widget _buildDecorativeElements() {
+    return Positioned.fill(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Top right gift icon
+          Positioned(
+            top: -10,
+            right: 30,
+            child: Icon(
+              Icons.card_giftcard_rounded,
+              size: 70,
+              color: Colors.white.withOpacity(0.15),
+            ),
+          ),
+
+          // Bottom left heart
+          Positioned(
+            bottom: -15,
+            left: 20,
+            child: Icon(
+              Icons.favorite_rounded,
+              size: 60,
+              color: AppColors.accent.withOpacity(0.12),
+            ),
+          ),
+
+          // Top left circle
+          Positioned(
+            top: -20,
+            left: -20,
+            child: Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withOpacity(0.08),
+              ),
+            ),
+          ),
+
+          // Bottom right star
+          Positioned(
+            bottom: 10,
+            right: 50,
+            child: Icon(
+              Icons.star_rounded,
+              size: 35,
+              color: AppColors.accent.withOpacity(0.15),
+            ),
+          ),
+
+          // Middle small circle
+          Positioned(
+            top: 40,
+            right: -10,
+            child: Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.secondary.withOpacity(0.1),
+              ),
+            ),
+          ),
+
+          // Small sparkle icon
+          Positioned(
+            top: 20,
+            left: 80,
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              size: 25,
+              color: Colors.white.withOpacity(0.2),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

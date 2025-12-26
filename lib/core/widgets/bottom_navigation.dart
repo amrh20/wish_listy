@@ -65,12 +65,18 @@ class CustomBottomNavigation extends StatelessWidget {
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.white.withOpacity(0.95), // Subtle background
               borderRadius: BorderRadius.circular(30),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
                   blurRadius: 20,
+                  offset: const Offset(0, -4), // Top shadow to separate from content
+                  spreadRadius: 0,
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
                   offset: const Offset(0, 4),
                   spreadRadius: 0,
                 ),
@@ -83,7 +89,7 @@ class CustomBottomNavigation extends StatelessWidget {
                 color: AppColors.textTertiary, // Inactive icon/text color
                 activeColor:
                     tabs[gNavIndex]['color'] as Color, // Active icon/text color
-                iconSize: 22,
+                iconSize: 26, // Increased icon size (26-28 pixels)
                 textStyle: AppStyles.bodySmall.copyWith(
                   fontWeight: FontWeight.w600,
                   fontSize: 12,

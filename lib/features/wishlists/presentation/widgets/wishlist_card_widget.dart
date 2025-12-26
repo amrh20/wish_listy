@@ -46,6 +46,7 @@ class WishlistCardWidget extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onAddItem;
   final Function(String) onMenuAction;
+  final bool isReadOnly; // If true, hide all action buttons and menu
 
   const WishlistCardWidget({
     super.key,
@@ -54,6 +55,7 @@ class WishlistCardWidget extends StatelessWidget {
     required this.onTap,
     required this.onAddItem,
     required this.onMenuAction,
+    this.isReadOnly = false, // Default to false for backward compatibility
   });
 
   @override
@@ -91,7 +93,8 @@ class WishlistCardWidget extends StatelessWidget {
       onView: onTap,
       onAddItem: onAddItem,
       onEdit: () => onMenuAction('edit'),
-      onMenu: () => _showMenu(context),
+      onMenu: isReadOnly ? null : () => _showMenu(context),
+      isReadOnly: isReadOnly,
     );
   }
 

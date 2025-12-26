@@ -8,6 +8,7 @@ import 'package:wish_listy/core/widgets/custom_text_field.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/data/models/user_model.dart';
 
@@ -335,32 +336,51 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
           // Avatar and user info row
           Row(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                backgroundImage: user.profileImage != null
-                    ? NetworkImage(user.profileImage!)
-                    : null,
-                child: user.profileImage == null
-                    ? Text(
-                        user.fullName.isNotEmpty
-                            ? user.fullName[0].toUpperCase()
-                            : '?',
-                        style: AppStyles.headingSmall.copyWith(
-                          color: AppColors.primary,
-                        ),
-                      )
-                    : null,
+              // Clickable Avatar
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _navigateToFriendProfile(user),
+                  borderRadius: BorderRadius.circular(24),
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    backgroundImage: user.profileImage != null
+                        ? NetworkImage(user.profileImage!)
+                        : null,
+                    child: user.profileImage == null
+                        ? Text(
+                            user.fullName.isNotEmpty
+                                ? user.fullName[0].toUpperCase()
+                                : '?',
+                            style: AppStyles.headingSmall.copyWith(
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      user.fullName,
-                      style: AppStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
+                    // Clickable Name
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _navigateToFriendProfile(user),
+                        borderRadius: BorderRadius.circular(4),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            user.fullName,
+                            style: AppStyles.bodyMedium.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                     if (user.username.isNotEmpty)
@@ -880,6 +900,15 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         );
       }
     }
+  }
+
+  /// Navigate to friend profile screen
+  void _navigateToFriendProfile(User user) {
+    AppRoutes.pushNamed(
+      context,
+      AppRoutes.friendProfile,
+      arguments: {'friendId': user.id},
+    );
   }
 
 }

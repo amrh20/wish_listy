@@ -536,31 +536,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
   Future<void> _deleteWishlist(WishlistSummary wishlist) async {
     try {
-
-      // Show loading indicator
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text('Deleting wishlist...'),
-              ],
-            ),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-
       // Check if user is guest
       final authService = Provider.of<AuthRepository>(context, listen: false);
 
@@ -578,6 +553,11 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
       // Reload wishlists to update the screen
       await _loadWishlists();
+
+      // Ensure we stay on the "My Wishlists" tab (index 0) after deletion
+      if (mounted && _mainTabController.index != 0) {
+        _mainTabController.animateTo(0);
+      }
 
       if (mounted) {
         final localization = Provider.of<LocalizationService>(

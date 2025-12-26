@@ -81,6 +81,7 @@ class ModernWishlistCard extends StatefulWidget {
   final String? category; // Added for category images
   final DateTime? eventDate; // For days left calculation
   final List<String> previewItemNames; // For guest-style bubbles preview
+  final bool isReadOnly; // If true, hide all action buttons and menu
 
   const ModernWishlistCard({
     super.key,
@@ -100,6 +101,7 @@ class ModernWishlistCard extends StatefulWidget {
     this.category,
     this.eventDate,
     this.previewItemNames = const [],
+    this.isReadOnly = false, // Default to false for backward compatibility
   });
 
   @override
@@ -118,6 +120,10 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
         widget.description != null && widget.description!.trim().isNotEmpty;
 
     return Container(
+      constraints: const BoxConstraints(
+        maxWidth: double.infinity,
+        minWidth: 0,
+      ),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -140,112 +146,13 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
           onTap: widget.onView,
           borderRadius: BorderRadius.circular(20),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 1. Top Section: Header
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // A. The Hero Icon (Left Side) - LARGE & COLORFUL
-                  Container(
-                    height: 60,
-                    width: 60,
-                    decoration: BoxDecoration(
-                      color: categoryColor.withOpacity(0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      categoryVisual.icon,
-                      size: 30,
-                      color: categoryColor,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  // B. Title & Metadata (Right Side)
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                widget.title,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (widget.onMenu != null)
-                              IconButton(
-                                onPressed: widget.onMenu,
-                                icon: const Icon(
-                                  Icons.more_vert,
-                                  color: Colors.grey,
-                                ),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(
-                                  minWidth: 40,
-                                  minHeight: 40,
-                                ),
-                                tooltip: 'Options',
-                              )
-                            else
-                              const Icon(Icons.more_vert, color: Colors.grey),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        // Metadata Row
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: categoryColor.withOpacity(0.10),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                categoryName,
-                                style: TextStyle(
-                                  color: categoryColor,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '• ${widget.totalItems} ${widget.totalItems == 1 ? 'Wish' : 'Wishes'}',
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                        if (hasDescription) ...[
-                          const SizedBox(height: 10),
-                          Text(
-                            widget.description!.trim(),
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 13,
-                              height: 1.35,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              widget.isReadOnly
+                  ? _buildCompactHeader(categoryVisual, categoryName, hasDescription)
+                  : _buildFullHeader(categoryVisual, categoryColor, categoryName, hasDescription),
 
               const SizedBox(height: 16),
 
@@ -260,8 +167,8 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
                 ),
               ],
 
-              // 3. Bottom Section: Action Button (Only if 0 items)
-              if (!hasItems) ...[
+              // 3. Bottom Section: Action Button (Only if 0 items and not read-only)
+              if (!hasItems && !widget.isReadOnly) ...[
                 const SizedBox(height: 16),
                 Material(
                   color: Colors.transparent,
@@ -269,7 +176,10 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
                     onTap: widget.onAddItem,
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
-                      width: double.infinity,
+                      constraints: const BoxConstraints(
+                        minWidth: double.infinity,
+                        maxWidth: double.infinity,
+                      ),
                       height: 44,
                       decoration: BoxDecoration(
                         gradient: AppColors.primaryGradient,
@@ -278,14 +188,20 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
                       child: const Center(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.add, color: Colors.white, size: 20),
                             SizedBox(width: 8),
-                            Text(
-                              'Add Your First Wish',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                            Flexible(
+                              child: Text(
+                                'Add Your First Wish',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -299,6 +215,156 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
           ),
         ),
       ),
+    );
+  }
+
+  /// Compact header for read-only cards (Home Screen)
+  Widget _buildCompactHeader(
+    _CategoryVisual categoryVisual,
+    String categoryName,
+    bool hasDescription,
+  ) {
+    return Row(
+      children: [
+        // Small Icon
+        Icon(
+          categoryVisual.icon,
+          size: 24,
+          color: Theme.of(context).primaryColor,
+        ),
+        const SizedBox(width: 8),
+        // Wishlist Name (Expanded)
+        Expanded(
+          child: Text(
+            widget.title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Full header with icon, metadata, and menu (default)
+  Widget _buildFullHeader(
+    _CategoryVisual categoryVisual,
+    Color categoryColor,
+    String categoryName,
+    bool hasDescription,
+  ) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // A. The Hero Icon (Left Side) - LARGE & COLORFUL
+        Container(
+          height: 60,
+          width: 60,
+          decoration: BoxDecoration(
+            color: categoryColor.withOpacity(0.15),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            categoryVisual.icon,
+            size: 30,
+            color: categoryColor,
+          ),
+        ),
+        const SizedBox(width: 16),
+        // B. Title & Metadata (Right Side)
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Flexible(
+                    child: Text(
+                      widget.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (widget.onMenu != null)
+                    IconButton(
+                      onPressed: widget.onMenu,
+                      icon: const Icon(
+                        Icons.more_vert,
+                        color: Colors.grey,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 40,
+                        minHeight: 40,
+                      ),
+                      tooltip: 'Options',
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              // Metadata Row
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: categoryColor.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      categoryName,
+                      style: TextStyle(
+                        color: categoryColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      '• ${widget.totalItems} ${widget.totalItems == 1 ? 'Wish' : 'Wishes'}',
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 11,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              if (hasDescription) ...[
+                const SizedBox(height: 10),
+                Text(
+                  widget.description!.trim(),
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                    height: 1.3,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 

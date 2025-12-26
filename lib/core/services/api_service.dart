@@ -473,6 +473,11 @@ class ApiService {
 
   /// Get the Dio instance for advanced operations
   Dio get dio => _dio;
+
+  /// Get dashboard data for Home Screen
+  Future<Map<String, dynamic>> getDashboardData() async {
+    return await get('/dashboard/home');
+  }
 }
 
 /// Custom exception class for API errors

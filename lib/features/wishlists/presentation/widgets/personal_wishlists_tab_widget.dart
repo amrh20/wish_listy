@@ -84,64 +84,62 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
               // Decorative background blobs
               _buildDecorativeBlobs(),
               // Content
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 75,
-                        height: 75,
-                        decoration: BoxDecoration(
-                          gradient: AppColors.primaryGradient,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.favorite_border_rounded,
-                          size: 36,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        localization.translate('wishlists.noWishlistsYet'),
-                        style: AppStyles.headingMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        localization.translate(
-                          'wishlists.createFirstWishlistDescription',
-                        ),
-                        style: AppStyles.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 32),
-                      if (onCreateWishlist != null)
-                        CustomButton(
-                          text: localization.translate(
-                            'wishlists.createWishlist',
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+                child: Column(
+                  children: [
+                    const Spacer(flex: 2), // Top space (2 parts)
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 6),
                           ),
-                          onPressed: onCreateWishlist,
-                          customColor: AppColors.primary,
-                          icon: Icons.add_rounded,
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.favorite_border_rounded,
+                        size: 40,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      localization.translate('wishlists.noWishlistsYet'),
+                      style: AppStyles.headingMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      localization.translate(
+                        'wishlists.createFirstWishlistDescription',
+                      ),
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    if (onCreateWishlist != null)
+                      CustomButton(
+                        text: localization.translate(
+                          'wishlists.createWishlist',
                         ),
-                    ],
-                  ),
+                        onPressed: onCreateWishlist,
+                        customColor: AppColors.primary,
+                        icon: Icons.add_rounded,
+                      ),
+                    const Spacer(flex: 3), // Bottom space (3 parts)
+                  ],
                 ),
               ),
             ],

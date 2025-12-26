@@ -472,24 +472,31 @@ class FriendsScreenState extends State<FriendsScreen>
           children: [
             Row(
               children: [
-                // Profile Picture
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.warning.withValues(alpha: 0.1),
-                  backgroundImage: fromUser.profileImage != null
-                      ? NetworkImage(fromUser.profileImage!)
-                      : null,
-                  child: fromUser.profileImage == null
-                      ? Text(
-                          senderName.isNotEmpty
-                              ? senderName[0].toUpperCase()
-                              : '?',
-                          style: AppStyles.bodyLarge.copyWith(
-                            color: AppColors.warning,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        )
-                      : null,
+                // Clickable Profile Picture
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _navigateToFriendProfile(fromUser.id),
+                    borderRadius: BorderRadius.circular(24),
+                    child: CircleAvatar(
+                      radius: 24,
+                      backgroundColor: AppColors.warning.withValues(alpha: 0.1),
+                      backgroundImage: fromUser.profileImage != null
+                          ? NetworkImage(fromUser.profileImage!)
+                          : null,
+                      child: fromUser.profileImage == null
+                          ? Text(
+                              senderName.isNotEmpty
+                                  ? senderName[0].toUpperCase()
+                                  : '?',
+                              style: AppStyles.bodyLarge.copyWith(
+                                color: AppColors.warning,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
                 ),
 
                 const SizedBox(width: 12),
@@ -499,10 +506,21 @@ class FriendsScreenState extends State<FriendsScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        senderName,
-                        style: AppStyles.bodyLarge.copyWith(
-                          fontWeight: FontWeight.w600,
+                      // Clickable Name
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _navigateToFriendProfile(fromUser.id),
+                          borderRadius: BorderRadius.circular(4),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Text(
+                              senderName,
+                              style: AppStyles.bodyLarge.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       if (fromUser.username.isNotEmpty &&
@@ -594,20 +612,20 @@ class FriendsScreenState extends State<FriendsScreen>
 
   Widget _buildEmptyState() {
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          const Spacer(flex: 2), // Top space (2 parts)
           Container(
-            width: 120,
-            height: 120,
+            width: 80,
+            height: 80,
             decoration: BoxDecoration(
               color: AppColors.secondary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(60),
+              borderRadius: BorderRadius.circular(40),
             ),
             child: Icon(
               Icons.people_outline,
-              size: 60,
+              size: 40,
               color: AppColors.secondary,
             ),
           ),
@@ -633,11 +651,17 @@ class FriendsScreenState extends State<FriendsScreen>
             const SizedBox(height: 32),
             CustomButton(
               text: 'Add Friends',
-              onPressed: _showAddFriendDialog,
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.addFriend,
+                );
+              },
               variant: ButtonVariant.gradient,
               gradientColors: [AppColors.secondary, AppColors.primary],
             ),
           ],
+          const Spacer(flex: 3), // Bottom space (3 parts)
         ],
       ),
     );
@@ -901,6 +925,15 @@ class FriendsScreenState extends State<FriendsScreen>
       context,
       AppRoutes.friendProfile,
       arguments: {'friendId': friend.id},
+    );
+  }
+
+  /// Navigate to friend profile screen
+  void _navigateToFriendProfile(String friendId) {
+    AppRoutes.pushNamed(
+      context,
+      AppRoutes.friendProfile,
+      arguments: {'friendId': friendId},
     );
   }
 

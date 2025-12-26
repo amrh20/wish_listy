@@ -63,6 +63,7 @@ class AppRoutes {
   static const String createWishlist = '/create-wishlist';
   static const String addFriend = '/add-friend';
   static const String editProfile = '/edit-profile';
+  static const String friendActivityFeed = '/friend-activity-feed';
 
   // Routes Map
   static Map<String, WidgetBuilder> routes = {
@@ -199,6 +200,18 @@ class AppRoutes {
       return MaterialPageRoute(
         builder: (context) =>
             EventDetailsScreen(eventId: args['eventId'] ?? ''),
+      );
+    } else if (settings.name == friendActivityFeed) {
+      // Placeholder screen - TODO: Create FriendActivityFeedScreen
+      return MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: const Text('Friend Activity Feed'),
+          ),
+          body: const Center(
+            child: Text('Friend Activity Feed - Coming Soon'),
+          ),
+        ),
       );
     }
 

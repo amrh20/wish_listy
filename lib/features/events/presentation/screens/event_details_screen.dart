@@ -14,6 +14,7 @@ import 'package:wish_listy/features/events/presentation/widgets/wishlist_options
 import 'package:wish_listy/features/events/presentation/widgets/link_wishlist_bottom_sheet.dart';
 import 'package:wish_listy/features/events/presentation/widgets/event_wishlist_tile.dart';
 import 'package:wish_listy/core/widgets/top_overlay_toast.dart';
+import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final String eventId;
@@ -46,41 +47,33 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     _loadEventDetails();
   }
 
-  /// Handles back navigation - returns to events list
+  /// Handles back navigation - always navigates to Events tab in MainNavigation
   void _handleBackNavigation() {
     if (!mounted) return;
 
-    // Use post-frame callback to ensure Navigator is not locked
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+    // Close current screen
+    Navigator.of(context).pop();
 
-      final navigator = Navigator.of(context);
+    // Navigate to Events tab in MainNavigation
+    if (mounted) {
+      // Use post-frame callback to ensure navigation is safe
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
 
-      // Simple approach: just pop if possible, otherwise navigate
-      // Return true to indicate that events list should be refreshed
-      if (navigator.canPop()) {
-        try {
-          navigator.pop(true); // Return true to trigger refresh
-        } catch (e) {
-
-          // If pop fails, navigate to events screen
-          if (mounted) {
-            try {
-              navigator.pushReplacementNamed(AppRoutes.events);
-            } catch (e2) {
-
-            }
+        // Navigate to MainNavigation and switch to Events tab (index 2)
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.mainNavigation,
+          (route) => route.isFirst,
+        );
+        // Use another post frame callback to ensure MainNavigation is built before switching tabs
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            MainNavigation.switchToTab(context, 2); // Events tab is index 2
           }
-        }
-      } else {
-        // If no route to pop, navigate to events list directly
-        try {
-          navigator.pushReplacementNamed(AppRoutes.events);
-        } catch (e) {
-
-        }
-      }
-    });
+        });
+      });
+    }
   }
 
   Future<void> _loadEventDetails() async {

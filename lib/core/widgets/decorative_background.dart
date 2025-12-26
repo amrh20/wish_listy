@@ -75,12 +75,9 @@ class _DecorativeBackgroundState extends State<DecorativeBackground>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.background,
-            AppColors.background,
-            AppColors.surfaceVariant,
-            AppColors.background,
+            const Color(0xFFF8F5FB), // Very light purple (top)
+            const Color(0xFFF0EBF7), // Slightly more purple (bottom)
           ],
-          stops: [0.0, 0.3, 0.7, 1.0],
         ),
       ),
       child: Stack(
