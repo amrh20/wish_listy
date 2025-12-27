@@ -216,6 +216,14 @@ class EventsScreenState extends State<EventsScreen>
     }
   }
 
+  /// Public method to switch to Invited tab (called from MainNavigation)
+  void switchToInvitedTab() {
+    if (mounted && _tabController.index != 1) {
+      _tabController.animateTo(1);
+      setState(() {});
+    }
+  }
+
   /// Load events from API
   Future<void> _loadEvents() async {
     setState(() {
@@ -498,12 +506,13 @@ class EventsScreenState extends State<EventsScreen>
 
     return RefreshIndicator(
       onRefresh: _refreshEvents,
-      color: AppColors.accent,
+      color: AppColors.primary,
       child: _isLoading
           ? _buildEventSkeletonList()
           : myFilteredEvents.isEmpty
           ? EmptyMyEvents(localization: localization)
           : ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               itemCount: myFilteredEvents.length + 1,
               itemBuilder: (context, index) {
@@ -543,12 +552,13 @@ class EventsScreenState extends State<EventsScreen>
 
     return RefreshIndicator(
       onRefresh: _refreshEvents,
-      color: AppColors.secondary,
+      color: AppColors.primary,
       child: _isLoading
           ? _buildEventSkeletonList()
           : invitedFilteredEvents.isEmpty
           ? EmptyInvitedEvents(localization: localization)
           : SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

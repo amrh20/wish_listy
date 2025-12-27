@@ -48,6 +48,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     _fetchItemDetails();
   }
 
+  Future<void> _refreshItemDetails() async {
+    await _fetchItemDetails();
+  }
+
   Future<void> _fetchItemDetails() async {
     try {
       setState(() {
@@ -219,9 +223,12 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                           children: [
                             _buildCleanTopBar(item),
                             Expanded(
-                              child: SingleChildScrollView(
-                                physics: const BouncingScrollPhysics(),
-                                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                              child: RefreshIndicator(
+                                onRefresh: _refreshItemDetails,
+                                color: AppColors.primary,
+                                child: SingleChildScrollView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -250,6 +257,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                                 ),
                               ),
                             ),
+                          ),
                           ],
                         ),
         ),
@@ -276,6 +284,26 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   Widget _buildCleanTopBar(WishlistItem item) {
     final isReceived = _isReceived(item);
     final isOwner = _isOwner();
+    final isReserved = item.isReservedValue; // Check if item is reserved (Teaser Mode)
+    final isReservedForOwner = isOwner && isReserved; // Teaser Mode: Owner sees reserved but can't edit/delete
+    
+    // Helper function to show snackbar when trying to edit/delete reserved item
+    void _showReservedItemSnackbar() {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'You cannot edit or delete this item because a friend has already reserved it for you! 🎁',
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    }
     
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
@@ -303,12 +331,27 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
             ),
-            if (!isReceived)
+            if (!isReceived && !isReservedForOwner)
               IconButton(
                 tooltip: 'Edit',
                 onPressed: _editItem,
                 icon: const Icon(Icons.edit_outlined, size: 22),
                 color: AppColors.textPrimary,
+                style: IconButton.styleFrom(
+                  padding: const EdgeInsets.all(8),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            // Show disabled Edit button if reserved (Teaser Mode)
+            if (!isReceived && isReservedForOwner)
+              IconButton(
+                tooltip: 'Edit',
+                onPressed: _showReservedItemSnackbar,
+                icon: Icon(
+                  Icons.edit_outlined, 
+                  size: 22,
+                ),
+                color: AppColors.textTertiary.withOpacity(0.5), // Grey out
                 style: IconButton.styleFrom(
                   padding: const EdgeInsets.all(8),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -323,6 +366,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   Widget _buildHeaderSection(WishlistItem item) {
     final priorityColor = _getPriorityColor(item.priority);
     final dateText = _formatDate(item.createdAt);
+    final isOwner = _isOwner();
+    final isReserved = item.isReservedValue; // Check if item is reserved (Teaser Mode)
+    final isReservedForOwner = isOwner && isReserved; // Teaser Mode: Owner sees reserved
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -339,48 +385,87 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 12),
-        // Priority Badge + Date Row
-        Row(
+        // Badge + Date Row
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Priority Chip
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: priorityColor.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: priorityColor.withOpacity(0.3),
-                  width: 1,
+            Row(
+              children: [
+                // Show Mystery Badge if reserved for owner (Teaser Mode), otherwise show Priority Chip
+                if (isReservedForOwner)
+                  // Mystery Badge for Teaser Mode - Longer and clearer text
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6A1B9A).withOpacity(0.12), // Deep Purple
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF6A1B9A).withOpacity(0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.visibility_off,
+                          size: 16,
+                          color: const Color(0xFF6A1B9A), // Deep Purple
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Reserved by a friend 🤫',
+                          style: TextStyle(
+                            color: const Color(0xFF6A1B9A), // Deep Purple
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+            else
+              // Priority Chip (default)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: priorityColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: priorityColor.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _getPriorityIcon(item.priority),
+                      size: 14,
+                      color: priorityColor,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _getPriorityText(item.priority),
+                      style: TextStyle(
+                        color: priorityColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _getPriorityIcon(item.priority),
-                    size: 14,
-                    color: priorityColor,
+                const SizedBox(width: 12),
+                // Date
+                Text(
+                  'Added on $dateText',
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _getPriorityText(item.priority),
-                    style: TextStyle(
-                      color: priorityColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Date
-            Text(
-              'Added on $dateText',
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-              ),
+                ),
+              ],
             ),
           ],
         ),
@@ -593,13 +678,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                           ],
                         ),
                       ),
-                      // Arrow Icon (only if location exists)
-                      if (storeLocation != null && storeLocation.isNotEmpty)
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          color: AppColors.textTertiary,
-                          size: 16,
-                        ),
                     ],
                   ),
                   if (storeLocation != null && storeLocation.isNotEmpty) ...[
@@ -739,6 +817,16 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   Widget _buildGiftedBanner(WishlistItem item) {
+    // Check if item is reserved for owner (Teaser Mode) - hide banner to avoid duplication with header badge
+    final isOwner = _isOwner();
+    final isReserved = item.isReservedValue;
+    final isReservedForOwner = isOwner && isReserved;
+    
+    // Don't show banner if reserved for owner (Teaser Mode) - already shown in header badge
+    if (isReservedForOwner) {
+      return const SizedBox.shrink();
+    }
+    
     // For Owner: Don't show who reserved (Spoiler Protection)
     // For Guest: Show who reserved if available
     final reservedByName = item.reservedBy?.fullName;
@@ -830,6 +918,46 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     return item.isReceived;
   }
 
+  // Helper functions to determine item status (matching wishlist_items_screen logic)
+  String _getItemStatusText(WishlistItem item) {
+    final isReserved = item.isReservedValue;
+    final isReceived = item.isReceived;
+    
+    if (isReceived) {
+      return 'Gifted';
+    } else if (isReserved) {
+      return 'Reserved';
+    } else {
+      return 'Available';
+    }
+  }
+
+  IconData _getItemStatusIcon(WishlistItem item) {
+    final isReserved = item.isReservedValue;
+    final isReceived = item.isReceived;
+    
+    if (isReceived) {
+      return Icons.check_circle;
+    } else if (isReserved) {
+      return Icons.lock_outline;
+    } else {
+      return Icons.shopping_bag_outlined;
+    }
+  }
+
+  Color _getItemStatusColor(WishlistItem item) {
+    final isReserved = item.isReservedValue;
+    final isReceived = item.isReceived;
+    
+    if (isReceived) {
+      return AppColors.success; // Green for Gifted
+    } else if (isReserved) {
+      return AppColors.warning; // Orange/Yellow for Reserved
+    } else {
+      return AppColors.info; // Blue for Available
+    }
+  }
+
   bool _shouldShowVisitStore(WishlistItem item) {
     // For owner: always show if URL exists
     if (_isOwner()) {
@@ -910,7 +1038,11 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     if (authService.isGuest || authService.userId == null) {
       return false;
     }
-    return item.reservedBy?.id == authService.userId;
+    // Use isReservedByMe from API if available, otherwise calculate from reservedBy
+    // Convert both IDs to String for comparison to ensure type matching
+    final reservedById = item.reservedBy?.id?.toString();
+    final currentUserId = authService.userId?.toString();
+    return item.isReservedByMe ?? (reservedById != null && reservedById == currentUserId);
   }
 
   Widget _buildStickyActionBar(WishlistItem item) {
@@ -1010,7 +1142,15 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 ),
               ),
               TextButton(
-                onPressed: () => _toggleReservation(item),
+                onPressed: () {
+                  // Always use _currentItem if available (it has the latest data from API)
+                  // If _currentItem is null, use item parameter
+                  final currentItem = _currentItem ?? item;
+                  
+                  // Force isCurrentlyReserved to true since we're in the "Reserved by ME" case
+                  // This ensures we always send "cancel" action when clicking Cancel Reservation
+                  _toggleReservationWithAction(currentItem, action: 'cancel');
+                },
                 child: Text(
                   'Undo',
                   style: TextStyle(
@@ -1025,9 +1165,14 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       );
     }
     
-    // Case C: Reserved by OTHERS
-    if (item.reservedBy != null) {
-      final reservedByName = item.reservedBy?.fullName ?? 'Someone';
+    // Case C: Reserved by OTHERS (Guest view)
+    // Check if item is reserved but NOT by me (using isReserved from API)
+    final isReserved = item.isReservedValue;
+    final isReservedByMe = _isReservedByMe(item);
+    final isReservedByOther = isReserved && !isReservedByMe;
+    
+    if (isReservedByOther) {
+      // For guest: show "Already reserved by another friend 🔒"
       return Container(
         padding: EdgeInsets.only(
           left: 20,
@@ -1061,10 +1206,11 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  '🔒 Reserved by $reservedByName',
+                  'Already reserved by another friend 🔒',
                   style: AppStyles.bodyMedium.copyWith(
                     color: Colors.grey.shade700,
                     fontWeight: FontWeight.w600,
+                    fontStyle: FontStyle.italic,
                   ),
                 ),
               ),
@@ -1106,6 +1252,16 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   Future<void> _toggleReservation(WishlistItem item) async {
+    // Use _isReservedByMe to determine action
+    final isCurrentlyReserved = _isReservedByMe(item);
+    final action = isCurrentlyReserved ? 'cancel' : 'reserve';
+    await _toggleReservationWithAction(item, action: action);
+  }
+
+  Future<void> _toggleReservationWithAction(
+    WishlistItem item, {
+    required String action, // 'reserve' or 'cancel'
+  }) async {
     final authService = Provider.of<AuthRepository>(context, listen: false);
     if (authService.isGuest) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1118,18 +1274,27 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     }
 
     try {
+      // Debug: Log the reservation state
+      debugPrint('🔍 _toggleReservationWithAction Debug:');
+      debugPrint('  - item.isReservedByMe (from API): ${item.isReservedByMe}');
+      debugPrint('  - item.reservedBy?.id: ${item.reservedBy?.id}');
+      debugPrint('  - authService.userId: ${authService.userId}');
+      debugPrint('  - action (explicit): $action');
+      
       // Optimistic update
-      final wasReserved = item.reservedBy != null;
       setState(() {
-        if (wasReserved) {
+        if (action == 'cancel') {
           _currentItem = item.copyWith(reservedBy: null);
         } else {
           // Will be updated from API response
         }
       });
 
-      // Call API
-      final updatedItemData = await _wishlistRepository.toggleReservation(item.id);
+      // Call API with explicit action
+      final updatedItemData = await _wishlistRepository.toggleReservation(
+        item.id,
+        action: action, // Explicitly pass 'reserve' or 'cancel'
+      );
       final updatedItem = WishlistItem.fromJson(updatedItemData);
 
       if (mounted) {
@@ -1137,10 +1302,18 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           _currentItem = updatedItem;
         });
 
+        // Refresh item details to ensure UI is up to date
+        await _fetchItemDetails();
+
+          // Determine message based on the action we took
+          // If action was 'reserve', now it's reserved
+          // If action was 'cancel', now it's not reserved
+          final isNowReserved = action == 'reserve';
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              updatedItem.reservedBy?.id == authService.userId
+              isNowReserved
                   ? 'Item reserved! 🎁'
                   : 'Reservation cancelled',
             ),
@@ -1347,11 +1520,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         _InfoTile(
           width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
           title: 'Status',
-          value: _isReceived(item) ? 'Received' : 'Available',
-          icon: _isReceived(item) ? Icons.check_circle : Icons.inventory_2_outlined,
-          iconColor: _isReceived(item) ? AppColors.success : AppColors.info,
-          chipColor: (_isReceived(item) ? AppColors.success : AppColors.info)
-              .withOpacity(0.12),
+          value: _getItemStatusText(item),
+          icon: _getItemStatusIcon(item),
+          iconColor: _getItemStatusColor(item),
+          chipColor: _getItemStatusColor(item).withOpacity(0.12),
         ),
         _InfoTile(
           width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
@@ -1444,7 +1616,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           // Mark as Purchased text button (small, compact)
           if (!isGuest) ...[
             TextButton(
-              onPressed: _togglePurchaseStatus,
+              onPressed: _toggleReceivedStatus,
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 minimumSize: Size.zero,
@@ -1462,40 +1634,103 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             const SizedBox(width: 8),
           ],
           // Actions menu (Edit, Delete)
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, size: 20),
-            onSelected: (value) {
-              switch (value) {
-                case 'edit':
-                  _editItem();
-                  break;
-                case 'delete':
-                  _deleteItem();
-                  break;
-              }
+          Builder(
+            builder: (context) {
+              // Check if item is reserved for owner (Teaser Mode)
+              final item = _currentItem ?? widget.item;
+              final isOwner = _isOwner();
+              final isReserved = item.isReservedValue;
+              final isReservedForOwner = isOwner && isReserved;
+              
+              return PopupMenuButton<String>(
+                icon: Icon(
+                  Icons.more_vert, 
+                  size: 20,
+                  color: isReservedForOwner 
+                      ? AppColors.textTertiary.withOpacity(0.5) // Grey out if reserved
+                      : AppColors.textPrimary,
+                ),
+                onSelected: (value) {
+                  // If item is reserved, show snackbar instead of executing action
+                  if (isReservedForOwner) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Text(
+                          'You cannot edit or delete this item because a friend has already reserved it for you! 🎁',
+                        ),
+                        backgroundColor: AppColors.primary,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        duration: const Duration(seconds: 3),
+                        margin: const EdgeInsets.all(16),
+                      ),
+                    );
+                    return;
+                  }
+                  
+                  switch (value) {
+                    case 'edit':
+                      _editItem();
+                      break;
+                    case 'delete':
+                      _deleteItem();
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem<String>(
+                    value: 'edit',
+                    enabled: !isReservedForOwner, // Disable if reserved
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.edit_outlined, 
+                          size: 18, 
+                          color: isReservedForOwner 
+                              ? AppColors.textTertiary.withOpacity(0.5)
+                              : AppColors.textPrimary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Edit',
+                          style: TextStyle(
+                            color: isReservedForOwner 
+                                ? AppColors.textTertiary.withOpacity(0.5)
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'delete',
+                    enabled: !isReservedForOwner, // Disable if reserved
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.delete_outline, 
+                          size: 18, 
+                          color: isReservedForOwner 
+                              ? AppColors.error.withOpacity(0.5)
+                              : AppColors.error,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Delete',
+                          style: TextStyle(
+                            color: isReservedForOwner 
+                                ? AppColors.error.withOpacity(0.5)
+                                : AppColors.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_outlined, size: 18, color: AppColors.textPrimary),
-                    SizedBox(width: 8),
-                    Text('Edit'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                    SizedBox(width: 8),
-                    Text('Delete'),
-                  ],
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -1668,8 +1903,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   Widget _buildUnifiedInfoSection() {
-    final isReceived =
-        (_currentItem?.isReceived ?? widget.item.isReceived);
+    final item = _currentItem ?? widget.item;
+    final isReceived = item.isReceived;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1685,11 +1920,11 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
         // Status Label - Integrated
         _buildInfoRow(
-          icon: isReceived ? Icons.check_circle : Icons.shopping_bag_outlined,
+          icon: _getItemStatusIcon(item),
           label: 'Status',
-          value: isReceived ? 'Received' : 'Available',
-          iconColor: isReceived ? AppColors.success : AppColors.warning,
-          valueColor: isReceived ? AppColors.success : AppColors.warning,
+          value: _getItemStatusText(item),
+          iconColor: _getItemStatusColor(item),
+          valueColor: _getItemStatusColor(item),
         ),
 
         const SizedBox(height: 16),
@@ -1843,31 +2078,76 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         SizedBox(height: buttonSpacing),
 
         // Button 3: Delete Item (Destructive Action)
-        SizedBox(
-          width: double.infinity,
-          height: buttonHeight,
-          child: OutlinedButton(
-            onPressed: _deleteItem,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.error,
-              side: const BorderSide(color: AppColors.error, width: 1.5),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(buttonBorderRadius),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.delete_outline, size: 20, color: AppColors.error),
-                const SizedBox(width: 8),
-                Text(
-                  'Delete Item',
-                  style: AppStyles.button.copyWith(color: AppColors.error),
+        Builder(
+          builder: (context) {
+            // Check if item is reserved for owner (Teaser Mode)
+            final item = _currentItem ?? widget.item;
+            final isOwner = _isOwner();
+            final isReserved = item.isReservedValue;
+            final isReservedForOwner = isOwner && isReserved;
+            
+            return SizedBox(
+              width: double.infinity,
+              height: buttonHeight,
+              child: OutlinedButton(
+                onPressed: isReservedForOwner 
+                    ? () {
+                        // Show snackbar instead of deleting
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text(
+                              'You cannot edit or delete this item because a friend has already reserved it for you! 🎁',
+                            ),
+                            backgroundColor: AppColors.primary,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            duration: const Duration(seconds: 3),
+                            margin: const EdgeInsets.all(16),
+                          ),
+                        );
+                      }
+                    : _deleteItem,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: isReservedForOwner 
+                      ? AppColors.error.withOpacity(0.5)
+                      : AppColors.error,
+                  side: BorderSide(
+                    color: isReservedForOwner 
+                        ? AppColors.error.withOpacity(0.5)
+                        : AppColors.error, 
+                    width: 1.5,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(buttonBorderRadius),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                 ),
-              ],
-            ),
-          ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.delete_outline, 
+                      size: 20, 
+                      color: isReservedForOwner 
+                          ? AppColors.error.withOpacity(0.5)
+                          : AppColors.error,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Delete Item',
+                      style: AppStyles.button.copyWith(
+                        color: isReservedForOwner 
+                            ? AppColors.error.withOpacity(0.5)
+                            : AppColors.error,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ],
     );
@@ -1918,38 +2198,188 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   // NOTE: _formatDate already exists above (yyyy-mm-dd). Keep one implementation only.
 
   // Action Handlers
-  void _togglePurchaseStatus() {
-    // TODO: Implement API call to update item status
-    final newStatus =
-        (_currentItem?.status ?? widget.item.status) == ItemStatus.purchased
-        ? ItemStatus.desired
-        : ItemStatus.purchased;
-
-    setState(() {
-      _currentItem =
-          _currentItem?.copyWith(status: newStatus) ??
-          widget.item.copyWith(status: newStatus);
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          newStatus == ItemStatus.purchased
-              ? 'Wish marked as gifted! 🎉'
-              : 'Wish marked as available! 📝',
+  Future<void> _toggleReceivedStatus() async {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please login to mark items as received'),
+          backgroundColor: AppColors.error,
         ),
-        backgroundColor: newStatus == ItemStatus.purchased
-            ? AppColors.success
-            : AppColors.info,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
+      );
+      return;
+    }
+
+    try {
+      final item = _currentItem ?? widget.item;
+      final isOwner = _isOwner();
+      final isReservedByMe = _isReservedByMe(item);
+      
+      // If owner, use toggleReceivedStatus; if guest who reserved, use markAsPurchased
+      if (isOwner) {
+        // Owner: Toggle received status
+        final currentStatus = item.isReceived;
+        final newStatus = !currentStatus;
+
+        // Optimistic update
+        setState(() {
+          _currentItem = item.copyWith(isReceived: newStatus);
+        });
+
+        // Call API with the correct value
+        final updatedItemData = await _wishlistRepository.toggleReceivedStatus(
+          itemId: item.id,
+          isReceived: newStatus, // Send the new status directly (true or false)
+        );
+        final updatedItem = WishlistItem.fromJson(updatedItemData);
+
+        if (!mounted) return;
+
+        // Update with server response
+        setState(() {
+          _currentItem = updatedItem;
+        });
+
+        // Refresh item details
+        await _fetchItemDetails();
+
+        // Show success snackbar
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(
+                    updatedItem.isReceived ? Icons.check_circle : Icons.undo,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    updatedItem.isReceived
+                        ? 'Marked as Received! ✅'
+                        : 'Marked as Not Received',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: updatedItem.isReceived
+                  ? AppColors.success
+                  : AppColors.info,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              duration: const Duration(seconds: 2),
+              margin: const EdgeInsets.all(16),
+              elevation: 2,
+            ),
+          );
+        }
+      } else if (isReservedByMe) {
+        // Guest who reserved: Mark as purchased
+        // Optimistic update
+        setState(() {
+          _currentItem = item.copyWith(isReceived: true);
+        });
+
+        // Call API to mark as purchased
+        final updatedItemData = await _wishlistRepository.markAsPurchased(
+          itemId: item.id,
+          // purchasedBy is optional - API will use current user if not provided
+        );
+        final updatedItem = WishlistItem.fromJson(updatedItemData);
+
+        if (!mounted) return;
+
+        // Update with server response
+        setState(() {
+          _currentItem = updatedItem;
+        });
+
+        // Refresh item details
+        await _fetchItemDetails();
+
+        // Show success snackbar
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Item marked as purchased! 🎁',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              duration: const Duration(seconds: 2),
+              margin: const EdgeInsets.all(16),
+              elevation: 2,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Revert optimistic update on error
+      if (mounted) {
+        setState(() {
+          _currentItem = _currentItem ?? widget.item;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update status: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _editItem() {
     // Navigate to edit item screen
     final item = _currentItem ?? widget.item;
+    
+    // Check if item is reserved for owner (Teaser Mode)
+    final isOwner = _isOwner();
+    final isReserved = item.isReservedValue;
+    final isReservedForOwner = isOwner && isReserved;
+    
+    if (isReservedForOwner) {
+      // Show snackbar instead of editing
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'You cannot edit or delete this item because a friend has already reserved it for you! 🎁',
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+      return;
+    }
+    
     Navigator.pushNamed(
       context,
       AppRoutes.addItem,
@@ -1988,6 +2418,31 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
   void _deleteItem() {
     final item = _currentItem ?? widget.item;
+    
+    // Check if item is reserved for owner (Teaser Mode)
+    final isOwner = _isOwner();
+    final isReserved = item.isReservedValue;
+    final isReservedForOwner = isOwner && isReserved;
+    
+    if (isReservedForOwner) {
+      // Show snackbar instead of showing delete dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'You cannot edit or delete this item because a friend has already reserved it for you! 🎁',
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+      return;
+    }
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

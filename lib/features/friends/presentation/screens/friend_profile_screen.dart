@@ -54,8 +54,12 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
             ],
           ),
         ),
-        child: CustomScrollView(
-          slivers: [
+        child: RefreshIndicator(
+          onRefresh: _refreshProfile,
+          color: AppColors.primary,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
             SliverAppBar(
               pinned: true,
               expandedHeight: _expandedHeaderHeight,
@@ -99,9 +103,14 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );
+  }
+
+  Future<void> _refreshProfile() async {
+    await _controller.fetchProfile();
   }
 }
 

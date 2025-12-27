@@ -14,7 +14,7 @@ class WishlistItemCardWidget extends StatefulWidget {
   final bool enableSwipe;
   final bool isOwner; // Whether current user is the owner
   final String? currentUserId; // Current user ID for reservation checks
-  final VoidCallback? onToggleReservation; // Toggle reservation (Guest only)
+  final Function(String action)? onToggleReservation; // Toggle reservation (Guest only) - action: 'reserve' or 'cancel'
   final VoidCallback? onToggleReceivedStatus; // Toggle received status (Owner only)
 
   const WishlistItemCardWidget({
@@ -126,6 +126,28 @@ class _WishlistItemCardWidgetState extends State<WishlistItemCardWidget> {
       onToggleReceivedStatus: widget.onToggleReceivedStatus,
     );
 
+    // Check if item is reserved and user is owner (Teaser Mode)
+    final isReserved = widget.item.isReservedValue;
+    final isReservedForOwner = widget.isOwner && isReserved;
+    
+    // Helper function to show snackbar when trying to edit/delete reserved item
+    void _showReservedItemSnackbar() {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'You cannot edit or delete this item because a friend has already reserved it for you! 🎁',
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    }
+
     // Wrap with Slidable only if swipe is enabled
     if (widget.enableSwipe) {
       return Slidable(
@@ -140,19 +162,31 @@ class _WishlistItemCardWidgetState extends State<WishlistItemCardWidget> {
           children: [
             if (widget.onEdit != null)
               CustomSlidableAction(
-                onPressed: (_) => widget.onEdit?.call(),
-                      backgroundColor: AppColors.info, // Blue
+                onPressed: isReservedForOwner 
+                    ? (_) => _showReservedItemSnackbar()
+                    : (_) => widget.onEdit?.call(),
+                backgroundColor: isReservedForOwner 
+                    ? AppColors.textTertiary.withOpacity(0.5) // Grey out if reserved
+                    : AppColors.info, // Blue
                 foregroundColor: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                child: const Column(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                          Icon(Icons.edit, size: 28, color: Colors.white),
-                    SizedBox(height: 4),
+                    Icon(
+                      Icons.edit, 
+                      size: 28, 
+                      color: isReservedForOwner 
+                          ? Colors.white.withOpacity(0.7)
+                          : Colors.white,
+                    ),
+                    const SizedBox(height: 4),
                     Text(
                       'Edit',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: isReservedForOwner 
+                            ? Colors.white.withOpacity(0.7)
+                            : Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -162,19 +196,31 @@ class _WishlistItemCardWidgetState extends State<WishlistItemCardWidget> {
               ),
             if (widget.onDelete != null)
               CustomSlidableAction(
-                      onPressed: (_) => _handleDeleteWithConfirmation(),
-                      backgroundColor: AppColors.error, // Red
+                onPressed: isReservedForOwner 
+                    ? (_) => _showReservedItemSnackbar()
+                    : (_) => _handleDeleteWithConfirmation(),
+                backgroundColor: isReservedForOwner 
+                    ? AppColors.textTertiary.withOpacity(0.5) // Grey out if reserved
+                    : AppColors.error, // Red
                 foregroundColor: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                child: const Column(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                          Icon(Icons.delete, size: 28, color: Colors.white),
-                    SizedBox(height: 4),
+                    Icon(
+                      Icons.delete, 
+                      size: 28, 
+                      color: isReservedForOwner 
+                          ? Colors.white.withOpacity(0.7)
+                          : Colors.white,
+                    ),
+                    const SizedBox(height: 4),
                     Text(
                       'Delete',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: isReservedForOwner 
+                            ? Colors.white.withOpacity(0.7)
+                            : Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -205,7 +251,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
   final IconData Function(String) getCategoryIcon;
   final bool isOwner;
   final String? currentUserId;
-  final VoidCallback? onToggleReservation;
+  final Function(String action)? onToggleReservation; // action: 'reserve' or 'cancel'
   final VoidCallback? onToggleReceivedStatus;
 
   const _ModernWishlistItemContent({
@@ -225,70 +271,122 @@ class _ModernWishlistItemContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Determine visual state based on isOwner and item status
-    final isReceived = item.isReceived;
-    final isReservedByMe = item.reservedBy?.id == currentUserId;
-    final isReservedByOther = item.reservedBy != null && !isReservedByMe;
+    // Use direct API values with fallback to computed values
+    final isPurchased = item.isPurchasedValue; // isPurchased ?? isReceived
+    final isReservedByMe = item.isReservedByMe ?? (item.reservedBy?.id == currentUserId);
+    final isReserved = item.isReservedValue; // isReserved ?? (reservedBy != null)
+    final isReservedByOther = isReserved && !isReservedByMe;
     
     // Case A: Owner
     if (isOwner) {
-      return _buildOwnerCard(context, isReceived);
+      return _buildOwnerCard(context, isPurchased);
     }
     
     // Case B: Guest
-    return _buildGuestCard(context, isReceived, isReservedByMe, isReservedByOther);
+    return _buildGuestCard(context, isPurchased, isReservedByMe, isReservedByOther);
   }
 
-  Widget _buildOwnerCard(BuildContext context, bool isReceived) {
+  Widget _buildOwnerCard(BuildContext context, bool isPurchased) {
     final hasMenu = onEdit != null || onDelete != null;
-    final shouldShowEdit = onEdit != null && !isReceived; // Hide edit if received
+    final isReserved = item.isReservedValue; // Check if item is reserved (Teaser Mode)
+    final isReceived = item.isReceived; // Check if item is received
+    // Hide edit if purchased OR if reserved (Teaser Mode)
+    final shouldShowEdit = onEdit != null && !isPurchased && !isReserved;
     final theme = Theme.of(context);
-
-    return Opacity(
-      opacity: isReceived ? 0.6 : 1.0,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-              spreadRadius: 0,
-            ),
-          ],
+    
+    // Helper function to show snackbar when trying to edit/delete reserved item
+    void _showReservedItemSnackbar() {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'You cannot edit or delete this item because a friend has already reserved it for you! 🎁',
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(16),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Main Content Row (Image + Title/Category + Menu)
-              InkWell(
-                onTap: onTap,
-                borderRadius: BorderRadius.circular(12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Icon/Image
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: isReceived
-                            ? AppColors.success.withOpacity(0.15)
-                            : priorityColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        getCategoryIcon('General'),
-                        color: isReceived ? AppColors.success : priorityColor,
-                        size: 24,
-                      ),
-                    ),
+      );
+    }
+
+    // Apply opacity 0.6 if purchased (regardless of received status)
+    // This makes all purchased items visually dimmed and disabled
+    final shouldDim = isPurchased;
+    
+    return Opacity(
+      opacity: shouldDim ? 0.6 : 1.0,
+      child: Stack(
+        children: [
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              // Add border for reserved items (Teaser Mode) to make them stand out
+              // Add green border for received items
+              border: isReceived
+                  ? Border.all(
+                      color: AppColors.success.withOpacity(0.4), // Green border for received
+                      width: 2,
+                    )
+                  : (isReserved && !isPurchased
+                      ? Border.all(
+                          color: const Color(0xFF6A1B9A).withOpacity(0.3), // Deep Purple border
+                          width: 1.5,
+                        )
+                      : null),
+              boxShadow: [
+                BoxShadow(
+                  color: isReceived
+                      ? AppColors.success.withOpacity(0.15) // Green shadow for received
+                      : (isReserved && !isPurchased
+                          ? const Color(0xFF6A1B9A).withOpacity(0.1) // Purple shadow for reserved
+                          : Colors.black.withOpacity(0.05)),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                  spreadRadius: 0,
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. Main Content Row (Image + Title/Category + Menu)
+                  InkWell(
+                    onTap: isPurchased ? null : onTap, // Disable tap if purchased
+                    borderRadius: BorderRadius.circular(12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Icon/Image - Show gift icon if received
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: isReceived
+                                ? AppColors.success.withOpacity(0.15) // Green background for received
+                                : (isPurchased
+                                    ? AppColors.success.withOpacity(0.15)
+                                    : priorityColor.withOpacity(0.1)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            isReceived
+                                ? Icons.card_giftcard_rounded // Gift icon for received items
+                                : getCategoryIcon('General'),
+                            color: isReceived
+                                ? AppColors.success // Green icon for received
+                                : (isPurchased ? AppColors.success : priorityColor),
+                            size: 24,
+                          ),
+                        ),
                     const SizedBox(width: 12),
                     // Title & Category Column
                     Expanded(
@@ -300,46 +398,107 @@ class _ModernWishlistItemContent extends StatelessWidget {
                             duration: const Duration(milliseconds: 300),
                             style: AppStyles.bodyMedium.copyWith(
                               fontWeight: FontWeight.bold,
-                              decoration: isReceived
+                              decoration: isPurchased
                                   ? TextDecoration.lineThrough
                                   : TextDecoration.none,
-                              color: isReceived
+                              color: isPurchased
                                   ? AppColors.textTertiary
                                   : AppColors.textPrimary,
                             ),
                             child: Text(item.name),
                           ),
                           const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Container(
-                                width: 6,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: priorityColor,
-                                  shape: BoxShape.circle,
+                          // Show Mystery Badge if reserved (Teaser Mode) AND not received, otherwise show priority
+                          if (isReserved && !isReceived)
+                            // Mystery Badge for Teaser Mode - Longer and clearer text
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.visibility_off,
+                                      size: 14,
+                                      color: const Color(0xFF6A1B9A), // Deep Purple
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        'Reserved by a friend 🤫',
+                                        style: AppStyles.caption.copyWith(
+                                          color: const Color(0xFF6A1B9A), // Deep Purple
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                getPriorityText(item.priority),
-                                style: AppStyles.caption.copyWith(
-                                  color: priorityColor,
-                                  fontWeight: FontWeight.w600,
+                                const SizedBox(height: 2),
+                                Text(
+                                  'A friend has reserved this gift for you!',
+                                  style: AppStyles.caption.copyWith(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 10,
+                                    fontStyle: FontStyle.italic,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            )
+                          else if (isPurchased)
+                            // Purchased Badge
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 14,
+                                  color: AppColors.success,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Purchased ✅',
+                                  style: AppStyles.caption.copyWith(
+                                    color: AppColors.success,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            // Priority Badge (default)
+                            Row(
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: priorityColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  getPriorityText(item.priority),
+                                  style: AppStyles.caption.copyWith(
+                                    color: priorityColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
                         ],
                       ),
                     ),
                     // 3-Dots Menu (Top Right)
-                    if (hasMenu && shouldShowEdit)
+                    // Show menu if available, but grey out if reserved (Teaser Mode) or purchased
+                    if (hasMenu)
                       PopupMenuButton<String>(
                         color: Colors.white,
                         icon: Icon(
                           Icons.more_vert,
-                          color: AppColors.textTertiary,
+                          color: (isReserved || isPurchased)
+                              ? AppColors.textTertiary.withOpacity(0.5) // Grey out if reserved or purchased
+                              : AppColors.textTertiary,
                           size: 20,
                         ),
                         iconSize: 20,
@@ -352,6 +511,29 @@ class _ModernWishlistItemContent extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         onSelected: (value) {
+                          // If item is reserved or purchased, show snackbar instead of executing action
+                          if (isReserved || isPurchased) {
+                            if (isPurchased) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    'This item has been purchased and cannot be edited or deleted.',
+                                  ),
+                                  backgroundColor: AppColors.primary,
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  duration: const Duration(seconds: 3),
+                                  margin: const EdgeInsets.all(16),
+                                ),
+                              );
+                            } else {
+                              _showReservedItemSnackbar();
+                            }
+                            return;
+                          }
+                          
                           if (value == 'edit') {
                             onEdit?.call();
                           } else if (value == 'delete') {
@@ -362,18 +544,23 @@ class _ModernWishlistItemContent extends StatelessWidget {
                           if (onEdit != null)
                             PopupMenuItem<String>(
                               value: 'edit',
+                              enabled: !isReserved && !isPurchased, // Disable if reserved or purchased
                               child: Row(
                                 children: [
                                   Icon(
                                     Icons.edit,
-                                    color: AppColors.textPrimary,
+                                    color: (isReserved || isPurchased)
+                                        ? AppColors.textTertiary.withOpacity(0.5)
+                                        : AppColors.textPrimary,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
                                     'Edit',
                                     style: AppStyles.bodyMedium.copyWith(
-                                      color: AppColors.textPrimary,
+                                      color: (isReserved || isPurchased)
+                                          ? AppColors.textTertiary.withOpacity(0.5)
+                                          : AppColors.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -382,14 +569,23 @@ class _ModernWishlistItemContent extends StatelessWidget {
                           if (onDelete != null)
                             PopupMenuItem<String>(
                               value: 'delete',
+                              enabled: !isReserved && !isPurchased, // Disable if reserved or purchased
                               child: Row(
                                 children: [
-                                  Icon(Icons.delete, color: AppColors.error, size: 20),
+                                  Icon(
+                                    Icons.delete,
+                                    color: (isReserved || isPurchased)
+                                        ? AppColors.error.withOpacity(0.5)
+                                        : AppColors.error, 
+                                    size: 20,
+                                  ),
                                   const SizedBox(width: 12),
                                   Text(
                                     'Delete',
                                     style: AppStyles.bodyMedium.copyWith(
-                                      color: AppColors.error,
+                                      color: (isReserved || isPurchased)
+                                          ? AppColors.error.withOpacity(0.5)
+                                          : AppColors.error,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -408,11 +604,39 @@ class _ModernWishlistItemContent extends StatelessWidget {
               if (onToggleReceivedStatus != null)
                 Align(
                   alignment: Alignment.centerRight,
-                  child: _buildReceivedStatusToggle(context, isReceived, theme),
+                  child: _buildReceivedStatusToggle(context, item.isReceived, theme),
                 ),
-            ],
+                ],
+              ),
+            ),
           ),
-        ),
+          // Gift icon badge in top right corner when received
+          if (isReceived)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.success,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.success.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.celebration_rounded, // Celebration/gift icon
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -451,7 +675,8 @@ class _ModernWishlistItemContent extends StatelessWidget {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop();
-                onToggleReservation?.call();
+                // Pass explicit action: 'cancel' if reserved by me, 'reserve' otherwise
+                onToggleReservation?.call(isReservedByMe ? 'cancel' : 'reserve');
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -464,6 +689,63 @@ class _ModernWishlistItemContent extends StatelessWidget {
               ),
               child: Text(
                 'Confirm',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Show confirmation dialog before marking as purchased
+  void _confirmMarkAsPurchased(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(
+            'Mark as Purchased?',
+            style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'This will mark the item as purchased and received. Have you already bought this gift?',
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                'Cancel',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                onToggleReceivedStatus?.call();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.success,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: Text(
+                'Mark as Purchased',
                 style: AppStyles.bodyMedium.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -537,41 +819,111 @@ class _ModernWishlistItemContent extends StatelessWidget {
 
   /// Build the sleek interactive status toggle widget
   Widget _buildReceivedStatusToggle(BuildContext context, bool isReceived, ThemeData theme) {
+    final isPurchased = item.isPurchasedValue;
+    
     if (isReceived) {
-      // State B: Item IS Received
-      return InkWell(
-        onTap: () => _confirmToggleStatus(context, isReceived),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.green.shade50,
-            border: Border.all(color: Colors.green.shade200),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.check_circle,
-                color: Colors.green,
-                size: 18,
+      // State B: Item IS Received - Hide action button, show status text
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_circle,
+              color: AppColors.success,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Marked as gifted',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
               ),
-              const SizedBox(width: 6),
-              Text(
-                'Received',
-                style: TextStyle(
-                  color: Colors.green.shade700,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
+    } else if (isPurchased && !isReceived) {
+      // State C: Item is Purchased by another friend but NOT Received yet
+      // Show status text + action button for owner to confirm receipt
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Status text
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: AppColors.warning.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.warning.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.shopping_bag_outlined,
+                  color: AppColors.warning,
+                  size: 14,
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    'Purchased by another friend, awaiting confirmation',
+                    style: TextStyle(
+                      color: AppColors.warning,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Action button
+          InkWell(
+            onTap: () => _confirmToggleStatus(context, isReceived),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    color: AppColors.primary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Mark Received',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
     } else {
-      // State A: Item is NOT Received
+      // State A: Item is NOT Received and NOT Purchased - Show action button
       return InkWell(
         onTap: () => _confirmToggleStatus(context, isReceived),
         borderRadius: BorderRadius.circular(8),
@@ -605,9 +957,9 @@ class _ModernWishlistItemContent extends StatelessWidget {
     }
   }
 
-  Widget _buildGuestCard(BuildContext context, bool isReceived, bool isReservedByMe, bool isReservedByOther) {
-    // Case B1: Received
-    if (isReceived) {
+  Widget _buildGuestCard(BuildContext context, bool isPurchased, bool isReservedByMe, bool isReservedByOther) {
+    // Case A: Purchased (isPurchased == true) - Highest Priority
+    if (isPurchased) {
       return Opacity(
         opacity: 0.6,
         child: Container(
@@ -627,7 +979,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: InkWell(
-              onTap: onTap,
+              onTap: null, // Disable tap for purchased items
               borderRadius: BorderRadius.circular(12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -662,11 +1014,35 @@ class _ModernWishlistItemContent extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          'Already Gifted',
-                          style: AppStyles.caption.copyWith(
-                            color: AppColors.textTertiary,
-                            fontStyle: FontStyle.italic,
+                        // Purchased Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: AppColors.success.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_circle,
+                                size: 12,
+                                color: AppColors.success,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Purchased',
+                                style: AppStyles.caption.copyWith(
+                                  color: AppColors.success,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -680,7 +1056,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
       );
     }
 
-    // Case B2: Reserved by Me
+    // Case B: Reserved by Me (isReservedByMe == true) - High Priority
     if (isReservedByMe) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
@@ -766,31 +1142,69 @@ class _ModernWishlistItemContent extends StatelessWidget {
                 ),
               ),
               // Spacing
-              if (onToggleReservation != null)
+              if (onToggleReservation != null || (onToggleReceivedStatus != null && !isPurchased))
                 const SizedBox(height: 8),
-              // Cancel Reservation Button
-              if (onToggleReservation != null)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: () => _confirmToggleReservation(context, true),
-                    icon: Icon(
-                      Icons.cancel_outlined,
-                      size: 16,
-                      color: AppColors.error,
-                    ),
-                    label: Text(
-                      'Cancel Reservation',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.error,
-                        fontWeight: FontWeight.w600,
+              // Action Buttons Row (Cancel Reservation + Mark as Purchased)
+              if (onToggleReservation != null || (onToggleReceivedStatus != null && !isPurchased))
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    // Mark as Purchased Button (if not purchased yet and onToggleReceivedStatus is available)
+                    if (onToggleReceivedStatus != null && !isPurchased) ...[
+                      ElevatedButton.icon(
+                        onPressed: () => _confirmMarkAsPurchased(context),
+                        icon: Icon(
+                          Icons.check_circle,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          'Mark as Purchased',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.success,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                       ),
-                    ),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    ),
-                  ),
+                      const SizedBox(width: 8),
+                    ],
+                    // Cancel Reservation Button (Error/Red Style)
+                    if (onToggleReservation != null)
+                      OutlinedButton.icon(
+                        onPressed: () {
+                    // Explicitly pass 'cancel' action for Cancel Reservation button
+                    _confirmToggleReservation(context, true);
+                  },
+                        icon: Icon(
+                          Icons.close,
+                          size: 16,
+                          color: AppColors.error,
+                        ),
+                        label: Text(
+                          'Cancel Reservation',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          side: BorderSide(color: AppColors.error, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
             ],
           ),
@@ -798,10 +1212,10 @@ class _ModernWishlistItemContent extends StatelessWidget {
       );
     }
 
-    // Case B3: Reserved by Someone Else
+    // Case C: Reserved by Someone Else (isReserved == true && !isReservedByMe)
     if (isReservedByOther) {
       return Opacity(
-        opacity: 0.5,
+        opacity: 0.8, // Dimmed to show unavailability
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
           decoration: BoxDecoration(
@@ -818,86 +1232,159 @@ class _ModernWishlistItemContent extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Icon
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.textTertiary.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    getCategoryIcon('General'),
-                    color: AppColors.textTertiary,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Title & Status Column
-                Expanded(
-                  child: Column(
+                // Main Content Row
+                InkWell(
+                  onTap: onTap,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        item.name,
-                        style: AppStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
+                      // Icon with Status Badge overlay
+                      Stack(
+                        clipBehavior: Clip.none,
                         children: [
-                          if (item.reservedBy?.profileImage != null)
-                            CircleAvatar(
-                              radius: 8,
-                              backgroundImage: NetworkImage(item.reservedBy!.profileImage!),
-                            )
-                          else
-                            Container(
-                              width: 16,
-                              height: 16,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.2),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  item.reservedBy?.fullName.substring(0, 1).toUpperCase() ?? '?',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: AppColors.textTertiary.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Reserved by ${item.reservedBy?.fullName ?? 'Someone'}',
-                              style: AppStyles.caption.copyWith(
-                                color: AppColors.textTertiary,
-                                fontSize: 11,
+                            child: Icon(
+                              getCategoryIcon('General'),
+                              color: AppColors.textTertiary,
+                              size: 24,
+                            ),
+                          ),
+                          // Status Badge overlay (top-right corner)
+                          Positioned(
+                            top: -4,
+                            right: -4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[800]!.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.lock_outline,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Reserved',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(width: 12),
+                      // Title & Status Column
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              item.name,
+                              style: AppStyles.bodyMedium.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                if (item.reservedBy?.profileImage != null)
+                                  CircleAvatar(
+                                    radius: 8,
+                                    backgroundImage: NetworkImage(item.reservedBy!.profileImage!),
+                                  )
+                                else
+                                  Container(
+                                    width: 16,
+                                    height: 16,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withOpacity(0.2),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        item.reservedBy?.fullName.substring(0, 1).toUpperCase() ?? '?',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Reserved by others',
+                                    style: AppStyles.caption.copyWith(
+                                      color: AppColors.textTertiary,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Lock icon
+                      Icon(
+                        Icons.lock_outline,
+                        color: AppColors.textTertiary,
+                        size: 18,
+                      ),
                     ],
                   ),
                 ),
-                // Lock icon
-                Icon(
-                  Icons.lock_outline,
-                  color: AppColors.textTertiary,
-                  size: 18,
+                // Spacing
+                const SizedBox(height: 8),
+                // Status Label (replaces action button) - Full width container
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.grey[300]!,
+                      width: 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Taken by another friend ✨',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -993,12 +1480,15 @@ class _ModernWishlistItemContent extends StatelessWidget {
             // Spacing
             if (onToggleReservation != null)
               const SizedBox(height: 8),
-            // Reserve Gift Button
+            // Case D: Reserve This Gift Button (Available items only)
             if (onToggleReservation != null)
               Align(
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
-                  onPressed: () => _confirmToggleReservation(context, false),
+                  onPressed: () {
+                    // Explicitly pass 'reserve' action for Reserve button
+                    _confirmToggleReservation(context, false);
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,

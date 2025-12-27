@@ -73,6 +73,7 @@ class ReservationsTabWidget extends StatelessWidget {
       onRefresh: () async => onRefresh(),
       color: AppColors.primary,
       child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
         itemCount: reservations.length,
         itemBuilder: (context, index) {

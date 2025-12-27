@@ -136,8 +136,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                               ? _buildEmptyState()
                               : RefreshIndicator(
                                   onRefresh: _refreshNotifications,
-                                  color: AppColors.info,
+                                  color: AppColors.primary,
                                   child: SingleChildScrollView(
+                                    physics: const AlwaysScrollableScrollPhysics(),
                                     padding: const EdgeInsets.all(16),
                                     child: Column(
                                       crossAxisAlignment:
@@ -968,12 +969,16 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
   Future<void> _handleFriendRequestAction(AppNotification notification, bool accept) async {
     // Extract requestId from notification data
-    // The notification data can have requestId, _id, or the notification id itself
-    final requestId = notification.data?['requestId'] ?? 
-                      notification.data?['_id'] ?? 
+    // Try multiple possible field names: relatedId, requestId, request_id, id, _id
+    final requestId = notification.data?['relatedId'] ??
+                      notification.data?['related_id'] ??
+                      notification.data?['requestId'] ?? 
+                      notification.data?['request_id'] ??
+                      notification.data?['id'] ??
+                      notification.data?['_id'] ??
                       notification.id;
     
-    if (requestId == null || requestId.isEmpty) {
+    if (requestId == null || requestId.toString().isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

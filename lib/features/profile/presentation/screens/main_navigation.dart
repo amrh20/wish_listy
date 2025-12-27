@@ -21,9 +21,9 @@ class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
   /// Helper to switch tabs from child screens while keeping the bottom nav.
-  static void switchToTab(BuildContext context, int index) {
+  static void switchToTab(BuildContext context, int index, {int? eventsTabIndex}) {
     final state = context.findAncestorStateOfType<_MainNavigationState>();
-    state?._onTabTapped(index);
+    state?._onTabTapped(index, eventsTabIndex: eventsTabIndex);
   }
 
   @override
@@ -69,7 +69,7 @@ class _MainNavigationState extends State<MainNavigation>
     super.dispose();
   }
 
-  void _onTabTapped(int index) {
+  void _onTabTapped(int index, {int? eventsTabIndex}) {
     final authService = Provider.of<AuthRepository>(context, listen: false);
 
     // Check if guest user is trying to access restricted features
@@ -110,6 +110,12 @@ class _MainNavigationState extends State<MainNavigation>
     if (_currentIndex == index) {
       // Double tap to scroll to top or refresh
       _handleDoubleTap(index);
+      // If already on Events tab and eventsTabIndex is provided, switch to that tab
+      if (index == 2 && eventsTabIndex != null) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          _eventsKey.currentState?.switchToInvitedTab();
+        });
+      }
       return;
     }
 
@@ -123,6 +129,13 @@ class _MainNavigationState extends State<MainNavigation>
     // Animate FAB
     _fabAnimationController.reset();
     _fabAnimationController.forward();
+
+    // If switching to Events tab and eventsTabIndex is provided, switch to that tab
+    if (index == 2 && eventsTabIndex != null) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _eventsKey.currentState?.switchToInvitedTab();
+      });
+    }
   }
 
   List<Widget> get _screens => [

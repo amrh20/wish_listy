@@ -115,7 +115,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         return Scaffold(
           backgroundColor: Colors.transparent,
           body: Stack(
-            children: [
+              children: [
               // Full-height colorful pattern background (bottom layer)
               Positioned(
                 top: 0,
@@ -151,8 +151,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                   // Profile Header with Avatar and Name
                   _buildProfileHeader(localization),
 
-                  // Profile Content in rounded container
-                  Expanded(
+                // Profile Content in rounded container
+                Expanded(
                     child: Transform(
                       transform: Matrix4.translationValues(0.0, -20.0, 0.0),
                       child: Container(
@@ -169,55 +169,55 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                           ],
                         ),
-                        child: RefreshIndicator(
-                          onRefresh: _refreshProfile,
-                          color: AppColors.primary,
-                          child: _isLoading
-                              ? const Center(child: CircularProgressIndicator())
-                              : _errorMessage != null
-                                  ? _buildErrorState()
-                                  : SingleChildScrollView(
-                                      physics: const AlwaysScrollableScrollPhysics(),
-                                      child: AnimatedBuilder(
-                                        animation: _animationController,
-                                        builder: (context, child) {
-                                          return FadeTransition(
-                                            opacity: _fadeAnimation,
-                                            child: SlideTransition(
-                                              position: _slideAnimation,
-                                              child: Padding(
-                                                padding: const EdgeInsets.all(16.0),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    // Stats Cards
-                                                    _buildStatsSection(),
-                                                    const SizedBox(height: 16),
+                    child: RefreshIndicator(
+                      onRefresh: _refreshProfile,
+                      color: AppColors.primary,
+                      child: _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : _errorMessage != null
+                              ? _buildErrorState()
+                              : SingleChildScrollView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  child: AnimatedBuilder(
+                                    animation: _animationController,
+                                    builder: (context, child) {
+                                      return FadeTransition(
+                                        opacity: _fadeAnimation,
+                                        child: SlideTransition(
+                                          position: _slideAnimation,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(16.0),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                // Stats Cards
+                                                _buildStatsSection(),
+                                                const SizedBox(height: 16),
 
-                                                    // Account Settings
-                                                    _buildAccountSettings(),
-                                                    const SizedBox(height: 16),
-                                                    // App Settings
-                                                    _buildAppSettings(),
+                                                // Account Settings
+                                                _buildAccountSettings(),
+                                                const SizedBox(height: 16),
+                                                // App Settings
+                                                _buildAppSettings(),
                                                     const SizedBox(height: 16),
                                                     // Logout (last item)
                                                     _buildLogoutSection(),
-                                                    const SizedBox(height: 80),
-                                                  ],
-                                                ),
-                                              ),
+                                                const SizedBox(height: 80),
+                                              ],
                                             ),
-                                          );
-                                        },
+                                          ),
+                                        ),
+                                      );
+                                    },
                                       ),
-                                    ),
-                        ),
-                      ),
+                                  ),
+                                ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
             ],
           ),
         );
@@ -446,62 +446,62 @@ class _ProfileScreenState extends State<ProfileScreen>
         ],
       ),
       child: IntrinsicHeight(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            // Friends Stat
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  // Navigate to Friends tab while keeping the main navigation bar
-                  MainNavigation.switchToTab(context, 3);
-                },
-                child: _buildStatItem(
-                  icon: Icons.people_outline,
-                  value: '${_userProfile!.friendsCount}',
-                  label: 'Friends',
-                  iconColor: AppColors.secondary,
-                  iconBackgroundColor: AppColors.secondary.withOpacity(0.1),
-                ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          // Friends Stat
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                // Navigate to Friends tab while keeping the main navigation bar
+                MainNavigation.switchToTab(context, 3);
+              },
+              child: _buildStatItem(
+                icon: Icons.people_outline,
+                value: '${_userProfile!.friendsCount}',
+                label: 'Friends',
+                iconColor: AppColors.secondary,
+                iconBackgroundColor: AppColors.secondary.withOpacity(0.1),
               ),
             ),
-            // Divider
+          ),
+          // Divider
             Container(height: 60, width: 1, color: Colors.grey.withOpacity(0.2)),
-            // Wishlists Stat
-            Expanded(
-              child: GestureDetector(
+          // Wishlists Stat
+          Expanded(
+            child: GestureDetector(
                 onTap: () {
                   // Navigate to Wishlists tab while keeping the main navigation bar
                   MainNavigation.switchToTab(context, 1);
                 },
-                child: _buildStatItem(
-                  icon: Icons.favorite_outline,
-                  value: '${_userProfile!.wishlistsCount}',
-                  label: 'Wishlists',
-                  iconColor: AppColors.primary,
-                  iconBackgroundColor: AppColors.primary.withOpacity(0.1),
-                ),
+              child: _buildStatItem(
+                icon: Icons.favorite_outline,
+                value: '${_userProfile!.wishlistsCount}',
+                label: 'Wishlists',
+                iconColor: AppColors.primary,
+                iconBackgroundColor: AppColors.primary.withOpacity(0.1),
               ),
             ),
-            // Divider
+          ),
+          // Divider
             Container(height: 60, width: 1, color: Colors.grey.withOpacity(0.2)),
-            // Events Stat
-            Expanded(
-              child: GestureDetector(
+          // Events Stat
+          Expanded(
+            child: GestureDetector(
                 onTap: () {
                   // Navigate to Events tab while keeping the main navigation bar
                   MainNavigation.switchToTab(context, 2);
                 },
-                child: _buildStatItem(
-                  icon: Icons.event_outlined,
-                  value: '${_userProfile!.eventsCreated}',
-                  label: 'Events',
-                  iconColor: AppColors.accent,
-                  iconBackgroundColor: AppColors.accent.withOpacity(0.1),
-                ),
+              child: _buildStatItem(
+                icon: Icons.event_outlined,
+                value: '${_userProfile!.eventsCreated}',
+                label: 'Events',
+                iconColor: AppColors.accent,
+                iconBackgroundColor: AppColors.accent.withOpacity(0.1),
               ),
             ),
-          ],
+          ),
+        ],
         ),
       ),
     );

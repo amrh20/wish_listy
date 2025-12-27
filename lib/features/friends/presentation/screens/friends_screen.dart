@@ -226,11 +226,12 @@ class FriendsScreenState extends State<FriendsScreen>
 
     return RefreshIndicator(
       onRefresh: _refreshFriends,
-      color: AppColors.secondary,
+      color: AppColors.primary,
       child: filteredFriends.isEmpty
           ? _buildEmptyState()
           : AnimationLimiter(
               child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
                 controller: _scrollController,
                 padding: const EdgeInsets.all(16),
                 itemCount: filteredFriends.length +
@@ -299,12 +300,13 @@ class FriendsScreenState extends State<FriendsScreen>
     }
 
     return RefreshIndicator(
-      onRefresh: _refreshFriends,
-      color: AppColors.secondary,
+      onRefresh: _refreshFriendRequests,
+      color: AppColors.primary,
       child: _friendRequests.isEmpty
           ? _buildEmptyFriendRequests()
           : AnimationLimiter(
               child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
                 itemCount: _friendRequests.length + 1,
                 itemBuilder: (context, index) {
@@ -1003,10 +1005,12 @@ class FriendsScreenState extends State<FriendsScreen>
 
 
   Future<void> _refreshFriends() async {
-    // Reset pagination and reload both friends and requests
-    await Future.wait([
-      _loadFriends(resetPage: true),
-      _loadFriendRequests(),
-    ]);
+    // Reset pagination and reload friends
+    await _loadFriends(resetPage: true);
+  }
+
+  Future<void> _refreshFriendRequests() async {
+    // Reload friend requests
+    await _loadFriendRequests();
   }
 }

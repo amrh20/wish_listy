@@ -259,9 +259,13 @@ class NotificationDropdown extends StatelessWidget {
   }) async {
     try {
       // Get requestId from notification data
-      final requestId = notification.data?['requestId'] ?? 
+      // Try multiple possible field names: relatedId, requestId, request_id, id
+      final requestId = notification.data?['relatedId'] ??
+                       notification.data?['related_id'] ??
+                       notification.data?['requestId'] ?? 
                        notification.data?['request_id'] ??
-                       notification.data?['id'];
+                       notification.data?['id'] ??
+                       notification.data?['_id'];
       
       if (requestId == null || requestId.toString().isEmpty) {
         if (context.mounted) {

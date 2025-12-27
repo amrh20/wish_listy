@@ -123,11 +123,11 @@ class Wishlist {
 
   int get totalItems => items.length;
   int get purchasedItems =>
-      items.where((item) => item.isReceived).length;
+      items.where((item) => item.isPurchasedValue).length;
   int get reservedItems =>
-      items.where((item) => item.isReserved).length;
+      items.where((item) => item.isReservedValue).length;
   int get availableItems =>
-      items.where((item) => !item.isReceived && !item.isReserved).length;
+      items.where((item) => !item.isPurchasedValue && !item.isReservedValue).length;
 
   @override
   String toString() {
@@ -159,9 +159,16 @@ class WishlistItem {
   final bool isReceived; // Whether the item has been received
   final friends.User? reservedBy; // User who reserved the item (nullable)
   final Wishlist? wishlist; // Nested wishlist object (for reservations API)
+  
+  // Direct API fields (with fallback to computed values)
+  final bool? isPurchased; // Whether the item is purchased (from API)
+  final bool? isReservedByMe; // Whether the item is reserved by current user (from API)
+  final bool? isReserved; // Whether the item is reserved (from API)
+  final int? availableQuantity; // Available quantity (from API)
 
-  // Computed properties
-  bool get isReserved => reservedBy != null;
+  // Computed properties (fallback if API fields are null)
+  bool get isPurchasedValue => isPurchased ?? isReceived;
+  bool get isReservedValue => isReserved ?? (reservedBy != null);
   String get price => priceRange?.toString() ?? 'Price not specified';
 
   WishlistItem({
@@ -179,6 +186,10 @@ class WishlistItem {
     this.isReceived = false,
     this.reservedBy,
     this.wishlist,
+    this.isPurchased,
+    this.isReservedByMe,
+    this.isReserved,
+    this.availableQuantity,
   });
 
   factory WishlistItem.fromJson(Map<String, dynamic> json) {
@@ -192,10 +203,20 @@ class WishlistItem {
                        json['wishlist']?.toString() ?? 
                        '';
     
-    // Parse status
+    // Parse status - support both 'status' and 'itemStatus' fields
     ItemStatus status = ItemStatus.desired;
-    if (json['status'] != null) {
-      final statusStr = json['status'].toString().toLowerCase();
+    final statusStr = (json['itemStatus']?.toString() ?? 
+                      json['status']?.toString() ?? 
+                      '').toLowerCase();
+    
+    // Check if item is reserved using isReserved field or totalReserved > 0
+    final isReserved = json['isReserved'] as bool? ?? 
+                      (json['totalReserved'] as int? ?? 0) > 0;
+    
+    // If isReserved is true, set status to reserved
+    if (isReserved) {
+      status = ItemStatus.reserved;
+    } else if (statusStr.isNotEmpty) {
       status = ItemStatus.values.firstWhere(
         (e) => e.toString().split('.').last.toLowerCase() == statusStr,
         orElse: () => ItemStatus.desired,
@@ -274,6 +295,22 @@ class WishlistItem {
                       json['is_received'] as bool? ?? 
                       false;
     
+    // Parse isPurchased: direct from API, fallback to isReceived
+    final isPurchased = json['isPurchased'] as bool? ?? 
+                       json['is_purchased'] as bool?;
+    
+    // Parse isReservedByMe: direct from API
+    final isReservedByMe = json['isReservedByMe'] as bool? ?? 
+                          json['is_reserved_by_me'] as bool?;
+    
+    // Parse isReserved: direct from API (already parsed above, but store separately)
+    final isReservedFromApi = json['isReserved'] as bool? ?? 
+                             json['is_reserved'] as bool?;
+    
+    // Parse availableQuantity: direct from API
+    final availableQuantity = json['availableQuantity'] as int? ?? 
+                            json['available_quantity'] as int?;
+    
     // Parse reservedBy: support both camelCase and snake_case
     friends.User? reservedBy;
     if (json['reservedBy'] != null && json['reservedBy'] is Map) {
@@ -315,6 +352,10 @@ class WishlistItem {
       isReceived: isReceived,
       reservedBy: reservedBy,
       wishlist: wishlist,
+      isPurchased: isPurchased,
+      isReservedByMe: isReservedByMe,
+      isReserved: isReservedFromApi,
+      availableQuantity: availableQuantity,
     );
   }
 
@@ -349,6 +390,10 @@ class WishlistItem {
     bool? isReceived,
     friends.User? reservedBy,
     Wishlist? wishlist,
+    bool? isPurchased,
+    bool? isReservedByMe,
+    bool? isReserved,
+    int? availableQuantity,
   }) {
     return WishlistItem(
       id: id ?? this.id,
@@ -365,6 +410,10 @@ class WishlistItem {
       isReceived: isReceived ?? this.isReceived,
       reservedBy: reservedBy ?? this.reservedBy,
       wishlist: wishlist ?? this.wishlist,
+      isPurchased: isPurchased ?? this.isPurchased,
+      isReservedByMe: isReservedByMe ?? this.isReservedByMe,
+      isReserved: isReserved ?? this.isReserved,
+      availableQuantity: availableQuantity ?? this.availableQuantity,
     );
   }
 

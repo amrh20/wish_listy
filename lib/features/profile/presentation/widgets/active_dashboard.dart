@@ -72,8 +72,8 @@ class UpcomingOccasionsSection extends StatelessWidget {
               const SizedBox(width: 8),
               TextButton(
                 onPressed: () {
-                  // Navigate to Events Tab (Tab index 2) - keeps bottom nav visible
-                  MainNavigation.switchToTab(context, 2);
+                  // Navigate to Events Tab (Tab index 2) and open Invited tab (index 1)
+                  MainNavigation.switchToTab(context, 2, eventsTabIndex: 1);
                 },
                 style: TextButton.styleFrom(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -231,16 +231,33 @@ class _OccasionCard extends StatelessWidget {
                     arguments: {'friendId': occasion.hostId!},
                   );
                 },
-                child: Text(
-                  'Hosted by ${occasion.hostName}',
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.primary,
-                    fontSize: 12,
-                    decoration: TextDecoration.underline,
-                    decorationColor: AppColors.primary.withOpacity(0.5),
-                  ),
+                child: RichText(
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  text: TextSpan(
+                    style: AppStyles.bodySmall.copyWith(
+                      fontSize: 12,
+                    ),
+                    children: [
+                      // "Hosted by" in black
+                      TextSpan(
+                        text: 'Hosted by ',
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textPrimary,
+                          fontSize: 12,
+                        ),
+                      ),
+                      // Name in primary color, larger font, and clickable
+                      TextSpan(
+                        text: occasion.hostName ?? '',
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.primary,
+                          fontSize: 13, // Slightly larger
+                          fontWeight: FontWeight.w600, // Bold to indicate clickable
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               )
             else
@@ -675,10 +692,7 @@ class _ActivityTile extends StatelessWidget {
                                 color: activity.friendId != null && activity.friendId!.isNotEmpty
                                     ? AppColors.primary
                                     : AppColors.textPrimary,
-                                decoration: activity.friendId != null && activity.friendId!.isNotEmpty
-                                    ? TextDecoration.underline
-                                    : null,
-                                decorationColor: AppColors.primary.withOpacity(0.5),
+                                fontSize: 14, // Slightly larger to indicate clickable
                               ),
                               recognizer: activity.friendId != null && activity.friendId!.isNotEmpty
                                   ? (TapGestureRecognizer()

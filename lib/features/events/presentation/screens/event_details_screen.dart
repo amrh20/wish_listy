@@ -110,6 +110,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
+  Future<void> _refreshEventDetails() async {
+    await _loadEventDetails();
+  }
+
   Color _getEventTypeColor(EventType type) {
     switch (type) {
       case EventType.birthday:
@@ -272,8 +276,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           },
           child: Scaffold(
             backgroundColor: AppColors.background,
-            body: CustomScrollView(
-              slivers: [
+            body: RefreshIndicator(
+              onRefresh: _refreshEventDetails,
+              color: AppColors.primary,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
                 // SliverAppBar (The Header)
                 _buildSliverAppBar(eventColor, localization),
 
@@ -301,6 +309,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   ),
                 ),
               ],
+              ),
             ),
             // Bottom Navigation Bar removed - actions moved to More Options menu
           ),

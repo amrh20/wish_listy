@@ -41,7 +41,7 @@ class EmptyWishlistStateWidget extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'No Wishes Yet',
+              isFriendWishlist ? 'No Wishes Yet' : 'No Wishes Yet',
               style: AppStyles.headingMedium.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
@@ -49,7 +49,9 @@ class EmptyWishlistStateWidget extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'This wishlist is empty. Start adding wishes you dream of!',
+              isFriendWishlist
+                  ? 'No wishes have been added to this wishlist yet.'
+                  : 'This wishlist is empty. Start adding wishes you dream of!',
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),

@@ -412,21 +412,53 @@ class WishlistRepository {
   /// Toggle reservation for an item
   ///
   /// [itemId] - Item ID (required)
+  /// [action] - Action to perform: 'reserve' or 'cancel' (default: 'reserve')
+  /// [quantity] - Quantity for reserve action (default: 1)
   ///
   /// Returns the updated item data
-  /// Uses API: PUT /api/items/:id/reserve
-  Future<Map<String, dynamic>> toggleReservation(String itemId) async {
+  /// Uses API: PUT /api/items/:itemId/reserve
+  /// Reserve: PUT with body { "action": "reserve", "quantity": 1 }
+  /// Cancel: PUT with body { "action": "cancel" }
+  /// Response contains isReserved in data.isReserved
+  Future<Map<String, dynamic>> toggleReservation(
+    String itemId, {
+    String action = 'reserve',
+    int quantity = 1,
+  }) async {
     try {
-      final response = await _apiService.put('/items/$itemId/reserve');
+      // Prepare request body based on action
+      // Reserve: { "action": "reserve", "quantity": 1 }
+      // Cancel: { "action": "cancel" }
+      final requestBody = action == 'cancel'
+          ? <String, dynamic>{'action': 'cancel'} // Cancel reservation
+          : <String, dynamic>{
+              'action': 'reserve',
+              'quantity': quantity,
+            }; // Reserve with quantity
 
-      // API might return: {success: true, item: {...}} or {success: true, data: {...}} or directly the item object
-      final itemData =
+      final response = await _apiService.put('/items/$itemId/reserve', data: requestBody);
+
+      // Parse response structure:
+      // { success: true, data: { isReserved: true/false, item: {...} } }
+      // or { success: true, data: { isReserved: true/false, reservation: {...} } }
+      final responseData = response['data'] as Map<String, dynamic>?;
+      
+      // Get isReserved from response
+      final isReserved = responseData?['isReserved'] as bool?;
+      
+      // Get item data from response
+      final itemData = responseData?['item'] as Map<String, dynamic>? ??
           response['item'] as Map<String, dynamic>? ??
-          response['data'] as Map<String, dynamic>? ??
+          responseData ??
           response;
 
       if (itemData == null || itemData.isEmpty) {
         throw Exception('Item data not found in response');
+      }
+
+      // Add isReserved to item data if available
+      if (isReserved != null && itemData is Map<String, dynamic>) {
+        itemData['isReserved'] = isReserved;
       }
 
       return itemData;
@@ -461,6 +493,47 @@ class WishlistRepository {
       rethrow;
     } catch (e) {
       throw Exception('Failed to load reservations. Please try again.');
+    }
+  }
+
+  /// Mark item as purchased
+  ///
+  /// [itemId] - Item ID (required)
+  /// [purchasedBy] - User ID who purchased the item (optional, defaults to current user)
+  ///
+  /// Returns the updated item data
+  /// Uses API: PUT /api/items/:id/purchase
+  Future<Map<String, dynamic>> markAsPurchased({
+    required String itemId,
+    String? purchasedBy,
+  }) async {
+    try {
+      // Request body is optional - if purchasedBy is not provided, API will use current user
+      final requestData = <String, dynamic>{};
+      if (purchasedBy != null) {
+        requestData['purchasedBy'] = purchasedBy;
+      }
+
+      final response = await _apiService.put(
+        '/items/$itemId/purchase',
+        data: requestData.isNotEmpty ? requestData : null,
+      );
+
+      // API might return: {success: true, item: {...}} or {success: true, data: {...}} or directly the item object
+      final itemData =
+          response['item'] as Map<String, dynamic>? ??
+          response['data'] as Map<String, dynamic>? ??
+          response;
+
+      if (itemData == null || itemData.isEmpty) {
+        throw Exception('Item data not found in response');
+      }
+
+      return itemData;
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Failed to mark item as purchased. Please try again.');
     }
   }
 

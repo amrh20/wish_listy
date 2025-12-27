@@ -944,7 +944,11 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     });
 
     try {
-      await _wishlistRepository.toggleReservation(item.id);
+      // Item is reserved (we're in reservations list), so unreserve it
+      await _wishlistRepository.toggleReservation(
+        item.id,
+        action: 'cancel', // Explicitly pass 'cancel' action
+      );
       
       // Refresh reservations to ensure consistency
       await _fetchMyReservations();

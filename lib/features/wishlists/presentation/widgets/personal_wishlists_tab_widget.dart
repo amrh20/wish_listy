@@ -38,8 +38,9 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: onRefresh,
-      color: AppColors.secondary,
+      color: AppColors.primary,
       child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.only(
           left: 16,
           right: 16,
