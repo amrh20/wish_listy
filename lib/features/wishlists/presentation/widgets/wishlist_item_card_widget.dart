@@ -312,12 +312,12 @@ class _ModernWishlistItemContent extends StatelessWidget {
       );
     }
 
-    // Apply opacity 0.6 if purchased (regardless of received status)
-    // This makes all purchased items visually dimmed and disabled
+    // Apply subtle opacity if purchased (owner can still interact)
+    // Increased opacity to make card clearer (0.85 instead of 0.75)
     final shouldDim = isPurchased;
     
     return Opacity(
-      opacity: shouldDim ? 0.6 : 1.0,
+      opacity: shouldDim ? 0.85 : 1.0,
       child: Stack(
         children: [
           Container(
@@ -359,7 +359,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                 children: [
                   // 1. Main Content Row (Image + Title/Category + Menu)
                   InkWell(
-                    onTap: isPurchased ? null : onTap, // Disable tap if purchased
+                    onTap: onTap, // Allow tap even if purchased to view details
                     borderRadius: BorderRadius.circular(12),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -445,8 +445,27 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                 ),
                               ],
                             )
+                          else if (isReceived)
+                            // Gifted Badge - Item is received
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 14,
+                                  color: AppColors.success,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Gifted',
+                                  style: AppStyles.caption.copyWith(
+                                    color: AppColors.success,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            )
                           else if (isPurchased)
-                            // Purchased Badge
+                            // Purchased Badge - Purchased but not received yet
                             Row(
                               children: [
                                 Icon(
@@ -876,7 +895,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
-                    'Purchased by another friend, awaiting confirmation',
+                    'Purchased by another friend, awaiting confirmation from you that you have received it',
                     style: TextStyle(
                       color: AppColors.warning,
                       fontWeight: FontWeight.w600,
@@ -890,68 +909,56 @@ class _ModernWishlistItemContent extends StatelessWidget {
             ),
           ),
           // Action button
-          InkWell(
-            onTap: () => _confirmToggleStatus(context, isReceived),
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+          ElevatedButton.icon(
+            onPressed: () => _confirmToggleStatus(context, isReceived),
+            icon: const Icon(
+              Icons.check_circle_outline,
+              size: 16,
+              color: Colors.white,
+            ),
+            label: const Text(
+              'Mark Received',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.check_circle_outline,
-                    color: AppColors.primary,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Mark Received',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
+              elevation: 0,
             ),
           ),
         ],
       );
     } else {
       // State A: Item is NOT Received and NOT Purchased - Show action button
-      return InkWell(
-        onTap: () => _confirmToggleStatus(context, isReceived),
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+      return ElevatedButton.icon(
+        onPressed: () => _confirmToggleStatus(context, isReceived),
+        icon: const Icon(
+          Icons.check_circle_outline,
+          size: 16,
+          color: Colors.white,
+        ),
+        label: const Text(
+          'Mark Received',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.check_circle_outline,
-                color: AppColors.primary,
-                size: 18,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Mark Received',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
+          elevation: 0,
         ),
       );
     }
@@ -961,7 +968,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
     // Case A: Purchased (isPurchased == true) - Highest Priority
     if (isPurchased) {
       return Opacity(
-        opacity: 0.6,
+        opacity: 0.85, // Increased opacity to make card clearer
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
           decoration: BoxDecoration(
@@ -979,7 +986,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: InkWell(
-              onTap: null, // Disable tap for purchased items
+              onTap: onTap, // Allow tap to view details even if purchased
               borderRadius: BorderRadius.circular(12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

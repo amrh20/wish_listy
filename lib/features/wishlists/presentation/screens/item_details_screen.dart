@@ -246,13 +246,19 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                                       _buildGiftedBanner(item),
                                       const SizedBox(height: 16),
                                     ],
+                                    // Purchased Banner (if purchased but not received - Owner view)
+                                    if (_isOwner() && item.isPurchasedValue && !item.isReceived) ...[
+                                      _buildPurchasedBanner(item),
+                                      const SizedBox(height: 16),
+                                    ],
                                     // Source Section (Online/Physical/Anywhere)
                                     _buildSourceSection(item),
                                     const SizedBox(height: 20),
                                     // Description
                                     _buildDescriptionSection(item),
                                     // Add bottom padding for sticky bar
-                                    if (!_isOwner()) const SizedBox(height: 80),
+                                    if (!_isOwner() || (item.isPurchasedValue && !item.isReceived)) 
+                                      const SizedBox(height: 80),
                                   ],
                                 ),
                               ),
@@ -262,8 +268,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                         ),
         ),
       ),
-      // Sticky Bottom Action Bar (Guest View only)
-      bottomNavigationBar: !_isOwner() ? _buildStickyActionBar(item) : null,
+      // Sticky Bottom Action Bar (Guest View or Owner when purchased but not received)
+      bottomNavigationBar: (!_isOwner() || (item.isPurchasedValue && !item.isReceived)) 
+          ? _buildStickyActionBar(item) 
+          : null,
     );
   }
 
@@ -368,7 +376,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     final dateText = _formatDate(item.createdAt);
     final isOwner = _isOwner();
     final isReserved = item.isReservedValue; // Check if item is reserved (Teaser Mode)
-    final isReservedForOwner = isOwner && isReserved; // Teaser Mode: Owner sees reserved
+    final isReceived = item.isReceived; // Check if item is received
+    final isReservedForOwner = isOwner && isReserved && !isReceived; // Teaser Mode: Owner sees reserved only if NOT received
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,7 +400,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           children: [
             Row(
               children: [
-                // Show Mystery Badge if reserved for owner (Teaser Mode), otherwise show Priority Chip
+                // Show Mystery Badge if reserved for owner (Teaser Mode) AND not received, otherwise show Priority Chip
                 if (isReservedForOwner)
                   // Mystery Badge for Teaser Mode - Longer and clearer text
                   Container(
@@ -425,37 +434,68 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                     ),
                   )
             else
-              // Priority Chip (default)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: priorityColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: priorityColor.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _getPriorityIcon(item.priority),
-                      size: 14,
-                      color: priorityColor,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      _getPriorityText(item.priority),
-                      style: TextStyle(
-                        color: priorityColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+              // Priority Chip (default) - or Gifted badge if received
+              isReceived
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.success.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            size: 14,
+                            color: AppColors.success,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Gifted',
+                            style: TextStyle(
+                              color: AppColors.success,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: priorityColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: priorityColor.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getPriorityIcon(item.priority),
+                            size: 14,
+                            color: priorityColor,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _getPriorityText(item.priority),
+                            style: TextStyle(
+                              color: priorityColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
                 const SizedBox(width: 12),
                 // Date
                 Text(
@@ -817,44 +857,75 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   Widget _buildGiftedBanner(WishlistItem item) {
-    // Check if item is reserved for owner (Teaser Mode) - hide banner to avoid duplication with header badge
-    final isOwner = _isOwner();
-    final isReserved = item.isReservedValue;
-    final isReservedForOwner = isOwner && isReserved;
+    // This banner is shown when item is received (isReceived: true)
+    // It should display "Marked as gifted" not "Reserved by a friend"
+    final isReceived = item.isReceived;
     
-    // Don't show banner if reserved for owner (Teaser Mode) - already shown in header badge
-    if (isReservedForOwner) {
+    // Only show if item is actually received
+    if (!isReceived) {
       return const SizedBox.shrink();
     }
-    
-    // For Owner: Don't show who reserved (Spoiler Protection)
-    // For Guest: Show who reserved if available
-    final reservedByName = item.reservedBy?.fullName;
-    final text = (reservedByName != null && reservedByName.isNotEmpty)
-        ? 'Reserved by $reservedByName'
-        : 'Reserved by a friend';
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.purple.shade50,
+        color: AppColors.success.withOpacity(0.1),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.14),
+          color: AppColors.success.withOpacity(0.3),
           width: 1,
         ),
       ),
       child: Row(
         children: [
-          Icon(Icons.check_circle, color: AppColors.primary, size: 20),
+          Icon(
+            Icons.check_circle,
+            color: AppColors.success,
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              text,
+              'Marked as gifted',
               style: AppStyles.bodyMedium.copyWith(
-                color: AppColors.primary,
+                color: AppColors.success,
                 fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPurchasedBanner(WishlistItem item) {
+    // Show banner for owner when item is purchased but not received yet
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.warning.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.shopping_bag_outlined,
+            color: AppColors.warning,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Purchased by another friend, awaiting confirmation from you that you have received it',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.warning,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -920,11 +991,14 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
   // Helper functions to determine item status (matching wishlist_items_screen logic)
   String _getItemStatusText(WishlistItem item) {
+    final isPurchased = item.isPurchasedValue;
     final isReserved = item.isReservedValue;
     final isReceived = item.isReceived;
     
     if (isReceived) {
       return 'Gifted';
+    } else if (isPurchased && !isReceived) {
+      return 'Purchased';
     } else if (isReserved) {
       return 'Reserved';
     } else {
@@ -933,11 +1007,14 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   IconData _getItemStatusIcon(WishlistItem item) {
+    final isPurchased = item.isPurchasedValue;
     final isReserved = item.isReservedValue;
     final isReceived = item.isReceived;
     
     if (isReceived) {
       return Icons.check_circle;
+    } else if (isPurchased && !isReceived) {
+      return Icons.shopping_bag_outlined;
     } else if (isReserved) {
       return Icons.lock_outline;
     } else {
@@ -946,11 +1023,14 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   Color _getItemStatusColor(WishlistItem item) {
+    final isPurchased = item.isPurchasedValue;
     final isReserved = item.isReservedValue;
     final isReceived = item.isReceived;
     
     if (isReceived) {
       return AppColors.success; // Green for Gifted
+    } else if (isPurchased && !isReceived) {
+      return AppColors.warning; // Orange/Yellow for Purchased
     } else if (isReserved) {
       return AppColors.warning; // Orange/Yellow for Reserved
     } else {
@@ -1047,6 +1127,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
   Widget _buildStickyActionBar(WishlistItem item) {
     final authService = Provider.of<AuthRepository>(context, listen: false);
+    final isOwner = _isOwner();
+    final isPurchased = item.isPurchasedValue;
     
     // Case A: Item is Received
     if (item.isReceived) {
@@ -1090,6 +1172,90 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // Case A.5: Purchased but not Received (Owner view)
+    if (isOwner && isPurchased && !item.isReceived) {
+      return Container(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 12,
+          bottom: 12 + MediaQuery.of(context).padding.bottom,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: AppColors.warning.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: AppColors.warning.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.shopping_bag_outlined,
+                    color: AppColors.warning,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Purchased by another friend, awaiting confirmation from you that you have received it',
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.warning,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _toggleReceivedStatus,
+                  icon: const Icon(
+                    Icons.check_circle_outline,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  label: const Text(
+                    'Mark Received',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
                   ),
                 ),
               ),
@@ -2033,8 +2199,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   Widget _buildActionButtons() {
-    final isReceived =
-        (_currentItem?.isReceived ?? widget.item.isReceived);
+    final item = _currentItem ?? widget.item;
+    final isReceived = item.isReceived;
+    final isPurchased = item.isPurchasedValue;
+    final isOwner = _isOwner();
     
     // Check if user is guest
     final authService = Provider.of<AuthRepository>(context, listen: false);
@@ -2047,6 +2215,33 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
     return Column(
       children: [
+        // Button 0: Mark Received (if purchased but not received - Owner only)
+        if (isOwner && isPurchased && !isReceived) ...[
+          SizedBox(
+            width: double.infinity,
+            height: buttonHeight,
+            child: ElevatedButton.icon(
+              onPressed: _toggleReceivedStatus,
+              icon: const Icon(Icons.check_circle_outline, size: 20, color: Colors.white),
+              label: const Text(
+                'Mark Received',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(buttonBorderRadius),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+          SizedBox(height: buttonSpacing),
+        ],
         // Button 1: Share Item (Secondary Action)
         SizedBox(
           width: double.infinity,
