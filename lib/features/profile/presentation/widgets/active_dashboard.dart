@@ -7,19 +7,23 @@ import 'package:wish_listy/features/profile/presentation/models/home_models.dart
 import 'package:wish_listy/features/wishlists/presentation/widgets/wishlist_card_widget.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/minimal_wishlist_card.dart';
+import 'package:wish_listy/features/profile/data/models/activity_model.dart';
+import 'package:wish_listy/features/profile/presentation/widgets/activity_card.dart';
 
 /// Active dashboard with all sections for users with data
 class ActiveDashboard extends StatelessWidget {
   final List<UpcomingOccasion> occasions;
   final List<WishlistSummary> wishlists;
-  final List<FriendActivity> activities;
+  final List<Activity> activities; // Changed from FriendActivity to Activity
 
   const ActiveDashboard({
     super.key,
-    required this.occasions,
-    required this.wishlists,
-    required this.activities,
-  });
+    List<UpcomingOccasion>? occasions,
+    List<WishlistSummary>? wishlists,
+    List<Activity>? activities,
+  }) : occasions = occasions ?? const [],
+       wishlists = wishlists ?? const [],
+       activities = activities ?? const [];
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +51,8 @@ class UpcomingOccasionsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (occasions.isEmpty) return const SizedBox.shrink();
+    // Add null safety check
+    if (occasions == null || occasions.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -403,7 +408,10 @@ class MyWishlistsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Limit to 3 items
+    // Add null safety check and limit to 3 items
+    if (wishlists == null || wishlists.isEmpty) {
+      return _buildEmptyState(context);
+    }
     final displayWishlists = wishlists.take(3).toList();
     final isEmpty = displayWishlists.isEmpty;
 
@@ -530,20 +538,22 @@ class MyWishlistsSection extends StatelessWidget {
 }
 
 
-/// Section 3: Friend Activity (Vertical List - Preview Mode: Max 5 items)
+/// Section 3: Friend Activity (Vertical List - Preview Mode: Max 3 items)
 class FriendActivitySection extends StatelessWidget {
-  final List<FriendActivity> activities;
+  final List<Activity> activities; // Changed from FriendActivity to Activity
 
   const FriendActivitySection({super.key, required this.activities});
 
   @override
   Widget build(BuildContext context) {
-    if (activities.isEmpty) return const SizedBox.shrink();
+    // Add null safety check before accessing activities
+    if (activities == null || activities.isEmpty) return const SizedBox.shrink();
 
-    // Limit to maximum 5 items for preview
-    final displayActivities = activities.length > 5 
-        ? activities.take(5).toList() 
-        : activities;
+    // Limit to maximum 3 items for preview (as per new API structure)
+    // Ensure displayActivities is never null
+    final displayActivities = (activities.length > 3 
+        ? activities.take(3).toList() 
+        : activities) ?? [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -592,175 +602,16 @@ class FriendActivitySection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        // Vertical List (limited to 5 items)
+        // Vertical List (limited to 3 items) - Using ActivityCard widget
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
-            children: displayActivities.map((activity) {
-              return _ActivityTile(activity: activity);
-            }).toList(),
+            children: displayActivities
+                .map((activity) => ActivityCard(activity: activity))
+                .toList(),
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Activity Tile Widget
-class _ActivityTile extends StatelessWidget {
-  final FriendActivity activity;
-
-  const _ActivityTile({required this.activity});
-
-  String _getInitials(String name) {
-    final parts = name.split(' ');
-    if (parts.isEmpty) return '';
-    if (parts.length == 1) return parts[0][0].toUpperCase();
-    return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Extract item name from action string (e.g., "added watch to their wishlist" -> "watch")
-    final itemName = activity.action.replaceAll(RegExp(r'^added '), '').replaceAll(RegExp(r' to their wishlist$'), '');
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Leading: Avatar of owner (Clickable)
-          GestureDetector(
-            onTap: activity.friendId != null && activity.friendId!.isNotEmpty
-                ? () {
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.friendProfile,
-                      arguments: {'friendId': activity.friendId!},
-                    );
-                  }
-                : null,
-            child: CircleAvatar(
-              radius: 24,
-              backgroundColor: AppColors.primary.withOpacity(0.1),
-              backgroundImage: activity.avatarUrl != null
-                  ? NetworkImage(activity.avatarUrl!)
-                  : null,
-              child: activity.avatarUrl == null
-                  ? Text(
-                      _getInitials(activity.friendName),
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  : null,
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Content: Title and Subtitle
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title: "ownerName added itemName to their wishlist" (Name is clickable)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Flexible(
-                      child: RichText(
-                        text: TextSpan(
-                          style: AppStyles.bodyMedium.copyWith(
-                            color: AppColors.textPrimary,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: activity.friendName,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: activity.friendId != null && activity.friendId!.isNotEmpty
-                                    ? AppColors.primary
-                                    : AppColors.textPrimary,
-                                fontSize: 14, // Slightly larger to indicate clickable
-                              ),
-                              recognizer: activity.friendId != null && activity.friendId!.isNotEmpty
-                                  ? (TapGestureRecognizer()
-                                    ..onTap = () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        AppRoutes.friendProfile,
-                                        arguments: {'friendId': activity.friendId!},
-                                      );
-                                    })
-                                  : null,
-                            ),
-                            const TextSpan(text: ' added '),
-                            TextSpan(
-                              text: itemName,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const TextSpan(text: ' to their wishlist'),
-                          ],
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                // Subtitle: Time ago
-                Text(
-                  activity.timeAgo,
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.textTertiary,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Trailing: Small image of the item or generic gift icon
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: AppColors.primary.withOpacity(0.1),
-            ),
-            child: activity.imageUrl != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      activity.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(
-                        Icons.card_giftcard_rounded,
-                        color: AppColors.primary,
-                        size: 24,
-                      ),
-                    ),
-                  )
-                : Icon(
-                    Icons.card_giftcard_rounded,
-                    color: AppColors.primary,
-                    size: 24,
-                  ),
-          ),
-        ],
-      ),
     );
   }
 }

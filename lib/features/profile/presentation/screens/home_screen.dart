@@ -37,6 +37,12 @@ class HomeScreenState extends State<HomeScreen> {
     super.initState();
     _controller = HomeController();
     _controller.fetchDashboardData();
+    // Load unread count from NotificationsCubit when app starts
+    // This ensures we use the correct API that respects lastBadgeSeenAt
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cubit = context.read<NotificationsCubit>();
+      cubit.getUnreadCount();
+    });
   }
 
   @override
@@ -150,10 +156,11 @@ class HomeScreenState extends State<HomeScreen> {
                 final notifications = state is NotificationsLoaded
                     ? state.notifications
                     : <AppNotification>[];
-                // Use unreadCount from NotificationsCubit, fallback to dashboardData
+                // Always use unreadCount from NotificationsCubit (uses /notifications/unread-count API)
+                // This API respects lastBadgeSeenAt, unlike /dashboard/home API
                 final unreadCount = state is NotificationsLoaded
                     ? state.unreadCount
-                    : (dashboardData?.stats.unreadNotificationsCount ?? 0);
+                    : 0; // Don't use dashboardData fallback - it doesn't respect lastBadgeSeenAt
 
                 return Builder(
                   builder: (buttonContext) {
@@ -480,7 +487,7 @@ class HomeScreenState extends State<HomeScreen> {
                                     : ActiveDashboard(
                                         occasions: _convertEventsToOccasions(controller.upcomingOccasions),
                                         wishlists: _convertWishlistsToSummaries(controller.myWishlists),
-                         activities: _convertItemsToActivities(controller.friendActivity),
+                                        activities: controller.latestActivityPreview ?? [], // Use latestActivityPreview directly with null safety
                                       ),
                           ),
                           // Bottom padding to clear Bottom Navigation Bar
@@ -500,7 +507,10 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   // Helper methods to convert API models to UI models
-  List<UpcomingOccasion> _convertEventsToOccasions(List<Event> events) {
+  List<UpcomingOccasion> _convertEventsToOccasions(List<Event>? events) {
+    // Add null safety check - return empty list if events is null or empty
+    if (events == null || events.isEmpty) return [];
+    
     return events.map((event) {
       return UpcomingOccasion(
         id: event.id,
@@ -515,7 +525,10 @@ class HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  List<WishlistSummary> _convertWishlistsToSummaries(List<Wishlist> wishlists) {
+  List<WishlistSummary> _convertWishlistsToSummaries(List<Wishlist>? wishlists) {
+    // Add null safety check - return empty list if wishlists is null or empty
+    if (wishlists == null || wishlists.isEmpty) return [];
+    
     return wishlists.map((wishlist) {
       return WishlistSummary(
         id: wishlist.id,
@@ -527,28 +540,6 @@ class HomeScreenState extends State<HomeScreen> {
         privacy: _convertVisibilityToPrivacy(wishlist.visibility),
         category: wishlist.category,
         previewItems: wishlist.items.take(3).toList(),
-      );
-    }).toList();
-  }
-
-  List<FriendActivity> _convertItemsToActivities(List<WishlistItem> items) {
-    return items.map((item) {
-      // Get owner info from nested wishlist.owner
-      final ownerName = item.wishlist?.owner?.fullName ?? 'Someone';
-      final ownerId = item.wishlist?.owner?.id;
-      final ownerImage = item.wishlist?.owner?.profileImage;
-      
-      // Calculate time ago
-      final timeAgo = _calculateTimeAgo(item.createdAt);
-      
-      return FriendActivity(
-        id: item.id,
-        friendName: ownerName,
-        friendId: ownerId, // Pass owner ID for navigation
-        action: 'added ${item.name} to their wishlist',
-        timeAgo: timeAgo,
-        avatarUrl: ownerImage,
-        imageUrl: item.imageUrl,
       );
     }).toList();
   }

@@ -1,6 +1,7 @@
 /// Data models for Home Screen dashboard
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
+import 'package:wish_listy/features/profile/data/models/activity_model.dart';
 
 /// Dashboard Model - Main model for Home Screen API response
 class DashboardModel {
@@ -8,18 +9,28 @@ class DashboardModel {
   final DashboardStats stats;
   final List<Wishlist> myWishlists;
   final List<Event> upcomingOccasions;
-  final List<WishlistItem> friendActivity;
+  final List<Activity> latestActivityPreview; // Changed from friendActivity to latestActivityPreview
 
   DashboardModel({
     required this.user,
     required this.stats,
     required this.myWishlists,
     required this.upcomingOccasions,
-    required this.friendActivity,
+    required this.latestActivityPreview,
   });
 
   factory DashboardModel.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] as Map<String, dynamic>? ?? json;
+    // Safely extract data object
+    Map<String, dynamic> data;
+    final dataRaw = json['data'];
+    if (dataRaw != null && dataRaw is Map<String, dynamic>) {
+      data = dataRaw;
+    } else if (json is Map<String, dynamic>) {
+      data = json;
+    } else {
+      // Fallback: create empty map
+      data = {};
+    }
 
     // Parse user
     final userData = data['user'] as Map<String, dynamic>? ?? {};
@@ -29,22 +40,65 @@ class DashboardModel {
     final statsData = data['stats'] as Map<String, dynamic>? ?? {};
     final stats = DashboardStats.fromJson(statsData);
 
-    // Parse wishlists
-    final wishlistsData = data['myWishlists'] as List<dynamic>? ?? [];
+    // Parse wishlists - ensure it's a List before calling .map()
+    List<dynamic> wishlistsData = [];
+    final wishlistsRaw = data['myWishlists'];
+    if (wishlistsRaw != null && wishlistsRaw is List) {
+      wishlistsData = wishlistsRaw;
+    }
     final wishlists = wishlistsData
-        .map((item) => Wishlist.fromJson(item as Map<String, dynamic>))
+        .map((item) {
+          try {
+            if (item is Map<String, dynamic>) {
+              return Wishlist.fromJson(item);
+            }
+            return null;
+          } catch (e) {
+            return null;
+          }
+        })
+        .whereType<Wishlist>()
         .toList();
 
-    // Parse upcoming occasions (events)
-    final occasionsData = data['upcomingOccasions'] as List<dynamic>? ?? [];
+    // Parse upcoming occasions (events) - ensure it's a List before calling .map()
+    List<dynamic> occasionsData = [];
+    final occasionsRaw = data['upcomingOccasions'];
+    if (occasionsRaw != null && occasionsRaw is List) {
+      occasionsData = occasionsRaw;
+    }
     final occasions = occasionsData
-        .map((item) => Event.fromJson(item as Map<String, dynamic>))
+        .map((item) {
+          try {
+            if (item is Map<String, dynamic>) {
+              return Event.fromJson(item);
+            }
+            return null;
+          } catch (e) {
+            return null;
+          }
+        })
+        .whereType<Event>()
         .toList();
 
-    // Parse friend activity (items)
-    final activityData = data['friendActivity'] as List<dynamic>? ?? [];
-    final activity = activityData
-        .map((item) => WishlistItem.fromJson(item as Map<String, dynamic>))
+    // Parse latest activity preview (max 3 items from /api/home) - ensure it's a List before calling .map()
+    List<dynamic> activityData = [];
+    final activityRaw = data['latestActivityPreview'] ?? data['friendActivity'];
+    if (activityRaw != null && activityRaw is List) {
+      activityData = activityRaw;
+    }
+    final activityPreview = activityData
+        .map((item) {
+          try {
+            if (item is Map<String, dynamic>) {
+              return Activity.fromJson(item);
+            }
+            return null;
+          } catch (e) {
+            // If parsing fails, return null
+            return null;
+          }
+        })
+        .whereType<Activity>()
         .toList();
 
     return DashboardModel(
@@ -52,7 +106,7 @@ class DashboardModel {
       stats: stats,
       myWishlists: wishlists,
       upcomingOccasions: occasions,
-      friendActivity: activity,
+      latestActivityPreview: activityPreview,
     );
   }
 

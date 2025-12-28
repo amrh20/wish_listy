@@ -68,8 +68,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     });
     _initializeAnimations();
     _startAnimations();
-    _loadWishlists();
-    _fetchMyReservations();
+    // Don't load data in initState - wait for screen to become visible
   }
 
   @override
@@ -85,16 +84,15 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-
-    // Reload data when screen becomes visible
-    // Check if this is the current route (screen is visible)
+    // Only load data when screen becomes visible for the first time
     final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
 
-    if (isCurrent && _hasLoadedOnce) {
-      // Screen is now visible and we've loaded before, reload data
+    if (isCurrent && !_hasLoadedOnce) {
+      _hasLoadedOnce = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _loadWishlists();
+          _fetchMyReservations();
         }
       });
     }

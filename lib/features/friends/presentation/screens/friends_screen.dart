@@ -51,6 +51,8 @@ class FriendsScreenState extends State<FriendsScreen>
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingMoreFriends = false;
 
+  bool _hasLoadedOnce = false;
+
   @override
   void initState() {
     super.initState();
@@ -61,12 +63,22 @@ class FriendsScreenState extends State<FriendsScreen>
     
     // Set up scroll listener for pagination
     _scrollController.addListener(_onScroll);
-    
-    // Load data when screen initializes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadFriends();
-      _loadFriendRequests();
-    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Only load data when screen becomes visible (is current route)
+    final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+    if (isCurrent && !_hasLoadedOnce) {
+      _hasLoadedOnce = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadFriends();
+          _loadFriendRequests();
+        }
+      });
+    }
   }
 
   void _onScroll() {

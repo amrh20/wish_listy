@@ -28,6 +28,7 @@ import '../../features/wishlists/presentation/screens/wishlist_item_details_scre
 import '../../features/wishlists/presentation/screens/create_wishlist_screen.dart';
 import '../../features/friends/presentation/screens/add_friend_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
+import '../../features/profile/presentation/screens/activity_feed_screen.dart';
 import '../../features/wishlists/data/models/wishlist_model.dart';
 import '../../features/events/data/models/event_model.dart';
 
@@ -191,9 +192,10 @@ class AppRoutes {
       );
     } else if (settings.name == friendProfile) {
       final args = settings.arguments as Map<String, dynamic>;
+      // Support both 'friendId' and 'userId' for backward compatibility
+      final friendId = args['friendId'] ?? args['userId'] ?? '';
       return MaterialPageRoute(
-        builder: (context) =>
-            FriendProfileScreen(friendId: args['friendId'] ?? ''),
+        builder: (context) => FriendProfileScreen(friendId: friendId),
       );
     } else if (settings.name == eventDetails) {
       final args = settings.arguments as Map<String, dynamic>;
@@ -202,16 +204,8 @@ class AppRoutes {
             EventDetailsScreen(eventId: args['eventId'] ?? ''),
       );
     } else if (settings.name == friendActivityFeed) {
-      // Placeholder screen - TODO: Create FriendActivityFeedScreen
       return MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(
-            title: const Text('Friend Activity Feed'),
-          ),
-          body: const Center(
-            child: Text('Friend Activity Feed - Coming Soon'),
-          ),
-        ),
+        builder: (context) => const ActivityFeedScreen(),
       );
     }
 

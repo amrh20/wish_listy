@@ -475,7 +475,31 @@ class ApiService {
   Dio get dio => _dio;
 
   /// Get dashboard data for Home Screen
+  /// Uses /api/dashboard/home endpoint which returns latestActivityPreview (max 3 items)
   Future<Map<String, dynamic>> getDashboardData() async {
+    return await get('/dashboard/home');
+  }
+
+  /// Get activities with pagination
+  /// Uses /api/activities endpoint with pagination support
+  /// [page] - Page number (starts from 1)
+  /// [limit] - Number of items per page (default: 10)
+  Future<Map<String, dynamic>> getActivities({
+    int page = 1,
+    int limit = 10,
+  }) async {
+    return await get(
+      '/activities',
+      queryParameters: {
+        'page': page,
+        'limit': limit,
+      },
+    );
+  }
+
+  /// Get friend activity feed
+  /// Note: Uses /dashboard/home endpoint which returns all friendActivity data
+  Future<Map<String, dynamic>> getFriendActivity() async {
     return await get('/dashboard/home');
   }
 }

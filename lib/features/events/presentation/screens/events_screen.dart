@@ -194,11 +194,11 @@ class EventsScreenState extends State<EventsScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Reload data when screen becomes visible after returning from another screen
+    // Only load data when screen becomes visible for the first time
     final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
 
-    if (isCurrent) {
-      // Always reload data when screen becomes current
+    if (isCurrent && !_hasLoadedOnce) {
+      _hasLoadedOnce = true;
       // Use a small delay to ensure navigation is complete
       Future.delayed(const Duration(milliseconds: 100), () {
         if (mounted) {

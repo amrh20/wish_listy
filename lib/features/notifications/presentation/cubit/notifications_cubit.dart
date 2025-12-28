@@ -508,10 +508,18 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       
       debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Unread count: $unreadCount');
       
-      // Update state if loaded
+      // Update state - if loaded, update it; if not loaded, create a minimal state with unreadCount
       if (state is NotificationsLoaded) {
         final currentState = state as NotificationsLoaded;
         emit(currentState.copyWith(
+          unreadCount: unreadCount,
+          isNewNotification: false,
+        ));
+      } else if (state is! NotificationsLoading) {
+        // If state is not loaded and not loading, create a minimal state with unreadCount
+        // This allows the badge to show the correct count even before notifications are loaded
+        emit(NotificationsLoaded(
+          notifications: [],
           unreadCount: unreadCount,
           isNewNotification: false,
         ));

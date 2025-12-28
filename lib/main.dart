@@ -16,6 +16,7 @@ import 'core/storage/adapters/wishlist_adapter.dart';
 import 'features/wishlists/data/repository/guest_data_repository.dart';
 import 'features/wishlists/data/models/wishlist_model.dart';
 import 'features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'features/profile/presentation/providers/activity_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -97,6 +98,9 @@ class MyApp extends StatelessWidget {
         Provider<GuestDataRepository>(create: (_) => guestDataRepository),
         BlocProvider<NotificationsCubit>.value(
           value: notificationsCubit, // Use the pre-created instance
+        ),
+        ChangeNotifierProvider<ActivityProvider>(
+          create: (_) => ActivityProvider(),
         ),
       ],
       child: Consumer<LocalizationService>(
