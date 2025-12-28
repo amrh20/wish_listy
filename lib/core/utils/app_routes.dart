@@ -15,6 +15,7 @@ import '../../features/events/presentation/screens/create_event_screen.dart';
 import '../../features/events/presentation/screens/event_details_screen.dart';
 import '../../features/events/presentation/screens/event_management_screen.dart';
 import '../../features/events/presentation/screens/event_wishlist_screen.dart';
+import '../../features/events/presentation/screens/event_guest_list_screen.dart';
 import '../../features/friends/presentation/screens/friends_screen.dart';
 import '../../features/friends/presentation/screens/friend_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
@@ -65,6 +66,7 @@ class AppRoutes {
   static const String addFriend = '/add-friend';
   static const String editProfile = '/edit-profile';
   static const String friendActivityFeed = '/friend-activity-feed';
+  static const String eventGuestList = '/event-guest-list';
 
   // Routes Map
   static Map<String, WidgetBuilder> routes = {
@@ -206,6 +208,14 @@ class AppRoutes {
     } else if (settings.name == friendActivityFeed) {
       return MaterialPageRoute(
         builder: (context) => const ActivityFeedScreen(),
+      );
+    } else if (settings.name == eventGuestList) {
+      final args = settings.arguments as Map<String, dynamic>;
+      return MaterialPageRoute(
+        builder: (context) => EventGuestListScreen(
+          eventId: args['eventId'] ?? '',
+          invitedFriends: args['invitedFriends'] as List<InvitedFriend>? ?? [],
+        ),
       );
     }
 

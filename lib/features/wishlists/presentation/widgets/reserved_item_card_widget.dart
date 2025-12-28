@@ -45,6 +45,7 @@ class ReservedItemCardWidget extends StatelessWidget {
     final owner = item.wishlist?.owner;
     final ownerName = owner?.fullName ?? 'Unknown';
     final ownerImage = owner?.profileImage;
+    final isPurchased = item.isPurchasedValue; // isPurchased ?? isReceived
 
     return Material(
       color: Colors.transparent,
@@ -57,12 +58,16 @@ class ReservedItemCardWidget extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Colors.grey.shade200,
-              width: 1,
+              color: isPurchased
+                  ? AppColors.success.withOpacity(0.3)
+                  : Colors.grey.shade200,
+              width: isPurchased ? 1.5 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: isPurchased
+                    ? AppColors.success.withOpacity(0.1)
+                    : Colors.black.withOpacity(0.04),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -76,7 +81,9 @@ class ReservedItemCardWidget extends StatelessWidget {
                 height: 50,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: isPurchased
+                      ? AppColors.success.withOpacity(0.15)
+                      : AppColors.primary.withOpacity(0.1),
                   image: item.imageUrl != null && item.imageUrl!.isNotEmpty
                       ? DecorationImage(
                           image: NetworkImage(item.imageUrl!),
@@ -87,8 +94,8 @@ class ReservedItemCardWidget extends StatelessWidget {
                 ),
                 child: item.imageUrl == null || item.imageUrl!.isEmpty
                     ? Icon(
-                        Icons.card_giftcard,
-                        color: AppColors.primary,
+                        isPurchased ? Icons.card_giftcard : Icons.card_giftcard,
+                        color: isPurchased ? AppColors.success : AppColors.primary,
                         size: 24,
                       )
                     : null,
@@ -104,63 +111,95 @@ class ReservedItemCardWidget extends StatelessWidget {
                       item.name,
                       style: AppStyles.bodyMedium.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: isPurchased
+                            ? AppColors.textTertiary
+                            : AppColors.textPrimary,
+                        decoration: isPurchased
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    // Owner Row
-                    Row(
-                      children: [
-                        // Small Avatar
-                        CircleAvatar(
-                          radius: 8,
-                          backgroundColor: AppColors.primary.withOpacity(0.2),
-                          backgroundImage: ownerImage != null &&
-                                  ownerImage.isNotEmpty
-                              ? NetworkImage(ownerImage)
-                              : null,
-                          child: ownerImage == null || ownerImage.isEmpty
-                              ? Text(
-                                  _getInitials(ownerName),
-                                  style: TextStyle(
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        const SizedBox(width: 6),
-                        // Owner Name Text
-                        Expanded(
-                          child: Text(
-                            'For $ownerName',
-                            style: AppStyles.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                    // Thankful message if purchased, otherwise owner row
+                    if (isPurchased)
+                      // Thankful message
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            size: 14,
+                            color: AppColors.success,
                           ),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Thank you! Your friend $ownerName received your gift 🎉',
+                              style: AppStyles.bodySmall.copyWith(
+                                color: AppColors.success,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      // Owner Row
+                      Row(
+                        children: [
+                          // Small Avatar
+                          CircleAvatar(
+                            radius: 8,
+                            backgroundColor: AppColors.primary.withOpacity(0.2),
+                            backgroundImage: ownerImage != null &&
+                                    ownerImage.isNotEmpty
+                                ? NetworkImage(ownerImage)
+                                : null,
+                            child: ownerImage == null || ownerImage.isEmpty
+                                ? Text(
+                                    _getInitials(ownerName),
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.primary,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 6),
+                          // Owner Name Text
+                          Expanded(
+                            child: Text(
+                              'For $ownerName',
+                              style: AppStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
-              // Cancel Button (Trailing)
-              IconButton(
-                icon: const Icon(
-                  Icons.cancel_outlined,
-                  color: AppColors.error,
-                  size: 24,
+              // Cancel Button (Trailing) - Hide if purchased
+              if (!isPurchased)
+                IconButton(
+                  icon: const Icon(
+                    Icons.cancel_outlined,
+                    color: AppColors.error,
+                    size: 24,
+                  ),
+                  onPressed: () => _showCancelConfirmation(context),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
-                onPressed: () => _showCancelConfirmation(context),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
             ],
           ),
         ),

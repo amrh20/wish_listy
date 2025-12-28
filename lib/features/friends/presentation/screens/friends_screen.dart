@@ -158,12 +158,9 @@ class FriendsScreenState extends State<FriendsScreen>
                       UnifiedTab(
                         label: localization.translate('ui.myFriends'),
                         icon: Icons.people_rounded,
-                        badgeCount: _getFilteredFriends().length,
                       ),
                       UnifiedTab(
                         label: localization.translate('ui.requests'),
-                        badgeCount: _friendRequests.length,
-                        badgeColor: AppColors.accent,
                       ),
                     ],
                     selectedTabIndex: _tabController.index,

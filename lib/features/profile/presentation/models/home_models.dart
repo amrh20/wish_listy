@@ -1,4 +1,5 @@
 /// Data models for Home Screen dashboard
+import 'package:flutter/foundation.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'package:wish_listy/features/profile/data/models/activity_model.dart';
@@ -85,8 +86,15 @@ class DashboardModel {
     final activityRaw = data['latestActivityPreview'] ?? data['friendActivity'];
     if (activityRaw != null && activityRaw is List) {
       activityData = activityRaw;
+    } else if (activityRaw != null && activityRaw is! List) {
+      // If it's not a List, log and use empty list
+      debugPrint('⚠️ DashboardModel: latestActivityPreview is not a List: ${activityRaw.runtimeType}');
+      activityData = [];
     }
-    final activityPreview = activityData
+    // Ensure activityData is never null before calling .map()
+    final safeActivityData = activityData ?? [];
+    final activityPreview = safeActivityData
+        .where((item) => item != null) // Filter out null items first
         .map((item) {
           try {
             if (item is Map<String, dynamic>) {
@@ -95,6 +103,7 @@ class DashboardModel {
             return null;
           } catch (e) {
             // If parsing fails, return null
+            debugPrint('⚠️ DashboardModel: Error parsing activity item: $e');
             return null;
           }
         })

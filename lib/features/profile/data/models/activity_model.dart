@@ -163,12 +163,10 @@ class Activity {
         return '$actorName is interested in an event';
       default:
         // For unknown types, try to create a readable message
-        final readableType = typeLower
-            .replaceAll('_', ' ')
-            .split(' ')
-            .map((word) => word.isEmpty 
-                ? '' 
-                : word[0].toUpperCase() + word.substring(1))
+        final words = typeLower.replaceAll('_', ' ').split(' ');
+        final readableType = words
+            .where((word) => word.isNotEmpty)
+            .map((word) => word[0].toUpperCase() + word.substring(1))
             .join(' ');
         return '$actorName $readableType ${itemName ?? ''}'.trim();
     }

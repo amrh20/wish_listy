@@ -485,8 +485,8 @@ class HomeScreenState extends State<HomeScreen> {
                                 : isEmpty
                                     ? const OnboardingDashboard()
                                     : ActiveDashboard(
-                                        occasions: _convertEventsToOccasions(controller.upcomingOccasions),
-                                        wishlists: _convertWishlistsToSummaries(controller.myWishlists),
+                                        occasions: _convertEventsToOccasions(controller.upcomingOccasions ?? []),
+                                        wishlists: _convertWishlistsToSummaries(controller.myWishlists ?? []),
                                         activities: controller.latestActivityPreview ?? [], // Use latestActivityPreview directly with null safety
                                       ),
                           ),

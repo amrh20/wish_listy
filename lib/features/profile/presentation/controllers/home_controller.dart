@@ -61,6 +61,13 @@ class HomeController extends ChangeNotifier {
       try {
         final dashboardModel = DashboardModel.fromJson(response);
         
+        // Validate that all lists are non-null before setting
+        if (dashboardModel.myWishlists == null || 
+            dashboardModel.upcomingOccasions == null || 
+            dashboardModel.latestActivityPreview == null) {
+          throw Exception('Dashboard model contains null lists');
+        }
+        
         // Update reactive variable
         dashboardData.value = dashboardModel;
         
@@ -71,6 +78,14 @@ class HomeController extends ChangeNotifier {
       } catch (parseError) {
         debugPrint('❌ HomeController: Error parsing dashboard data: $parseError');
         debugPrint('   Response data: $response');
+        // Set empty dashboard model on error to prevent null errors
+        dashboardData.value = DashboardModel(
+          user: DashboardUser(firstName: 'User'),
+          stats: DashboardStats(wishlistsCount: 0, unreadNotificationsCount: 0),
+          myWishlists: [],
+          upcomingOccasions: [],
+          latestActivityPreview: [],
+        );
         isLoading = false;
         errorMessage = 'Failed to parse dashboard data. Please try again.';
         _isFetching = false;

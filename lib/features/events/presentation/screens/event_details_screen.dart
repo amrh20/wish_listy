@@ -850,12 +850,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () => _handleRSVP('accepted'),
-                    icon: const Icon(Icons.check_circle, size: 18),
-                    label: const Text('Accept'),
+                    icon: const Icon(Icons.check_circle, size: 14),
+                    label: Text(
+                      'Accept',
+                      style: AppStyles.caption.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.success,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -864,13 +870,20 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: TextButton.icon(
+                  child: OutlinedButton.icon(
                     onPressed: () => _handleRSVP('maybe'),
-                    icon: const Icon(Icons.help_outline, size: 18),
-                    label: const Text('Maybe'),
-                    style: TextButton.styleFrom(
+                    icon: const Icon(Icons.help_outline, size: 14),
+                    label: Text(
+                      'Maybe',
+                      style: AppStyles.caption.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.textSecondary,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: BorderSide(color: AppColors.border),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -881,12 +894,18 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: () => _handleRSVP('declined'),
-                    icon: const Icon(Icons.close, size: 18),
-                    label: const Text('Decline'),
+                    icon: const Icon(Icons.close, size: 14),
+                    label: Text(
+                      'Decline',
+                      style: AppStyles.caption.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.error,
                       side: BorderSide(color: AppColors.error),
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1173,6 +1192,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         .where((f) => f.status == InvitationStatus.maybe)
         .toList();
 
+    // Show "See All" button if there are more than 6 friends
+    final shouldShowSeeAll = allInvitedFriends.length > 6;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1188,6 +1210,26 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           const SizedBox(height: 16),
         ..._buildStatusGroup('Declined', declinedFriends, Icons.cancel, AppColors.error),
         const SizedBox(height: 12),
+        // See All button (if there are many friends)
+        if (shouldShowSeeAll)
+          Center(
+            child: TextButton.icon(
+              onPressed: () => _navigateToGuestList(),
+              icon: Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: AppColors.primary,
+              ),
+              label: Text(
+                'See All',
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        if (shouldShowSeeAll) const SizedBox(height: 8),
         // Invite Friends button (only for creator)
         if (_event?.isCreator == true) _buildQuickInviteWidget(),
       ],
@@ -1464,6 +1506,20 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Navigate to Guest List screen
+  void _navigateToGuestList() {
+    if (_event == null) return;
+    
+    Navigator.pushNamed(
+      context,
+      AppRoutes.eventGuestList,
+      arguments: {
+        'eventId': _event!.id,
+        'invitedFriends': _event!.invitedFriends,
+      },
     );
   }
 

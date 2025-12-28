@@ -45,14 +45,15 @@ class ActiveDashboard extends StatelessWidget {
 
 /// Section 1: Upcoming Occasions (Horizontal List)
 class UpcomingOccasionsSection extends StatelessWidget {
-  final List<UpcomingOccasion> occasions;
+  final List<UpcomingOccasion>? occasions;
 
-  const UpcomingOccasionsSection({super.key, required this.occasions});
+  const UpcomingOccasionsSection({super.key, this.occasions});
 
   @override
   Widget build(BuildContext context) {
-    // Add null safety check
-    if (occasions == null || occasions.isEmpty) return const SizedBox.shrink();
+    // Add null safety check - ensure occasions is not null and not empty
+    final safeOccasions = occasions ?? [];
+    if (safeOccasions.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,9 +105,9 @@ class UpcomingOccasionsSection extends StatelessWidget {
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: occasions.length,
+            itemCount: safeOccasions.length,
             itemBuilder: (context, index) {
-              return _OccasionCard(occasion: occasions[index]);
+              return _OccasionCard(occasion: safeOccasions[index]);
             },
           ),
         ),
@@ -402,17 +403,18 @@ class _OccasionCard extends StatelessWidget {
 
 /// Section 1: My Wishlists (Vertical List - Max 3 items, always visible)
 class MyWishlistsSection extends StatelessWidget {
-  final List<WishlistSummary> wishlists;
+  final List<WishlistSummary>? wishlists;
 
-  const MyWishlistsSection({super.key, required this.wishlists});
+  const MyWishlistsSection({super.key, this.wishlists});
 
   @override
   Widget build(BuildContext context) {
     // Add null safety check and limit to 3 items
-    if (wishlists == null || wishlists.isEmpty) {
+    final safeWishlists = wishlists ?? [];
+    if (safeWishlists.isEmpty) {
       return _buildEmptyState(context);
     }
-    final displayWishlists = wishlists.take(3).toList();
+    final displayWishlists = safeWishlists.take(3).toList();
     final isEmpty = displayWishlists.isEmpty;
 
     return Column(
@@ -454,17 +456,26 @@ class MyWishlistsSection extends StatelessWidget {
           child: isEmpty
               ? _buildEmptyState(context)
               : Column(
-                  children: displayWishlists.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final wishlist = entry.value;
-                    // Remove bottom margin from last item
-                    return Container(
-                      margin: EdgeInsets.only(bottom: index < displayWishlists.length - 1 ? 8 : 0),
-                      child: MinimalWishlistCard(
-                        wishlist: wishlist,
-                      ),
-                    );
-                  }).toList(),
+                  children: (displayWishlists ?? [])
+                      .where((wishlist) => wishlist != null)
+                      .toList()
+                      .asMap()
+                      .entries
+                      .map((entry) {
+                        final index = entry.key;
+                        final wishlist = entry.value;
+                        final filteredList = (displayWishlists ?? [])
+                            .where((w) => w != null)
+                            .toList();
+                        // Remove bottom margin from last item
+                        return Container(
+                          margin: EdgeInsets.only(bottom: index < filteredList.length - 1 ? 8 : 0),
+                          child: MinimalWishlistCard(
+                            wishlist: wishlist,
+                          ),
+                        );
+                      })
+                      .toList(),
                 ),
         ),
       ],
@@ -540,20 +551,23 @@ class MyWishlistsSection extends StatelessWidget {
 
 /// Section 3: Friend Activity (Vertical List - Preview Mode: Max 3 items)
 class FriendActivitySection extends StatelessWidget {
-  final List<Activity> activities; // Changed from FriendActivity to Activity
+  final List<Activity>? activities; // Changed from FriendActivity to Activity
 
-  const FriendActivitySection({super.key, required this.activities});
+  const FriendActivitySection({super.key, this.activities});
 
   @override
   Widget build(BuildContext context) {
     // Add null safety check before accessing activities
-    if (activities == null || activities.isEmpty) return const SizedBox.shrink();
+    final safeActivities = activities ?? [];
+    if (safeActivities.isEmpty) return const SizedBox.shrink();
 
     // Limit to maximum 3 items for preview (as per new API structure)
-    // Ensure displayActivities is never null
-    final displayActivities = (activities.length > 3 
-        ? activities.take(3).toList() 
-        : activities) ?? [];
+    // Ensure displayActivities is never null and filter out any null items
+    final displayActivities = (safeActivities.length > 3 
+        ? safeActivities.take(3).toList() 
+        : safeActivities)
+        .where((activity) => activity != null)
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -606,7 +620,8 @@ class FriendActivitySection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
-            children: displayActivities
+            children: (displayActivities ?? [])
+                .where((activity) => activity != null)
                 .map((activity) => ActivityCard(activity: activity))
                 .toList(),
           ),

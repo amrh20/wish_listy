@@ -173,12 +173,10 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                                 'wishlists.myWishlists',
                               ),
                               icon: Icons.favorite_rounded,
-                              badgeCount: _personalWishlists.length,
                             ),
                             UnifiedTab(
                               label: 'Reservations',
                               icon: Icons.shopping_bag_outlined,
-                              badgeCount: _myReservations.length,
                             ),
                           ],
                     selectedTabIndex: authService.isGuest

@@ -453,13 +453,9 @@ class EventsScreenState extends State<EventsScreen>
                       UnifiedTab(
                         label: localization.translate('events.myEvents'),
                         icon: Icons.event_rounded,
-                        badgeCount: _myEvents.length,
                       ),
                       UnifiedTab(
                         label: localization.translate('events.invited'),
-                        badgeCount: _invitedEvents
-                            .where((e) => e.status == EventStatus.upcoming)
-                            .length,
                       ),
                     ],
                     selectedTabIndex: _tabController.index,
