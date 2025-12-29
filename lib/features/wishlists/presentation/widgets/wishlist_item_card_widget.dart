@@ -1153,11 +1153,13 @@ class _ModernWishlistItemContent extends StatelessWidget {
                 const SizedBox(height: 8),
               // Action Buttons Row (Cancel Reservation + Mark as Purchased)
               if (onToggleReservation != null || (onToggleReceivedStatus != null && !isPurchased))
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     // Mark as Purchased Button (if not purchased yet and onToggleReceivedStatus is available)
-                    if (onToggleReceivedStatus != null && !isPurchased) ...[
+                    if (onToggleReceivedStatus != null && !isPurchased)
                       ElevatedButton.icon(
                         onPressed: () => _confirmMarkAsPurchased(context),
                         icon: Icon(
@@ -1172,6 +1174,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.success,
@@ -1181,30 +1184,29 @@ class _ModernWishlistItemContent extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                    ],
                     // Cancel Reservation Button (Error/Red Style)
                     if (onToggleReservation != null)
                       OutlinedButton.icon(
                         onPressed: () {
-                    // Explicitly pass 'cancel' action for Cancel Reservation button
-                    _confirmToggleReservation(context, true);
-                  },
+                          // Explicitly pass 'cancel' action for Cancel Reservation button
+                          _confirmToggleReservation(context, true);
+                        },
                         icon: Icon(
                           Icons.close,
                           size: 16,
                           color: AppColors.error,
                         ),
                         label: Text(
-                          'Cancel Reservation',
+                          'Cancel Reserve',
                           style: TextStyle(
                             fontSize: 12,
                             color: AppColors.error,
                             fontWeight: FontWeight.w600,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           side: BorderSide(color: AppColors.error, width: 1.5),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),

@@ -504,31 +504,36 @@ class _GuestHomeScreenState extends State<GuestHomeScreen>
                             ],
                           ),
                         ),
-                        // Actions
-                        if (widget.onLogin != null)
-                          Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: widget.onLogin!,
-                                borderRadius: BorderRadius.circular(16),
-                                child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: Icon(
-                                    Icons.login_rounded,
-                                    color: AppColors.primary,
-                                    size: 22,
-                                  ),
-                                ),
-                              ),
+                        // Log In Button (always visible for guests)
+                        TextButton.icon(
+                          onPressed: () {
+                            Navigator.pushReplacementNamed(
+                              context,
+                              AppRoutes.login,
+                            );
+                          },
+                          icon: Icon(
+                            Icons.login_rounded,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
+                          label: Text(
+                            'Log In',
+                            style: AppStyles.bodyMedium.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -926,21 +931,6 @@ class GuestWishlistCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // A. The Hero Icon (Left Side) - LARGE & COLORFUL
-              Container(
-                height: 60,
-                width: 60,
-                decoration: BoxDecoration(
-                  color: categoryColor.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  categoryVisual.icon,
-                  size: 30,
-                  color: categoryColor,
-                ),
-              ),
-              const SizedBox(width: 16),
               // B. Title & Metadata (Right Side)
               Expanded(
                 child: Column(
@@ -951,15 +941,29 @@ class GuestWishlistCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: Text(
-                            wishlist.title,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          child: Row(
+                            children: [
+                              // Small inline icon (no background circle)
+                              Icon(
+                                categoryVisual.icon,
+                                size: 20,
+                                color: categoryColor,
+                              ),
+                              const SizedBox(width: 8),
+                              // Title text
+                              Expanded(
+                                child: Text(
+                                  wishlist.title,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         if (onEdit != null && onDelete != null)

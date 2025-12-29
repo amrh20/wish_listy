@@ -325,8 +325,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     final daysUntil = _event!.date.difference(DateTime.now()).inDays;
     final isPast = _event!.status == EventStatus.completed;
 
+    // Calculate dynamic expanded height based on whether host info is shown
+    final hasHostInfo = !_event!.isCreator && _event!.creatorName != null;
+    final expandedHeight = hasHostInfo ? 320.0 : 280.0;
+
     return SliverAppBar(
-      expandedHeight: 280,
+      expandedHeight: expandedHeight,
       floating: false,
       pinned: true,
       backgroundColor: Colors.transparent,
@@ -344,18 +348,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 32),
                   // Event Icon
                   Container(
-                    width: 80,
-                    height: 80,
+                    width: 70,
+                    height: 70,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(18),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.2),
@@ -367,56 +372,110 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                     child: Icon(
                       _getEventTypeIcon(_event!.type),
                       color: AppColors.primary,
-                      size: 40,
+                      size: 36,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Event Name
-                  Text(
-                    _event!.name,
-                    style: AppStyles.headingLarge.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 28,
-                    ),
-                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),
+                  // Event Name
+                  Flexible(
+                    child: Text(
+                      _event!.name,
+                      style: AppStyles.headingLarge.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Host Name with Avatar (for Guest View)
+                  if (hasHostInfo)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            radius: 12,
+                            backgroundColor: Colors.white.withOpacity(0.3),
+                            backgroundImage: _event!.creatorImage != null &&
+                                    _event!.creatorImage!.isNotEmpty
+                                ? NetworkImage(_event!.creatorImage!)
+                                : null,
+                            child: _event!.creatorImage == null ||
+                                    _event!.creatorImage!.isEmpty
+                                ? Text(
+                                    _getInitials(_event!.creatorName ?? ''),
+                                    style: AppStyles.bodySmall.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              'Hosted by ${_event!.creatorName}',
+                              style: AppStyles.bodySmall.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (hasHostInfo) const SizedBox(height: 8),
                   // Date Badge
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                      horizontal: 14,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(18),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.calendar_today,
-                          size: 16,
+                          size: 14,
                           color: Colors.white,
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          isPast
-                              ? 'Past Event'
-                              : daysUntil == 0
-                              ? 'Today'
-                              : daysUntil == 1
-                              ? 'Tomorrow'
-                              : 'In $daysUntil days',
-                          style: AppStyles.bodyMedium.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            isPast
+                                ? 'Past Event'
+                                : daysUntil == 0
+                                ? 'Today'
+                                : daysUntil == 1
+                                ? 'Tomorrow'
+                                : 'In $daysUntil days',
+                            style: AppStyles.bodySmall.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -457,112 +516,44 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           // Meta-Tags Row (Type, Privacy, Status)
           _buildMetaTagsRow(),
           const SizedBox(height: 16),
-          // Date & Time Row
-          Row(
-            children: [
-              Icon(
-                Icons.calendar_today_outlined,
-                color: AppColors.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Row(
-                  children: [
-                    Text(
-                      _formatDate(_event!.date),
-                      style: AppStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    if (_event!.time != null && _event!.time!.isNotEmpty) ...[
-                      const SizedBox(width: 8),
-                      Text(
-                        _formatTime(_event!.time),
-                        style: AppStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // Location Row (Clickable)
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _handleLocationTap,
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    Icon(
-                      _event!.mode == 'online' || _event!.mode == 'hybrid'
-                          ? Icons.video_camera_front_outlined
-                          : Icons.location_on_outlined,
-                      color: AppColors.textSecondary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _event!.mode == 'online' || _event!.mode == 'hybrid'
-                            ? (_event!.meetingLink ?? 'Online Event')
-                            : (_event!.location ?? 'Location TBD'),
-                        style: AppStyles.bodyMedium.copyWith(
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      size: 14,
-                      color: AppColors.textTertiary,
-                    ),
-                  ],
-                ),
+          
+          // Combined Date & Location Row (Compact)
+          _buildCompactInfoRow(),
+
+          // Divider (only if About section exists)
+          if (hasDescription) const Divider(height: 30),
+
+          // Description Section (only show if not empty)
+          if (hasDescription) ...[
+            Text(
+              'About',
+              style: AppStyles.headingSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
               ),
             ),
-          ),
-
-          // Divider
-          const Divider(height: 30),
-
-          // Description Section
-          Text(
-            'About',
-            style: AppStyles.headingSmall.copyWith(
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
+            const SizedBox(height: 12),
+            Text(
+              _event!.description!,
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            hasDescription
-                ? _event!.description!
-                : 'No description provided for this event.',
-            style: AppStyles.bodyMedium.copyWith(
-              color: hasDescription
-                  ? AppColors.textSecondary
-                  : AppColors.textTertiary,
-              height: 1.5,
-              fontStyle: hasDescription ? FontStyle.normal : FontStyle.italic,
-            ),
-          ),
-
-          // Divider
-          const Divider(height: 30),
-
-          // Guest Actions Area (RSVP buttons/badges)
-          if (_event!.isCreator == false) ...[
-            _buildGuestActionsArea(),
             const Divider(height: 30),
           ],
+
+          // Add spacing before Invitation Card
+          if (_event!.isCreator == false) const SizedBox(height: 16),
+
+          // Invitation Card (for Guest View) - replaces "Your Response" section
+          if (_event!.isCreator == false) ...[
+            _buildInvitationCard(),
+            const SizedBox(height: 24),
+          ],
+
+          // Add spacing before "Who's Coming" section
+          const SizedBox(height: 20),
 
           // Guests Section
           Text(
@@ -577,6 +568,365 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         ],
       ),
     );
+  }
+
+  /// Builds compact info row combining Date and Location
+  Widget _buildCompactInfoRow() {
+    return Column(
+      children: [
+        // Date & Time Row
+        Row(
+          children: [
+            Icon(
+              Icons.calendar_today_outlined,
+              color: AppColors.primary,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '${_formatDate(_event!.date)}${_event!.time != null && _event!.time!.isNotEmpty ? ' • ${_formatTime(_event!.time)}' : ''}',
+                style: AppStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Location Row (Clickable)
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _handleLocationTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    _event!.mode == 'online' || _event!.mode == 'hybrid'
+                        ? Icons.video_camera_front_outlined
+                        : Icons.location_on_outlined,
+                    color: AppColors.textSecondary,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _event!.mode == 'online' || _event!.mode == 'hybrid'
+                          ? (_event!.meetingLink ?? 'Online Event')
+                          : (_event!.location ?? 'Location TBD'),
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 14,
+                    color: AppColors.textTertiary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds the prominent Invitation Card for Guest View
+  Widget _buildInvitationCard() {
+    final currentStatus = _event?.myInvitationStatus ?? 'pending';
+    
+    // Don't show invitation card if not invited
+    if (currentStatus == 'not_invited') {
+      return const SizedBox.shrink();
+    }
+
+    // Show invitation card with premium gradient design
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            Color(0xFFF3E5F5), // Very light purple
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.deepPurple.withOpacity(0.1),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Title
+          Text(
+            'You\'re on the guest list! 🎟️',
+            style: AppStyles.headingSmall.copyWith(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: Colors.deepPurple.shade700,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          // Subtitle
+          Text(
+            'Let the host know if you can make it.',
+            style: AppStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          // Hybrid Button Layout (Column with two rows)
+          Column(
+            children: [
+              // Row 1: Accept Button (Full Width - Primary Action)
+              SizedBox(
+                width: double.infinity,
+                child: _buildRSVPButton(
+                  label: 'Accept',
+                  icon: Icons.check_circle_outline,
+                  status: 'accepted',
+                  currentStatus: currentStatus,
+                  isPrimary: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Row 2: Maybe and Decline Buttons (Side by Side)
+              Row(
+                children: [
+                  // Maybe Button (Orange Outlined)
+                  Expanded(
+                    child: _buildRSVPButton(
+                      label: 'Maybe',
+                      icon: Icons.help_outline,
+                      status: 'maybe',
+                      currentStatus: currentStatus,
+                      isMaybe: true,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Decline Button (The Minimalist - Grey TextButton)
+                  Expanded(
+                    child: _buildRSVPButton(
+                      label: 'Decline',
+                      icon: Icons.close,
+                      status: 'declined',
+                      currentStatus: currentStatus,
+                      isDecline: true,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds a single RSVP button with highlight/dim logic (Stadium style)
+  Widget _buildRSVPButton({
+    required String label,
+    required IconData icon,
+    required String status,
+    required String currentStatus,
+    bool isPrimary = false,
+    bool isMaybe = false,
+    bool isDecline = false,
+  }) {
+    final isSelected = currentStatus == status;
+    final isDimmed = currentStatus != 'pending' && currentStatus != 'not_invited' && !isSelected;
+
+    if (isPrimary) {
+      // Accept Button - ElevatedButton with Green (The Hero)
+      return ElevatedButton.icon(
+        onPressed: () => _handleRSVP(status),
+        icon: Icon(
+          icon,
+          size: 18,
+          color: Colors.white,
+        ),
+        label: Text(
+          label,
+          style: AppStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            fontSize: 14,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isSelected
+              ? const Color(0xFF4CAF50) // Soft Green
+              : (isDimmed
+                  ? Colors.grey.shade300
+                  : const Color(0xFF4CAF50)),
+          foregroundColor: isSelected ? Colors.white : Colors.grey.shade600,
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          shape: const StadiumBorder(), // Fully rounded ends
+          elevation: isSelected ? 4 : 0, // Pop out when selected
+        ),
+      );
+    } else if (isMaybe) {
+      // Maybe Button - OutlinedButton with Orange
+      return OutlinedButton.icon(
+        onPressed: () => _handleRSVP(status),
+        icon: Icon(
+          icon,
+          size: 18,
+          color: isSelected
+              ? Colors.orange.shade700
+              : (isDimmed ? Colors.grey.shade400 : Colors.orange.shade700),
+        ),
+        label: Text(
+          label,
+          style: AppStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: isSelected
+                ? Colors.orange.shade700
+                : (isDimmed ? Colors.grey.shade400 : Colors.orange.shade700),
+            fontSize: 14,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: isSelected
+              ? Colors.orange.shade700
+              : (isDimmed ? Colors.grey.shade400 : Colors.orange.shade700),
+          backgroundColor: isSelected
+              ? Colors.orange.withOpacity(0.1)
+              : Colors.transparent,
+          side: BorderSide(
+            color: isSelected
+                ? Colors.orange.shade700
+                : (isDimmed ? Colors.grey.shade300 : Colors.orange.shade400),
+            width: 1,
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          shape: const StadiumBorder(), // Fully rounded ends
+        ),
+      );
+    } else {
+      // Decline Button - OutlinedButton with Grey border and color
+      return OutlinedButton.icon(
+        onPressed: () => _handleRSVP(status),
+        icon: Icon(
+          icon,
+          size: 18,
+          color: isSelected
+              ? Colors.grey.shade700
+              : (isDimmed ? Colors.grey.shade400 : Colors.grey.shade600),
+        ),
+        label: Text(
+          label,
+          style: AppStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: isSelected
+                ? Colors.grey.shade700
+                : (isDimmed ? Colors.grey.shade400 : Colors.grey.shade600),
+            fontSize: 14,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: isSelected
+              ? Colors.grey.shade700
+              : (isDimmed ? Colors.grey.shade400 : Colors.grey.shade600),
+          backgroundColor: isSelected
+              ? Colors.grey.withOpacity(0.1)
+              : Colors.transparent,
+          side: BorderSide(
+            color: isSelected
+                ? Colors.grey.shade600
+                : (isDimmed ? Colors.grey.shade300 : Colors.grey.shade400),
+            width: 1,
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          shape: const StadiumBorder(), // Fully rounded ends
+        ),
+      );
+    }
+  }
+
+  /// Helper methods for status card styling
+  Color _getStatusCardColor(String status) {
+    switch (status) {
+      case 'accepted':
+        return AppColors.success.withOpacity(0.1);
+      case 'declined':
+        return AppColors.error.withOpacity(0.1);
+      case 'maybe':
+        return AppColors.warning.withOpacity(0.1);
+      default:
+        return AppColors.primary.withOpacity(0.1);
+    }
+  }
+
+  Color _getStatusCardBorderColor(String status) {
+    switch (status) {
+      case 'accepted':
+        return AppColors.success.withOpacity(0.3);
+      case 'declined':
+        return AppColors.error.withOpacity(0.3);
+      case 'maybe':
+        return AppColors.warning.withOpacity(0.3);
+      default:
+        return AppColors.primary.withOpacity(0.3);
+    }
+  }
+
+  Color _getStatusCardIconColor(String status) {
+    switch (status) {
+      case 'accepted':
+        return AppColors.success;
+      case 'declined':
+        return AppColors.error;
+      case 'maybe':
+        return AppColors.warning;
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  IconData _getStatusCardIcon(String status) {
+    switch (status) {
+      case 'accepted':
+        return Icons.check;
+      case 'declined':
+        return Icons.close;
+      case 'maybe':
+        return Icons.help_outline;
+      default:
+        return Icons.access_time;
+    }
+  }
+
+  String _getStatusCardTitle(String status) {
+    switch (status) {
+      case 'accepted':
+        return 'You are going';
+      case 'declined':
+        return 'You declined';
+      case 'maybe':
+        return 'Maybe';
+      default:
+        return 'Pending';
+    }
   }
 
   /// Builds the More Options Menu (PopupMenuButton)
