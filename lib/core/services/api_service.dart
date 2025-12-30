@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// API Service - Main service for handling all HTTP requests
 /// This service uses Dio for advanced HTTP operations with interceptors
@@ -91,6 +92,19 @@ class ApiService {
   }
 
   late Dio _dio;
+  String _storedLanguageCode = 'en'; // Cache language code (default to English)
+  
+  /// Initialize language code from SharedPreferences
+  Future<void> _initializeLanguageCode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _storedLanguageCode = prefs.getString('selected_language') ?? 'en';
+      _dio.options.headers['Accept-Language'] = _storedLanguageCode;
+    } catch (e) {
+      _storedLanguageCode = 'en';
+      _dio.options.headers['Accept-Language'] = 'en';
+    }
+  }
 
   /// Initialize Dio with base configuration and interceptors
   void _initializeDio() {
@@ -118,6 +132,15 @@ class ApiService {
 
     // Add interceptors for logging and error handling
     _dio.interceptors.addAll([
+      // Language header interceptor - adds Accept-Language to all requests
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          // Use cached language code (initialized on app start)
+          options.headers['Accept-Language'] = _storedLanguageCode;
+          handler.next(options);
+        },
+      ),
+
       // Custom logging interceptor - only in debug mode
       // Filters out wishlists requests to reduce console noise
       if (kDebugMode)
@@ -170,224 +193,37 @@ class ApiService {
           },
         ),
 
-      // Error handling interceptor
-      InterceptorsWrapper(
-        onError: (error, handler) {
-          _handleError(error);
-          handler.next(error);
-        },
-      ),
     ]);
   }
 
-  /// Handle different types of errors and convert them to user-friendly messages
-  void _handleError(DioException error) {
-    // Enhanced error logging for debugging
-    if (kDebugMode) {
+  static String _extractBackendMessage(dynamic data) {
+    if (data == null) return 'Something went wrong';
 
-      if (error.response != null) {
+    if (data is Map) {
+      final dynamic msg =
+          data['message'] ?? data['error'] ?? data['msg'] ?? data['errorMessage'];
+      final msgStr = msg?.toString().trim();
+      if (msgStr != null && msgStr.isNotEmpty) return msgStr;
 
+      final dynamic errors = data['errors'];
+      if (errors is Map && errors.isNotEmpty) {
+        final first = errors.values.first;
+        final firstStr = first?.toString().trim();
+        if (firstStr != null && firstStr.isNotEmpty) return firstStr;
       }
-      if (error.type == DioExceptionType.connectionError) {
-
-
+      if (errors is List && errors.isNotEmpty) {
+        final first = errors.first;
+        final firstStr = first?.toString().trim();
+        if (firstStr != null && firstStr.isNotEmpty) return firstStr;
       }
     }
-    
-    switch (error.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        throw ApiException(
-          'Connection timeout. Please check your internet connection and ensure the server is running.',
-        );
-      
-      case DioExceptionType.connectionError:
-        throw ApiException(
-          'Cannot connect to server. Please check:\n'
-          '1. Backend server is running\n'
-          '2. Correct IP address in API settings\n'
-          '3. Both devices on same WiFi network\n'
-          '4. Firewall is not blocking the connection',
-        );
 
-      case DioExceptionType.badResponse:
-        final statusCode = error.response?.statusCode;
-        final data = error.response?.data;
-
-        // Log detailed error information in debug mode
-        if (kDebugMode) {
-
-          if (error.response?.headers != null) {
-
-            final headers = error.response!.headers;
-            final headerKeys = <String>[];
-            headers.forEach((key, values) {
-
-              headerKeys.add(key.toLowerCase());
-            });
-            // Check for CORS headers specifically
-            final corsHeaders = [
-              'access-control-allow-origin',
-              'access-control-allow-methods',
-              'access-control-allow-headers',
-              'access-control-allow-credentials',
-            ];
-            final missingCors = corsHeaders
-                .where((h) => !headerKeys.contains(h.toLowerCase()))
-                .toList();
-            if (missingCors.isNotEmpty && statusCode == 403) {
-
-            }
-          } else {
-
-          }
-          if (data == null || (data is String && data.isEmpty)) {
-
-          }
-        }
-
-        // Extract error message from response
-        String? errorMessage;
-        if (data != null) {
-          if (data is Map<String, dynamic>) {
-            errorMessage =
-                data['message'] ??
-                data['error'] ??
-                data['msg'] ??
-                data['errorMessage'] ??
-                data['errors']?.toString();
-
-            // Try to extract from errors object if it's a map
-            if (errorMessage == null && data['errors'] is Map) {
-              final errors = data['errors'] as Map;
-              if (errors.isNotEmpty) {
-                final firstError = errors.values.first;
-                errorMessage = firstError?.toString();
-              }
-            }
-          } else if (data is String && data.isNotEmpty) {
-            errorMessage = data;
-          }
-        }
-
-        // Log extracted error message for debugging
-        if (kDebugMode) {
-          debugPrint('🌐 [API] Error message extracted: $errorMessage');
-          debugPrint('🌐 [API] Response data: $data');
-        }
-
-        if (statusCode == 400) {
-          throw ApiException(
-            errorMessage ?? 'Bad request. Please check your input.',
-            statusCode: statusCode,
-            data: data,
-          );
-        } else if (statusCode == 401) {
-          throw ApiException(
-            errorMessage ?? 'Unauthorized. Please login again.',
-            statusCode: statusCode,
-            data: data,
-          );
-        } else if (statusCode == 403) {
-          // 403 could be CORS, authentication, or permission issue
-          String message;
-          if (errorMessage != null && errorMessage.isNotEmpty) {
-            // Use backend error message if available
-            message = errorMessage;
-          } else {
-            // Check if response body is empty (common with CORS issues)
-            final isResponseEmpty =
-                data == null ||
-                (data is String && data.isEmpty) ||
-                (data is Map && data.isEmpty);
-
-            if (isResponseEmpty) {
-              message =
-                  'Access Denied (403) - Empty Response.\n'
-                  'This is usually a CORS issue:\n'
-                  '1. Add CORS middleware to your backend\n'
-                  '2. Allow origin: * or http://localhost:4000\n'
-                  '3. Restart backend server\n'
-                  '\nBackend example:\n'
-                  'const cors = require(\'cors\');\n'
-                  'app.use(cors({ origin: \'*\' }));';
-
-              if (kDebugMode) {
-
-              }
-            } else {
-              // Response has content but no error message
-              message =
-                  'Access Denied (403). Possible causes:\n'
-                  '• CORS not configured in backend\n'
-                  '• Backend validation failed\n'
-                  '• Missing required headers\n'
-                  '• Check backend logs for details';
-
-              if (kDebugMode) {
-
-              }
-            }
-          }
-          throw ApiException(message, statusCode: statusCode, data: data);
-        } else if (statusCode == 404) {
-          throw ApiException(
-            errorMessage ?? 'Resource not found.',
-            statusCode: statusCode,
-            data: data,
-          );
-        } else if (statusCode == 422) {
-          throw ApiException(
-            errorMessage ?? 'Validation error. Please check your input.',
-            statusCode: statusCode,
-            data: data,
-          );
-        } else if (statusCode == 500) {
-          throw ApiException(
-            errorMessage ?? 'Server error. Please try again later.',
-            statusCode: statusCode,
-            data: data,
-          );
-        } else {
-          throw ApiException(
-            errorMessage ?? 'An error occurred. Please try again.',
-            statusCode: statusCode,
-            data: data,
-          );
-        }
-
-      case DioExceptionType.cancel:
-        throw ApiException('Request was cancelled.');
-
-      case DioExceptionType.connectionError:
-        // Provide more helpful error message for connection errors
-        final errorMessage = error.message ?? '';
-        if (errorMessage.contains('Connection refused') ||
-            errorMessage.contains('Failed host lookup')) {
-          if (_isAndroid) {
-            throw ApiException(
-              'Cannot connect to server. Make sure:\n'
-              '1. Backend is running on port 4000\n'
-              '2. For physical device, use your computer\'s IP address\n'
-              '3. Both devices are on the same network',
-            );
-          } else {
-            throw ApiException(
-              'Cannot connect to server. Make sure backend is running on port 4000.',
-            );
-          }
-        }
-        throw ApiException(
-          'No internet connection. Please check your network.',
-        );
-
-      case DioExceptionType.badCertificate:
-        throw ApiException('Security error. Please try again.');
-
-      case DioExceptionType.unknown:
-        throw ApiException('An unexpected error occurred. Please try again.');
+    if (data is String) {
+      final s = data.trim();
+      if (s.isNotEmpty) return s;
     }
+
+    return 'Something went wrong';
   }
 
   /// Generic GET request method
@@ -403,8 +239,12 @@ class ApiService {
         options: Options(headers: headers),
       );
       return response.data;
-    } on DioException {
-      rethrow; // Let the interceptor handle the error
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      final msg = _extractBackendMessage(data);
+      throw ApiException(msg, statusCode: e.response?.statusCode, data: data);
+    } catch (e) {
+      throw ApiException(e.toString());
     }
   }
 
@@ -421,8 +261,12 @@ class ApiService {
         options: Options(headers: headers),
       );
       return response.data;
-    } on DioException {
-      rethrow; // Let the interceptor handle the error
+    } on DioException catch (e) {
+      final resData = e.response?.data;
+      final msg = _extractBackendMessage(resData);
+      throw ApiException(msg, statusCode: e.response?.statusCode, data: resData);
+    } catch (e) {
+      throw ApiException(e.toString());
     }
   }
 
@@ -439,8 +283,12 @@ class ApiService {
         options: Options(headers: headers),
       );
       return response.data;
-    } on DioException {
-      rethrow; // Let the interceptor handle the error
+    } on DioException catch (e) {
+      final resData = e.response?.data;
+      final msg = _extractBackendMessage(resData);
+      throw ApiException(msg, statusCode: e.response?.statusCode, data: resData);
+    } catch (e) {
+      throw ApiException(e.toString());
     }
   }
 
@@ -457,8 +305,12 @@ class ApiService {
         options: Options(headers: headers),
       );
       return response.data;
-    } on DioException {
-      rethrow; // Let the interceptor handle the error
+    } on DioException catch (e) {
+      final resData = e.response?.data;
+      final msg = _extractBackendMessage(resData);
+      throw ApiException(msg, statusCode: e.response?.statusCode, data: resData);
+    } catch (e) {
+      throw ApiException(e.toString());
     }
   }
 
@@ -473,8 +325,12 @@ class ApiService {
         options: Options(headers: headers),
       );
       return response.data;
-    } on DioException {
-      rethrow; // Let the interceptor handle the error
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      final msg = _extractBackendMessage(data);
+      throw ApiException(msg, statusCode: e.response?.statusCode, data: data);
+    } catch (e) {
+      throw ApiException(e.toString());
     }
   }
 
@@ -486,6 +342,20 @@ class ApiService {
   /// Remove authorization header
   void clearAuthToken() {
     _dio.options.headers.remove('Authorization');
+  }
+
+  /// Set language code for Accept-Language header
+  /// This will be used by the interceptor to add the header to all requests
+  void setLanguageCode(String languageCode) {
+    _storedLanguageCode = languageCode;
+    // Update the default headers
+    _dio.options.headers['Accept-Language'] = languageCode;
+  }
+  
+  /// Initialize language code from SharedPreferences
+  /// Should be called after LocalizationService is initialized
+  Future<void> initializeLanguageCode() async {
+    await _initializeLanguageCode();
   }
 
   /// Get the Dio instance for advanced operations
@@ -527,7 +397,54 @@ class ApiException implements Exception {
   final int? statusCode;
   final dynamic data;
 
-  ApiException(this.message, {this.statusCode, this.data});
+  ApiException(String message, {this.statusCode, this.data})
+      : message = _sanitizeMessage(_extractMessageFromData(data) ?? message);
+
+  static String? _extractMessageFromData(dynamic data) {
+    try {
+      if (data is Map) {
+        final dynamic msg =
+            data['message'] ?? data['error'] ?? data['msg'] ?? data['errorMessage'];
+        if (msg != null) return msg.toString();
+
+        final dynamic errors = data['errors'];
+        if (errors is Map && errors.isNotEmpty) {
+          final first = errors.values.first;
+          if (first != null) return first.toString();
+        }
+        if (errors is List && errors.isNotEmpty) {
+          final first = errors.first;
+          if (first != null) return first.toString();
+        }
+      }
+      if (data is String && data.trim().isNotEmpty) {
+        return data;
+      }
+    } catch (_) {
+      // Ignore parsing issues; fall back to provided message
+    }
+    return null;
+  }
+
+  static String _sanitizeMessage(String input) {
+    var s = input.trim();
+
+    // Common wrappers seen in Flutter Web / Dart runtime
+    s = s.replaceAll(RegExp(r'^Error:\s*'), '');
+    s = s.replaceAll(RegExp(r'^ApiException:\s*'), '');
+    s = s.replaceAll(RegExp(r'^Exception:\s*'), '');
+    s = s.replaceAll(RegExp(r'^DioException\s*\[.*?\]:\s*'), '');
+
+    // Common suffixes / duplicated chains
+    s = s.replaceAll(RegExp(r':\s*Error:\s*ApiException.*$'), '');
+    s = s.replaceAll(RegExp(r':\s*ApiException.*$'), '');
+    s = s.replaceAll(RegExp(r':\s*DioException.*$'), '');
+
+    // Remove stray "null" tokens
+    s = s.replaceAll(RegExp(r'\bnull\b'), '').trim();
+
+    return s.trim();
+  }
 
   @override
   String toString() => 'ApiException: $message';

@@ -300,8 +300,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     void _showReservedItemSnackbar() {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-            'You cannot edit or delete this item because a friend has already reserved it for you! 🎁',
+          content: Text(
+            Provider.of<LocalizationService>(context, listen: false).translate('details.cannotEditDeleteReserved'),
           ),
           backgroundColor: AppColors.primary,
           behavior: SnackBarBehavior.floating,
@@ -500,7 +500,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 const SizedBox(width: 12),
                 // Date
                 Text(
-                  'Added on $dateText',
+                  '${Provider.of<LocalizationService>(context, listen: false).translate('details.addedOn')} $dateText',
                   style: AppStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                     fontSize: 12,
@@ -1105,9 +1105,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       }
     } catch (e) {
       if (mounted) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not open maps'),
+          SnackBar(
+            content: Text(localization.translate('dialogs.couldNotOpenMaps')),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -1170,7 +1171,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'This gift has been received/purchased.',
+                  Provider.of<LocalizationService>(context, listen: false).translate('details.giftReceivedPurchased'),
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w600,
@@ -1225,7 +1226,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Purchased by another friend, awaiting confirmation from you that you have received it',
+                      Provider.of<LocalizationService>(context, listen: false).translate('details.purchasedAwaitingConfirmation'),
                       style: AppStyles.bodyMedium.copyWith(
                         color: AppColors.warning,
                         fontWeight: FontWeight.w600,
@@ -1244,9 +1245,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                     size: 18,
                     color: Colors.white,
                   ),
-                  label: const Text(
-                    'Mark Received',
-                    style: TextStyle(
+                  label: Text(
+                    Provider.of<LocalizationService>(context, listen: false).translate('details.markReceived'),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1320,7 +1321,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   _toggleReservationWithAction(currentItem, action: 'cancel');
                 },
                 child: Text(
-                  'Undo',
+                  Provider.of<LocalizationService>(context, listen: false).translate('details.undo'),
                   style: TextStyle(
                     color: AppColors.error,
                     fontWeight: FontWeight.w600,
@@ -1374,7 +1375,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Already reserved by another friend 🔒',
+                  Provider.of<LocalizationService>(context, listen: false).translate('details.alreadyReservedByFriend'),
                   style: AppStyles.bodyMedium.copyWith(
                     color: Colors.grey.shade700,
                     fontWeight: FontWeight.w600,
@@ -1409,7 +1410,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       child: SizedBox(
         width: double.infinity,
         child: CustomButton(
-          text: 'Reserve Gift 🎁',
+          text: Provider.of<LocalizationService>(context, listen: false).translate('details.reserveGift'),
           onPressed: () => _toggleReservation(item),
           variant: ButtonVariant.gradient,
           gradientColors: [AppColors.primary, AppColors.secondary],
@@ -1575,9 +1576,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
   Widget _buildGiftedStatusCard(WishlistItem item) {
     final reservedByName = _getReservedByName();
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final byText = (reservedByName != null && reservedByName.isNotEmpty)
-        ? 'By $reservedByName'
-        : 'By a Secret Friend 🤫';
+        ? localization.translate('details.byFriend').replaceAll('{name}', reservedByName)
+        : localization.translate('details.bySecretFriend');
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1683,7 +1685,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       children: [
         _InfoTile(
           width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
-          title: 'Priority',
+          title: Provider.of<LocalizationService>(context, listen: false).translate('details.priority'),
           value: _getPriorityText(item.priority),
           icon: Icons.priority_high,
           iconColor: priorityColor,
@@ -1691,7 +1693,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         ),
         _InfoTile(
           width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
-          title: 'Status',
+          title: Provider.of<LocalizationService>(context, listen: false).translate('details.status'),
           value: _getItemStatusText(item),
           icon: _getItemStatusIcon(item),
           iconColor: _getItemStatusColor(item),
@@ -1699,7 +1701,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         ),
         _InfoTile(
           width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
-          title: 'Store',
+          title: Provider.of<LocalizationService>(context, listen: false).translate('details.store'),
           value: (store.trim().isEmpty || store.trim() == 'null') ? '—' : store,
           icon: Icons.storefront_outlined,
           iconColor: AppColors.primary,
@@ -1707,7 +1709,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         ),
         _InfoTile(
           width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
-          title: 'Added',
+          title: Provider.of<LocalizationService>(context, listen: false).translate('details.added'),
           value: _formatDate(createdAt),
           icon: Icons.calendar_today_outlined,
           iconColor: AppColors.textSecondary,
@@ -1727,7 +1729,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Description',
+          Provider.of<LocalizationService>(context, listen: false).translate('details.description'),
           style: AppStyles.headingSmall.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
@@ -1795,7 +1797,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                isReceived ? 'Mark as Not Received' : 'Mark as Received',
+                isReceived 
+                    ? Provider.of<LocalizationService>(context, listen: false).translate('details.markAsNotReceived')
+                    : Provider.of<LocalizationService>(context, listen: false).translate('details.markAsReceived'),
                 style: AppStyles.caption.copyWith(
                   fontSize: 12,
                   color: isReceived ? AppColors.textSecondary : AppColors.success,
@@ -2082,7 +2086,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Item Information',
+          Provider.of<LocalizationService>(context, listen: false).translate('details.itemInformation'),
           style: AppStyles.bodyLarge.copyWith(
             fontWeight: FontWeight.w600,
             fontSize: 18,
@@ -2093,7 +2097,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         // Status Label - Integrated
         _buildInfoRow(
           icon: _getItemStatusIcon(item),
-          label: 'Status',
+          label: Provider.of<LocalizationService>(context, listen: false).translate('details.status'),
           value: _getItemStatusText(item),
           iconColor: _getItemStatusColor(item),
           valueColor: _getItemStatusColor(item),
@@ -2104,7 +2108,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         // Category
         _buildInfoRow(
           icon: Icons.category_outlined,
-          label: 'Category',
+          label: Provider.of<LocalizationService>(context, listen: false).translate('details.category'),
           value: 'General',
           iconColor: AppColors.info,
         ),
@@ -2114,7 +2118,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         // Added Date
         _buildInfoRow(
           icon: Icons.calendar_today_outlined,
-          label: 'Added on',
+          label: Provider.of<LocalizationService>(context, listen: false).translate('details.addedOn'),
           value: _formatDate(_currentItem?.createdAt ?? widget.item.createdAt),
           iconColor: AppColors.primary,
         ),
@@ -2176,7 +2180,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             Icon(Icons.note_outlined, color: AppColors.info, size: 18),
             const SizedBox(width: 8),
             Text(
-              'Notes',
+              Provider.of<LocalizationService>(context, listen: false).translate('details.notes'),
               style: AppStyles.bodyLarge.copyWith(
                 fontWeight: FontWeight.w600,
                 fontSize: 18,

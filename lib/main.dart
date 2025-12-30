@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'core/services/localization_service.dart';
+import 'core/services/api_service.dart';
 import 'features/auth/data/repository/auth_repository.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_routes.dart';
@@ -44,6 +45,11 @@ void main() async {
 
   // Initialize services
   await localizationService.initialize();
+  
+  // Initialize API service language code (must be after LocalizationService)
+  final apiService = ApiService();
+  await apiService.initializeLanguageCode();
+  
   try {
     await authRepository.initialize().timeout(
       const Duration(seconds: 10),

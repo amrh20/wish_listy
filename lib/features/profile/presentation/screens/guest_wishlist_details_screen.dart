@@ -260,7 +260,7 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Wish', style: AppStyles.headingSmall),
+        title: Text(Provider.of<LocalizationService>(context, listen: false).translate('details.deleteWish'), style: AppStyles.headingSmall),
         content: Text(
           'Remove "${model.name}" from this wishlist?',
           style: AppStyles.bodyMedium,
@@ -308,7 +308,7 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
               ),
               const SizedBox(height: 16),
               Text(
-                'No Wishes Yet',
+                Provider.of<LocalizationService>(context, listen: false).translate('details.noWishesYet'),
                 style: AppStyles.headingMedium.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.bold,
@@ -316,7 +316,7 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'This is a demo wishlist.',
+                Provider.of<LocalizationService>(context, listen: false).translate('details.demoWishlist'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -358,7 +358,7 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
             ),
             const SizedBox(height: 12),
             Text(
-              'This wishlist is empty. Start adding wishes you dream of!',
+              Provider.of<LocalizationService>(context, listen: false).translate('details.emptyWishlistMessage'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -366,7 +366,7 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
             ),
             const SizedBox(height: 32),
             PrimaryGradientButton(
-              text: 'Add First Wish',
+              text: Provider.of<LocalizationService>(context, listen: false).translate('details.addFirstWish'),
               icon: Icons.add_rounded,
               onPressed: () {
                 if (widget.wishlistId != null) {
@@ -466,7 +466,7 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '$total Wishes',
+                          Provider.of<LocalizationService>(context, listen: false).translate('details.totalWishes').replaceAll('{total}', total.toString()),
                           style: AppStyles.bodyMedium.copyWith(
                             color: AppColors.textSecondary,
                             fontSize: 14,
@@ -566,8 +566,8 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
                                       onTap: () {
                                         if (widget.isDummy) {
                                           ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('This is a demo item'),
+                                            SnackBar(
+                                              content: Text(Provider.of<LocalizationService>(context, listen: false).translate('details.demoItem')),
                                               behavior: SnackBarBehavior.floating,
                                             ),
                                           );
@@ -719,6 +719,7 @@ class _WishRow extends StatelessWidget {
             : null;
 
     final locationInfo = _computeLocationInfo(
+      context: context,
       url: item.url,
       storeLocation: item.storeLocation,
       storeName: item.storeName,
@@ -867,6 +868,7 @@ class _WishRow extends StatelessWidget {
   }
 
   _LocationInfo? _computeLocationInfo({
+    required BuildContext context,
     required String? url,
     required String? storeLocation,
     required String? storeName,
@@ -875,8 +877,9 @@ class _WishRow extends StatelessWidget {
     final loc = (storeLocation ?? '').trim();
     final name = (storeName ?? '').trim();
 
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     if (u.isNotEmpty) {
-      String text = 'Online Store';
+      String text = localization.translate('wishlists.onlineStore');
       try {
         final uri = Uri.parse(u.contains('://') ? u : 'https://$u');
         final host = uri.host.replaceFirst(RegExp(r'^www\.'), '');
@@ -895,7 +898,7 @@ class _WishRow extends StatelessWidget {
       return _LocationInfo(
         icon: Icons.location_on_outlined,
         color: Colors.deepOrange,
-        text: loc.isNotEmpty ? loc : 'In Store',
+        text: loc.isNotEmpty ? loc : localization.translate('wishlists.physicalStore'),
       );
     }
 

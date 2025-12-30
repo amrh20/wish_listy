@@ -210,14 +210,21 @@ class _SignupScreenState extends State<SignupScreen>
     } on ApiException catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        _showErrorSnackBar(e.message);
+        // Show backend error message directly
+        _showErrorSnackBar(e.message.isNotEmpty 
+            ? e.message 
+            : 'Registration failed. Please try again.');
       }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
-        _showErrorSnackBar('An unexpected error occurred. Please try again.');
+        // Only show generic message for truly unexpected errors
+        // If e is ApiException but wasn't caught, it means something went wrong
+        final errorMessage = e.toString().contains('Exception') || e.toString().contains('Error')
+            ? e.toString()
+            : 'An unexpected error occurred. Please try again.';
+        _showErrorSnackBar(errorMessage);
       }
-
     }
   }
 
@@ -507,7 +514,7 @@ class _SignupScreenState extends State<SignupScreen>
                                                 ],
                                               ).createShader(bounds),
                                           child: Text(
-                                            'Create new account',
+                                            localization.translate('auth.createAccount'),
                                             style: AppStyles.headingLarge
                                                 .copyWith(
                                                   fontSize: 30,
@@ -522,7 +529,7 @@ class _SignupScreenState extends State<SignupScreen>
                                         FadeTransition(
                                           opacity: _subtitleFade,
                                           child: Text(
-                                            'Create and share your wishlists with friends and family',
+                                            localization.translate('auth.createAccountSubtitle'),
                                             style: AppStyles.bodyLarge.copyWith(
                                               color: AppColors.textSecondary
                                                   .withOpacity(0.7),
@@ -581,8 +588,8 @@ class _SignupScreenState extends State<SignupScreen>
                                                 _buildGlassInputField(
                                                   controller:
                                                       _fullNameController,
-                                                  label: 'Full Name',
-                                                  hint: 'Full Name',
+                                                  label: localization.translate('auth.fullName'),
+                                                  hint: localization.translate('auth.fullName'),
                                                   keyboardType:
                                                       TextInputType.name,
                                                   prefixIcon:
@@ -590,11 +597,11 @@ class _SignupScreenState extends State<SignupScreen>
                                                   validator: (value) {
                                                     if (value?.isEmpty ??
                                                         true) {
-                                                      return 'Please enter your full name';
+                                                      return localization.translate('auth.pleaseEnterFullName');
                                                     }
                                                     if (value!.trim().length <
                                                         2) {
-                                                      return 'Name must be at least 2 characters';
+                                                      return localization.translate('auth.nameMinLength');
                                                     }
                                                     return null;
                                                   },
@@ -606,8 +613,8 @@ class _SignupScreenState extends State<SignupScreen>
                                                 _buildGlassInputField(
                                                   controller:
                                                       _usernameController,
-                                                  label: 'Email or Phone',
-                                                  hint: 'Email or Phone',
+                                                  label: localization.translate('auth.emailOrPhone'),
+                                                  hint: localization.translate('auth.emailOrPhone'),
                                                   keyboardType:
                                                       TextInputType.text,
                                                   prefixIcon:
@@ -615,7 +622,7 @@ class _SignupScreenState extends State<SignupScreen>
                                                   validator: (value) {
                                                     if (value?.isEmpty ??
                                                         true) {
-                                                      return 'Please enter email or phone';
+                                                      return localization.translate('auth.pleaseEnterEmail');
                                                     }
                                                     final authRepository =
                                                         Provider.of<
@@ -628,7 +635,7 @@ class _SignupScreenState extends State<SignupScreen>
                                                         .isValidUsername(
                                                           value!,
                                                         )) {
-                                                      return 'Invalid email or phone number';
+                                                      return localization.translate('auth.invalidEmailOrPhone');
                                                     }
                                                     return null;
                                                   },
@@ -689,8 +696,8 @@ class _SignupScreenState extends State<SignupScreen>
                                                 _buildGlassInputField(
                                                   controller:
                                                       _confirmPasswordController,
-                                                  label: 'Confirm Password',
-                                                  hint: 'Confirm Password',
+                                                  label: localization.translate('auth.confirmPassword'),
+                                                  hint: localization.translate('auth.confirmPassword'),
                                                   obscureText:
                                                       _obscureConfirmPassword,
                                                   prefixIcon:
@@ -716,12 +723,12 @@ class _SignupScreenState extends State<SignupScreen>
                                                   validator: (value) {
                                                     if (value?.isEmpty ??
                                                         true) {
-                                                      return 'Please confirm your password';
+                                                      return localization.translate('auth.pleaseConfirmPassword');
                                                     }
                                                     if (value !=
                                                         _passwordController
                                                             .text) {
-                                                      return 'Passwords do not match';
+                                                      return localization.translate('validation.passwordsDoNotMatch');
                                                     }
                                                     return null;
                                                   },
@@ -738,7 +745,7 @@ class _SignupScreenState extends State<SignupScreen>
                                                 FadeTransition(
                                                   opacity: _buttonFade,
                                                   child: CustomButton(
-                                                    text: 'Sign Up',
+                                                    text: localization.translate('auth.signup'),
                                                     onPressed:
                                                         _isFormValid &&
                                                             !_isLoading &&
@@ -770,7 +777,7 @@ class _SignupScreenState extends State<SignupScreen>
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Text(
-                                        'Already have an account?',
+                                        localization.translate('auth.alreadyHaveAccount'),
                                         style: AppStyles.bodyMedium.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
@@ -793,7 +800,7 @@ class _SignupScreenState extends State<SignupScreen>
                                             ),
                                           ),
                                           child: Text(
-                                            'Sign In',
+                                            localization.translate('auth.signIn'),
                                             style: AppStyles.bodyMedium
                                                 .copyWith(
                                                   color: AppColors.primary,

@@ -175,7 +175,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                               icon: Icons.favorite_rounded,
                             ),
                             UnifiedTab(
-                              label: 'Reservations',
+                              label: Provider.of<LocalizationService>(context, listen: false).translate('cards.reservations'),
                               icon: Icons.shopping_bag_outlined,
                             ),
                           ],

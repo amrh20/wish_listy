@@ -42,7 +42,7 @@
     <application
         android:label="WishListy"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/launcher_icon"
         android:theme="@style/LaunchTheme"
         android:exported="true"
         android:usesCleartextTraffic="true"

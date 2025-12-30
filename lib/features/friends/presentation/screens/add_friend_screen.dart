@@ -278,7 +278,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'No users found',
+              localization.translate('friends.noUsersFound'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -581,7 +581,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
           ),
           const SizedBox(height: 20),
           Text(
-            'Search for Friends',
+            localization.translate('friends.searchForFriendsTitle'),
             style: AppStyles.headingMedium.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -590,7 +590,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Enter an email or phone number to find and connect with your friends',
+            localization.translate('friends.searchForFriendsDescription'),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
               height: 1.5,
@@ -632,12 +632,12 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
 
   String _getSearchLabel(LocalizationService localization) {
     // Unified label for email/phone search
-    return 'Email / Phone';
+    return localization.translate('friends.emailOrPhoneLabel');
   }
 
   String _getSearchHint(LocalizationService localization) {
     // Simple hint explaining accepted input types
-    return 'Enter email address or phone number';
+    return localization.translate('friends.emailOrPhoneHint');
   }
 
   Future<void> _performSearch(String query) async {
@@ -694,8 +694,9 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         setState(() {
-          _searchError = 'Failed to search users. Please try again.';
+          _searchError = localization.translate('friends.failedToSearchUsers');
           _searchResults.clear();
           _isSearching = false;
         });
@@ -777,9 +778,10 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         setState(() {
           _sendingRequestToUserId = null; // Clear loading state on error
         });
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to send friend request. Please try again.'),
+            content: Text(localization.translate('friends.failedToSendFriendRequest')),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -884,12 +886,13 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               accept
-                  ? 'Failed to accept friend request. Please try again.'
-                  : 'Failed to reject friend request. Please try again.',
+                  ? localization.translate('friends.failedToAcceptFriendRequest')
+                  : localization.translate('friends.failedToRejectFriendRequest'),
             ),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,

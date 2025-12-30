@@ -68,7 +68,7 @@ class UpcomingOccasionsSection extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  'Friends\' Events 🎂',
+                  '${Provider.of<LocalizationService>(context, listen: false).translate('cards.friendsEvents')} 🎂',
                   style: AppStyles.headingMedium.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
@@ -249,7 +249,7 @@ class _OccasionCard extends StatelessWidget {
                     children: [
                       // "Hosted by" in black
                       TextSpan(
-                        text: 'Hosted by ',
+                        text: '${Provider.of<LocalizationService>(context, listen: false).translate('cards.hostedBy')} ',
                         style: AppStyles.bodySmall.copyWith(
                           color: AppColors.textPrimary,
                           fontSize: 12,
@@ -270,7 +270,7 @@ class _OccasionCard extends StatelessWidget {
               )
             else
               Text(
-                'Hosted by ${occasion.hostName}',
+                '${Provider.of<LocalizationService>(context, listen: false).translate('cards.hostedBy')} ${occasion.hostName}',
                 style: AppStyles.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                   fontSize: 12,
@@ -429,7 +429,7 @@ class MyWishlistsSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'My Wishlists 🎁',
+                '${Provider.of<LocalizationService>(context, listen: false).translate('cards.myWishlists')} 🎁',
                 style: AppStyles.headingMedium.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -501,7 +501,7 @@ class MyWishlistsSection extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              'You don\'t have a wishlist yet. Let\'s create your first one! 🎁',
+              Provider.of<LocalizationService>(context, listen: false).translate('details.youDontHaveWishlistYet'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
                 fontSize: 14,
@@ -533,7 +533,7 @@ class MyWishlistsSection extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'Create Wishlist',
+                    Provider.of<LocalizationService>(context, listen: false).translate('cards.createWishlist'),
                     style: AppStyles.bodyMedium.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -582,7 +582,7 @@ class FriendActivitySection extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  'Happening Now ⚡',
+                  '${Provider.of<LocalizationService>(context, listen: false).translate('cards.happeningNow')} ⚡',
                   style: AppStyles.headingMedium.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,

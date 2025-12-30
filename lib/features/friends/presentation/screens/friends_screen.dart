@@ -653,37 +653,47 @@ class FriendsScreenState extends State<FriendsScreen>
             ),
           ),
           const SizedBox(height: 24),
-          Text(
-            _searchQuery.isEmpty ? 'No Friends Yet' : 'No Friends Found',
-            style: AppStyles.headingMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _searchQuery.isEmpty
-                ? 'Start connecting with friends to share wishlists and make gift-giving more meaningful.'
-                : 'Try adjusting your search terms to find friends.',
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textTertiary,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          if (_searchQuery.isEmpty) ...[
-            const SizedBox(height: 32),
-            CustomButton(
-              text: 'Add Friends',
+          Consumer<LocalizationService>(
+            builder: (context, localization, child) {
+              return Column(
+                children: [
+                  Text(
+                    _searchQuery.isEmpty 
+                        ? localization.translate('friends.noFriendsYet')
+                        : localization.translate('friends.noFriendsFound'),
+                    style: AppStyles.headingMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _searchQuery.isEmpty
+                        ? localization.translate('friends.startConnectingWithFriends')
+                        : localization.translate('friends.tryAdjustingSearchTerms'),
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.textTertiary,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (_searchQuery.isEmpty) ...[
+                    const SizedBox(height: 32),
+                    CustomButton(
+                      text: localization.translate('friends.addFriends'),
               onPressed: () {
                 Navigator.pushNamed(
                   context,
                   AppRoutes.addFriend,
                 );
               },
-              variant: ButtonVariant.gradient,
-              gradientColors: [AppColors.secondary, AppColors.primary],
-            ),
-          ],
+                      variant: ButtonVariant.gradient,
+                      gradientColors: [AppColors.secondary, AppColors.primary],
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
           const Spacer(flex: 3), // Bottom space (3 parts)
         ],
       ),
@@ -710,20 +720,28 @@ class FriendsScreenState extends State<FriendsScreen>
             ),
           ),
           const SizedBox(height: 24),
-          Text(
-            'No Friend Requests',
-            style: AppStyles.headingMedium.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'When people send you friend requests, they\'ll appear here for you to accept or decline.',
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textTertiary,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
+          Consumer<LocalizationService>(
+            builder: (context, localization, child) {
+              return Column(
+                children: [
+                  Text(
+                    localization.translate('friends.noFriendRequests'),
+                    style: AppStyles.headingMedium.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    localization.translate('friends.noFriendRequestsDescription'),
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.textTertiary,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -815,8 +833,9 @@ class FriendsScreenState extends State<FriendsScreen>
       });
     } catch (e) {
       if (!mounted) return;
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       setState(() {
-        _friendsError = 'Failed to load friends. Please try again.';
+        _friendsError = localization.translate('friends.failedToLoadFriends');
         _isLoadingFriends = false;
         _isLoadingMoreFriends = false;
       });
@@ -873,8 +892,9 @@ class FriendsScreenState extends State<FriendsScreen>
       });
     } catch (e) {
       if (!mounted) return;
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       setState(() {
-        _requestsError = 'Failed to load friend requests. Please try again.';
+        _requestsError = localization.translate('friends.failedToLoadFriendRequests');
         _isLoadingRequests = false;
       });
     }
@@ -901,9 +921,10 @@ class FriendsScreenState extends State<FriendsScreen>
         await _loadFriends(resetPage: true);
       }
 
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       final message = accept
-          ? 'Friend request accepted!'
-          : 'Friend request declined';
+          ? localization.translate('notifications.friendRequestAccepted')
+          : localization.translate('notifications.friendRequestDeclined');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -988,7 +1009,7 @@ class FriendsScreenState extends State<FriendsScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Enter your friend\'s email address to send them a friend request.',
+              localization.translate('friends.enterFriendEmailDescription'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -996,8 +1017,8 @@ class FriendsScreenState extends State<FriendsScreen>
             const SizedBox(height: 16),
             CustomTextField(
               controller: emailController,
-              label: 'Email Address',
-              hint: 'friend@example.com',
+              label: localization.translate('friends.emailAddress'),
+              hint: localization.translate('friends.emailAddressPlaceholder'),
               keyboardType: TextInputType.emailAddress,
               prefixIcon: Icons.email_outlined,
             ),
@@ -1009,7 +1030,7 @@ class FriendsScreenState extends State<FriendsScreen>
             child: Text(localization.translate('common.cancel')),
           ),
           CustomButton(
-            text: 'Send Request',
+            text: localization.translate('friends.sendRequest'),
             onPressed: () {
               // Send friend request logic
               Navigator.pop(context);

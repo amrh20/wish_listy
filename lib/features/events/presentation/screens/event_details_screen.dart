@@ -966,15 +966,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   String _getStatusCardTitle(String status) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     switch (status) {
       case 'accepted':
-        return 'You are going';
+        return localization.translate('events.youAreGoing') ?? 'You are going';
       case 'declined':
-        return 'You declined';
+        return localization.translate('events.youDeclined') ?? 'You declined';
       case 'maybe':
-        return 'Maybe';
+        return localization.translate('events.maybe') ?? 'Maybe';
       default:
-        return 'Pending';
+        return localization.translate('events.pending') ?? 'Pending';
     }
   }
 
@@ -1253,7 +1254,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                     onPressed: () => _handleRSVP('accepted'),
                     icon: const Icon(Icons.check_circle, size: 14),
                     label: Text(
-                      'Accept',
+                      Provider.of<LocalizationService>(context, listen: false).translate('dialogs.accept'),
                       style: AppStyles.caption.copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
@@ -1275,7 +1276,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                     onPressed: () => _handleRSVP('maybe'),
                     icon: const Icon(Icons.help_outline, size: 14),
                     label: Text(
-                      'Maybe',
+                      Provider.of<LocalizationService>(context, listen: false).translate('dialogs.maybe'),
                       style: AppStyles.caption.copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
@@ -1297,7 +1298,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                     onPressed: () => _handleRSVP('declined'),
                     icon: const Icon(Icons.close, size: 14),
                     label: Text(
-                      'Decline',
+                      Provider.of<LocalizationService>(context, listen: false).translate('dialogs.decline'),
                       style: AppStyles.caption.copyWith(
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
@@ -1319,35 +1320,38 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         );
 
       case 'accepted':
+        final localizationAccepted = Provider.of<LocalizationService>(context, listen: false);
         return _buildStatusCard(
           backgroundColor: AppColors.success.withOpacity(0.1),
           borderColor: AppColors.success.withOpacity(0.3),
           iconColor: AppColors.success,
           icon: Icons.check,
-          title: 'You are going',
-          subtitle: 'Tap to change response',
+          title: localizationAccepted.translate('events.youAreGoing'),
+          subtitle: localizationAccepted.translate('events.tapToChangeResponse'),
           onTap: () => _handleRSVP('pending'),
         );
 
       case 'declined':
+        final localizationDeclined = Provider.of<LocalizationService>(context, listen: false);
         return _buildStatusCard(
           backgroundColor: AppColors.error.withOpacity(0.1),
           borderColor: AppColors.error.withOpacity(0.3),
           iconColor: AppColors.error,
           icon: Icons.close,
-          title: 'You declined',
-          subtitle: 'Tap to change response',
+          title: localizationDeclined.translate('events.youDeclined'),
+          subtitle: localizationDeclined.translate('events.tapToChangeResponse'),
           onTap: () => _handleRSVP('pending'),
         );
 
       case 'maybe':
+        final localizationMaybe = Provider.of<LocalizationService>(context, listen: false);
         return _buildStatusCard(
           backgroundColor: AppColors.warning.withOpacity(0.1),
           borderColor: AppColors.warning.withOpacity(0.3),
           iconColor: AppColors.warning,
           icon: Icons.help_outline,
-          title: 'Maybe',
-          subtitle: 'Tap to change response',
+          title: localizationMaybe.translate('events.maybe'),
+          subtitle: localizationMaybe.translate('events.tapToChangeResponse'),
           onTap: () => _handleRSVP('pending'),
         );
 
@@ -1578,7 +1582,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            'No one has been invited yet',
+            Provider.of<LocalizationService>(context, listen: false).translate('events.noOneInvitedYet'),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -1608,16 +1612,26 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Display all invited friends in a vertical list grouped by status
-        ..._buildStatusGroup('Accepted', acceptedFriends, Icons.check_circle, AppColors.success),
-        if (acceptedFriends.isNotEmpty && (pendingFriends.isNotEmpty || maybeFriends.isNotEmpty || declinedFriends.isNotEmpty))
-          const SizedBox(height: 16),
-        ..._buildStatusGroup('Pending', pendingFriends, Icons.schedule, AppColors.warning),
-        if (pendingFriends.isNotEmpty && (maybeFriends.isNotEmpty || declinedFriends.isNotEmpty))
-          const SizedBox(height: 16),
-        ..._buildStatusGroup('Maybe', maybeFriends, Icons.help_outline, AppColors.info),
-        if (maybeFriends.isNotEmpty && declinedFriends.isNotEmpty)
-          const SizedBox(height: 16),
-        ..._buildStatusGroup('Declined', declinedFriends, Icons.cancel, AppColors.error),
+        Builder(
+          builder: (context) {
+            final localization = Provider.of<LocalizationService>(context, listen: false);
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ..._buildStatusGroup(localization.translate('events.accepted'), acceptedFriends, Icons.check_circle, AppColors.success),
+                if (acceptedFriends.isNotEmpty && (pendingFriends.isNotEmpty || maybeFriends.isNotEmpty || declinedFriends.isNotEmpty))
+                  const SizedBox(height: 16),
+                ..._buildStatusGroup(localization.translate('events.pending'), pendingFriends, Icons.schedule, AppColors.warning),
+                if (pendingFriends.isNotEmpty && (maybeFriends.isNotEmpty || declinedFriends.isNotEmpty))
+                  const SizedBox(height: 16),
+                ..._buildStatusGroup(localization.translate('events.maybe'), maybeFriends, Icons.help_outline, AppColors.info),
+                if (maybeFriends.isNotEmpty && declinedFriends.isNotEmpty)
+                  const SizedBox(height: 16),
+                ..._buildStatusGroup(localization.translate('events.declined'), declinedFriends, Icons.cancel, AppColors.error),
+              ],
+            );
+          },
+        ),
         const SizedBox(height: 12),
         // See All button (if there are many friends)
         if (shouldShowSeeAll)
@@ -1630,7 +1644,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 color: AppColors.primary,
               ),
               label: Text(
-                'See All',
+                Provider.of<LocalizationService>(context, listen: false).translate('events.seeAll'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
@@ -1904,8 +1918,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               const SizedBox(width: 8),
               Text(
                 _event?.invitedFriends.isEmpty ?? true
-                    ? 'Invite Friends'
-                    : 'Invite More Friends',
+                    ? Provider.of<LocalizationService>(context, listen: false).translate('events.inviteFriends')
+                    : Provider.of<LocalizationService>(context, listen: false).translate('events.inviteMoreFriends'),
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.primary,
@@ -2095,18 +2109,23 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               ),
               const SizedBox(height: 16),
               // Unlink option
-              ListTile(
-                leading: Icon(Icons.link_off_rounded, color: AppColors.error),
-                title: Text(
-                  'Unlink Wishlist',
-                  style: AppStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.error,
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _handleUnlinkWishlist();
+              Builder(
+                builder: (context) {
+                  final localization = Provider.of<LocalizationService>(context, listen: false);
+                  return ListTile(
+                    leading: Icon(Icons.link_off_rounded, color: AppColors.error),
+                    title: Text(
+                      localization.translate('events.unlinkWishlist'),
+                      style: AppStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.error,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _handleUnlinkWishlist();
+                    },
+                  );
                 },
               ),
               const SizedBox(height: 8),
@@ -2120,22 +2139,23 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   /// Handles unlinking wishlist from event
   Future<void> _handleUnlinkWishlist() async {
     // Show confirmation dialog
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          'Unlink Wishlist',
+          localization.translate('events.unlinkWishlist'),
           style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'Are you sure you want to unlink this wishlist from the event? The wishlist will not be deleted, but it will no longer be associated with this event.',
+          localization.translate('events.unlinkWishlistMessage'),
           style: AppStyles.bodyMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(
-              'Cancel',
+              localization.translate('common.cancel'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -2144,7 +2164,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              'Unlink',
+              localization.translate('events.unlink'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.error,
                 fontWeight: FontWeight.w600,
@@ -2323,13 +2343,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   /// Gets display text for Privacy
   String _getPrivacyText(String privacy) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     switch (privacy.toLowerCase()) {
       case 'public':
-        return 'Public';
+        return localization.translate('events.public');
       case 'private':
-        return 'Private';
+        return localization.translate('events.private');
       case 'friends_only':
-        return 'Friends Only';
+        return localization.translate('events.friendsOnly');
       default:
         return privacy;
     }
@@ -2351,15 +2372,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   /// Gets display text for Status
   String _getStatusText(EventStatus status) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     switch (status) {
       case EventStatus.upcoming:
-        return 'Upcoming';
+        return localization.translate('events.upcoming');
       case EventStatus.ongoing:
-        return 'Ongoing';
+        return localization.translate('events.ongoing');
       case EventStatus.completed:
-        return 'Completed';
+        return localization.translate('events.completed');
       case EventStatus.cancelled:
-        return 'Cancelled';
+        return localization.translate('events.cancelled');
     }
   }
 
@@ -2386,7 +2408,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       children: [
         // Section Header
         Text(
-          '🎁 Gift Registry',
+          localization.translate('events.giftRegistry'),
           style: AppStyles.headingSmall.copyWith(
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
@@ -2423,7 +2445,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Create Event Wishlist',
+              Provider.of<LocalizationService>(context, listen: false).translate('events.createEventWishlist'),
               style: AppStyles.headingSmall.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -2431,7 +2453,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Link a wishlist to this event so guests can see what to gift',
+              Provider.of<LocalizationService>(context, listen: false).translate('events.linkWishlistDescription'),
               style: AppStyles.bodySmall.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -2459,7 +2481,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                     const Icon(Icons.add, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'Create Wishlist',
+                      Provider.of<LocalizationService>(context, listen: false).translate('events.createWishlist'),
                       style: AppStyles.button.copyWith(color: Colors.white),
                     ),
                   ],
@@ -2491,7 +2513,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'No Wishlist Yet',
+                  Provider.of<LocalizationService>(context, listen: false).translate('events.noWishlistYet'),
                   style: AppStyles.headingSmall.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
@@ -2499,7 +2521,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'No wishlist or wishes are linked to this event yet.',
+                  Provider.of<LocalizationService>(context, listen: false).translate('details.noWishlistLinkedToEvent'),
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                   ),

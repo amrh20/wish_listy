@@ -589,21 +589,22 @@ class _EventManagementScreenState extends State<EventManagementScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('No, Keep Event'),
+            child: Text(Provider.of<LocalizationService>(context, listen: false).translate('events.noKeepEvent')),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.pop(context);
+              final localization = Provider.of<LocalizationService>(context, listen: false);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Event cancelled successfully'),
+                  content: Text(localization.translate('events.eventCancelledSuccessfully')),
                   backgroundColor: AppColors.success,
                 ),
               );
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: Text('Yes, Cancel Event'),
+            child: Text(Provider.of<LocalizationService>(context, listen: false).translate('events.yesCancelEvent')),
           ),
         ],
       ),

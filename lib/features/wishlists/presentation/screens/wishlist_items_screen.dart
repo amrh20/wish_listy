@@ -722,10 +722,11 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                         Builder(
                           builder: (context) {
                             final authService = Provider.of<AuthRepository>(context, listen: false);
+                            final loc = Provider.of<LocalizationService>(context, listen: false);
                             // Hide "Gifted" for guest users
                             if (authService.isGuest) {
                               return Text(
-                                '$_totalItems Wishes',
+                                '$_totalItems ${loc.translate('cards.wishes')}',
                                 style: AppStyles.bodyMedium.copyWith(
                                   color: AppColors.textSecondary,
                                   fontSize: 14,
@@ -733,7 +734,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                               );
                             }
                             return Text(
-                              '$_totalItems Wishes • $_purchasedItems Gifted',
+                              '$_totalItems ${loc.translate('cards.wishes')} • $_purchasedItems ${loc.translate('ui.gifted')}',
                               style: AppStyles.bodyMedium.copyWith(
                                 color: AppColors.textSecondary,
                                 fontSize: 14,
@@ -818,6 +819,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                               return const SizedBox.shrink();
                             }
                             
+                            final loc = Provider.of<LocalizationService>(context, listen: false);
                             // Show all filters: All, Available, Reserved, Gifted
                             return SingleChildScrollView(
                               scrollDirection: Axis.horizontal,
@@ -825,7 +827,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                                 children: [
                                   WishlistFilterChipWidget(
                                     value: 'all',
-                                    label: 'All',
+                                    label: loc.translate('ui.all'),
                                     icon: Icons.all_inclusive,
                                     isSelected: _selectedFilter == 'all',
                                     onTap: () {
@@ -837,7 +839,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                                   const SizedBox(width: 8),
                                   WishlistFilterChipWidget(
                                     value: 'available',
-                                    label: 'Available',
+                                    label: loc.translate('ui.available'),
                                     icon: Icons.shopping_bag_outlined,
                                     isSelected: _selectedFilter == 'available',
                                     onTap: () {
@@ -849,7 +851,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                                   const SizedBox(width: 8),
                                   WishlistFilterChipWidget(
                                     value: 'reserved',
-                                    label: 'Reserved',
+                                    label: loc.translate('ui.reserved'),
                                     icon: Icons.lock_outline,
                                     isSelected: _selectedFilter == 'reserved',
                                     onTap: () {
@@ -861,7 +863,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                                   const SizedBox(width: 8),
                                   WishlistFilterChipWidget(
                                     value: 'purchased',
-                                    label: 'Gifted',
+                                    label: loc.translate('ui.gifted'),
                                     icon: Icons.check_circle_outline,
                                     isSelected: _selectedFilter == 'purchased',
                                     onTap: () {
@@ -1052,6 +1054,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
       // Show success snackbar based on the action we took
       if (mounted) {
+        final loc = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -1066,8 +1069,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                 const SizedBox(width: 8),
                 Text(
                   isNowReserved
-                      ? 'Item reserved! 🎁'
-                      : 'Reservation cancelled',
+                      ? loc.translate('dialogs.itemReservedSuccessfully')
+                      : loc.translate('dialogs.reservationCancelledSuccessfully'),
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -1101,6 +1104,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
       // Show error snackbar
       if (mounted) {
+        final loc = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -1109,7 +1113,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Failed to update reservation. Please try again.',
+                    loc.translate('dialogs.failedToUpdateReservation'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
@@ -1170,6 +1174,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
       // Show success snackbar
       if (mounted) {
+        final loc = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -1181,7 +1186,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Item marked as purchased! 🎁',
+                  loc.translate('dialogs.itemMarkedAsPurchased'),
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -1255,6 +1260,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
       // Show success snackbar
       if (mounted) {
+        final loc = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -1267,8 +1273,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                 const SizedBox(width: 8),
                 Text(
                   updatedItem.isReceived
-                      ? 'Marked as Received! ✅'
-                      : 'Marked as Not Received',
+                      ? loc.translate('dialogs.markedAsReceived')
+                      : loc.translate('dialogs.markedAsNotReceived'),
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -1302,6 +1308,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
       // Show error snackbar
       if (mounted) {
+        final loc = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -1310,7 +1317,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Failed to update status. Please try again.',
+                    loc.translate('dialogs.failedToUpdateStatus'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
@@ -1367,11 +1374,11 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
             borderRadius: BorderRadius.circular(16),
           ),
           title: Text(
-            'Delete Item',
+            Provider.of<LocalizationService>(context, listen: false).translate('dialogs.deleteItem'),
             style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
           ),
           content: Text(
-            'Are you sure you want to delete "${item.name}"? This action cannot be undone.',
+            Provider.of<LocalizationService>(context, listen: false).translate('dialogs.areYouSureDeleteItemFull', args: {'itemName': item.name}),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),

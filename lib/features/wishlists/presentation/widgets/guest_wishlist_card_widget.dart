@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/wishlists/presentation/widgets/wishlist_card_widget.dart';
 
@@ -84,7 +86,8 @@ class GuestWishlistCardWidget extends StatelessWidget {
     final hasDescription = description != null && description.isNotEmpty;
 
     final categoryColor = categoryVisual.foregroundColor;
-    final wishesText = '• ${wishlist.itemCount} ${wishlist.itemCount == 1 ? 'Wish' : 'Wishes'}';
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final wishesText = '• ${wishlist.itemCount} ${wishlist.itemCount == 1 ? localization.translate('cards.wish') : localization.translate('cards.wishes')}';
 
     return Container(
       padding: const EdgeInsets.all(16),

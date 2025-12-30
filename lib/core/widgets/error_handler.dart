@@ -120,18 +120,24 @@ class ErrorHandler {
         onRetry: onRetry,
       );
     } else if (exception.statusCode == 401) {
+      // Show backend error message if available, otherwise use generic message
       showErrorDialog(
         context,
         title: 'Authentication Error',
-        message: 'Please login again to continue.',
+        message: exception.message.isNotEmpty 
+            ? exception.message 
+            : 'Please login again to continue.',
         onRetry: onRetry,
         retryText: 'Login',
       );
     } else if (exception.statusCode == 403) {
+      // Show backend error message if available, otherwise use generic message
       showErrorDialog(
         context,
         title: 'Access Denied',
-        message: 'You don\'t have permission to perform this action.',
+        message: exception.message.isNotEmpty 
+            ? exception.message 
+            : 'You don\'t have permission to perform this action.',
       );
     } else if (exception.statusCode == 404) {
       // Show actual API error message for 404

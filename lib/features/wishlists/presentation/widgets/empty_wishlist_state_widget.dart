@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/primary_gradient_button.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 /// Empty state widget when wishlist has no items
 class EmptyWishlistStateWidget extends StatelessWidget {
@@ -40,42 +42,50 @@ class EmptyWishlistStateWidget extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            Text(
-              isFriendWishlist ? 'No Wishes Yet' : 'No Wishes Yet',
-              style: AppStyles.headingMedium.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
+            Consumer<LocalizationService>(
+              builder: (context, localization, child) {
+                return Column(
+                  children: [
+                    Text(
+                      localization.translate('details.noWishesYet'),
+                      style: AppStyles.headingMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      isFriendWishlist
+                          ? localization.translate('cards.noWishesDescription')
+                          : localization.translate('details.emptyWishlistMessage'),
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    if (!isFriendWishlist)
+                      PrimaryGradientButton(
+                        text: localization.translate('details.addFirstWish'),
+                        icon: Icons.add_rounded,
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.addItem,
+                            arguments: {
+                              'wishlistId': wishlistId,
+                              'wishlistName': wishlistName,
+                            },
+                          ).then((_) {
+                            // Refresh the list when returning from add item screen
+                            // This will be handled by the parent screen
+                          });
+                        },
+                      ),
+                  ],
+                );
+              },
             ),
-            const SizedBox(height: 12),
-            Text(
-              isFriendWishlist
-                  ? 'No wishes have been added to this wishlist yet.'
-                  : 'This wishlist is empty. Start adding wishes you dream of!',
-              style: AppStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            if (!isFriendWishlist)
-              PrimaryGradientButton(
-                text: 'Add First Wish',
-                icon: Icons.add_rounded,
-                onPressed: () {
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.addItem,
-                    arguments: {
-                      'wishlistId': wishlistId,
-                      'wishlistName': wishlistName,
-                    },
-                  ).then((_) {
-                    // Refresh the list when returning from add item screen
-                    // This will be handled by the parent screen
-                  });
-                },
-              ),
           ],
         ),
       ),

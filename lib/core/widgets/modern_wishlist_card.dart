@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/wishlists/presentation/widgets/wishlist_card_widget.dart';
 
 /// Helper class for category visual styling
@@ -337,7 +339,7 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      '• ${widget.totalItems} ${widget.totalItems == 1 ? 'Wish' : 'Wishes'}',
+                      '• ${widget.totalItems} ${widget.totalItems == 1 ? Provider.of<LocalizationService>(context, listen: false).translate('cards.wish') : Provider.of<LocalizationService>(context, listen: false).translate('cards.wishes')}',
                       style: const TextStyle(
                         color: Colors.grey,
                         fontSize: 11,

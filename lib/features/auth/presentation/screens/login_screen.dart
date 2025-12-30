@@ -170,43 +170,30 @@ class _LoginScreenState extends State<LoginScreen>
       }
       // Note: Login failures now throw ApiException, so no else block needed
     } on ApiException catch (e) {
-      // Handle API-specific errors
+      // Handle API-specific errors - show backend error message directly
       if (mounted) {
         final localization = Provider.of<LocalizationService>(
           context,
           listen: false,
         );
 
-        // Get the actual error message from API (use backend message directly)
-        String errorMessage = e.message.isNotEmpty
-            ? e.message
-            : 'An error occurred';
-
-        String title = localization.translate('auth.loginFailed');
-
-        // For 400, 401, 404, 422 errors: Show the actual API message from backend
-        if (e.statusCode == 400 || e.statusCode == 401 || e.statusCode == 404 || e.statusCode == 422) {
-          // Use the actual API message directly (no translation or modification)
-          errorMessage = e.message.isNotEmpty ? e.message : 'Invalid request. Please check your input.';
-        } else if (e.statusCode == 500) {
-          // For 500 errors, show generic server error message
-          title = localization.translate('auth.error');
+        // ApiException now extracts backend `data.message` and sanitizes noisy prefixes
+        // so `e.message` should already be the user-facing backend message.
+        String errorMessage = e.message.trim();
+        if (errorMessage.isEmpty) {
           errorMessage = localization.translate('auth.unexpectedError');
-        } else {
-          // For other errors, show the actual API message
-          errorMessage = e.message.isNotEmpty ? e.message : 'An error occurred';
         }
 
-        // Show error dialog with Lottie animation
+        // Use backend message as the dialog title (localization-friendly via Accept-Language)
+        // Keep message empty/minimal.
+        final String title = errorMessage;
+
+        // Show error dialog with Lottie animation - only close button
         ConfirmationDialog.show(
           context: context,
           isSuccess: false,
           title: title,
-          message: errorMessage,
-          primaryActionLabel: localization.translate('auth.tryAgain'),
-          onPrimaryAction: () {
-            // User can try again by submitting the form again
-          },
+          message: '',
           secondaryActionLabel: localization.translate('auth.close'),
           onSecondaryAction: () {},
           barrierDismissible: true,
@@ -220,16 +207,13 @@ class _LoginScreenState extends State<LoginScreen>
           listen: false,
         );
 
-        // Show error dialog with Lottie animation
+        // Show error dialog with Lottie animation - only close button
+        // Title-only dialog for unexpected errors (avoid generic "Error" header)
         ConfirmationDialog.show(
           context: context,
           isSuccess: false,
-          title: localization.translate('auth.error'),
-          message: localization.translate('auth.unexpectedError'),
-          primaryActionLabel: localization.translate('auth.tryAgain'),
-          onPrimaryAction: () {
-            // User can try again by submitting the form again
-          },
+          title: localization.translate('auth.unexpectedError'),
+          message: '',
           secondaryActionLabel: localization.translate('auth.close'),
           onSecondaryAction: () {},
           barrierDismissible: true,
@@ -459,7 +443,7 @@ class _LoginScreenState extends State<LoginScreen>
                                                 ],
                                               ).createShader(bounds),
                                           child: Text(
-                                            'Login',
+                                            localization.translate('auth.login'),
                                             style: AppStyles.headingLarge
                                                 .copyWith(
                                                   fontSize: 32,
@@ -474,7 +458,7 @@ class _LoginScreenState extends State<LoginScreen>
                                       FadeTransition(
                                         opacity: _subtitleFade,
                                         child: Text(
-                                          'Welcome back! Continue your wishlist journey',
+                                          localization.translate('auth.welcomeBackMessage'),
                                           textAlign: TextAlign.center,
                                           style: AppStyles.bodyLarge.copyWith(
                                             color: AppColors.textSecondary
@@ -531,8 +515,8 @@ class _LoginScreenState extends State<LoginScreen>
                                               // Username Field (Email or Phone)
                                               _buildGlassInputField(
                                                 controller: _usernameController,
-                                                label: 'Email or Phone',
-                                                hint: 'Email or Phone',
+                                                label: localization.translate('auth.emailOrPhone'),
+                                                hint: localization.translate('auth.emailOrPhone'),
                                                 keyboardType:
                                                     TextInputType.text,
                                                 prefixIcon:

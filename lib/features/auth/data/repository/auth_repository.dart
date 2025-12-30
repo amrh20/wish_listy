@@ -150,12 +150,16 @@ class AuthRepository extends ChangeNotifier {
       // Return the response data which should contain user info and token
       return response;
     } on ApiException {
-      // Re-throw ApiException to preserve error details
+      // Re-throw ApiException to preserve error details from backend
       rethrow;
     } catch (e) {
-      // Handle any unexpected errors
-
-      throw Exception('Registration failed. Please try again.');
+      // Handle unexpected errors - convert to ApiException to preserve error handling flow
+      // ApiException should have been thrown by ApiService, so this catch is for truly unexpected errors
+      throw ApiException(
+        e.toString().contains('Exception') || e.toString().contains('Error')
+            ? e.toString()
+            : 'Registration failed. Please try again.',
+      );
     }
   }
 
@@ -164,20 +168,11 @@ class AuthRepository extends ChangeNotifier {
     required String username, // username can be email or phone
     required String password,
   }) async {
-    try {
-      final loginData = {'username': username, 'password': password};
-      final response = await _apiService.post('/auth/login', data: loginData);
-      return response;
-    } on ApiException {
-      // Re-throw ApiException to preserve error details
-      rethrow;
-    } catch (e) {
-
-      // Convert to ApiException so it can be handled properly
-      throw ApiException(
-        'Login failed. Please check your connection and try again.',
-      );
-    }
+    // ApiException will be thrown by ApiService interceptor if there's an error
+    // No need to catch and rethrow - let ApiException propagate naturally
+    final loginData = {'username': username, 'password': password};
+    final response = await _apiService.post('/auth/login', data: loginData);
+    return response;
   }
 
   // Login with credentials using real API
@@ -240,15 +235,16 @@ class AuthRepository extends ChangeNotifier {
         );
       }
     } on ApiException catch (e) {
-      // Re-throw ApiException so login screen can show proper error message
-
+      // Re-throw ApiException so login screen can show proper error message from backend
       rethrow;
     } catch (e) {
-      // Handle any unexpected errors
-
-      // Convert to ApiException so it can be handled properly by login screen
+      // Handle unexpected errors (should not happen if ApiService is working correctly)
+      // Re-throw as ApiException to preserve error handling flow
+      // Only use generic message if we truly don't have backend error message
       throw ApiException(
-        'Login failed. Please check your connection and try again.',
+        e.toString().contains('Exception') || e.toString().contains('Error')
+            ? e.toString()
+            : 'Login failed. Please check your connection and try again.',
       );
     }
   }

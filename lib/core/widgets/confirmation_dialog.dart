@@ -26,8 +26,8 @@ class ConfirmationDialog {
     required bool isSuccess,
     required String title,
     required String message,
-    required String primaryActionLabel,
-    required VoidCallback onPrimaryAction,
+    String? primaryActionLabel,
+    VoidCallback? onPrimaryAction,
     String? secondaryActionLabel,
     VoidCallback? onSecondaryAction,
     List<DialogAction>? additionalActions,
@@ -74,8 +74,8 @@ class _ConfirmationDialogWidget extends StatelessWidget {
   final bool isSuccess;
   final String title;
   final String message;
-  final String primaryActionLabel;
-  final VoidCallback onPrimaryAction;
+  final String? primaryActionLabel;
+  final VoidCallback? onPrimaryAction;
   final String? secondaryActionLabel;
   final VoidCallback? onSecondaryAction;
   final List<DialogAction>? additionalActions;
@@ -86,8 +86,8 @@ class _ConfirmationDialogWidget extends StatelessWidget {
     required this.isSuccess,
     required this.title,
     required this.message,
-    required this.primaryActionLabel,
-    required this.onPrimaryAction,
+    this.primaryActionLabel,
+    this.onPrimaryAction,
     this.secondaryActionLabel,
     this.onSecondaryAction,
     this.additionalActions,
@@ -207,48 +207,54 @@ class _ConfirmationDialogWidget extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
-
-              // Message
-              Text(
-                message,
-                style: AppStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+              if (message.trim().isNotEmpty) ...[
+                const SizedBox(height: 12),
+                // Message
+                Text(
+                  message,
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
+                const SizedBox(height: 32),
+              ] else ...[
+                const SizedBox(height: 24),
+              ],
 
               // Action Buttons
               Column(
                 children: [
-                  // Primary Action Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: CustomButton(
-                      text: primaryActionLabel,
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        onPrimaryAction();
-                      },
-                      variant: isSuccess
-                          ? ButtonVariant.gradient
-                          : ButtonVariant.primary,
-                      size: ButtonSize.small,
-                      gradientColors: isSuccess
-                          ? [AppColors.primary, AppColors.secondary]
-                          : null,
-                      customColor: isSuccess ? null : accentColor,
-                      icon: isSuccess
-                          ? Icons.check_rounded
-                          : Icons.refresh_rounded,
+                  // Primary Action Button (if provided)
+                  if (primaryActionLabel != null && onPrimaryAction != null) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: CustomButton(
+                        text: primaryActionLabel!,
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          onPrimaryAction!();
+                        },
+                        variant: isSuccess
+                            ? ButtonVariant.gradient
+                            : ButtonVariant.primary,
+                        size: ButtonSize.small,
+                        gradientColors: isSuccess
+                            ? [AppColors.primary, AppColors.secondary]
+                            : null,
+                        customColor: isSuccess ? null : accentColor,
+                        icon: isSuccess
+                            ? Icons.check_rounded
+                            : Icons.refresh_rounded,
+                      ),
                     ),
-                  ),
+                  ],
 
                   // Secondary Action Button (if provided)
                   if (secondaryActionLabel != null &&
                       onSecondaryAction != null) ...[
-                    const SizedBox(height: 12),
+                    if (primaryActionLabel != null && onPrimaryAction != null)
+                      const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
                       child: CustomButton(

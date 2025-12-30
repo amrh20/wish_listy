@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/services/socket_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/notifications/data/models/notification_model.dart';
@@ -899,9 +901,10 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     } catch (e, stackTrace) {
       debugPrint('❌ NotificationsCubit: Error handling notification tap: $e');
       debugPrint('❌ Stack trace: $stackTrace');
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('An error occurred while opening the notification.'),
+        SnackBar(
+          content: Text(localization.translate('dialogs.errorOpeningNotification')),
           backgroundColor: Colors.red,
         ),
       );

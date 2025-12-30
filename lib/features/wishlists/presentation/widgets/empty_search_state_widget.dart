@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 /// Empty state widget when search/filter returns no results
 class EmptySearchStateWidget extends StatelessWidget {
@@ -8,6 +10,7 @@ class EmptySearchStateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 32),
@@ -22,14 +25,14 @@ class EmptySearchStateWidget extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No wishes found',
+              localization.translate('cards.noWishesFound'),
               style: AppStyles.headingSmall.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Try adjusting your search or filters',
+              localization.translate('cards.tryAdjustingSearchOrFilters'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textTertiary,
               ),

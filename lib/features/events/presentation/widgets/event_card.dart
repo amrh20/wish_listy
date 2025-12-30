@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
-import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 
@@ -350,7 +349,7 @@ class EventCard extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                'Add Wishlist',
+                localization.translate('cards.addWishlist'),
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
@@ -402,7 +401,7 @@ class EventCard extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Text(
-            'Invited Guests',
+            localization.translate('cards.invitedGuests'),
             style: TextStyle(
               color: Colors.grey.shade600,
               fontSize: 12,

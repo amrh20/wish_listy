@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 /// Widget for selecting a wishlist when adding an item
 class WishlistSelectionWidget extends StatelessWidget {
@@ -56,7 +58,7 @@ class WishlistSelectionWidget extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Text(
-                  'No wishlists found. Please create a wishlist first.',
+                  Provider.of<LocalizationService>(context, listen: false).translate('cards.noWishlistsFound'),
                   style: AppStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),

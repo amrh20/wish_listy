@@ -144,12 +144,18 @@ flutter:
 
 # App Icon Configuration
 flutter_launcher_icons:
-  android: true
+  android: "launcher_icon"
   ios: true
   image_path: "assets/images/app_logo.png"
-  adaptive_icon_background: "#FFFEF9"
+  min_sdk_android: 21
+  
+  # For Android (Adaptive Icon) - Force White Background
+  adaptive_icon_background: "#FFFFFF"  # Pure white background
   adaptive_icon_foreground: "assets/images/app_logo.png"
-  remove_alpha_ios: true
+  
+  # For iOS - Remove Transparency (fill with white)
+  remove_alpha_ios: true  # Attempts to fill transparency with white
+  
   # Android specific settings
   android_gravity: center
   adaptive_icon_padding: true

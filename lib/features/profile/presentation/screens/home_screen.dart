@@ -138,7 +138,7 @@ class HomeScreenState extends State<HomeScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Ready to make some wishes come true? ✨',
+                                  Provider.of<LocalizationService>(context, listen: false).translate('profile.readyToMakeWishesComeTrue'),
                                   style: AppStyles.bodyMedium.copyWith(
                                     color: AppColors.textSecondary, // Same as UnifiedPageHeader
                                     fontSize: 15,

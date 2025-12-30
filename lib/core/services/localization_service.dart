@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 
 class LocalizationService extends ChangeNotifier {
   static const String _languageKey = 'selected_language';
@@ -76,6 +78,29 @@ class LocalizationService extends ChangeNotifier {
 
     } catch (e) {
 
+    }
+
+    // Update API service language code for Accept-Language header
+    try {
+      final apiService = ApiService();
+      apiService.setLanguageCode(languageCode);
+    } catch (e) {
+      // Silently fail if API service is not available
+    }
+
+    // Update user's preferred language on backend (if authenticated)
+    try {
+      final authRepository = AuthRepository();
+      if (authRepository.isAuthenticated) {
+        final apiService = ApiService();
+        await apiService.put(
+          '/users/profile',
+          data: {'preferredLanguage': languageCode},
+        );
+      }
+    } catch (e) {
+      // Silently fail if API call fails (user might be offline or not authenticated)
+      // The language change should still proceed locally
     }
 
     // Load new translations

@@ -463,7 +463,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               child: _buildStatItem(
                 icon: Icons.people_outline,
                 value: '${_userProfile!.friendsCount}',
-                label: 'Friends',
+                label: Provider.of<LocalizationService>(context, listen: false).translate('ui.friends'),
                 iconColor: AppColors.secondary,
                 iconBackgroundColor: AppColors.secondary.withOpacity(0.1),
               ),
@@ -481,7 +481,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               child: _buildStatItem(
                 icon: Icons.favorite_outline,
                 value: '${_userProfile!.wishlistsCount}',
-                label: 'Wishlists',
+                label: Provider.of<LocalizationService>(context, listen: false).translate('ui.wishlists'),
                 iconColor: AppColors.primary,
                 iconBackgroundColor: AppColors.primary.withOpacity(0.1),
               ),
@@ -499,7 +499,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               child: _buildStatItem(
                 icon: Icons.event_outlined,
                 value: '${_userProfile!.eventsCreated}',
-                label: 'Events',
+                label: Provider.of<LocalizationService>(context, listen: false).translate('ui.events'),
                 iconColor: AppColors.accent,
                 iconBackgroundColor: AppColors.accent.withOpacity(0.1),
               ),
@@ -588,7 +588,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'Account Settings',
+                Provider.of<LocalizationService>(context, listen: false).translate('profile.accountSettings'),
                 style: AppStyles.headingSmall.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -599,24 +599,24 @@ class _ProfileScreenState extends State<ProfileScreen>
 
           _buildSettingItem(
             icon: Icons.person_outline,
-            title: 'Personal Information',
-            subtitle: 'Name, email, bio',
+            title: Provider.of<LocalizationService>(context, listen: false).translate('profile.personalInformation'),
+            subtitle: Provider.of<LocalizationService>(context, listen: false).translate('profile.nameEmailBio'),
             onTap: _editPersonalInfo,
             color: AppColors.primary,
           ),
 
           _buildSettingItem(
             icon: Icons.security_outlined,
-            title: 'Privacy & Security',
-            subtitle: 'Password, privacy settings',
+            title: Provider.of<LocalizationService>(context, listen: false).translate('profile.privacySecurity'),
+            subtitle: Provider.of<LocalizationService>(context, listen: false).translate('profile.passwordPrivacySettings'),
             onTap: _privacySettings,
             color: AppColors.secondary,
           ),
 
           _buildSettingItem(
             icon: Icons.notifications_outlined,
-            title: 'Notifications',
-            subtitle: 'Push, email, in-app',
+            title: Provider.of<LocalizationService>(context, listen: false).translate('profile.notificationSettings'),
+            subtitle: Provider.of<LocalizationService>(context, listen: false).translate('profile.notificationSettingsSubtitle'),
             onTap: _notificationSettings,
             color: AppColors.accent,
           ),
@@ -660,7 +660,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               const SizedBox(width: 12),
               Text(
-                'App Settings',
+                Provider.of<LocalizationService>(context, listen: false).translate('profile.appSettings'),
                 style: AppStyles.headingSmall.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -671,8 +671,10 @@ class _ProfileScreenState extends State<ProfileScreen>
 
           _buildSettingItem(
             icon: Icons.language_outlined,
-            title: 'Language',
-            subtitle: _currentLanguage == 'en' ? 'English' : 'العربية',
+            title: Provider.of<LocalizationService>(context, listen: false).translate('profile.language'),
+            subtitle: _currentLanguage == 'en' 
+                ? Provider.of<LocalizationService>(context, listen: false).translate('profile.english')
+                : Provider.of<LocalizationService>(context, listen: false).translate('profile.arabic'),
             onTap: _languageSettings,
             showDivider: false,
             color: AppColors.secondary,
@@ -752,7 +754,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
             ),
             subtitle: Text(
-              'Sign out of your account',
+              Provider.of<LocalizationService>(context, listen: false).translate('profile.signOutOfAccount'),
               style: AppStyles.bodySmall.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -1011,7 +1013,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
             ListTile(
               leading: Icon(Icons.language, color: AppColors.secondary),
-              title: Text('العربية'),
+              title: Text(localization.translate('profile.arabic')),
               subtitle: Text(localization.translate('dialogs.arabic')),
               trailing: _currentLanguage == 'ar'
                   ? Icon(Icons.check_circle, color: AppColors.success)
@@ -1174,11 +1176,11 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('Interests updated successfully!'),
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text(Provider.of<LocalizationService>(context, listen: false).translate('cards.interestsUpdatedSuccessfully')),
                 ],
               ),
               backgroundColor: AppColors.success,
@@ -1222,7 +1224,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 const Icon(Icons.error_outline, color: Colors.white),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text('Failed to update interests. Please try again.'),
+                  child: Text(Provider.of<LocalizationService>(context, listen: false).translate('cards.failedToUpdateInterests')),
                 ),
               ],
             ),
@@ -1296,7 +1298,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Help friends choose for you! 🎁',
+                    '${Provider.of<LocalizationService>(context, listen: false).translate('profile.helpFriendsChoose')} 🎁',
                     style: AppStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
@@ -1304,7 +1306,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Tap to select your favorite gift categories.',
+                    Provider.of<LocalizationService>(context, listen: false).translate('profile.tapToSelectCategories'),
                     style: AppStyles.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -1333,7 +1335,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Interests',
+              Provider.of<LocalizationService>(context, listen: false).translate('profile.interests'),
               style: AppStyles.headingSmall.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -1346,7 +1348,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 color: AppColors.primary,
               ),
               label: Text(
-                'Edit',
+                Provider.of<LocalizationService>(context, listen: false).translate('app.edit'),
                 style: AppStyles.bodySmall.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
@@ -1558,7 +1560,7 @@ class _InterestsSelectionSheetState extends State<InterestsSelectionSheet> {
               child: Row(
                 children: [
                   Text(
-                    'Select Your Interests',
+                    Provider.of<LocalizationService>(context, listen: false).translate('profile.selectYourInterests'),
                     style: AppStyles.headingMedium.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -1656,9 +1658,9 @@ class _InterestsSelectionSheetState extends State<InterestsSelectionSheet> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : const Text(
-                          'Save Changes',
-                          style: TextStyle(
+                      : Text(
+                          Provider.of<LocalizationService>(context, listen: false).translate('cards.saveChanges'),
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),

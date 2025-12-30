@@ -2,8 +2,10 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/friends/data/models/friend_event_model.dart';
 import 'package:wish_listy/features/friends/data/models/friend_wishlist_model.dart';
 import 'package:wish_listy/features/friends/presentation/controllers/friend_profile_controller.dart';
@@ -162,12 +164,13 @@ class _PatternedHeader extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                       child: Obx(() {
+                        final localization = Provider.of<LocalizationService>(context, listen: false);
                         final p = controller.profile.value;
                         final user = p?.user;
 
                         final fullName = (user?.fullName.isNotEmpty ?? false)
                             ? user!.fullName
-                            : 'Friend';
+                            : localization.translate('friends.friend');
                         final profileImage = user?.profileImage;
 
                         final counts = p?.counts;
@@ -272,10 +275,11 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
     final initial = fullName.trim().isNotEmpty
         ? fullName.trim()[0].toUpperCase()
-        : 'F';
+        : localization.translate('friends.friendInitial');
 
     return Container(
       decoration: BoxDecoration(
@@ -360,6 +364,7 @@ class _GlassStatsContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -379,7 +384,7 @@ class _GlassStatsContainer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: _buildStatItem(context, 'Wishlists', wishlists.toString()),
+            child: _buildStatItem(context, localization.translate('friends.wishlists'), wishlists.toString()),
           ),
           Container(
             width: 1,
@@ -387,7 +392,7 @@ class _GlassStatsContainer extends StatelessWidget {
             color: Colors.grey.shade300,
           ),
           Expanded(
-            child: _buildStatItem(context, 'Friends', friends.toString()),
+            child: _buildStatItem(context, localization.translate('navigation.friends'), friends.toString()),
           ),
           Container(
             width: 1,
@@ -395,7 +400,7 @@ class _GlassStatsContainer extends StatelessWidget {
             color: Colors.grey.shade300,
           ),
           Expanded(
-            child: _buildStatItem(context, 'Events', events.toString()),
+            child: _buildStatItem(context, localization.translate('navigation.events'), events.toString()),
           ),
         ],
       ),
@@ -727,18 +732,24 @@ class _BodyContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Wishlists Section Header
-          const Text(
-            'Wishlists 🎁',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+          Builder(
+            builder: (context) {
+              final localization = Provider.of<LocalizationService>(context, listen: false);
+              return Text(
+                '${localization.translate('friends.wishlists')} 🎁',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              );
+            },
           ),
           // Spacing after header
           const SizedBox(height: 8),
           // Wishlists Content
           Obx(() {
+            final localization = Provider.of<LocalizationService>(context, listen: false);
             final isLoading = controller.isLoading.value;
             final list = controller.wishlists;
             if (isLoading) {
@@ -747,8 +758,8 @@ class _BodyContent extends StatelessWidget {
             if (list.isEmpty) {
               return _buildEmptyState(
                 icon: Icons.card_giftcard,
-                title: 'No public wishlists',
-                subtitle: 'This friend hasn\'t shared any lists yet.',
+                title: localization.translate('friends.noPublicWishlists'),
+                subtitle: localization.translate('friends.noPublicWishlistsDescription'),
               );
             }
 
@@ -763,8 +774,9 @@ class _BodyContent extends StatelessWidget {
                   wishlist: w,
                   controller: controller,
                   onTap: () {
+                    final localization = Provider.of<LocalizationService>(context, listen: false);
                     final friendName =
-                        controller.profile.value?.user.fullName ?? 'Friend';
+                        controller.profile.value?.user.fullName ?? localization.translate('friends.friend');
                     Navigator.pushNamed(
                       context,
                       AppRoutes.wishlistItems,
