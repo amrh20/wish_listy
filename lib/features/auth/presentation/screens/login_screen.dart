@@ -151,11 +151,12 @@ class _LoginScreenState extends State<LoginScreen>
       );
 
       if (success && mounted) {
-        // Ensure NotificationsCubit is initialized and listener is registered
-        // This ensures the socket listener is active before navigation
+        // Ensure NotificationsCubit is initialized and fetch unread count
         try {
           final notificationsCubit = context.read<NotificationsCubit>();
-          debugPrint('✅ LoginScreen: NotificationsCubit accessed, listener should be registered');
+          debugPrint('✅ LoginScreen: NotificationsCubit accessed, fetching unread count...');
+          // Fetch unread count immediately after login
+          notificationsCubit.getUnreadCount();
         } catch (e) {
           debugPrint('⚠️ LoginScreen: Could not access NotificationsCubit: $e');
         }

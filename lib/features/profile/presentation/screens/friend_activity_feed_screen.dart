@@ -268,6 +268,10 @@ class _ActivityTile extends StatelessWidget {
         .replaceAll(RegExp(r'^added '), '')
         .replaceAll(RegExp(r' to their wishlist$'), '');
 
+    // Navigate to friend profile when card is tapped
+    final friendId = activity.friendId;
+    final canNavigateToProfile = friendId != null && friendId.isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -283,38 +287,40 @@ class _ActivityTile extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Avatar
-          GestureDetector(
-            onTap: activity.friendId != null
-                ? () {
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.friendProfile,
-                      arguments: {'userId': activity.friendId},
-                    );
-                  }
-                : null,
-            child: CircleAvatar(
-              radius: 24,
-              backgroundColor: AppColors.primary.withOpacity(0.1),
-              backgroundImage: activity.avatarUrl != null
-                  ? NetworkImage(activity.avatarUrl!)
-                  : null,
-              child: activity.avatarUrl == null
-                  ? Text(
-                      _getInitials(activity.friendName),
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    )
-                  : null,
-            ),
-          ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: canNavigateToProfile
+              ? () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.friendProfile,
+                    arguments: {'friendId': friendId},
+                  );
+                }
+              : null,
+          borderRadius: BorderRadius.circular(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Avatar
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: AppColors.primary.withOpacity(0.1),
+                backgroundImage: activity.avatarUrl != null
+                    ? NetworkImage(activity.avatarUrl!)
+                    : null,
+                child: activity.avatarUrl == null
+                    ? Text(
+                        _getInitials(activity.friendName),
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      )
+                    : null,
+              ),
           const SizedBox(width: 12),
           // Content
           Expanded(

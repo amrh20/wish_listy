@@ -322,7 +322,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       children: [
         // Try Without Account Button (Guest Mode)
         CustomButton(
-          text: 'Try Without an Account',
+          text: localization.translate('welcome.getStarted'),
           onPressed: () async {
             // Set user as guest
             final authService = Provider.of<AuthRepository>(

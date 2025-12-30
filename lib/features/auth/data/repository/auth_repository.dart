@@ -92,11 +92,15 @@ class AuthRepository extends ChangeNotifier {
     _userEmail = null;
     _userName = null;
 
+    // Clear auth token from API service to prevent unauthorized API calls
+    _apiService.clearAuthToken();
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_logged_in', false);
     await prefs.remove('user_id');
     await prefs.remove('user_email');
     await prefs.remove('user_name');
+    await prefs.remove('auth_token');
 
     notifyListeners();
   }

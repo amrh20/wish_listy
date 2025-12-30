@@ -19,6 +19,7 @@ import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'package:wish_listy/features/notifications/presentation/widgets/notification_dropdown.dart';
 import 'package:wish_listy/features/notifications/data/models/notification_model.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final GlobalKey<HomeScreenState>? key;
@@ -51,14 +52,15 @@ class HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  String _getTimeBasedGreeting() {
+  String _getTimeBasedGreeting(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final hour = DateTime.now().hour;
     if (hour < 12) {
-      return 'Good Morning';
+      return localization.translate('home.goodMorning');
     } else if (hour < 17) {
-      return 'Good Afternoon';
+      return localization.translate('home.goodAfternoon');
     } else {
-      return 'Good Evening';
+      return localization.translate('home.goodEvening');
     }
   }
 
@@ -127,7 +129,7 @@ class HomeScreenState extends State<HomeScreen> {
                               mainAxisAlignment: MainAxisAlignment.start,
                               children: [
                                 Text(
-                                  '${_getTimeBasedGreeting()}, $firstName',
+                                  '${_getTimeBasedGreeting(context)}, $firstName',
                                   style: AppStyles.headingLarge.copyWith(
                                     color: AppColors.textPrimary, // Same as UnifiedPageHeader
                                     fontWeight: FontWeight.bold,

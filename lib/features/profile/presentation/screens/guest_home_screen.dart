@@ -11,6 +11,7 @@ import 'package:wish_listy/features/profile/presentation/screens/guest_wishlist_
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 class GuestWishlist {
   final String title;
@@ -72,11 +73,11 @@ class _GuestHomeScreenState extends State<GuestHomeScreen>
   late Animation<double> _floatingAnimation;
   late Animation<double> _pulseAnimation;
 
-  List<GuestWishlist> get _guestInspirationList => [
+  List<GuestWishlist> _guestInspirationList(LocalizationService localization) => [
         GuestWishlist(
-          title: 'Graduation Goals',
+          title: localization.translate('guest.home.dummyData.graduationGoals.title'),
           category: 'Graduation',
-          description: 'Tech upgrades for my new journey! 🎓',
+          description: localization.translate('guest.home.dummyData.graduationGoals.description'),
           itemCount: 3,
           items: [
             WishItemIcon(
@@ -103,9 +104,9 @@ class _GuestHomeScreenState extends State<GuestHomeScreen>
           ],
         ),
         GuestWishlist(
-          title: 'My 25th Birthday',
+          title: localization.translate('guest.home.dummyData.my25thBirthday.title'),
           category: 'Birthday',
-          description: 'Can\'t wait to celebrate with you all! 🎉',
+          description: localization.translate('guest.home.dummyData.my25thBirthday.description'),
           itemCount: 3,
           items: [
             WishItemIcon(
@@ -132,9 +133,9 @@ class _GuestHomeScreenState extends State<GuestHomeScreen>
           ],
         ),
         GuestWishlist(
-          title: 'Dream Wedding',
+          title: localization.translate('guest.home.dummyData.dreamWedding.title'),
           category: 'Wedding',
-          description: 'Essentials for our new home together. 💍',
+          description: localization.translate('guest.home.dummyData.dreamWedding.description'),
           itemCount: 3,
           items: [
             WishItemIcon(
@@ -386,8 +387,9 @@ class _GuestHomeScreenState extends State<GuestHomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final userLists = _buildUserCreatedLists();
-    final inspiration = _guestInspirationList;
+    final inspiration = _guestInspirationList(localization);
     final userEntries = _guestWishlists.map((w) {
       final itemCount = w.items.length;
       final preview = w.items.take(3).map((it) {
@@ -482,55 +484,75 @@ class _GuestHomeScreenState extends State<GuestHomeScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Make Your Wishes Come True ✨',
-                                style: AppStyles.headingLarge.copyWith(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 22,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'The fun way to organize dreams & receive gifts you love.',
-                                style: AppStyles.bodyLarge.copyWith(
-                                  color: AppColors.textSecondary,
-                                  fontStyle: FontStyle.italic,
-                                  fontSize: 14,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                              Builder(
+                                builder: (context) {
+                                  final localization = Provider.of<LocalizationService>(context, listen: false);
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        localization.translate('dialogs.makeYourWishesComeTrue'),
+                                        style: AppStyles.headingLarge.copyWith(
+                                          color: AppColors.textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 22,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        localization.translate('dialogs.theFunWayToOrganize'),
+                                        style: AppStyles.bodyLarge.copyWith(
+                                          color: AppColors.textSecondary,
+                                          fontStyle: FontStyle.italic,
+                                          fontSize: 14,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                             ],
                           ),
                         ),
-                        // Log In Button (always visible for guests)
-                        TextButton.icon(
-                          onPressed: () {
-                            Navigator.pushReplacementNamed(
-                              context,
-                              AppRoutes.login,
-                            );
-                          },
-                          icon: Icon(
-                            Icons.login_rounded,
-                            size: 18,
-                            color: AppColors.primary,
-                          ),
-                          label: Text(
-                            'Log In',
-                            style: AppStyles.bodyMedium.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                        // Log In Button (always visible for guests) - Icon style like unified header
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.pushReplacementNamed(
+                                context,
+                                AppRoutes.login,
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: AppColors.primary.withOpacity(0.2),
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    offset: const Offset(0, 2),
+                                    blurRadius: 8,
+                                    spreadRadius: 0,
+                                  ),
+                                ],
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  Icons.login_rounded,
+                                  color: AppColors.primary,
+                                  size: 22,
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -575,7 +597,7 @@ class _GuestHomeScreenState extends State<GuestHomeScreen>
                                 // User's Real Lists
                                 if (userLists.isNotEmpty) ...[
                                   Text(
-                                    'Your Lists',
+                                    localization.translate('guest.home.yourLists'),
                                     style: AppStyles.headingSmall.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: AppColors.textPrimary,
@@ -665,7 +687,7 @@ class _GuestHomeScreenState extends State<GuestHomeScreen>
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Get Inspired ✨',
+                                          localization.translate('guest.home.getInspired'),
                                           style: AppStyles.headingSmall.copyWith(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 18,
@@ -674,7 +696,7 @@ class _GuestHomeScreenState extends State<GuestHomeScreen>
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          'Sample collections to spark your creativity',
+                                          localization.translate('guest.home.getInspiredSubtitle'),
                                           style: AppStyles.bodyMedium.copyWith(
                                             fontSize: 13,
                                             color: AppColors.textSecondary,
@@ -824,7 +846,7 @@ class _GuestHomeScreenState extends State<GuestHomeScreen>
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'Create Your First Wishlist',
+                                      localization.translate('guest.home.createFirstWishlist'),
                                       style: AppStyles.bodyLarge.copyWith(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w600,
@@ -897,9 +919,10 @@ class GuestWishlistCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasItems = wishlist.items.isNotEmpty;
 
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final categoryColor = categoryVisual.foregroundColor;
     final categoryName = wishlist.category;
-    final wishesText = '• ${wishlist.itemCount} ${wishlist.itemCount == 1 ? 'Wish' : 'Wishes'}';
+    final wishesText = '• ${wishlist.itemCount} ${wishlist.itemCount == 1 ? localization.translate('guest.home.wish') : localization.translate('guest.home.wishes')}';
     final description = wishlist.description?.trim();
     final hasDescription = description != null && description.isNotEmpty;
 
@@ -991,7 +1014,7 @@ class GuestWishlistCard extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'Edit',
+                                      Provider.of<LocalizationService>(context, listen: false).translate('app.edit'),
                                       style: AppStyles.bodyMedium.copyWith(
                                         color: AppColors.textPrimary,
                                         fontWeight: FontWeight.w600,
@@ -1011,7 +1034,7 @@ class GuestWishlistCard extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'Delete',
+                                      Provider.of<LocalizationService>(context, listen: false).translate('app.delete'),
                                       style: AppStyles.bodyMedium.copyWith(
                                         color: AppColors.error,
                                         fontWeight: FontWeight.w600,
@@ -1109,15 +1132,15 @@ class GuestWishlistCard extends StatelessWidget {
                     gradient: AppColors.primaryGradient,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.add, color: Colors.white, size: 20),
-                        SizedBox(width: 8),
+                        const Icon(Icons.add, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
                         Text(
-                          'Add Your First Wish',
-                          style: TextStyle(
+                          Provider.of<LocalizationService>(context, listen: false).translate('guest.home.addFirstWish'),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),

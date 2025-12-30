@@ -12,11 +12,14 @@ import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
 import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
 
 class FriendsScreen extends StatefulWidget {
-  const FriendsScreen({super.key});
+  final int? initialTabIndex;
+  
+  const FriendsScreen({super.key, this.initialTabIndex});
 
   @override
   FriendsScreenState createState() => FriendsScreenState();
@@ -56,13 +59,22 @@ class FriendsScreenState extends State<FriendsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    final initialIndex = widget.initialTabIndex ?? 0;
+    _tabController = TabController(length: 2, vsync: this, initialIndex: initialIndex);
     _initializeAnimations();
     _startAnimations();
     _searchController.addListener(_onSearchChanged);
     
     // Set up scroll listener for pagination
     _scrollController.addListener(_onScroll);
+  }
+
+  /// Switch to a specific tab programmatically
+  void switchToTab(int index) {
+    if (index >= 0 && index < _tabController.length) {
+      _tabController.animateTo(index);
+      setState(() {});
+    }
   }
 
   @override
@@ -580,7 +592,7 @@ class FriendsScreenState extends State<FriendsScreen>
                         ),
                       ),
                       child: Text(
-                        'Decline',
+                        Provider.of<LocalizationService>(context, listen: false).translate('dialogs.decline'),
                         style: AppStyles.bodySmall.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -604,7 +616,7 @@ class FriendsScreenState extends State<FriendsScreen>
                         ),
                       ),
                       child: Text(
-                        'Accept',
+                        Provider.of<LocalizationService>(context, listen: false).translate('dialogs.accept'),
                         style: AppStyles.bodySmall.copyWith(
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -745,6 +757,13 @@ class FriendsScreenState extends State<FriendsScreen>
 
   /// Load friends from API
   Future<void> _loadFriends({bool resetPage = false}) async {
+    // Don't make API calls for guest users
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest) {
+      debugPrint('⚠️ FriendsScreen: Skipping API call for guest user');
+      return;
+    }
+
     if (resetPage) {
       setState(() {
         _currentPage = 1;
@@ -766,7 +785,7 @@ class FriendsScreenState extends State<FriendsScreen>
     try {
       final response = await _friendsRepository.getFriends(
         page: _currentPage,
-        limit: 20,
+        limit: 10,
       );
 
       if (!mounted) return;
@@ -825,6 +844,13 @@ class FriendsScreenState extends State<FriendsScreen>
   }
 
   Future<void> _loadFriendRequests() async {
+    // Don't make API calls for guest users
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest) {
+      debugPrint('⚠️ FriendsScreen: Skipping friend requests API call for guest user');
+      return;
+    }
+
     setState(() {
       _isLoadingRequests = true;
       _requestsError = null;
@@ -914,13 +940,14 @@ class FriendsScreenState extends State<FriendsScreen>
       );
     } catch (e) {
       if (!mounted) return;
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
-            children: const [
+            children: [
               Icon(Icons.error, color: Colors.white),
               SizedBox(width: 8),
-              Text('Failed to process friend request. Please try again.'),
+              Text(localization.translate('dialogs.failedToProcessFriendRequest')),
             ],
           ),
           backgroundColor: AppColors.error,
@@ -950,12 +977,13 @@ class FriendsScreenState extends State<FriendsScreen>
 
   void _showAddFriendDialog() {
     final emailController = TextEditingController();
+    final localization = Provider.of<LocalizationService>(context, listen: false);
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Add Friend'),
+        title: Text(localization.translate('dialogs.addFriend')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -978,7 +1006,7 @@ class FriendsScreenState extends State<FriendsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: Text(localization.translate('common.cancel')),
           ),
           CustomButton(
             text: 'Send Request',
@@ -991,7 +1019,7 @@ class FriendsScreenState extends State<FriendsScreen>
                     children: [
                       Icon(Icons.send, color: Colors.white),
                       const SizedBox(width: 8),
-                      Text('Friend request sent!'),
+                      Text(localization.translate('dialogs.friendRequestSent')),
                     ],
                   ),
                   backgroundColor: AppColors.success,

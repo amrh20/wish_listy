@@ -98,7 +98,7 @@ class _EventGuestListScreenState extends State<EventGuestListScreen>
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          "Who's Coming",
+          localization.translate('dialogs.whosComing'),
           style: AppStyles.headingMedium.copyWith(
             fontWeight: FontWeight.bold,
             color: AppColors.textPrimary,
@@ -117,7 +117,7 @@ class _EventGuestListScreenState extends State<EventGuestListScreen>
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search by name...',
+                hintText: localization.translate('dialogs.searchByName'),
                 hintStyle: AppStyles.bodyMedium.copyWith(
                   color: AppColors.textTertiary,
                 ),
@@ -171,11 +171,11 @@ class _EventGuestListScreenState extends State<EventGuestListScreen>
                 fontWeight: FontWeight.w600,
               ),
               unselectedLabelStyle: AppStyles.bodyMedium,
-              tabs: const [
-                Tab(text: 'All'),
-                Tab(text: 'Going'),
-                Tab(text: 'Maybe'),
-                Tab(text: 'Pending'),
+              tabs: [
+                Tab(text: localization.translate('ui.all')),
+                Tab(text: localization.translate('events.going')),
+                Tab(text: localization.translate('dialogs.maybe')),
+                Tab(text: localization.translate('events.pending')),
               ],
             ),
           ),
@@ -333,22 +333,23 @@ class _EventGuestListScreenState extends State<EventGuestListScreen>
   }
 
   Widget _buildEmptyState() {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     String message;
     if (_searchQuery.isNotEmpty) {
-      message = 'No friends found matching "$_searchQuery"';
+      message = localization.translate('dialogs.noFriendsFoundMatching').replaceAll('{query}', _searchQuery);
     } else {
       switch (_selectedTabIndex) {
         case 1:
-          message = 'No one is going yet';
+          message = localization.translate('dialogs.noOneGoingYet');
           break;
         case 2:
-          message = 'No one has responded "Maybe" yet';
+          message = localization.translate('dialogs.noOneRespondedMaybe');
           break;
         case 3:
-          message = 'No pending invitations';
+          message = localization.translate('dialogs.noPendingInvitations');
           break;
         default:
-          message = 'No friends invited yet';
+          message = localization.translate('dialogs.noFriendsInvitedYet');
       }
     }
 
@@ -415,13 +416,13 @@ class _EventGuestListScreenState extends State<EventGuestListScreen>
   String _getStatusText(InvitationStatus status, LocalizationService localization) {
     switch (status) {
       case InvitationStatus.accepted:
-        return 'Going';
+        return localization.translate('events.going');
       case InvitationStatus.maybe:
-        return 'Maybe';
+        return localization.translate('dialogs.maybe');
       case InvitationStatus.pending:
-        return 'Pending';
+        return localization.translate('events.pending');
       case InvitationStatus.declined:
-        return 'Declined';
+        return localization.translate('events.declined');
     }
   }
 

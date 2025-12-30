@@ -105,12 +105,34 @@
     "title": "Welcome",
     "subtitle": "Create and share your wishlists with friends and family",
     "getStarted": "Explore as Guest",
-    "alreadyHaveAccount": "Sign In"
+    "alreadyHaveAccount": "Get Started"
+  },
+  "onboarding": {
+    "createWishlists": {
+      "title": "Create Wishlists",
+      "description": "Organize your dream items and gift ideas in beautiful, personalized wishlists."
+    },
+    "shareWithFriends": {
+      "title": "Share with Friends",
+      "description": "Connect with friends and family to discover their wishes and make gift-giving meaningful."
+    },
+    "organizeEvents": {
+      "title": "Organize Events",
+      "description": "Plan celebrations, manage guest lists, and coordinate gift exchanges for special occasions."
+    },
+    "skip": "Skip",
+    "exploreAsGuest": "Explore as Guest"
+  },
+  "wishlists": {
+    "wishlistDescriptionOptional": "Description is optional"
   },
   "home": {
     "title": "Home",
     "welcomeMessage": "Welcome to WishListy",
     "greeting": "Welcome back!",
+    "goodMorning": "Good Morning",
+    "goodAfternoon": "Good Afternoon",
+    "goodEvening": "Good Evening",
     "subtitle": "What would you like to do today?",
     "upcomingEvents": "Upcoming Events",
     "recentWishlists": "Recent Wishlists",
@@ -354,16 +376,14 @@
     "barcodeScannerComingSoon": "Barcode scanner coming soon!",
     "birthday2024": "Birthday 2024",
     "christmas2024": "Christmas 2024",
-    "personalWishlists": "Personal Wishlists",
     "friendsWishlists": "Invited",
     "friendsWishlistsComingSoon": "Friends' Wishlists Coming Soon",
     "friendsWishlistsDescription": "Browse and reserve items from your friends' wishlists. This feature will be available soon!",
     "itemsPurchased": "items purchased",
     "exploreWishlists": "Explore Wishlists",
     "signInToCreateWishlists": "Sign in to create your own wishlists and connect with friends",
-    "searchWishlists": "Search for public wishlists",
+    "searchWishlists": "Search for wishlists",
     "by": "by",
-    "updated": "Updated",
     "popularUsers": "Popular Users",
     "noResultsFound": "No results found",
     "updatedDaysAgo": "Updated {days} days ago",
@@ -532,11 +552,9 @@
     "enterMeetingLink": "Enter video call link (Zoom, Google Meet, etc.)",
     "createEvent": "Create Event",
     "saveAsDraft": "Save as Draft",
-    "eventCreatedSuccessfully": "Event created successfully!",
-    "eventSavedAsDraft": "Event saved as draft",
     "eventCreatedSuccessfully": "Event Created Successfully!",
+    "eventSavedAsDraft": "Event saved as draft",
     "eventCreatedMessage": "Your event \"{eventName}\" has been created successfully.",
-    "inviteFriends": "Invite Friends",
     "viewEvent": "View Event",
     "addWishlistItems": "Add Wishlist Items",
     "manageEvent": "Manage Event",
@@ -571,11 +589,9 @@
     "respondToInvitation": "Respond to Invitation",
     "going": "Going",
     "notGoing": "Not Going",
-    "maybe": "Maybe",
     "changeResponse": "Change Response",
     "wishlistActions": "Wishlist Actions",
     "viewEventWishlist": "View Event Wishlist",
-    "addWishlistItems": "Add Wishlist Items",
     "editWishlistItems": "Edit Wishlist Items",
     "reserveItem": "Reserve Item",
     "unreserveItem": "Unreserve Item",
@@ -600,9 +616,6 @@
     "eventSharing": "Event Sharing",
     "shareEventLink": "Share Event Link",
     "eventLinkCopied": "Event Link Copied",
-    "eventManagement": "Event Management",
-    "editEventDetails": "Edit Event Details",
-    "deleteEvent": "Delete Event",
     "confirmDeleteEvent": "Confirm Delete Event",
     "deleteEventMessage": "Are you sure you want to delete this event? This action cannot be undone.",
     "eventDeleted": "Event Deleted Successfully",
@@ -618,7 +631,9 @@
     "guestRemoved": "Guest Removed Successfully",
     "guestAdded": "Guest Added Successfully",
     "rsvpUpdated": "RSVP Updated Successfully",
-    "reminderSent": "Reminder Sent Successfully"
+    "reminderSent": "Reminder Sent Successfully",
+    "deselectall": "[EN: إلغاء اختيار الكل]",
+    "selectall": "[EN: اختيار الكل]"
   },
   "friends": {
     "title": "Friends",
@@ -670,7 +685,7 @@
     "friendsCount": "{count} friends",
     "requestReceived": "Request received",
     "requestPending": "Request pending",
-    "alreadyFriends": "Already friends",
+    "alreadyFriends": "Already Friends",
     "requestAlreadySent": "Request already sent",
     "pendingRequestsCount": "{count} pending requests",
     "friendSince": "Friends since {date}",
@@ -686,7 +701,6 @@
     "sendFriendRequest": "Send Friend Request",
     "cancelFriendRequest": "Cancel Friend Request",
     "friendRequestPending": "Friend Request Pending",
-    "alreadyFriends": "Already Friends",
     "blockedUser": "Blocked User",
     "reportUser": "Report User",
     "reportReason": "Report Reason",
@@ -823,6 +837,7 @@
     "all": "All",
     "unread": "Unread",
     "markAllRead": "Mark All as Read",
+    "markAllAsRead": "Mark all read",
     "clearAll": "Clear All",
     "noNotifications": "No notifications",
     "friendRequest": "New friend request",
@@ -834,7 +849,20 @@
     "newMessage": "New message",
     "systemUpdate": "System update",
     "requestAccepted": "Request Accepted Successfully",
-    "requestRejected": "Request Rejected Successfully"
+    "requestRejected": "Request Rejected Successfully",
+    "today": "Today",
+    "earlier": "Earlier",
+    "unreadNotifications": "{count} unread notifications",
+    "viewAllNotifications": "View All Notifications",
+    "responseSent": "Response Sent ✅",
+    "youDeclinedInvitation": "You declined the invitation",
+    "youMarkedMaybe": "You marked as maybe",
+    "youAcceptedInvitation": "You accepted the invitation",
+    "friendRequestAccepted": "Friend request accepted!",
+    "friendRequestDeclined": "Friend request declined",
+    "failedToAcceptRequest": "Failed to accept friend request. Please try again.",
+    "failedToDeclineRequest": "Failed to decline friend request. Please try again.",
+    "newNotifications": "{count} new"
   },
   "common": {
     "cancel": "Cancel",
@@ -945,7 +973,8 @@
     "permissionDenied": "Permission denied",
     "featureNotAvailable": "Feature not available",
     "comingSoon": "Coming soon",
-    "beta": "Beta"
+    "beta": "Beta",
+    "friendRequestRejected": "[EN: تم رفض طلب الصداقة]"
   },
   "social": {
     "google": "Google",
@@ -978,11 +1007,71 @@
     "friendActivity": "created a new event: \"{eventName}\"",
     "itemReceived": "marked \"{itemName}\" as received",
     "confirmCancelEvent": "Are you sure you want to cancel \"{eventName}\"? This action cannot be undone.",
-    "friendRequestMessage": "\"{message}\""
+    "friendRequestMessage": "\"{message}\"",
+    "youreOnGuestList": "You're on the guest list! 🎟️",
+    "letHostKnow": "Let the host know if you can make it.",
+    "whosComing": "Who's Coming",
+    "about": "About",
+    "yourResponse": "Your Response",
+    "accept": "Accept",
+    "maybe": "Maybe",
+    "decline": "Decline",
+    "youAreGoing": "You are going! Don't forget a gift 🎁",
+    "failedToUpdateResponse": "Failed to update response",
+    "eventDeletedSuccessfully": "Event deleted successfully",
+    "failedToDeleteEvent": "Failed to delete event",
+    "wishlistUnlinkedSuccessfully": "Wishlist unlinked successfully",
+    "failedToUnlinkWishlist": "Failed to unlink wishlist",
+    "wishlistLinkedSuccessfully": "Wishlist linked successfully",
+    "failedToLinkWishlist": "Failed to link wishlist",
+    "couldNotOpenMaps": "Could not open maps",
+    "couldNotOpenMeetingLink": "Could not open meeting link",
+    "meetingLinkNotAvailable": "Meeting link not available",
+    "searchByName": "Search by name...",
+    "hostedBy": "Hosted by",
+    "pastEvent": "Past Event",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "inDays": "In {days} days",
+    "noOneGoingYet": "No one is going yet",
+    "noOneRespondedMaybe": "No one has responded \"Maybe\" yet",
+    "noPendingInvitations": "No pending invitations",
+    "noFriendsInvitedYet": "No friends invited yet",
+    "noFriendsFoundMatching": "No friends found matching \"{query}\"",
+    "makeYourWishesComeTrue": "Make Your Wishes Come True ✨",
+    "theFunWayToOrganize": "The fun way to organize dreams & receive gifts you love.",
+    "logIn": "Log In",
+    "deleteItem": "Delete Item",
+    "areYouSureDeleteItem": "Are you sure you want to delete \"{itemName}\"?",
+    "pleaseLoginToReserve": "Please login to reserve items",
+    "failedToUpdateReservation": "Failed to update reservation",
+    "invalidUrl": "Invalid URL",
+    "couldNotOpenLink": "Could not open link",
+    "pleaseLoginToMarkReceived": "Please login to mark items as received",
+    "failedToUpdateStatus": "Failed to update status",
+    "copiedToClipboard": "Copied to clipboard",
+    "deletingItem": "Deleting item...",
+    "searchWishes": "Search wishes...",
+    "failedToMarkAsPurchased": "Failed to mark as purchased",
+    "failedToProcessFriendRequest": "Failed to process friend request. Please try again.",
+    "addFriend": "Add Friend",
+    "friendRequestSent": "Friend request sent!",
+    "failedToUpdateRsvp": "Failed to update RSVP",
+    "failedToLoadEvent": "Failed to load event",
+    "shareFunctionalityComingSoon": "Share functionality coming soon",
+    "shareWishlist": "Share wishlist: {wishlistName}",
+    "failedToCancelReservation": "Failed to cancel reservation",
+    "retry": "Retry",
+    "unableToProcessFriendRequest": "Unable to process friend request. Request ID not found.",
+    "allNotificationsMarkedAsRead": "All notifications marked as read",
+    "errorLoggingOut": "Error logging out",
+    "selectLanguage": "Select Language",
+    "english": "English",
+    "arabic": "Arabic"
   },
   "features": {
     "createWishlists": "Create Wishlists",
-    "shareWithFriends": "Share with Friends", 
+    "shareWithFriends": "Share with Friends",
     "organizeEvents": "Organize Events"
   },
   "taglines": {
@@ -1113,6 +1202,68 @@
         "viewDetails": "View Details"
       }
     },
+    "onboarding": {
+      "title": "Welcome to WishListy!",
+      "subtitle": "Explore what you can do as a guest",
+      "browsePublicWishlists": {
+        "title": "Browse Public Wishlists",
+        "description": "Discover wishlists shared by others"
+      },
+      "exploreEvents": {
+        "title": "Explore Events",
+        "description": "View public events and celebrations"
+      },
+      "signUpForMore": {
+        "title": "Sign Up for More",
+        "description": "Create your own wishlists and manage events"
+      },
+      "benefitsOfSigningUp": "Benefits of Signing Up",
+      "benefitUnlimitedWishlists": "Create unlimited wishlists",
+      "benefitOrganizeEvents": "Organize events and invite friends",
+      "benefitTrackPurchases": "Track gift purchases",
+      "benefitConnectFriends": "Connect with friends",
+      "signUpNow": "Sign Up Now",
+      "continueAsGuest": "Continue as Guest"
+    },
+    "home": {
+      "yourLists": "Your Lists",
+      "getInspired": "Get Inspired ✨",
+      "getInspiredSubtitle": "Sample collections to spark your creativity",
+      "createFirstWishlist": "Create Your First Wishlist",
+      "addFirstWish": "Add Your First Wish",
+      "wishes": "Wishes",
+      "wish": "Wish",
+      "dummyData": {
+        "graduationGoals": {
+          "title": "Graduation Goals",
+          "description": "Tech upgrades for my new journey! 🎓"
+        },
+        "my25thBirthday": {
+          "title": "My 25th Birthday",
+          "description": "Can't wait to celebrate with you all! 🎉"
+        },
+        "dreamWedding": {
+          "title": "Dream Wedding",
+          "description": "Essentials for our new home together. 💍"
+        }
+      }
+    },
+    "unlock": {
+      "events": {
+        "title": "Unlock Events",
+        "description": "Create events, invite friends, and link them to your wishlists by creating a free account."
+      },
+      "friends": {
+        "title": "Unlock Friends",
+        "description": "Connect with friends, see their wishlists, and coordinate gift-giving by creating a free account."
+      },
+      "profile": {
+        "title": "Unlock Profile",
+        "description": "Customize your profile, manage settings, and access all features by creating a free account."
+      },
+      "createFreeAccount": "Create a Free Account",
+      "notNow": "Not Now"
+    },
     "wishlists": {
       "whereToFind": "Where can this gift be found?",
       "onlineStore": "Online Store",
@@ -1122,7 +1273,7 @@
       "addProductLink": "Add Product Link",
       "enterProductUrl": "Enter product URL",
       "storeName": "Store Name",
-      "enterStoreName": "Enter store name",   
+      "enterStoreName": "Enter store name",
       "storeLocation": "Store Location",
       "enterStoreLocation": "Enter store location",
       "takePhoto": "Take Photo",

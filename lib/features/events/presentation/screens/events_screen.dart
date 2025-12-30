@@ -226,6 +226,21 @@ class EventsScreenState extends State<EventsScreen>
 
   /// Load events from API
   Future<void> _loadEvents() async {
+    // Don't make API calls for guest users
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest) {
+      debugPrint('⚠️ EventsScreen: Skipping API call for guest user');
+      setState(() {
+        _isLoading = false;
+        _myEvents = [];
+        _invitedEvents = [];
+        _publicEvents = [];
+        _hasLoadedOnce = true;
+      });
+      _applyFilters();
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -672,9 +687,10 @@ class EventsScreenState extends State<EventsScreen>
       await _loadEvents(); // Full reload to ensure consistency
       
       // Show error message
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to update RSVP: ${e.toString()}'),
+          content: Text('${localization.translate('dialogs.failedToUpdateRsvp')}: ${e.toString()}'),
           backgroundColor: AppColors.error,
           duration: const Duration(seconds: 3),
         ),
@@ -795,9 +811,10 @@ class EventsScreenState extends State<EventsScreen>
       );
     } catch (e) {
       if (mounted) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to load event: ${e.toString()}'),
+            content: Text('${localization.translate('dialogs.failedToLoadEvent')}: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -807,9 +824,10 @@ class EventsScreenState extends State<EventsScreen>
 
   void _shareEvent(EventSummary event) {
     // TODO: Implement share functionality
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Share functionality coming soon'),
+        content: Text(localization.translate('dialogs.shareFunctionalityComingSoon')),
         backgroundColor: AppColors.info,
       ),
     );
@@ -921,6 +939,7 @@ class EventsScreenState extends State<EventsScreen>
 
       if (mounted) {
         // Show success message
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -928,7 +947,7 @@ class EventsScreenState extends State<EventsScreen>
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text('Event deleted successfully'),
+                Text(localization.translate('dialogs.eventDeletedSuccessfully')),
               ],
             ),
             backgroundColor: AppColors.success,
@@ -941,10 +960,11 @@ class EventsScreenState extends State<EventsScreen>
       }
     } catch (e) {
       if (mounted) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete event: ${e.toString()}'),
+            content: Text('${localization.translate('dialogs.failedToDeleteEvent')}: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );

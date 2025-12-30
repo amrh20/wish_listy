@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 
 /// Action buttons widget for create wishlist screen
@@ -34,10 +36,15 @@ class CreateWishlistActionButtonsWidget extends StatelessWidget {
           icon: isEditing ? Icons.save_rounded : Icons.favorite_rounded,
         ),
         const SizedBox(height: 12),
-        CustomButton(
-          text: 'Cancel',
-          onPressed: onCancel,
-          variant: ButtonVariant.outline,
+        Builder(
+          builder: (context) {
+            final localization = Provider.of<LocalizationService>(context, listen: false);
+            return CustomButton(
+              text: localization.translate('common.cancel'),
+              onPressed: onCancel,
+              variant: ButtonVariant.outline,
+            );
+          },
         ),
       ],
     );

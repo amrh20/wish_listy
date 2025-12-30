@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 class FriendRequestTile extends StatelessWidget {
   final String senderName;
@@ -33,6 +35,7 @@ class FriendRequestTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     return Container(
       padding: EdgeInsets.all(compact ? 12 : 16),
       decoration: BoxDecoration(
@@ -125,7 +128,7 @@ class FriendRequestTile extends StatelessWidget {
                     shape: const StadiumBorder(),
                   ),
                   child: Text(
-                    'Decline',
+                    localization.translate('dialogs.decline'),
                     style: TextStyle(fontSize: compact ? 12 : 14),
                   ),
                 ),
@@ -142,7 +145,7 @@ class FriendRequestTile extends StatelessWidget {
                     shape: const StadiumBorder(),
                   ),
                   child: Text(
-                    'Accept',
+                    localization.translate('dialogs.accept'),
                     style: TextStyle(fontSize: compact ? 12 : 14),
                   ),
                 ),

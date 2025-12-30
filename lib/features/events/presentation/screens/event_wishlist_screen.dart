@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 class EventWishlistScreen extends StatefulWidget {
   final EventSummary event;
@@ -418,7 +420,7 @@ class _EventWishlistScreenState extends State<EventWishlistScreen>
               });
             },
             decoration: InputDecoration(
-              hintText: 'Search wishlist items...',
+              hintText: Provider.of<LocalizationService>(context, listen: false).translate('ui.searchWishlistItems'),
               prefixIcon: Icon(
                 Icons.search_outlined,
                 color: AppColors.textTertiary,
@@ -888,7 +890,7 @@ class _EventWishlistScreenState extends State<EventWishlistScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: Text(Provider.of<LocalizationService>(context, listen: false).translate('app.cancel')),
           ),
           TextButton(
             onPressed: () {

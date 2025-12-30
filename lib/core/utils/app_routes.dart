@@ -4,6 +4,7 @@ import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/signup_screen.dart';
 import '../../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../../features/auth/presentation/screens/legal_info_screen.dart';
 import 'package:wish_listy/features/profile/presentation/screens/home_screen.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 import '../../features/wishlists/presentation/screens/my_wishlists_screen.dart';
@@ -67,6 +68,7 @@ class AppRoutes {
   static const String editProfile = '/edit-profile';
   static const String friendActivityFeed = '/friend-activity-feed';
   static const String eventGuestList = '/event-guest-list';
+  static const String legalInfo = '/legal-info';
 
   // Routes Map
   static Map<String, WidgetBuilder> routes = {
@@ -91,6 +93,15 @@ class AppRoutes {
 
   // Route Generator for dynamic routes
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
+    // Handle friends route with optional initialTabIndex
+    if (settings.name == friends) {
+      final args = settings.arguments as Map<String, dynamic>?;
+      final initialTabIndex = args?['initialTabIndex'] as int?;
+      return MaterialPageRoute(
+        builder: (context) => FriendsScreen(initialTabIndex: initialTabIndex),
+      );
+    }
+    
     // Handle createWishlist route with optional wishlistId for editing and eventId for event context
     if (settings.name == createWishlist) {
       final args = settings.arguments as Map<String, dynamic>?;
@@ -215,6 +226,14 @@ class AppRoutes {
         builder: (context) => EventGuestListScreen(
           eventId: args['eventId'] ?? '',
           invitedFriends: args['invitedFriends'] as List<InvitedFriend>? ?? [],
+        ),
+      );
+    } else if (settings.name == legalInfo) {
+      final args = settings.arguments as Map<String, dynamic>;
+      return MaterialPageRoute(
+        builder: (context) => LegalInfoScreen(
+          title: args['title'] ?? 'Legal Information',
+          content: args['content'] ?? '',
         ),
       );
     }

@@ -195,6 +195,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                 _buildStatsSection(),
                                                 const SizedBox(height: 16),
 
+                                                // Interests Section
+                                                _buildInterestsSection(),
+                                                const SizedBox(height: 16),
+
                                                 // Account Settings
                                                 _buildAccountSettings(),
                                                 const SizedBox(height: 16),
@@ -420,7 +424,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   vertical: 12,
                 ),
               ),
-              child: const Text('Retry'),
+              child: Text(Provider.of<LocalizationService>(context, listen: false).translate('dialogs.retry')),
             ),
           ],
         ),
@@ -925,7 +929,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error logging out: $e'),
+            content: Text('${Provider.of<LocalizationService>(context, listen: false).translate('dialogs.errorLoggingOut')}: $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -985,17 +989,18 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _languageSettings() {
     // Show language selection dialog
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Select Language'),
+        title: Text(localization.translate('dialogs.selectLanguage')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: Icon(Icons.language, color: AppColors.primary),
-              title: Text('English'),
-              subtitle: Text('English'),
+              title: Text(localization.translate('dialogs.english')),
+              subtitle: Text(localization.translate('dialogs.english')),
               trailing: _currentLanguage == 'en'
                   ? Icon(Icons.check_circle, color: AppColors.success)
                   : null,
@@ -1007,7 +1012,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             ListTile(
               leading: Icon(Icons.language, color: AppColors.secondary),
               title: Text('العربية'),
-              subtitle: Text('Arabic'),
+              subtitle: Text(localization.translate('dialogs.arabic')),
               trailing: _currentLanguage == 'ar'
                   ? Icon(Icons.check_circle, color: AppColors.success)
                   : null,
@@ -1021,7 +1026,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: Text(localization.translate('common.cancel')),
           ),
         ],
       ),
@@ -1062,6 +1067,17 @@ class _ProfileScreenState extends State<ProfileScreen>
         // Parse the response data
         if (mounted) {
           setState(() {
+            // Parse interests from API response
+            List<String> interests = [];
+            if (data['interests'] != null) {
+              if (data['interests'] is List) {
+                interests = List<String>.from(data['interests']);
+              } else if (data['interests'] is String) {
+                // Handle case where interests might be a comma-separated string
+                interests = (data['interests'] as String).split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+              }
+            }
+            
             _userProfile = UserProfile(
               id: data['_id'] ?? data['id'] ?? '',
               name: data['fullName'] ?? data['name'] ?? '',
@@ -1088,6 +1104,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 showWishlistActivity:
                     data['privacySettings']?['showWishlistActivity'] ?? true,
               ),
+              interests: interests,
             );
             _isLoading = false;
             _hasLoaded = true;
@@ -1135,9 +1152,251 @@ class _ProfileScreenState extends State<ProfileScreen>
     await _loadUserProfile(forceRefresh: true);
   }
 
+  /// Update user interests
+  Future<void> updateInterests(List<String> selectedInterests) async {
+    try {
+      final apiService = ApiService();
+      
+      // Call API: PUT /api/users/interests
+      final response = await apiService.put(
+        '/users/interests',
+        data: {'interests': selectedInterests},
+      );
+
+      if (response['success'] == true || response['success'] == null) {
+        // Update local user profile instantly
+        if (mounted && _userProfile != null) {
+          setState(() {
+            _userProfile = _userProfile!.copyWith(interests: selectedInterests);
+          });
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Interests updated successfully!'),
+                ],
+              ),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+      } else {
+        throw Exception(response['message'] ?? 'Failed to update interests');
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(e.message),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Failed to update interests. Please try again.'),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   // Public method to refresh profile from outside (e.g., from MainNavigation)
   void refreshProfile() {
     _loadUserProfile(forceRefresh: true);
+  }
+
+  /// Build Interests Section Widget
+  Widget _buildInterestsSection() {
+    if (_userProfile == null) return const SizedBox.shrink();
+    
+    final interests = _userProfile!.interests;
+    final isEmpty = interests.isEmpty;
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isEmpty 
+            ? Colors.purple.withOpacity(0.05)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: isEmpty
+            ? Border.all(
+                color: Colors.purple.withOpacity(0.2),
+                width: 1.5,
+                style: BorderStyle.solid,
+              )
+            : null,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textTertiary.withOpacity(0.1),
+            offset: const Offset(0, 2),
+            blurRadius: 8,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: isEmpty ? _buildEmptyInterestsState() : _buildPopulatedInterestsState(),
+    );
+  }
+
+  /// Build Empty Interests State (The "Hook")
+  Widget _buildEmptyInterestsState() {
+    return InkWell(
+      onTap: () => _showInterestsSelectionSheet(),
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Icon(
+              Icons.lightbulb_outline,
+              color: Colors.amber,
+              size: 28,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Help friends choose for you! 🎁',
+                    style: AppStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Tap to select your favorite gift categories.',
+                    style: AppStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: AppColors.textTertiary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build Populated Interests State (The "Tags")
+  Widget _buildPopulatedInterestsState() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header with Title and Edit button
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Interests',
+              style: AppStyles.headingSmall.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () => _showInterestsSelectionSheet(),
+              icon: Icon(
+                Icons.edit_outlined,
+                size: 16,
+                color: AppColors.primary,
+              ),
+              label: Text(
+                'Edit',
+                style: AppStyles.bodySmall.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: const Size(0, 32),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Wrap widget with Chips
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _userProfile!.interests.map((interest) {
+            return Chip(
+              label: Text(
+                interest,
+                style: AppStyles.bodySmall.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              backgroundColor: Colors.purple.withOpacity(0.1),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  /// Show Interests Selection Sheet
+  void _showInterestsSelectionSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => InterestsSelectionSheet(
+        currentInterests: _userProfile?.interests ?? [],
+        onSave: (selectedInterests) {
+          updateInterests(selectedInterests);
+        },
+      ),
+    );
   }
 }
 
@@ -1155,6 +1414,7 @@ class UserProfile {
   final int giftsReceived;
   final int giftsGiven;
   final PrivacySettings privacy;
+  final List<String> interests;
 
   UserProfile({
     required this.id,
@@ -1169,7 +1429,40 @@ class UserProfile {
     required this.giftsReceived,
     required this.giftsGiven,
     required this.privacy,
+    this.interests = const [],
   });
+  
+  UserProfile copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? bio,
+    String? profilePicture,
+    DateTime? joinDate,
+    int? friendsCount,
+    int? wishlistsCount,
+    int? eventsCreated,
+    int? giftsReceived,
+    int? giftsGiven,
+    PrivacySettings? privacy,
+    List<String>? interests,
+  }) {
+    return UserProfile(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      bio: bio ?? this.bio,
+      profilePicture: profilePicture ?? this.profilePicture,
+      joinDate: joinDate ?? this.joinDate,
+      friendsCount: friendsCount ?? this.friendsCount,
+      wishlistsCount: wishlistsCount ?? this.wishlistsCount,
+      eventsCreated: eventsCreated ?? this.eventsCreated,
+      giftsReceived: giftsReceived ?? this.giftsReceived,
+      giftsGiven: giftsGiven ?? this.giftsGiven,
+      privacy: privacy ?? this.privacy,
+      interests: interests ?? this.interests,
+    );
+  }
 }
 
 class PrivacySettings {
@@ -1187,3 +1480,195 @@ class PrivacySettings {
 }
 
 enum ProfileVisibility { public, friends, private }
+
+/// Interests Selection Sheet Widget
+class InterestsSelectionSheet extends StatefulWidget {
+  final List<String> currentInterests;
+  final Function(List<String>) onSave;
+
+  const InterestsSelectionSheet({
+    super.key,
+    required this.currentInterests,
+    required this.onSave,
+  });
+
+  @override
+  State<InterestsSelectionSheet> createState() => _InterestsSelectionSheetState();
+}
+
+class _InterestsSelectionSheetState extends State<InterestsSelectionSheet> {
+  late Set<String> _selectedInterests;
+  bool _isLoading = false;
+
+  // Hardcoded list of categories (matches Backend Enum)
+  static const List<String> _allCategories = [
+    'Watches',
+    'Perfumes',
+    'Sneakers',
+    'Jewelry',
+    'Handbags',
+    'Makeup & Skincare',
+    'Gadgets',
+    'Gaming',
+    'Photography',
+    'Home Decor',
+    'Plants',
+    'Coffee & Tea',
+    'Books',
+    'Fitness Gear',
+    'Car Accessories',
+    'Music Instruments',
+    'Art',
+    'DIY & Crafts',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedInterests = Set<String>.from(widget.currentInterests);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Text(
+                    'Select Your Interests',
+                    style: AppStyles.headingMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                    color: AppColors.textSecondary,
+                  ),
+                ],
+              ),
+            ),
+            // Categories Grid
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _allCategories.map((category) {
+                    final isSelected = _selectedInterests.contains(category);
+                    return FilterChip(
+                      label: Text(category),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedInterests.add(category);
+                          } else {
+                            _selectedInterests.remove(category);
+                          }
+                        });
+                      },
+                      selectedColor: Colors.purple.withOpacity(0.2),
+                      checkmarkColor: AppColors.primary,
+                      labelStyle: AppStyles.bodySmall.copyWith(
+                        color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      side: BorderSide(
+                        color: isSelected 
+                            ? AppColors.primary 
+                            : Colors.grey.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+            // Save Button
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : () async {
+                    setState(() {
+                      _isLoading = true;
+                    });
+                    
+                    try {
+                      await widget.onSave(_selectedInterests.toList());
+                      if (mounted) {
+                        Navigator.pop(context);
+                      }
+                    } catch (e) {
+                      // Error handling is done in updateInterests method
+                    } finally {
+                      if (mounted) {
+                        setState(() {
+                          _isLoading = false;
+                        });
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Text(
+                          'Save Changes',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

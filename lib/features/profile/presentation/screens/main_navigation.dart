@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/widgets/top_navigation.dart';
 import 'package:wish_listy/core/widgets/bottom_navigation.dart';
@@ -11,6 +12,7 @@ import 'package:wish_listy/features/auth/presentation/widgets/guest_onboarding_b
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'home_screen.dart' show HomeScreen, HomeScreenState;
 import 'package:wish_listy/features/wishlists/presentation/screens/my_wishlists_screen.dart';
 import 'package:wish_listy/features/events/presentation/screens/events_screen.dart';
@@ -45,9 +47,22 @@ class _MainNavigationState extends State<MainNavigation>
   void initState() {
     super.initState();
     _initializeFabAnimation();
-    // Show guest onboarding if needed
+    
+    // Fetch notifications unread count if user is authenticated
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final authService = Provider.of<AuthRepository>(context, listen: false);
+      if (!authService.isGuest) {
+        // User is authenticated - fetch unread count
+        try {
+          final notificationsCubit = context.read<NotificationsCubit>();
+          debugPrint('✅ MainNavigation: Fetching unread count on init...');
+          notificationsCubit.getUnreadCount();
+        } catch (e) {
+          debugPrint('⚠️ MainNavigation: Could not access NotificationsCubit: $e');
+        }
+      }
+      
+      // Show guest onboarding if needed
       if (authService.isGuest) {
         GuestOnboardingBottomSheet.showIfNeeded(context);
       }
@@ -275,49 +290,78 @@ class _MainNavigationState extends State<MainNavigation>
               const SizedBox(height: 24),
 
               // Title
-              Text(
-                'Unlock $featureName',
-                style: AppStyles.headingLargeWithContext(context).copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-
-              // Description
-              Text(
-                description,
-                style: AppStyles.bodyLargeWithContext(context).copyWith(
-                  color: AppColors.textSecondary,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
+              Builder(
+                builder: (context) {
+                  final localization = Provider.of<LocalizationService>(context, listen: false);
+                  String titleKey = '';
+                  String descKey = '';
+                  if (featureName == 'Events') {
+                    titleKey = 'guest.unlock.events.title';
+                    descKey = 'guest.unlock.events.description';
+                  } else if (featureName == 'Friends') {
+                    titleKey = 'guest.unlock.friends.title';
+                    descKey = 'guest.unlock.friends.description';
+                  } else if (featureName == 'Profile') {
+                    titleKey = 'guest.unlock.profile.title';
+                    descKey = 'guest.unlock.profile.description';
+                  }
+                  return Column(
+                    children: [
+                      Text(
+                        titleKey.isNotEmpty ? localization.translate(titleKey) : 'Unlock $featureName',
+                        style: AppStyles.headingLargeWithContext(context).copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        descKey.isNotEmpty ? localization.translate(descKey) : description,
+                        style: AppStyles.bodyLargeWithContext(context).copyWith(
+                          color: AppColors.textSecondary,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 32),
 
               // CTA Button
-              CustomButton(
-                text: 'Create a Free Account',
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pushNamed(context, AppRoutes.signup);
+              Builder(
+                builder: (context) {
+                  final localization = Provider.of<LocalizationService>(context, listen: false);
+                  return CustomButton(
+                    text: localization.translate('guest.unlock.createFreeAccount'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.signup);
+                    },
+                    variant: ButtonVariant.gradient,
+                    gradientColors: [AppColors.primary, AppColors.secondary],
+                    size: ButtonSize.large,
+                  );
                 },
-                variant: ButtonVariant.gradient,
-                gradientColors: [AppColors.primary, AppColors.secondary],
-                size: ButtonSize.large,
               ),
               const SizedBox(height: 12),
 
               // Secondary button
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'Not Now',
-                  style: AppStyles.bodyMediumWithContext(context).copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+              Builder(
+                builder: (context) {
+                  final localization = Provider.of<LocalizationService>(context, listen: false);
+                  return TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      localization.translate('guest.unlock.notNow'),
+                      style: AppStyles.bodyMediumWithContext(context).copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),

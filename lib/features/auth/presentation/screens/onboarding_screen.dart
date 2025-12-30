@@ -23,29 +23,31 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   late List<Animation<double>> _fadeAnimations;
   late List<Animation<Offset>> _slideAnimations;
 
-  final List<OnboardingSlide> _slides = [
-    OnboardingSlide(
-      title: 'Create Wishlists',
-      description: 'Organize your dream items and gift ideas in beautiful, personalized wishlists.',
-      icon: Icons.favorite_outline,
-      color: AppColors.primary,
-      gradientColors: [AppColors.primary, AppColors.primaryLight],
-    ),
-    OnboardingSlide(
-      title: 'Share with Friends',
-      description: 'Connect with friends and family to discover their wishes and make gift-giving meaningful.',
-      icon: Icons.people_outline,
-      color: AppColors.secondary,
-      gradientColors: [AppColors.secondary, AppColors.secondaryLight],
-    ),
-    OnboardingSlide(
-      title: 'Organize Events',
-      description: 'Plan celebrations, manage guest lists, and coordinate gift exchanges for special occasions.',
-      icon: Icons.celebration_outlined,
-      color: AppColors.accent,
-      gradientColors: [AppColors.accent, AppColors.accentLight],
-    ),
-  ];
+  List<OnboardingSlide> _buildSlides(LocalizationService localization) {
+    return [
+      OnboardingSlide(
+        title: localization.translate('onboarding.createWishlists.title'),
+        description: localization.translate('onboarding.createWishlists.description'),
+        icon: Icons.favorite_outline,
+        color: AppColors.primary,
+        gradientColors: [AppColors.primary, AppColors.primaryLight],
+      ),
+      OnboardingSlide(
+        title: localization.translate('onboarding.shareWithFriends.title'),
+        description: localization.translate('onboarding.shareWithFriends.description'),
+        icon: Icons.people_outline,
+        color: AppColors.secondary,
+        gradientColors: [AppColors.secondary, AppColors.secondaryLight],
+      ),
+      OnboardingSlide(
+        title: localization.translate('onboarding.organizeEvents.title'),
+        description: localization.translate('onboarding.organizeEvents.description'),
+        icon: Icons.celebration_outlined,
+        color: AppColors.accent,
+        gradientColors: [AppColors.accent, AppColors.accentLight],
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -104,8 +106,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  void _goToNextPage() {
-    if (_currentPage < _slides.length - 1) {
+  void _goToNextPage(LocalizationService localization) {
+    final slides = _buildSlides(localization);
+    if (_currentPage < slides.length - 1) {
       _pageController.animateToPage(
         _currentPage + 1,
         duration: const Duration(milliseconds: 300),
@@ -143,11 +146,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
                     // PageView for slides
                     Expanded(
-                      child: PageView.builder(
-                        controller: _pageController,
-                        itemCount: _slides.length,
-                        itemBuilder: (context, index) {
-                          return _buildSlide(_slides[index], index);
+                      child: Builder(
+                        builder: (context) {
+                          final slides = _buildSlides(localization);
+                          return PageView.builder(
+                            controller: _pageController,
+                            itemCount: slides.length,
+                            itemBuilder: (context, index) {
+                              return _buildSlide(slides[index], index);
+                            },
+                          );
                         },
                       ),
                     ),
@@ -171,11 +179,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       color: Colors.white,
       child: Stack(
         children: [
-          // Decorative shapes based on current slide
+              // Decorative shapes based on current slide
           AnimatedBuilder(
             animation: _pageController,
             builder: (context, child) {
-              final slide = _slides[_currentPage];
+              final localization = Provider.of<LocalizationService>(context, listen: false);
+              final slides = _buildSlides(localization);
+              final slide = slides[_currentPage];
               return CustomPaint(
                 painter: DecorativeShapesPainter(
                   color: slide.color.withOpacity(0.08),
@@ -349,7 +359,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Widget _buildFooter(LocalizationService localization) {
-    final isLastPage = _currentPage == _slides.length - 1;
+    final slides = _buildSlides(localization);
+    final isLastPage = _currentPage == slides.length - 1;
     
     return Padding(
       padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 32.0),
@@ -365,7 +376,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 TextButton(
                   onPressed: _skipToLast,
                   child: Text(
-                    'Skip',
+                    localization.translate('onboarding.skip'),
                     style: AppStyles.bodyMedium.copyWith(
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.w600,
@@ -377,29 +388,34 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
               // Page Indicator (center)
               Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _slides.length,
-                    (index) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: _currentPage == index ? 24 : 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: _currentPage == index
-                            ? _slides[index].color
-                            : AppColors.textTertiary.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(4),
+                child: Builder(
+                  builder: (context) {
+                    final slides = _buildSlides(localization);
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        slides.length,
+                        (index) => AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          width: _currentPage == index ? 24 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _currentPage == index
+                                ? slides[index].color
+                                : AppColors.textTertiary.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
 
               // Next Button (right) - circular button with arrow
               if (!isLastPage)
-                _buildNextButton()
+                _buildNextButton(localization, () => _goToNextPage(localization))
               else
                 const SizedBox(width: 56), // Match Skip button width for balance
             ],
@@ -415,21 +431,22 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  Widget _buildNextButton() {
+  Widget _buildNextButton(LocalizationService localization, VoidCallback onTap) {
+    final slides = _buildSlides(localization);
     return Container(
       width: 56,
       height: 56,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            _slides[_currentPage].color,
-            _slides[_currentPage].gradientColors[1],
+            slides[_currentPage].color,
+            slides[_currentPage].gradientColors[1],
           ],
         ),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: _slides[_currentPage].color.withOpacity(0.3),
+            color: slides[_currentPage].color.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -438,7 +455,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: _goToNextPage,
+          onTap: onTap,
           borderRadius: BorderRadius.circular(28),
           child: const Icon(
             Icons.arrow_forward_rounded,
@@ -451,8 +468,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Widget _buildActionButtons(LocalizationService localization) {
+    final slides = _buildSlides(localization);
     return AnimatedOpacity(
-      opacity: _currentPage == _slides.length - 1 ? 1.0 : 0.0,
+      opacity: _currentPage == slides.length - 1 ? 1.0 : 0.0,
       duration: const Duration(milliseconds: 300),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24.0, 0, 24.0, 32.0),
@@ -474,7 +492,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
             // Explore as Guest Button (Secondary Action)
             CustomButton(
-              text: 'Explore as Guest',
+              text: localization.translate('onboarding.exploreAsGuest'),
               onPressed: () async {
                 final authService = Provider.of<AuthRepository>(
                   context,

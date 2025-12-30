@@ -1189,37 +1189,17 @@ class _CreateEventScreenState extends State<CreateEventScreen>
           ? (localization.translate('events.viewEvent') != 'events.viewEvent'
                 ? localization.translate('events.viewEvent')
                 : 'View Event')
-          : localization.translate('events.inviteGuestsNow'),
+          : localization.translate('events.viewEvent'),
       onPrimaryAction: () {
         Navigator.of(context).pop(); // Close dialog
-        if (_isEditMode) {
-          // Navigate to event details for edit mode
-          Navigator.pushReplacementNamed(
-            context,
-            AppRoutes.eventDetails,
-            arguments: {'eventId': eventId},
-          );
-        } else {
-          // Open invite guests bottom sheet for create mode
-          _showFriendsSelectionModal();
-        }
+        // Navigate to event details
+        Navigator.pushReplacementNamed(
+          context,
+          AppRoutes.eventDetails,
+          arguments: {'eventId': eventId},
+        );
       },
       additionalActions: [
-        if (!_isEditMode)
-          DialogAction(
-            label: localization.translate('events.viewEvent'),
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              // Navigate to event details, replacing create event screen
-              Navigator.pushReplacementNamed(
-                context,
-                AppRoutes.eventDetails,
-                arguments: {'eventId': eventId},
-              );
-            },
-            variant: ButtonVariant.outline,
-            icon: Icons.visibility_rounded,
-          ),
         DialogAction(
           label: localization.translate('events.done'),
           onPressed: () {

@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
@@ -9,6 +10,7 @@ import 'package:wish_listy/features/profile/presentation/screens/main_navigation
 import 'package:wish_listy/features/profile/presentation/widgets/minimal_wishlist_card.dart';
 import 'package:wish_listy/features/profile/data/models/activity_model.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/activity_card.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 /// Active dashboard with all sections for users with data
 class ActiveDashboard extends StatelessWidget {
@@ -87,7 +89,7 @@ class UpcomingOccasionsSection extends StatelessWidget {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  'View All',
+                  Provider.of<LocalizationService>(context, listen: false).translate('home.viewAll'),
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
@@ -439,7 +441,7 @@ class MyWishlistsSection extends StatelessWidget {
                   MainNavigation.switchToTab(context, 1);
                 },
                 child: Text(
-                  'View All',
+                  Provider.of<LocalizationService>(context, listen: false).translate('home.viewAll'),
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
@@ -604,7 +606,7 @@ class FriendActivitySection extends StatelessWidget {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  'View All',
+                  Provider.of<LocalizationService>(context, listen: false).translate('home.viewAll'),
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,

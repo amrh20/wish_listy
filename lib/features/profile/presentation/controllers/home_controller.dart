@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/profile/presentation/models/home_models.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
@@ -15,6 +16,7 @@ class HomeController extends ChangeNotifier {
   final Rxn<DashboardModel> dashboardData = Rxn<DashboardModel>();
   
   final ApiService _apiService = ApiService();
+  final AuthRepository _authRepository = AuthRepository();
 
   // Getters for convenience - always return non-null lists
   DashboardModel? get data => dashboardData.value;
@@ -41,6 +43,15 @@ class HomeController extends ChangeNotifier {
   Future<void> fetchDashboardData() async {
     // Prevent duplicate calls
     if (_isFetching) {
+      return;
+    }
+    
+    // Don't make API calls for guest users
+    if (_authRepository.isGuest) {
+      debugPrint('⚠️ HomeController: Skipping API call for guest user');
+      _isFetching = false;
+      isLoading = false;
+      notifyListeners();
       return;
     }
     

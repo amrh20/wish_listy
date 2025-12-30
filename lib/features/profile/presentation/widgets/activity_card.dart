@@ -163,6 +163,10 @@ class ActivityCard extends StatelessWidget {
       ];
     }
 
+    // Navigate to friend profile when card is tapped
+    final friendId = activity.actor.id;
+    final canNavigateToProfile = friendId.isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -178,24 +182,24 @@ class ActivityCard extends StatelessWidget {
           ),
         ],
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Avatar
-            GestureDetector(
-              onTap: activity.actor.id.isNotEmpty
-                  ? () {
-                      Navigator.pushNamed(
-                        context,
-                        AppRoutes.friendProfile,
-                        arguments: {'friendId': activity.actor.id},
-                      );
-                    }
-                  : null,
-              child: CircleAvatar(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: canNavigateToProfile
+              ? () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.friendProfile,
+                    arguments: {'friendId': friendId},
+                  );
+                }
+              : onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Avatar
+              CircleAvatar(
                 radius: 24,
                 backgroundColor: AppColors.primary.withOpacity(0.1),
                 backgroundImage: actorImage != null
@@ -212,48 +216,48 @@ class ActivityCard extends StatelessWidget {
                       )
                     : null,
               ),
-            ),
-            const SizedBox(width: 12),
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  RichText(
-                    text: TextSpan(
-                      style: AppStyles.bodyMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontSize: 14,
+              const SizedBox(width: 12),
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        style: AppStyles.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                        ),
+                        children: textSpans,
                       ),
-                      children: textSpans,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    timeAgo,
-                    style: AppStyles.caption.copyWith(
-                      color: AppColors.textTertiary,
-                      fontSize: 12,
+                    const SizedBox(height: 4),
+                    Text(
+                      timeAgo,
+                      style: AppStyles.caption.copyWith(
+                        color: AppColors.textTertiary,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            // Activity Icon
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: activityColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+              // Activity Icon
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: activityColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  activityIcon,
+                  color: activityColor,
+                  size: 20,
+                ),
               ),
-              child: Icon(
-                activityIcon,
-                color: activityColor,
-                size: 20,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

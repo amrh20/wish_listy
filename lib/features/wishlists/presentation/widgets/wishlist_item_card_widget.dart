@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 
 /// Modern swipeable wishlist item card widget
@@ -38,12 +40,13 @@ class WishlistItemCardWidget extends StatefulWidget {
 class _WishlistItemCardWidgetState extends State<WishlistItemCardWidget> {
   void _handleDeleteWithConfirmation() {
     // Show confirmation dialog before deleting
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text('Delete Item'),
-          content: Text('Are you sure you want to delete "${widget.item.name}"?'),
+          title: Text(localization.translate('dialogs.deleteItem')),
+          content: Text(localization.translate('dialogs.areYouSureDeleteItem').replaceAll('{itemName}', widget.item.name)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -51,7 +54,7 @@ class _WishlistItemCardWidgetState extends State<WishlistItemCardWidget> {
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(
-                'Cancel',
+                localization.translate('common.cancel'),
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             ),
@@ -64,7 +67,7 @@ class _WishlistItemCardWidgetState extends State<WishlistItemCardWidget> {
                 // Show confirmation snackbar
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('${widget.item.name} deleted'),
+                    content: Text('${widget.item.name} ${localization.translate('messages.itemDeleted')}'),
                     backgroundColor: AppColors.textPrimary,
                     duration: const Duration(seconds: 2),
                   ),

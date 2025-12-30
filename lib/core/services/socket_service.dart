@@ -57,9 +57,11 @@ class SocketService {
       print('🔌 [Socket URL] Platform detection error: $e');
     }
 
-    // iOS or other: use localhost
-    const url = 'http://localhost:$serverPort';
-    print('🔌 [Socket URL] Default (iOS/Other) → Using: $url');
+    // iOS Physical Device - use Mac's IP address
+    // Note: On physical iPhone, localhost refers to the iPhone itself, not the Mac
+    // For iOS Simulator, localhost works (but we'll use IP for consistency)
+    final url = 'http://$serverIP:$serverPort';
+    print('🔌 [Socket URL] iOS/Other detected → Using: $url');
     print('════════════════════════════════════════════');
     return url;
   }

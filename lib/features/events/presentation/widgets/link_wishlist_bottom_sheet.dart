@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 /// Bottom sheet widget for linking an existing wishlist to an event
 class LinkWishlistBottomSheet extends StatefulWidget {
@@ -151,7 +153,7 @@ class _LinkWishlistBottomSheetState extends State<LinkWishlistBottomSheet> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search wishlists...',
+                hintText: Provider.of<LocalizationService>(context, listen: false).translate('wishlists.searchWishlists'),
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: AppColors.background,

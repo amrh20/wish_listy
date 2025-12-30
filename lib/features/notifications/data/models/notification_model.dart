@@ -8,6 +8,8 @@ class AppNotification {
   final bool isRead;
   final DateTime createdAt;
   final DateTime? readAt;
+  final String? relatedId; // ID of Event, Item, or User
+  final String? relatedWishlistId; // Crucial for navigating to WishlistDetails
 
   AppNotification({
     required this.id,
@@ -19,6 +21,8 @@ class AppNotification {
     this.isRead = false,
     required this.createdAt,
     this.readAt,
+    this.relatedId,
+    this.relatedWishlistId,
   });
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
@@ -49,19 +53,43 @@ class AppNotification {
           break;
         case 'eventinvitation':
         case 'event_invitation':
+        case 'eventinvite':
+        case 'event_invite':
           type = NotificationType.eventInvitation;
           break;
         case 'eventreminder':
         case 'event_reminder':
           type = NotificationType.eventReminder;
           break;
+        case 'eventinvitationaccepted':
+        case 'event_invitation_accepted':
+          type = NotificationType.eventResponse;
+          break;
+        case 'eventinvitationmaybe':
+        case 'event_invitation_maybe':
+          type = NotificationType.eventResponse;
+          break;
         case 'itempurchased':
         case 'item_purchased':
+        case 'itemreceived':
+        case 'item_received':
           type = NotificationType.itemPurchased;
           break;
         case 'itemreserved':
         case 'item_reserved':
           type = NotificationType.itemReserved;
+          break;
+        case 'itemunreserved':
+        case 'item_unreserved':
+          type = NotificationType.itemUnreserved;
+          break;
+        case 'eventupdate':
+        case 'event_update':
+          type = NotificationType.eventUpdate;
+          break;
+        case 'eventresponse':
+        case 'event_response':
+          type = NotificationType.eventResponse;
           break;
         case 'wishlistshared':
         case 'wishlist_shared':
@@ -101,6 +129,27 @@ class AppNotification {
       readAt = null;
     }
 
+    // Parse relatedId and relatedWishlistId with fallback to data map
+    String? relatedId;
+    try {
+      relatedId = json['relatedId'] as String? ??
+          json['related_id'] as String? ??
+          json['data']?['relatedId'] as String? ??
+          json['data']?['related_id'] as String?;
+    } catch (e) {
+      relatedId = null;
+    }
+
+    String? relatedWishlistId;
+    try {
+      relatedWishlistId = json['relatedWishlistId'] as String? ??
+          json['related_wishlist_id'] as String? ??
+          json['data']?['relatedWishlistId'] as String? ??
+          json['data']?['related_wishlist_id'] as String?;
+    } catch (e) {
+      relatedWishlistId = null;
+    }
+
     return AppNotification(
       id: notificationId,
       userId: userId,
@@ -111,6 +160,8 @@ class AppNotification {
       isRead: json['isRead'] ?? json['is_read'] ?? false,
       createdAt: createdAt,
       readAt: readAt,
+      relatedId: relatedId,
+      relatedWishlistId: relatedWishlistId,
     );
   }
 
@@ -125,6 +176,8 @@ class AppNotification {
       'is_read': isRead,
       'created_at': createdAt.toIso8601String(),
       'read_at': readAt?.toIso8601String(),
+      'related_id': relatedId,
+      'related_wishlist_id': relatedWishlistId,
     };
   }
 
@@ -138,6 +191,8 @@ class AppNotification {
     bool? isRead,
     DateTime? createdAt,
     DateTime? readAt,
+    String? relatedId,
+    String? relatedWishlistId,
   }) {
     return AppNotification(
       id: id ?? this.id,
@@ -149,6 +204,8 @@ class AppNotification {
       isRead: isRead ?? this.isRead,
       createdAt: createdAt ?? this.createdAt,
       readAt: readAt ?? this.readAt,
+      relatedId: relatedId ?? this.relatedId,
+      relatedWishlistId: relatedWishlistId ?? this.relatedWishlistId,
     );
   }
 
@@ -197,8 +254,11 @@ enum NotificationType {
   friendRequestRejected, // Added to match backend
   eventInvitation,
   eventReminder,
+  eventUpdate,
+  eventResponse,
   itemPurchased,
   itemReserved,
+  itemUnreserved,
   wishlistShared,
   general,
 }
@@ -216,10 +276,16 @@ extension NotificationTypeExtension on NotificationType {
         return 'Event Invitation';
       case NotificationType.eventReminder:
         return 'Event Reminder';
+      case NotificationType.eventUpdate:
+        return 'Event Update';
+      case NotificationType.eventResponse:
+        return 'Event Response';
       case NotificationType.itemPurchased:
         return 'Item Purchased';
       case NotificationType.itemReserved:
         return 'Item Reserved';
+      case NotificationType.itemUnreserved:
+        return 'Item Unreserved';
       case NotificationType.wishlistShared:
         return 'Wishlist Shared';
       case NotificationType.general:
@@ -239,10 +305,16 @@ extension NotificationTypeExtension on NotificationType {
         return '🎉';
       case NotificationType.eventReminder:
         return '⏰';
+      case NotificationType.eventUpdate:
+        return '📅';
+      case NotificationType.eventResponse:
+        return '💬';
       case NotificationType.itemPurchased:
         return '🛍️';
       case NotificationType.itemReserved:
         return '📌';
+      case NotificationType.itemUnreserved:
+        return '🔓';
       case NotificationType.wishlistShared:
         return '💝';
       case NotificationType.general:

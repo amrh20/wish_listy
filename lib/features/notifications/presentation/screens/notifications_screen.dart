@@ -13,6 +13,8 @@ import 'package:wish_listy/features/notifications/presentation/widgets/friend_re
 import 'package:wish_listy/features/notifications/presentation/widgets/friend_request_rejected_tile.dart';
 import 'package:wish_listy/features/notifications/presentation/widgets/event_response_tile.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:provider/provider.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -94,7 +96,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => context.read<NotificationsCubit>().loadNotifications(),
-                    child: const Text('Retry'),
+                    child: Text(Provider.of<LocalizationService>(context, listen: false).translate('dialogs.retry')),
                   ),
                 ],
               ),
@@ -146,7 +148,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                                       children: [
                                         // Today Section
                                         if (todayNotifications.isNotEmpty) ...[
-                                          _buildSectionHeader('Today'),
+                                          _buildSectionHeader(Provider.of<LocalizationService>(context, listen: false).translate('notifications.today')),
                                           const SizedBox(height: 12),
                                           ...todayNotifications.map(
                                             (notification) =>
@@ -160,7 +162,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                                         // Earlier Section
                                         if (earlierNotifications
                                             .isNotEmpty) ...[
-                                          _buildSectionHeader('Earlier'),
+                                          _buildSectionHeader(Provider.of<LocalizationService>(context, listen: false).translate('notifications.earlier')),
                                           const SizedBox(height: 12),
                                           ...earlierNotifications.map(
                                             (notification) =>
@@ -221,14 +223,14 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Notifications',
+                  Provider.of<LocalizationService>(context, listen: false).translate('app.notifications'),
                   style: AppStyles.headingSmall.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 if (unreadCount > 0)
                   Text(
-                    '$unreadCount unread notifications',
+                    Provider.of<LocalizationService>(context, listen: false).translate('notifications.unreadNotifications').replaceAll('{count}', unreadCount.toString()),
                     style: AppStyles.bodySmall.copyWith(
                       color: AppColors.info,
                       fontWeight: FontWeight.w500,
@@ -243,7 +245,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
             TextButton(
               onPressed: _markAllAsRead,
               child: Text(
-                'Mark all read',
+                Provider.of<LocalizationService>(context, listen: false).translate('notifications.markAllAsRead'),
                 style: AppStyles.bodySmall.copyWith(
                   color: AppColors.info,
                   fontWeight: FontWeight.w600,
@@ -322,29 +324,18 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _handleNotificationTap(notification),
+          onTap: () {
+            // Use cubit's smart navigation
+            context.read<NotificationsCubit>().handleNotificationTap(notification, context);
+          },
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Icon
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: _getNotificationColor(
-                      notification.type,
-                    ).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    _getNotificationIcon(notification.type),
-                    color: _getNotificationColor(notification.type),
-                    size: 24,
-                  ),
-                ),
+                // Icon using helper method
+                _buildLeadingIcon(notification.type, data: notification.data),
 
                 const SizedBox(width: 16),
 
@@ -359,10 +350,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                             child: Text(
                               notification.title,
                               style: AppStyles.bodyMedium.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: notification.isRead
-                                    ? AppColors.textSecondary
-                                    : AppColors.textPrimary,
+                                fontWeight: FontWeight.bold, // Always bold
+                                color: _getTitleColor(notification.type, data: notification.data),
                               ),
                             ),
                           ),
@@ -398,10 +387,33 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                         ),
                       ),
 
-                      const SizedBox(height: 12),
+                      // RSVP Buttons for event invitations only
+                      if (notification.type == NotificationType.eventInvitation) ...[
+                        const SizedBox(height: 8),
+                        Builder(
+                          builder: (context) {
+                            // Get eventId from relatedId or data map
+                            final eventId = notification.relatedId ?? 
+                                           notification.data?['eventId']?.toString() ??
+                                           notification.data?['event_id']?.toString() ??
+                                           notification.data?['event']?['_id']?.toString() ??
+                                           notification.data?['event']?['id']?.toString();
+                            
+                            if (eventId != null && eventId.isNotEmpty) {
+                              // Create a notification copy with relatedId set
+                              final notificationWithId = notification.copyWith(relatedId: eventId);
+                              return _buildRSVPButtons(notificationWithId, context.read<NotificationsCubit>());
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                      ],
+
+                      const SizedBox(height: 8),
 
                       // Action Buttons for friend requests
-                      if (_hasActions(notification.type))
+                      if (_hasActions(notification.type) && 
+                          notification.type != NotificationType.eventInvitation)
                         _buildActionButtons(notification),
                     ],
                   ),
@@ -721,11 +733,12 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   Widget _buildActionButtons(AppNotification notification) {
     switch (notification.type) {
       case NotificationType.friendRequest:
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         return Row(
           children: [
             Expanded(
               child: _buildActionButton(
-                'Reject',
+                localization.translate('dialogs.decline'),
                 () => _handleFriendRequestAction(notification, false),
                 isOutlined: true,
                 color: AppColors.error,
@@ -734,28 +747,10 @@ class _NotificationsScreenState extends State<NotificationsScreen>
             const SizedBox(width: 12),
             Expanded(
               child: _buildActionButton(
-                'Accept',
+                localization.translate('dialogs.accept'),
                 () => _handleFriendRequestAction(notification, true),
                 color: AppColors.success,
               ),
-            ),
-          ],
-        );
-
-      case NotificationType.eventInvitation:
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildActionButton(
-              'Maybe',
-              () => _handleEventInvitationAction(notification, 'maybe'),
-              isOutlined: true,
-            ),
-            const SizedBox(width: 8),
-            _buildActionButton(
-              'Accept',
-              () => _handleEventInvitationAction(notification, 'accept'),
-              color: AppColors.accent,
             ),
           ],
         );
@@ -816,6 +811,288 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
+  /// Build RSVP buttons for event invitation notifications
+  Widget _buildRSVPButtons(AppNotification notification, NotificationsCubit cubit) {
+    if (notification.type != NotificationType.eventInvitation) {
+      return const SizedBox.shrink();
+    }
+    
+    // Get eventId from relatedId or data map
+    final eventId = notification.relatedId ?? 
+                   notification.data?['eventId']?.toString() ??
+                   notification.data?['event_id']?.toString() ??
+                   notification.data?['event']?['_id']?.toString() ??
+                   notification.data?['event']?['id']?.toString();
+    
+    if (eventId == null || eventId.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        bool isLoading = false;
+        String? selectedStatus; // 'accepted', 'maybe', 'declined'
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            // Show success message if response was sent
+            if (selectedStatus != null) ...[
+              Row(
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    size: 16,
+                    color: AppColors.success,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    Provider.of<LocalizationService>(context, listen: false).translate('notifications.responseSent'),
+                    style: AppStyles.bodySmall.copyWith(
+                      color: AppColors.success,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              // Show action buttons - Same style as Friend Request buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Decline Button
+                  SizedBox(
+                    height: 32,
+                    child: OutlinedButton(
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              setState(() {
+                                isLoading = true;
+                              });
+                              try {
+                                final eventId = notification.relatedId ?? 
+                                               notification.data?['eventId']?.toString() ??
+                                               notification.data?['event_id']?.toString() ??
+                                               notification.data?['event']?['_id']?.toString() ??
+                                               notification.data?['event']?['id']?.toString();
+                                if (eventId == null || eventId.isEmpty) {
+                                  throw Exception('Event ID not found');
+                                }
+                                await cubit.respondToEvent(eventId, 'declined');
+                                if (mounted) {
+                                  setState(() {
+                                    isLoading = false;
+                                    selectedStatus = 'declined';
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(Provider.of<LocalizationService>(context, listen: false).translate('notifications.youDeclinedInvitation')),
+                                      backgroundColor: AppColors.textSecondary,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  setState(() {
+                                    isLoading = false;
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Failed to respond: ${e.toString()}'),
+                                      backgroundColor: AppColors.error,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        minimumSize: const Size(0, 32),
+                        side: BorderSide(color: Colors.grey.shade300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: isLoading
+                          ? SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                              ),
+                            )
+                          : Text(
+                              Provider.of<LocalizationService>(context, listen: false).translate('dialogs.decline'),
+                              style: AppStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Maybe Button
+                  SizedBox(
+                    height: 32,
+                    child: OutlinedButton(
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              setState(() {
+                                isLoading = true;
+                              });
+                              try {
+                                final eventId = notification.relatedId ?? 
+                                               notification.data?['eventId']?.toString() ??
+                                               notification.data?['event_id']?.toString() ??
+                                               notification.data?['event']?['_id']?.toString() ??
+                                               notification.data?['event']?['id']?.toString();
+                                if (eventId == null || eventId.isEmpty) {
+                                  throw Exception('Event ID not found');
+                                }
+                                await cubit.respondToEvent(eventId, 'maybe');
+                                if (mounted) {
+                                  setState(() {
+                                    isLoading = false;
+                                    selectedStatus = 'maybe';
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(Provider.of<LocalizationService>(context, listen: false).translate('notifications.youMarkedMaybe')),
+                                      backgroundColor: AppColors.warning,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  setState(() {
+                                    isLoading = false;
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Failed to respond: ${e.toString()}'),
+                                      backgroundColor: AppColors.error,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        minimumSize: const Size(0, 32),
+                        side: BorderSide(color: Colors.orange.shade300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: isLoading
+                          ? SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                              ),
+                            )
+                          : Text(
+                              Provider.of<LocalizationService>(context, listen: false).translate('dialogs.maybe'),
+                              style: AppStyles.bodySmall.copyWith(
+                                color: Colors.orange,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Accept Button
+                  SizedBox(
+                    height: 32,
+                    child: ElevatedButton(
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              setState(() {
+                                isLoading = true;
+                              });
+                              try {
+                                final eventId = notification.relatedId ?? 
+                                               notification.data?['eventId']?.toString() ??
+                                               notification.data?['event_id']?.toString() ??
+                                               notification.data?['event']?['_id']?.toString() ??
+                                               notification.data?['event']?['id']?.toString();
+                                if (eventId == null || eventId.isEmpty) {
+                                  throw Exception('Event ID not found');
+                                }
+                                await cubit.respondToEvent(eventId, 'accepted');
+                                if (mounted) {
+                                  setState(() {
+                                    isLoading = false;
+                                    selectedStatus = 'accepted';
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(Provider.of<LocalizationService>(context, listen: false).translate('notifications.youAcceptedInvitation')),
+                                      backgroundColor: AppColors.success,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  setState(() {
+                                    isLoading = false;
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Failed to respond: ${e.toString()}'),
+                                      backgroundColor: AppColors.error,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        minimumSize: const Size(0, 32),
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: isLoading
+                          ? SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              Provider.of<LocalizationService>(context, listen: false).translate('dialogs.accept'),
+                              style: AppStyles.bodySmall.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildEmptyState() {
     return Padding(
       padding: const EdgeInsets.all(32),
@@ -837,7 +1114,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           ),
           const SizedBox(height: 24),
           Text(
-            'No Notifications',
+            Provider.of<LocalizationService>(context, listen: false).translate('notifications.noNotifications'),
             style: AppStyles.headingMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -875,22 +1152,62 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     }).toList();
   }
 
-  Color _getNotificationColor(NotificationType type) {
+  /// Build leading icon with color based on notification type
+  Widget _buildLeadingIcon(NotificationType type, {Map<String, dynamic>? data}) {
+    final iconData = _getNotificationIcon(type, data: data);
+    final iconColor = _getNotificationColor(type, data: data);
+    
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: iconColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(
+        iconData,
+        color: iconColor,
+        size: 24,
+      ),
+    );
+  }
+
+  Color _getNotificationColor(NotificationType type, {Map<String, dynamic>? data}) {
+    // Check if this is item_received (even if mapped to itemPurchased)
+    final isItemReceived = data?['type']?.toString().toLowerCase() == 'item_received' ||
+                          data?['notificationType']?.toString().toLowerCase() == 'item_received';
+    
     switch (type) {
-      case NotificationType.friendRequest:
-        return AppColors.secondary;
-      case NotificationType.friendRequestAccepted:
-        return AppColors.success;
-      case NotificationType.friendRequestRejected:
-        return AppColors.error;
+      // Event types
       case NotificationType.eventInvitation:
-        return AppColors.accent;
+        return Colors.orange; // event_invite
+      case NotificationType.eventResponse:
+        return Colors.green; // event_invitation_accepted (Green)
+      case NotificationType.eventUpdate:
+        return Colors.amber; // event_update (Amber)
       case NotificationType.eventReminder:
-        return AppColors.warning;
-      case NotificationType.itemPurchased:
-        return AppColors.success;
+        return Colors.orange;
+      
+      // Friend types
+      case NotificationType.friendRequest:
+        return Colors.blue;
+      case NotificationType.friendRequestAccepted:
+        return Colors.green;
+      case NotificationType.friendRequestRejected:
+        return Colors.blue;
+      
+      // Item types
       case NotificationType.itemReserved:
-        return AppColors.info;
+        return Colors.deepPurple; // Deep Purple - "Secret"
+      case NotificationType.itemPurchased:
+        // Check if this is actually item_received
+        if (isItemReceived) {
+          return Colors.teal; // Teal for item_received (Mission Accomplished)
+        }
+        return Colors.purple;
+      case NotificationType.itemUnreserved:
+        return Colors.grey;
+      
       case NotificationType.wishlistShared:
         return AppColors.primary;
       case NotificationType.general:
@@ -898,22 +1215,42 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     }
   }
 
-  IconData _getNotificationIcon(NotificationType type) {
+  IconData _getNotificationIcon(NotificationType type, {Map<String, dynamic>? data}) {
+    // Check if this is item_received (even if mapped to itemPurchased)
+    final isItemReceived = data?['type']?.toString().toLowerCase() == 'item_received' ||
+                          data?['notificationType']?.toString().toLowerCase() == 'item_received';
+    
     switch (type) {
-      case NotificationType.friendRequest:
-        return Icons.person_add_outlined;
-      case NotificationType.friendRequestAccepted:
-        return Icons.person_add_alt_1_outlined;
-      case NotificationType.friendRequestRejected:
-        return Icons.person_remove_outlined;
+      // Event types
       case NotificationType.eventInvitation:
-        return Icons.celebration_outlined;
+        return Icons.event; // event_invite
+      case NotificationType.eventResponse:
+        return Icons.event_available; // event_invitation_accepted
+      case NotificationType.eventUpdate:
+        return Icons.edit_calendar; // event_update
       case NotificationType.eventReminder:
-        return Icons.event_outlined;
-      case NotificationType.itemPurchased:
-        return Icons.shopping_bag_outlined;
+        return Icons.calendar_today;
+      
+      // Friend types
+      case NotificationType.friendRequest:
+        return Icons.person_add;
+      case NotificationType.friendRequestAccepted:
+        return Icons.how_to_reg;
+      case NotificationType.friendRequestRejected:
+        return Icons.person_remove;
+      
+      // Item types
       case NotificationType.itemReserved:
-        return Icons.bookmark_outline;
+        return Icons.visibility_off; // Deep Purple - "Secret"
+      case NotificationType.itemPurchased:
+        // Check if this is actually item_received
+        if (isItemReceived) {
+          return Icons.check_circle_outline; // Success/happiness icon for item_received
+        }
+        return Icons.card_giftcard; // Purple
+      case NotificationType.itemUnreserved:
+        return Icons.lock_open; // Grey
+      
       case NotificationType.wishlistShared:
         return Icons.share_outlined;
       case NotificationType.general:
@@ -921,9 +1258,28 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     }
   }
 
+  /// Get title color based on notification type (for highlighting)
+  Color _getTitleColor(NotificationType type, {Map<String, dynamic>? data}) {
+    // Check if this is item_received
+    final isItemReceived = data?['type']?.toString().toLowerCase() == 'item_received' ||
+                          data?['notificationType']?.toString().toLowerCase() == 'item_received';
+    
+    // Highlight event_invitation_accepted with green
+    if (type == NotificationType.eventResponse) {
+      return Colors.green.shade700;
+    }
+    
+    // Highlight item_received with teal
+    if (type == NotificationType.itemPurchased && isItemReceived) {
+      return Colors.teal.shade700;
+    }
+    
+    return AppColors.textPrimary;
+  }
+
   bool _hasActions(NotificationType type) {
-    return type == NotificationType.friendRequest ||
-        type == NotificationType.eventInvitation;
+    // Event invitations now use RSVP buttons, not action buttons
+    return type == NotificationType.friendRequest;
   }
 
   String _formatNotificationTime(DateTime time) {
@@ -943,28 +1299,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
 
   // Action Handlers
   void _handleNotificationTap(AppNotification notification) {
-    if (!notification.isRead) {
-      context.read<NotificationsCubit>().markAsRead(notification.id);
-    }
-
-    // Navigate based on notification type
-    switch (notification.type) {
-      case NotificationType.friendRequest:
-        // Navigate to friend profile or friends screen
-        break;
-      case NotificationType.eventInvitation:
-        // Navigate to event details
-        break;
-      case NotificationType.itemPurchased:
-      case NotificationType.itemReserved:
-        // Navigate to wishlist
-        break;
-      case NotificationType.wishlistShared:
-        // Navigate to shared wishlist
-        break;
-      default:
-        break;
-    }
+    // Use the cubit's handleNotificationTap method for smart navigation
+    context.read<NotificationsCubit>().handleNotificationTap(notification, context);
   }
 
   Future<void> _handleFriendRequestAction(AppNotification notification, bool accept) async {
@@ -982,11 +1318,11 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Row(
+            content: Row(
               children: [
                 Icon(Icons.error, color: Colors.white),
                 SizedBox(width: 8),
-                Text('Unable to process friend request. Request ID not found.'),
+                Text(Provider.of<LocalizationService>(context, listen: false).translate('dialogs.unableToProcessFriendRequest')),
               ],
             ),
             backgroundColor: AppColors.error,
@@ -1015,9 +1351,10 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       // Reload notifications to update the list
       context.read<NotificationsCubit>().loadNotifications();
       
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       final message = accept
-          ? 'Friend request accepted!'
-          : 'Friend request declined';
+          ? localization.translate('notifications.friendRequestAccepted')
+          : localization.translate('notifications.friendRequestDeclined');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1066,8 +1403,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                 Expanded(
                   child: Text(
                     accept
-                        ? 'Failed to accept friend request. Please try again.'
-                        : 'Failed to decline friend request. Please try again.',
+                        ? Provider.of<LocalizationService>(context, listen: false).translate('notifications.failedToAcceptRequest')
+                        : Provider.of<LocalizationService>(context, listen: false).translate('notifications.failedToDeclineRequest'),
                   ),
                 ),
               ],
@@ -1081,31 +1418,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     }
   }
 
-  void _handleEventInvitationAction(
-    AppNotification notification,
-    String action,
-  ) {
-    context.read<NotificationsCubit>().markAsRead(notification.id);
-
-    final message = action == 'accept'
-        ? 'Event invitation accepted!'
-        : 'Marked as maybe';
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.event, color: Colors.white),
-            const SizedBox(width: 8),
-            Text(message),
-          ],
-        ),
-        backgroundColor: AppColors.accent,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
-  }
+  // Removed _handleEventInvitationAction - now using cubit.respondToEvent directly in RSVP buttons
 
   void _markAllAsRead() {
     context.read<NotificationsCubit>().markAllAsRead();
@@ -1116,7 +1429,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           children: [
             Icon(Icons.done_all, color: Colors.white),
             const SizedBox(width: 8),
-            Text('All notifications marked as read'),
+            Text(Provider.of<LocalizationService>(context, listen: false).translate('dialogs.allNotificationsMarkedAsRead')),
           ],
         ),
         backgroundColor: AppColors.success,

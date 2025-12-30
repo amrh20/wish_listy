@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -106,7 +108,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           children: [
             Icon(Icons.check_circle, color: Colors.white),
             const SizedBox(width: 8),
-            Text('Email sent successfully!'),
+            Text(Provider.of<LocalizationService>(context, listen: false).translate('auth.checkEmail')),
           ],
         ),
         backgroundColor: AppColors.success,

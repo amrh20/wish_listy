@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 class GuestManagementScreen extends StatefulWidget {
   final EventSummary event;
@@ -345,7 +347,7 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
               });
             },
             decoration: InputDecoration(
-              hintText: 'Search guests...',
+              hintText: Provider.of<LocalizationService>(context, listen: false).translate('events.searchFriendsHint'),
               prefixIcon: Icon(
                 Icons.search_outlined,
                 color: AppColors.textTertiary,
@@ -712,8 +714,8 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
           children: [
             TextField(
               decoration: InputDecoration(
-                labelText: 'Email or Username',
-                hintText: 'Enter email or username',
+                labelText: Provider.of<LocalizationService>(context, listen: false).translate('friends.email'),
+                hintText: Provider.of<LocalizationService>(context, listen: false).translate('friends.searchPlaceholder'),
                 prefixIcon: Icon(Icons.person_add),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -723,8 +725,8 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
             const SizedBox(height: 16),
             TextField(
               decoration: InputDecoration(
-                labelText: 'Personal Message (Optional)',
-                hintText: 'Add a personal message',
+                labelText: Provider.of<LocalizationService>(context, listen: false).translate('events.sendInvitation'),
+                hintText: Provider.of<LocalizationService>(context, listen: false).translate('events.sendInvitation'),
                 prefixIcon: Icon(Icons.message),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -737,7 +739,7 @@ class _GuestManagementScreenState extends State<GuestManagementScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: Text(Provider.of<LocalizationService>(context, listen: false).translate('app.cancel')),
           ),
           ElevatedButton(
             onPressed: () {

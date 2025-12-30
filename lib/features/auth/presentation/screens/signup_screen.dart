@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -7,6 +8,7 @@ import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/core/utils/legal_content.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
 
@@ -37,6 +39,7 @@ class _SignupScreenState extends State<SignupScreen>
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isAgreed = false;
 
   @override
   void initState() {
@@ -724,7 +727,12 @@ class _SignupScreenState extends State<SignupScreen>
                                                   },
                                                 ),
 
-                                                const SizedBox(height: 32),
+                                                const SizedBox(height: 24),
+
+                                                // Terms and Conditions Checkbox
+                                                _buildTermsCheckbox(localization),
+
+                                                const SizedBox(height: 24),
 
                                                 // Sign Up Button
                                                 FadeTransition(
@@ -733,7 +741,8 @@ class _SignupScreenState extends State<SignupScreen>
                                                     text: 'Sign Up',
                                                     onPressed:
                                                         _isFormValid &&
-                                                            !_isLoading
+                                                            !_isLoading &&
+                                                            _isAgreed
                                                         ? _handleSignup
                                                         : null,
                                                     isLoading: _isLoading,
@@ -814,6 +823,106 @@ class _SignupScreenState extends State<SignupScreen>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildTermsCheckbox(LocalizationService localization) {
+    final isRTL = localization.isRTL;
+    final isEn = localization.currentLanguage == 'en';
+    
+    // Text strings based on language
+    final prefixText = isEn ? 'I agree to the ' : 'أوافق على ';
+    final privacyPolicyText = isEn ? 'Privacy Policy' : 'سياسة الخصوصية';
+    final middleText = isEn ? ' and ' : ' و ';
+    final termsText = isEn ? 'Terms & Conditions' : 'الشروط والأحكام';
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Checkbox(
+          value: _isAgreed,
+          onChanged: (value) {
+            setState(() {
+              _isAgreed = value ?? false;
+            });
+          },
+          activeColor: AppColors.primary,
+          checkColor: Colors.white,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+        ),
+        Expanded(
+            child: GestureDetector(
+            onTap: () {
+              setState(() {
+                _isAgreed = !_isAgreed;
+              });
+            },
+            child: RichText(
+              text: TextSpan(
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontSize: 13,
+                ),
+                children: [
+                  TextSpan(text: prefixText),
+                  TextSpan(
+                    text: privacyPolicyText,
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      decoration: TextDecoration.underline,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () {
+                        final content = isEn
+                            ? LegalContent.privacyPolicyEn
+                            : LegalContent.privacyPolicyAr;
+                        final title = isEn ? 'Privacy Policy' : 'سياسة الخصوصية';
+                        AppRoutes.pushNamed(
+                          context,
+                          AppRoutes.legalInfo,
+                          arguments: {
+                            'title': title,
+                            'content': content,
+                          },
+                        );
+                      },
+                  ),
+                  TextSpan(text: middleText),
+                  TextSpan(
+                    text: termsText,
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      decoration: TextDecoration.underline,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () {
+                        final content = isEn
+                            ? LegalContent.termsEn
+                            : LegalContent.termsAr;
+                        final title = isEn
+                            ? 'Terms & Conditions'
+                            : 'الشروط والأحكام';
+                        AppRoutes.pushNamed(
+                          context,
+                          AppRoutes.legalInfo,
+                          arguments: {
+                            'title': title,
+                            'content': content,
+                          },
+                        );
+                      },
+                  ),
+                ],
+              ),
+              textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+              textAlign: isRTL ? TextAlign.right : TextAlign.left,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

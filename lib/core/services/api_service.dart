@@ -58,8 +58,25 @@ class ApiService {
     }
 
     if (_isIOS) {
-      // iOS Simulator - localhost works directly
-      return 'http://localhost:4000/api';
+      // iOS Physical Device - use Mac's IP address
+      // iOS Simulator can use localhost, but for physical device we need Mac's IP
+      // Note: On physical iPhone, localhost refers to the iPhone itself, not the Mac
+      // 
+      // TO FIX CONNECTION REFUSED ON PHYSICAL iPhone:
+      // 1. Find your Mac's IP: ifconfig | grep "inet " | grep -v 127.0.0.1
+      // 2. Make sure backend listens on 0.0.0.0, not just localhost
+      // 3. Ensure both Mac and iPhone are on the same WiFi network
+      // 4. Check firewall settings on your Mac
+      //
+      // For iOS Simulator: localhost works (can keep using this)
+      // For Physical iPhone: use Mac's IP address (found: 192.168.1.11)
+      
+      const String iosIP = '192.168.1.11'; // Physical iPhone - Your Mac's IP
+      // For iOS Simulator, you can use 'localhost' if needed:
+      // const String iosIP = 'localhost'; // Uncomment for iOS Simulator
+      
+      final url = 'http://$iosIP:4000/api';
+      return url;
     }
 
     // Default fallback

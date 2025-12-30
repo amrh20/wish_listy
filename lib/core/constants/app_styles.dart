@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'app_colors.dart';
 import '../utils/accessibility_utils.dart';
+import '../services/localization_service.dart';
 
 class AppStyles {
   // Icon size constants for standardization
@@ -29,16 +31,40 @@ class AppStyles {
           )
         : fontSize;
 
-    return GoogleFonts.readexPro(
-      fontSize: finalFontSize,
-      fontWeight: fontWeight,
-      color: color,
-      height: height,
-      letterSpacing: letterSpacing,
-    );
+    // Check if Arabic language is being used
+    bool isArabic = false;
+    if (context != null) {
+      try {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
+        isArabic = localization.currentLanguage == 'ar';
+      } catch (e) {
+        // If Provider is not available, default to English
+        isArabic = false;
+      }
+    }
+
+    // Use Mestika for Arabic, Ubuntu for English
+    if (isArabic) {
+      return TextStyle(
+        fontFamily: 'Mestika',
+        fontSize: finalFontSize,
+        fontWeight: fontWeight,
+        color: color,
+        height: height,
+        letterSpacing: letterSpacing,
+      );
+    } else {
+      return GoogleFonts.ubuntu(
+        fontSize: finalFontSize,
+        fontWeight: fontWeight,
+        color: color,
+        height: height,
+        letterSpacing: letterSpacing,
+      );
+    }
   }
 
-  // Beautiful Text Styles with Readex Pro Font (Trendy & Catchy)
+  // Beautiful Text Styles with Ubuntu Font for English, Mestika for Arabic
   // Font sizes optimized for mobile screens with accessibility support
   
   // Context-aware methods for accessibility (use these when you have BuildContext)
@@ -223,13 +249,45 @@ class AppStyles {
         minSize: AccessibilityUtils.minFontSize,
       );
 
-  static TextStyle get button => GoogleFonts.readexPro(
+  // Button style - needs context for language detection
+  // For backward compatibility, this defaults to Ubuntu
+  // Use buttonWithContext when you have BuildContext available
+  static TextStyle get button => GoogleFonts.ubuntu(
     fontSize: 14,
     fontWeight: FontWeight.w600,
     color: AppColors.textWhite,
     height: 1.4,
     letterSpacing: 0.2,
   );
+
+  // Context-aware button style that uses Mestika for Arabic
+  static TextStyle buttonWithContext(BuildContext context) {
+    try {
+      final localization = Provider.of<LocalizationService>(context, listen: false);
+      final isArabic = localization.currentLanguage == 'ar';
+      
+      if (isArabic) {
+        return const TextStyle(
+          fontFamily: 'Mestika',
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textWhite,
+          height: 1.4,
+          letterSpacing: 0.2,
+        );
+      }
+    } catch (e) {
+      // Fallback to default if Provider is not available
+    }
+    
+    return GoogleFonts.ubuntu(
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+      color: AppColors.textWhite,
+      height: 1.4,
+      letterSpacing: 0.2,
+    );
+  }
 
   static TextStyle get overline => const TextStyle(
     fontSize: 10,

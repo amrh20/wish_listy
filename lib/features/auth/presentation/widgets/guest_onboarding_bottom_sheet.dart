@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -38,6 +40,7 @@ class GuestOnboardingBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Container(
@@ -69,7 +72,7 @@ class GuestOnboardingBottomSheet extends StatelessWidget {
                   children: [
                     // Title
                     Text(
-                      'Welcome to WishListy!',
+                      localization.translate('guest.onboarding.title'),
                       style: AppStyles.headingLargeWithContext(context),
                       textAlign: TextAlign.center,
                     ),
@@ -77,7 +80,7 @@ class GuestOnboardingBottomSheet extends StatelessWidget {
 
                     // Subtitle
                     Text(
-                      'Explore what you can do as a guest',
+                      localization.translate('guest.onboarding.subtitle'),
                       style: AppStyles.bodyLargeWithContext(context).copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -88,23 +91,26 @@ class GuestOnboardingBottomSheet extends StatelessWidget {
                     // Features list
                     _buildFeatureItem(
                       context,
+                      localization,
                       Icons.favorite_outline,
-                      'Browse Public Wishlists',
-                      'Discover wishlists shared by others',
+                      localization.translate('guest.onboarding.browsePublicWishlists.title'),
+                      localization.translate('guest.onboarding.browsePublicWishlists.description'),
                     ),
                     const SizedBox(height: 20),
                     _buildFeatureItem(
                       context,
+                      localization,
                       Icons.event_outlined,
-                      'Explore Events',
-                      'View public events and celebrations',
+                      localization.translate('guest.onboarding.exploreEvents.title'),
+                      localization.translate('guest.onboarding.exploreEvents.description'),
                     ),
                     const SizedBox(height: 20),
                     _buildFeatureItem(
                       context,
+                      localization,
                       Icons.lock_outline,
-                      'Sign Up for More',
-                      'Create your own wishlists and manage events',
+                      localization.translate('guest.onboarding.signUpForMore.title'),
+                      localization.translate('guest.onboarding.signUpForMore.description'),
                     ),
                     const SizedBox(height: 32),
 
@@ -135,7 +141,7 @@ class GuestOnboardingBottomSheet extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Benefits of Signing Up',
+                                localization.translate('guest.onboarding.benefitsOfSigningUp'),
                                 style: AppStyles.headingSmallWithContext(context).copyWith(
                                   color: AppColors.primary,
                                   fontWeight: FontWeight.bold,
@@ -146,19 +152,23 @@ class GuestOnboardingBottomSheet extends StatelessWidget {
                           const SizedBox(height: 16),
                           _buildBenefitItem(
                             context,
-                            'Create unlimited wishlists',
+                            localization,
+                            localization.translate('guest.onboarding.benefitUnlimitedWishlists'),
                           ),
                           _buildBenefitItem(
                             context,
-                            'Organize events and invite friends',
+                            localization,
+                            localization.translate('guest.onboarding.benefitOrganizeEvents'),
                           ),
                           _buildBenefitItem(
                             context,
-                            'Track gift purchases',
+                            localization,
+                            localization.translate('guest.onboarding.benefitTrackPurchases'),
                           ),
                           _buildBenefitItem(
                             context,
-                            'Connect with friends',
+                            localization,
+                            localization.translate('guest.onboarding.benefitConnectFriends'),
                           ),
                         ],
                       ),
@@ -174,7 +184,7 @@ class GuestOnboardingBottomSheet extends StatelessWidget {
               child: Column(
                 children: [
                   CustomButton(
-                    text: 'Sign Up Now',
+                    text: localization.translate('guest.onboarding.signUpNow'),
                     onPressed: () {
                       Navigator.pop(context);
                       Navigator.pushNamed(context, AppRoutes.signup);
@@ -187,7 +197,7 @@ class GuestOnboardingBottomSheet extends StatelessWidget {
                   TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: Text(
-                      'Continue as Guest',
+                      localization.translate('guest.onboarding.continueAsGuest'),
                       style: AppStyles.bodyMediumWithContext(context).copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -204,6 +214,7 @@ class GuestOnboardingBottomSheet extends StatelessWidget {
 
   Widget _buildFeatureItem(
     BuildContext context,
+    LocalizationService localization,
     IconData icon,
     String title,
     String description,
@@ -248,7 +259,7 @@ class GuestOnboardingBottomSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildBenefitItem(BuildContext context, String text) {
+  Widget _buildBenefitItem(BuildContext context, LocalizationService localization, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(

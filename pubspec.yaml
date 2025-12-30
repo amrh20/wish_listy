@@ -94,10 +94,32 @@ flutter:
     - assets/images/
     - assets/images/categories/
     - assets/icons/
-    - assets/animations/
     - assets/translations/
     - assets/lottie/
     - assets/vectors/bottom_sheets/
+
+  # Fonts configuration
+  fonts:
+    - family: Mestika
+      fonts:
+        - asset: assets/fonts/Mestika-Thin.otf
+          weight: 100
+        - asset: assets/fonts/Mestika-ExtraLight.otf
+          weight: 200
+        - asset: assets/fonts/Mestika-Light.otf
+          weight: 300
+        - asset: assets/fonts/Mestika-Regular.otf
+          weight: 400
+        - asset: assets/fonts/Mestika-Medium.otf
+          weight: 500
+        - asset: assets/fonts/Mestika-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/Mestika-Bold.otf
+          weight: 700
+        - asset: assets/fonts/Mestika-ExtraBold.otf
+          weight: 800
+        - asset: assets/fonts/Mestika-Black.otf
+          weight: 900
 
 # Removed heavy dependencies for faster builds:
 # - Firebase packages (firebase_core, firebase_auth, etc.) - Can be added later

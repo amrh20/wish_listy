@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -15,6 +17,7 @@ import 'package:wish_listy/features/events/presentation/widgets/link_wishlist_bo
 import 'package:wish_listy/features/events/presentation/widgets/event_wishlist_tile.dart';
 import 'package:wish_listy/core/widgets/top_overlay_toast.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
+import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 
 class EventDetailsScreen extends StatefulWidget {
   final String eventId;
@@ -40,11 +43,42 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   // Repository
   final EventRepository _eventRepository = EventRepository();
+  
+  // Stream subscription for event updates from notifications
+  StreamSubscription<String>? _eventUpdateSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadEventDetails();
+    _setupEventUpdateListener();
+  }
+
+  /// Setup listener for event updates from notifications
+  void _setupEventUpdateListener() {
+    try {
+      final notificationsCubit = context.read<NotificationsCubit>();
+      _eventUpdateSubscription = notificationsCubit.eventUpdateStream.listen(
+        (updatedEventId) {
+          // Only refresh if this is the current event
+          if (updatedEventId == widget.eventId && mounted) {
+            debugPrint('🔄 EventDetailsScreen: Received update signal for event: $updatedEventId');
+            _refreshEventDetails();
+          }
+        },
+        onError: (error) {
+          debugPrint('⚠️ EventDetailsScreen: Error in event update stream: $error');
+        },
+      );
+    } catch (e) {
+      debugPrint('⚠️ EventDetailsScreen: Could not setup event update listener: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _eventUpdateSubscription?.cancel();
+    super.dispose();
   }
 
   /// Handles back navigation - always navigates to Events tab in MainNavigation
@@ -293,7 +327,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Unified Info Sheet (Merged Date, Location, Description, Guests)
-                        _buildUnifiedInfoSheet(acceptedGuests, remainingCount),
+                        _buildUnifiedInfoSheet(acceptedGuests, remainingCount, localization),
 
                         const SizedBox(height: 16),
 
@@ -421,7 +455,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                           const SizedBox(width: 6),
                           Flexible(
                             child: Text(
-                              'Hosted by ${_event!.creatorName}',
+                              '${localization.translate('dialogs.hostedBy')} ${_event!.creatorName}',
                               style: AppStyles.bodySmall.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w500,
@@ -457,12 +491,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                         Flexible(
                           child: Text(
                             isPast
-                                ? 'Past Event'
+                                ? localization.translate('dialogs.pastEvent')
                                 : daysUntil == 0
-                                ? 'Today'
+                                ? localization.translate('dialogs.today')
                                 : daysUntil == 1
-                                ? 'Tomorrow'
-                                : 'In $daysUntil days',
+                                ? localization.translate('dialogs.tomorrow')
+                                : localization.translate('dialogs.inDays').replaceAll('{days}', daysUntil.toString()),
                             style: AppStyles.bodySmall.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
@@ -489,6 +523,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Widget _buildUnifiedInfoSheet(
     List<EventInvitation> acceptedGuests,
     int remainingCount,
+    LocalizationService localization,
   ) {
     final hasDescription =
         _event!.description != null && _event!.description!.isNotEmpty;
@@ -526,7 +561,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           // Description Section (only show if not empty)
           if (hasDescription) ...[
             Text(
-              'About',
+              localization.translate('dialogs.about'),
               style: AppStyles.headingSmall.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
@@ -543,21 +578,35 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             const Divider(height: 30),
           ],
 
-          // Add spacing before Invitation Card
-          if (_event!.isCreator == false) const SizedBox(height: 16),
+          // Add spacing before Invitation Card / Status Card
+          if (_event!.isCreator == false) const SizedBox(height: 8),
 
-          // Invitation Card (for Guest View) - replaces "Your Response" section
+          // Invitation Card (for Guest View - pending status) OR Status Card (for responded)
           if (_event!.isCreator == false) ...[
-            _buildInvitationCard(),
-            const SizedBox(height: 24),
+            // Show invitation card only if status is pending
+            if (_event!.myInvitationStatus == 'pending')
+              _buildInvitationCard(localization)
+            // Show status card if user has responded
+            else ...[
+              Text(
+                'Your Response',
+                style: AppStyles.headingSmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildGuestActionsArea(),
+            ],
+            const SizedBox(height: 16),
           ],
 
           // Add spacing before "Who's Coming" section
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // Guests Section
           Text(
-            'Who\'s Coming',
+            localization.translate('dialogs.whosComing'),
             style: AppStyles.headingSmall.copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -638,15 +687,15 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   /// Builds the prominent Invitation Card for Guest View
-  Widget _buildInvitationCard() {
+  Widget _buildInvitationCard(LocalizationService localization) {
     final currentStatus = _event?.myInvitationStatus ?? 'pending';
     
-    // Don't show invitation card if not invited
-    if (currentStatus == 'not_invited') {
+    // Don't show invitation card if not invited OR if user already responded (not pending)
+    if (currentStatus == 'not_invited' || currentStatus != 'pending') {
       return const SizedBox.shrink();
     }
 
-    // Show invitation card with premium gradient design
+    // Show invitation card with premium gradient design (only for pending status)
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -675,7 +724,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         children: [
           // Title
           Text(
-            'You\'re on the guest list! 🎟️',
+            localization.translate('dialogs.youreOnGuestList'),
             style: AppStyles.headingSmall.copyWith(
               fontWeight: FontWeight.bold,
               fontSize: 18,
@@ -686,7 +735,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           const SizedBox(height: 8),
           // Subtitle
           Text(
-            'Let the host know if you can make it.',
+            localization.translate('dialogs.letHostKnow'),
             style: AppStyles.bodySmall.copyWith(
               color: AppColors.textSecondary,
               fontSize: 13,
@@ -701,7 +750,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               SizedBox(
                 width: double.infinity,
                 child: _buildRSVPButton(
-                  label: 'Accept',
+                  label: localization.translate('dialogs.accept'),
                   icon: Icons.check_circle_outline,
                   status: 'accepted',
                   currentStatus: currentStatus,
@@ -712,27 +761,27 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               // Row 2: Maybe and Decline Buttons (Side by Side)
               Row(
                 children: [
-                  // Maybe Button (Orange Outlined)
-                  Expanded(
-                    child: _buildRSVPButton(
-                      label: 'Maybe',
-                      icon: Icons.help_outline,
-                      status: 'maybe',
-                      currentStatus: currentStatus,
-                      isMaybe: true,
+                    // Maybe Button (Orange Outlined)
+                    Expanded(
+                      child: _buildRSVPButton(
+                        label: localization.translate('dialogs.maybe'),
+                        icon: Icons.help_outline,
+                        status: 'maybe',
+                        currentStatus: currentStatus,
+                        isMaybe: true,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Decline Button (The Minimalist - Grey TextButton)
-                  Expanded(
-                    child: _buildRSVPButton(
-                      label: 'Decline',
-                      icon: Icons.close,
-                      status: 'declined',
-                      currentStatus: currentStatus,
-                      isDecline: true,
+                    const SizedBox(width: 12),
+                    // Decline Button (The Minimalist - Grey TextButton)
+                    Expanded(
+                      child: _buildRSVPButton(
+                        label: localization.translate('dialogs.decline'),
+                        icon: Icons.close,
+                        status: 'declined',
+                        currentStatus: currentStatus,
+                        isDecline: true,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ],
@@ -1145,6 +1194,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       await _eventRepository.deleteEvent(_event!.id);
 
       if (mounted) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         // Show success message
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1153,7 +1203,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
               children: [
                 Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text('Event deleted successfully'),
+                Text(localization.translate('dialogs.eventDeletedSuccessfully')),
               ],
             ),
             backgroundColor: AppColors.success,
@@ -1166,10 +1216,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to delete event: ${e.toString()}'),
+            content: Text('${localization.translate('dialogs.failedToDeleteEvent')}: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -1322,7 +1373,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 16),
+          margin: EdgeInsets.zero,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: backgroundColor,
@@ -1410,8 +1461,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         _event = updatedEvent;
       });
 
+      // Reload event details to get the latest data from server
+      await _loadEventDetails();
+
+      if (!mounted) return;
+
       // Show success snackbar
       if (status == 'accepted') {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -1419,7 +1476,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text('You are going! Don\'t forget a gift 🎁'),
+                  child: Text(localization.translate('dialogs.youAreGoing')),
                 ),
               ],
             ),
@@ -1438,9 +1495,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       });
 
       // Show error snackbar
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to update response: ${e.toString()}'),
+          content: Text('${localization.translate('dialogs.failedToUpdateResponse')}: ${e.toString()}'),
           backgroundColor: AppColors.error,
           duration: const Duration(seconds: 3),
         ),
@@ -1452,6 +1510,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Future<void> _handleLocationTap() async {
     if (_event == null) return;
 
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final mode = _event!.mode ?? 'in_person';
     final myStatus = _event!.myInvitationStatus ?? 'not_invited';
 
@@ -1467,7 +1526,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Could not open maps'),
+                content: Text(localization.translate('dialogs.couldNotOpenMaps')),
                 backgroundColor: AppColors.error,
               ),
             );
@@ -1485,7 +1544,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Could not open meeting link'),
+                content: Text(localization.translate('dialogs.couldNotOpenMeetingLink')),
                 backgroundColor: AppColors.error,
               ),
             );
@@ -1495,7 +1554,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Meeting link not available'),
+              content: Text(localization.translate('dialogs.meetingLinkNotAvailable')),
               backgroundColor: AppColors.warning,
             ),
           );
@@ -2113,9 +2172,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       if (!mounted) return;
       Navigator.pop(context); // Close loading dialog
 
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Wishlist unlinked successfully'),
+          content: Text(localization.translate('dialogs.wishlistUnlinkedSuccessfully')),
           backgroundColor: AppColors.success,
         ),
       );
@@ -2125,9 +2185,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context); // Close loading dialog
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to unlink wishlist: ${e.toString()}'),
+          content: Text('${localization.translate('dialogs.failedToUnlinkWishlist')}: ${e.toString()}'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -2153,9 +2214,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             if (!mounted) return;
 
             Navigator.pop(context);
+            final localization = Provider.of<LocalizationService>(context, listen: false);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Wishlist linked successfully'),
+                content: Text(localization.translate('dialogs.wishlistLinkedSuccessfully')),
                 backgroundColor: AppColors.success,
               ),
             );
@@ -2165,9 +2227,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           } catch (e) {
             if (!mounted) return;
             Navigator.pop(context);
+            final localization = Provider.of<LocalizationService>(context, listen: false);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Failed to link wishlist: ${e.toString()}'),
+                content: Text('${localization.translate('dialogs.failedToLinkWishlist')}: ${e.toString()}'),
                 backgroundColor: AppColors.error,
               ),
             );

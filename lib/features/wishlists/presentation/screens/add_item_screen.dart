@@ -1660,8 +1660,8 @@ class _AddItemScreenState extends State<AddItemScreen>
                   controller: customLocationController,
                   autofocus: true,
                   decoration: InputDecoration(
-                    labelText: 'Enter Location',
-                    hintText: 'Type your location...',
+                    labelText: Provider.of<LocalizationService>(context, listen: false).translate('wishlists.storeLocation'),
+                    hintText: Provider.of<LocalizationService>(context, listen: false).translate('wishlists.enterStoreLocation'),
                     prefixIcon: Icon(
                       Icons.location_on_outlined,
                       color: AppColors.primary,
@@ -1709,7 +1709,7 @@ class _AddItemScreenState extends State<AddItemScreen>
                   }
                 },
                 child: Text(
-                  'Add',
+                  Provider.of<LocalizationService>(context, listen: false).translate('app.add'),
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
@@ -1720,7 +1720,7 @@ class _AddItemScreenState extends State<AddItemScreen>
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text(
-                  'Cancel',
+                  Provider.of<LocalizationService>(context, listen: false).translate('app.cancel'),
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                   ),

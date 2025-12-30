@@ -8,6 +8,7 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
@@ -1093,9 +1094,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
         if (mounted) {
+          final localization = Provider.of<LocalizationService>(context, listen: false);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not open maps'),
+            SnackBar(
+              content: Text(localization.translate('dialogs.couldNotOpenMaps')),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -1430,9 +1432,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }) async {
     final authService = Provider.of<AuthRepository>(context, listen: false);
     if (authService.isGuest) {
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please login to reserve items'),
+          content: Text(localization.translate('dialogs.pleaseLoginToReserve')),
           backgroundColor: AppColors.error,
         ),
       );
@@ -1493,9 +1496,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         setState(() {
           _currentItem = item;
         });
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update reservation: ${e.toString()}'),
+            content: Text('${localization.translate('dialogs.failedToUpdateReservation')}: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -1546,9 +1550,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       }
     } catch (_) {
       if (mounted) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid URL'),
+          SnackBar(
+            content: Text(localization.translate('dialogs.invalidUrl')),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -1558,9 +1563,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not open link'),
+        SnackBar(
+          content: Text(localization.translate('dialogs.couldNotOpenLink')),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -2396,9 +2402,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   Future<void> _toggleReceivedStatus() async {
     final authService = Provider.of<AuthRepository>(context, listen: false);
     if (authService.isGuest) {
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please login to mark items as received'),
+          content: Text(localization.translate('dialogs.pleaseLoginToMarkReceived')),
           backgroundColor: AppColors.error,
         ),
       );
@@ -2537,9 +2544,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         setState(() {
           _currentItem = _currentItem ?? widget.item;
         });
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update status: ${e.toString()}'),
+            content: Text('${localization.translate('dialogs.failedToUpdateStatus')}: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -2601,9 +2609,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
     Clipboard.setData(ClipboardData(text: text));
     if (mounted) {
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Copied to clipboard'),
+        SnackBar(
+          content: Text(localization.translate('dialogs.copiedToClipboard')),
           behavior: SnackBarBehavior.floating,
           duration: Duration(seconds: 2),
         ),
@@ -2699,6 +2708,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
       // Show loading indicator
       if (mounted) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -2712,7 +2722,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text('Deleting item...'),
+                Text(localization.translate('dialogs.deletingItem')),
               ],
             ),
             behavior: SnackBarBehavior.floating,

@@ -10,6 +10,7 @@ import 'package:wish_listy/features/profile/presentation/screens/guest_login_pro
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
 import 'package:wish_listy/features/wishlists/presentation/widgets/wishlist_filter_chip_widget.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 class WishItemModel {
   final String id;
@@ -275,7 +276,7 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              'Delete',
+              Provider.of<LocalizationService>(context, listen: false).translate('app.delete'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.error,
                 fontWeight: FontWeight.w700,
@@ -495,7 +496,7 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
                               setState(() => _searchQuery = value);
                             },
                             decoration: InputDecoration(
-                              hintText: 'Search wishes...',
+                              hintText: Provider.of<LocalizationService>(context, listen: false).translate('dialogs.searchWishes'),
                               hintStyle: AppStyles.bodyMedium.copyWith(
                                 color: AppColors.textTertiary,
                               ),
@@ -621,8 +622,8 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
           children: [
             TextField(
               controller: controller,
-              decoration: const InputDecoration(
-                hintText: 'Wish name',
+              decoration: InputDecoration(
+                hintText: Provider.of<LocalizationService>(context, listen: false).translate('wishlists.wishTitle'),
               ),
             ),
             const SizedBox(height: 12),
@@ -639,8 +640,8 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
               onChanged: (v) {
                 if (v != null) priority = v;
               },
-              decoration: const InputDecoration(
-                labelText: 'Priority',
+              decoration: InputDecoration(
+                labelText: Provider.of<LocalizationService>(context, listen: false).translate('wishlists.priority'),
               ),
             ),
           ],
@@ -649,7 +650,7 @@ class _GuestWishlistDetailsScreenState extends State<GuestWishlistDetailsScreen>
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Cancel',
+              Provider.of<LocalizationService>(context, listen: false).translate('app.cancel'),
               style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
             ),
           ),
@@ -827,7 +828,7 @@ class _WishRow extends StatelessWidget {
                           ),
                           SizedBox(width: 8),
                           Text(
-                            'Edit',
+                            Provider.of<LocalizationService>(context, listen: false).translate('app.edit'),
                             style: AppStyles.bodyMedium.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w600,
@@ -847,7 +848,7 @@ class _WishRow extends StatelessWidget {
                           ),
                           SizedBox(width: 8),
                           Text(
-                            'Delete',
+                            Provider.of<LocalizationService>(context, listen: false).translate('app.delete'),
                             style: AppStyles.bodyMedium.copyWith(
                               color: AppColors.error,
                               fontWeight: FontWeight.w600,

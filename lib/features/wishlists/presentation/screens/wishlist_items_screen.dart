@@ -6,6 +6,7 @@ import 'package:wish_listy/core/widgets/primary_gradient_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/widgets/animated_background.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
 import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
@@ -545,6 +546,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     if (_isLoading) {
       return Scaffold(
         backgroundColor: AppColors.background,
@@ -768,7 +770,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                               });
                             },
                             decoration: InputDecoration(
-                              hintText: 'Search wishes...',
+                              hintText: localization.translate('dialogs.searchWishes'),
                               hintStyle: AppStyles.bodyMedium.copyWith(
                                 color: AppColors.textTertiary,
                               ),
@@ -1207,9 +1209,10 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
             _items[index] = item;
           }
         });
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to mark as purchased: ${e.toString()}'),
+            content: Text('${localization.translate('dialogs.failedToMarkAsPurchased')}: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -1377,7 +1380,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                'Cancel',
+                Provider.of<LocalizationService>(context, listen: false).translate('app.cancel'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -1389,7 +1392,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                 _performDeleteItem(item);
               },
               child: Text(
-                'Delete',
+                Provider.of<LocalizationService>(context, listen: false).translate('app.delete'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.error,
                   fontWeight: FontWeight.w600,
@@ -1407,6 +1410,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
       // Show loading indicator
       if (mounted) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -1420,7 +1424,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text('Deleting item...'),
+                Text(localization.translate('dialogs.deletingItem')),
               ],
             ),
             behavior: SnackBarBehavior.floating,

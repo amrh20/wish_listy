@@ -393,9 +393,10 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     }
 
     // TODO: Implement share functionality for authenticated users
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Share wishlist: ${wishlist.name}'),
+        content: Text(localization.translate('dialogs.shareWishlist').replaceAll('{wishlistName}', wishlist.name)),
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -975,12 +976,13 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     } catch (e) {
       // Revert optimistic update on error
       if (mounted) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         setState(() {
           _myReservations.add(item);
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to cancel reservation: ${e.toString()}'),
+            content: Text('${localization.translate('dialogs.failedToCancelReservation')}: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
