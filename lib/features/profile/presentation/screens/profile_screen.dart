@@ -236,6 +236,8 @@ class _ProfileScreenState extends State<ProfileScreen>
         ? userName[0].toUpperCase()
         : '?';
     final profileImage = _userProfile?.profilePicture;
+    final userBio = _userProfile?.bio;
+    final hasBio = userBio != null && userBio.trim().isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.only(left: 8, right: 8, top: 12, bottom: 0),
@@ -250,66 +252,113 @@ class _ProfileScreenState extends State<ProfileScreen>
         padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
         child: SafeArea(
           bottom: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Stack(
             children: [
-              // White Circle with Initial
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 4),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 16,
-                      offset: const Offset(0, 8),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // White Circle with Initial
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.white,
-                  backgroundImage: profileImage != null && profileImage.isNotEmpty
-                      ? NetworkImage(profileImage)
-                      : null,
-                  child: profileImage == null || profileImage.isEmpty
-                      ? Text(
-                          userInitial,
+                    child: CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.white,
+                      backgroundImage: profileImage != null && profileImage.isNotEmpty
+                          ? NetworkImage(profileImage)
+                          : null,
+                      child: profileImage == null || profileImage.isEmpty
+                          ? Text(
+                              userInitial,
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Name below circle with Edit button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          userName.isNotEmpty ? userName : 'User',
                           style: const TextStyle(
-                            fontSize: 26,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Edit Button
+                      GestureDetector(
+                        onTap: _editPersonalInfo,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            size: 18,
                             color: AppColors.primary,
                           ),
-                        )
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Name below circle
-              Text(
-                userName.isNotEmpty ? userName : 'User',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              // Handle below name
-              if (_userProfile?.handle != null && _userProfile!.handle!.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  _userProfile!.getDisplayHandle(),
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                  // Handle below name
+                  if (_userProfile?.handle != null && _userProfile!.handle!.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      _userProfile!.getDisplayHandle(),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  // Bio below handle (if exists)
+                  if (hasBio) ...[
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        userBio,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary.withOpacity(0.8),
+                          height: 1.4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
         ),
@@ -952,10 +1001,11 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  void _editPersonalInfo() {
+  Future<void> _editPersonalInfo() async {
     if (_userProfile == null) return;
     
-    Navigator.pushNamed(
+    // Navigate to Personal Information screen and wait for result
+    final result = await Navigator.pushNamed(
       context,
       AppRoutes.personalInformation,
       arguments: {
@@ -964,6 +1014,12 @@ class _ProfileScreenState extends State<ProfileScreen>
         'bio': _userProfile!.bio,
       },
     );
+    
+    // If user saved changes (result is not null), refresh the profile data
+    if (result != null && mounted) {
+      // Reload profile data to reflect changes
+      await _loadUserProfile(forceRefresh: true);
+    }
   }
 
   void _privacySettings() {

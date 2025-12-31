@@ -31,6 +31,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
+  final _customEventTypeController = TextEditingController();
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -40,7 +41,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   String _selectedEventType = 'birthday';
-  String? _wishlistOption = 'create'; // 'create', 'link', 'none'
+  String? _wishlistOption = 'none'; // 'link', 'none' (removed 'create' option)
   String? _linkedWishlistId;
   String? _linkedWishlistName;
   String _selectedPrivacy = 'friends_only';
@@ -59,64 +60,66 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   Event? _existingEvent; // Existing event data when in edit mode
   bool get _isEditMode => _eventId != null;
 
-  final List<EventTypeOption> _eventTypes = [
-    EventTypeOption(
-      id: 'birthday',
-      name: 'Birthday',
-      icon: Icons.cake_outlined,
-      color: AppColors.accent,
-      emoji: '🎂',
-    ),
-    EventTypeOption(
-      id: 'wedding',
-      name: 'Wedding',
-      icon: Icons.favorite_outline,
-      color: AppColors.primary,
-      emoji: '💒',
-    ),
-    EventTypeOption(
-      id: 'anniversary',
-      name: 'Anniversary',
-      icon: Icons.favorite_border,
-      color: AppColors.error,
-      emoji: '💕',
-    ),
-    EventTypeOption(
-      id: 'graduation',
-      name: 'Graduation',
-      icon: Icons.school_outlined,
-      color: AppColors.accent,
-      emoji: '🎓',
-    ),
-    EventTypeOption(
-      id: 'holiday',
-      name: 'Holiday',
-      icon: Icons.celebration_outlined,
-      color: AppColors.success,
-      emoji: '🎄',
-    ),
-    EventTypeOption(
-      id: 'baby_shower',
-      name: 'Baby Shower',
-      icon: Icons.child_friendly_outlined,
-      color: AppColors.info,
-      emoji: '👶',
-    ),
-    EventTypeOption(
-      id: 'house_warming',
-      name: 'Housewarming',
-      icon: Icons.home_outlined,
-      color: AppColors.warning,
-      emoji: '🏠',
-    ),
-    EventTypeOption(
-      id: 'other',
-      name: 'Other',
-      icon: Icons.event_outlined,
-      color: AppColors.primary,
-      emoji: '🎈',
-    ),
-  ];
+  List<EventTypeOption> _getEventTypes(LocalizationService localization) {
+    return [
+      EventTypeOption(
+        id: 'birthday',
+        name: localization.translate('events.birthday'),
+        icon: Icons.cake_outlined,
+        color: AppColors.accent,
+        emoji: '🎂',
+      ),
+      EventTypeOption(
+        id: 'wedding',
+        name: localization.translate('events.wedding'),
+        icon: Icons.favorite_outline,
+        color: AppColors.primary,
+        emoji: '💒',
+      ),
+      EventTypeOption(
+        id: 'anniversary',
+        name: localization.translate('events.anniversary'),
+        icon: Icons.favorite_border,
+        color: AppColors.error,
+        emoji: '💕',
+      ),
+      EventTypeOption(
+        id: 'graduation',
+        name: localization.translate('events.graduation'),
+        icon: Icons.school_outlined,
+        color: AppColors.accent,
+        emoji: '🎓',
+      ),
+      EventTypeOption(
+        id: 'holiday',
+        name: localization.translate('common.holiday'),
+        icon: Icons.celebration_outlined,
+        color: AppColors.success,
+        emoji: '🎄',
+      ),
+      EventTypeOption(
+        id: 'baby_shower',
+        name: localization.translate('events.babyShower'),
+        icon: Icons.child_friendly_outlined,
+        color: AppColors.info,
+        emoji: '👶',
+      ),
+      EventTypeOption(
+        id: 'house_warming',
+        name: localization.translate('events.housewarming'),
+        icon: Icons.home_outlined,
+        color: AppColors.warning,
+        emoji: '🏠',
+      ),
+      EventTypeOption(
+        id: 'other',
+        name: localization.translate('events.other'),
+        icon: Icons.event_outlined,
+        color: AppColors.primary,
+        emoji: '🎈',
+      ),
+    ];
+  }
 
   @override
   void initState() {
@@ -180,7 +183,21 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     _locationController.text = event.location ?? '';
 
     // Set event type
-    _selectedEventType = event.type.toString().split('.').last;
+    final eventTypeString = event.type.toString().split('.').last;
+    
+    // Check if this is a custom event type (not in the predefined list)
+    // Get localization for predefined types check
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final isPredefinedType = _getEventTypes(localization).any((type) => type.id == eventTypeString);
+    
+    if (isPredefinedType) {
+      _selectedEventType = eventTypeString;
+      _customEventTypeController.clear();
+    } else {
+      // It's a custom event type
+      _selectedEventType = 'other';
+      _customEventTypeController.text = eventTypeString;
+    }
 
     // Set privacy
     _selectedPrivacy = event.privacy ?? 'friends_only';
@@ -262,6 +279,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     _descriptionController.dispose();
     _locationController.dispose();
     _meetingLinkController.dispose();
+    _customEventTypeController.dispose();
     super.dispose();
   }
 
@@ -310,16 +328,44 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                                     children: [
                                       // Event Type Selection
                                       EventTypeSelectionWidget(
-                                        eventTypes: _eventTypes,
+                                        eventTypes: _getEventTypes(localization),
                                         selectedEventType: _selectedEventType,
                                         selectedColor:
-                                            _getSelectedEventTypeColor(),
+                                            _getSelectedEventTypeColor(localization),
                                         onEventTypeChanged: (type) {
                                           setState(() {
                                             _selectedEventType = type;
+                                            // Clear custom event type when switching away from "other"
+                                            if (type != 'other') {
+                                              _customEventTypeController.clear();
+                                            }
                                           });
                                         },
                                       ),
+                                      // Show custom event type input when "other" is selected
+                                      if (_selectedEventType == 'other') ...[
+                                        const SizedBox(height: 16),
+                                        CustomTextField(
+                                          controller: _customEventTypeController,
+                                          label: localization.translate(
+                                            'events.customEventType',
+                                          ),
+                                          hint: localization.translate(
+                                            'events.enterCustomEventType',
+                                          ),
+                                          prefixIcon: Icons.edit_outlined,
+                                          isRequired: true,
+                                          validator: (value) {
+                                            if (_selectedEventType == 'other' &&
+                                                (value?.isEmpty ?? true)) {
+                                              return localization.translate(
+                                                'events.pleaseEnterCustomEventType',
+                                              );
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ],
                                       const SizedBox(height: 24),
 
                                       // Event Name
@@ -493,12 +539,19 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                                         selectedDate: _selectedDate,
                                         selectedTime: _selectedTime,
                                         location: _locationController.text,
-                                        selectedEventType: _eventTypes
-                                            .firstWhere(
-                                              (type) =>
-                                                  type.id == _selectedEventType,
-                                              orElse: () => _eventTypes.first,
-                                            ),
+                                        selectedEventType: _selectedEventType == 'other' &&
+                                                _customEventTypeController.text.trim().isNotEmpty
+                                            ? EventTypeOption(
+                                                id: 'other',
+                                                name: _customEventTypeController.text.trim(),
+                                                icon: Icons.event_outlined,
+                                                color: AppColors.primary,
+                                                emoji: '🎈',
+                                              )
+                                            : _getEventTypes(localization).firstWhere(
+                                                (type) => type.id == _selectedEventType,
+                                                orElse: () => _getEventTypes(localization).first,
+                                              ),
                                         formatDate: _formatDate,
                                         formatTime: _formatTime,
                                       ),
@@ -511,7 +564,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                                             _saveEvent(localization),
                                         isLoading: _isLoading,
                                         primaryColor:
-                                            _getSelectedEventTypeColor(),
+                                            _getSelectedEventTypeColor(localization),
                                         buttonText: _isEditMode
                                             ? localization.translate(
                                                         'events.updateEvent',
@@ -716,12 +769,21 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   }
 
   // Helper Methods
-  Color _getSelectedEventTypeColor() {
-    final selectedEventType = _eventTypes.firstWhere(
+  Color _getSelectedEventTypeColor(LocalizationService localization) {
+    final selectedEventType = _getEventTypes(localization).firstWhere(
       (type) => type.id == _selectedEventType,
-      orElse: () => _eventTypes.first,
+      orElse: () => _getEventTypes(localization).first,
     );
     return selectedEventType.color;
+  }
+
+  /// Get the final event type to use (custom value if "other" is selected, otherwise selected type)
+  String _getFinalEventType() {
+    if (_selectedEventType == 'other' &&
+        _customEventTypeController.text.trim().isNotEmpty) {
+      return _customEventTypeController.text.trim();
+    }
+    return _selectedEventType;
   }
 
   /// Format selected date as ISO 8601 UTC format string
@@ -777,15 +839,16 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     
     final date = await showDatePicker(
       context: context,
-      initialDate: _selectedDate ?? DateTime.now().add(Duration(days: 7)),
+      initialDate: _selectedDate ?? todayDate,
       firstDate: todayDate, // Prevent past dates
       lastDate: DateTime.now().add(Duration(days: 365)),
       builder: (context, child) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(
               context,
-            ).colorScheme.copyWith(primary: _getSelectedEventTypeColor()),
+            ).colorScheme.copyWith(primary: _getSelectedEventTypeColor(localization)),
           ),
           child: child!,
         );
@@ -855,11 +918,12 @@ class _CreateEventScreenState extends State<CreateEventScreen>
       context: context,
       initialTime: initialTime,
       builder: (context, child) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(
               context,
-            ).colorScheme.copyWith(primary: _getSelectedEventTypeColor()),
+            ).colorScheme.copyWith(primary: _getSelectedEventTypeColor(localization)),
           ),
           child: child!,
         );
@@ -1021,25 +1085,9 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     try {
       String? wishlistId;
 
-      // Handle wishlist creation/linking based on selected option (only for create mode)
-      if (!_isEditMode && _wishlistOption == 'create') {
-        // Create empty wishlist linked to event
-        final eventName = _nameController.text.trim();
-        final wishlistName = '$eventName Wishlist';
-
-        final wishlistResponse = await _wishlistRepository.createWishlist(
-          name: wishlistName,
-          description: 'Wishlist for ${eventName} event',
-          privacy: 'friends',
-          category: _selectedEventType,
-        );
-
-        final wishlistData = wishlistResponse['data'] ?? wishlistResponse;
-        wishlistId =
-            wishlistData['id']?.toString() ??
-            wishlistData['wishlistId']?.toString();
-
-      } else if (_wishlistOption == 'link' && _linkedWishlistId != null) {
+      // Handle wishlist linking based on selected option (only for create mode)
+      // Note: 'create' option has been removed - users can only link existing wishlists
+      if (_wishlistOption == 'link' && _linkedWishlistId != null) {
         // Use linked wishlist ID
         wishlistId = _linkedWishlistId;
 
@@ -1075,7 +1123,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
           description: _descriptionController.text.trim(),
           date: eventDate,
           time: eventTime,
-          type: _selectedEventType,
+          type: _getFinalEventType(),
           privacy: _selectedPrivacy,
           mode: _selectedEventMode.apiValue,
           location: (_selectedEventMode == EventMode.inPerson ||
@@ -1095,7 +1143,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
           description: _descriptionController.text.trim(),
           date: eventDate,
           time: eventTime,
-          type: _selectedEventType,
+          type: _getFinalEventType(),
           privacy: _selectedPrivacy,
           mode: _selectedEventMode.apiValue,
           location: (_selectedEventMode == EventMode.inPerson ||
@@ -1163,9 +1211,9 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     LocalizationService localization, {
     required String eventId,
   }) {
-    final selectedEventType = _eventTypes.firstWhere(
+    final selectedEventType = _getEventTypes(localization).firstWhere(
       (type) => type.id == _selectedEventType,
-      orElse: () => _eventTypes.first,
+      orElse: () => _getEventTypes(localization).first,
     );
 
     // Different messages for create vs edit

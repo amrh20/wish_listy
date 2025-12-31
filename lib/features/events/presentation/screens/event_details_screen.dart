@@ -2276,9 +2276,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Widget _buildMetaTagsRow() {
     final tags = <Widget>[];
 
-    // Type Tag
+    // Type Tag - use typeString if available (custom type), otherwise use enum
     final typeIcon = _getEventTypeIcon(_event!.type);
-    final typeText = _getEventTypeText(_event!.type);
+    final typeText = _event!.typeString != null 
+        ? _event!.typeString! 
+        : _getEventTypeText(_event!.type);
     tags.add(_buildTag(typeText, typeIcon, AppColors.accent));
 
     // Privacy Tag

@@ -511,4 +511,26 @@ class AuthRepository extends ChangeNotifier {
       throw Exception('Failed to load profile. Please try again.');
     }
   }
+
+  // Update user profile via PATCH API
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> profileData) async {
+    try {
+      if (_userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Call API to update user profile
+      // Endpoint: PATCH /api/users/:id/profile
+      final response = await _apiService.patch(
+        '/users/$_userId/profile',
+        data: profileData,
+      );
+
+      return response;
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Failed to update profile. Please try again.');
+    }
+  }
 }

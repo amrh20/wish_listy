@@ -22,14 +22,15 @@ enum BottomSheetVectorType {
 /// Extension to get asset path for each vector type
 extension BottomSheetVectorTypeExtension on BottomSheetVectorType {
   /// Get the asset path for this vector type
-  String get assetPath {
+  /// Returns null if image doesn't exist (will fallback to icon)
+  String? get assetPath {
     switch (this) {
       case BottomSheetVectorType.menu:
-        return 'assets/vectors/bottom_sheets/menu_character.png';
+        return null; // Removed: 'assets/vectors/bottom_sheets/menu_character.png';
       case BottomSheetVectorType.friends:
         return 'assets/vectors/bottom_sheets/friends_character.png';
       case BottomSheetVectorType.creation:
-        return 'assets/vectors/bottom_sheets/creation_character.png';
+        return null; // Removed: 'assets/vectors/bottom_sheets/creation_character.png';
       case BottomSheetVectorType.filter:
         return 'assets/vectors/bottom_sheets/filter_character.png';
       case BottomSheetVectorType.settings:

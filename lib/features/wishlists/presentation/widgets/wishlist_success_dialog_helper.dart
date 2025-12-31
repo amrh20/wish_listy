@@ -55,20 +55,13 @@ class WishlistSuccessDialogHelper {
               // Close create wishlist screen
               Navigator.of(context).pop(); // Close create wishlist screen
               
-              // Navigate to Wishlists tab in MainNavigation
+              // Navigate directly to My Wishlists screen
               if (context.mounted) {
-                // Navigate to MainNavigation and switch to Wishlists tab (index 1)
                 Navigator.pushNamedAndRemoveUntil(
                   context,
-                  AppRoutes.mainNavigation,
+                  AppRoutes.myWishlists,
                   (route) => route.isFirst,
                 );
-                // Use post frame callback to ensure MainNavigation is built before switching tabs
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (context.mounted) {
-                    MainNavigation.switchToTab(context, 1);
-                  }
-                });
               }
             }
           },

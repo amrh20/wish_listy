@@ -66,6 +66,12 @@ dependencies:
   # Skeleton loading effect
   skeletonizer: ^2.1.2
 
+  # Country picker with flags
+  country_picker: ^2.0.20
+
+  # Date formatting
+  intl: ^0.20.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

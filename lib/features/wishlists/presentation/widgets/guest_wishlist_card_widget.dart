@@ -46,6 +46,39 @@ _CategoryVisual _getCategoryVisual(String? categoryRaw) {
         backgroundColor: Colors.lightBlue.shade50,
         foregroundColor: Colors.lightBlue.shade700,
       );
+    case 'anniversary':
+      return _CategoryVisual(
+        icon: Icons.celebration_rounded,
+        backgroundColor: Colors.purple.shade50,
+        foregroundColor: Colors.purple.shade700,
+      );
+    case 'babyshower':
+    case 'babyShower':
+    case 'baby_shower':
+      return _CategoryVisual(
+        icon: Icons.child_care_rounded,
+        backgroundColor: Colors.cyan.shade50,
+        foregroundColor: Colors.cyan.shade700,
+      );
+    case 'christmas':
+      return _CategoryVisual(
+        icon: Icons.card_giftcard_rounded,
+        backgroundColor: Colors.red.shade50,
+        foregroundColor: Colors.red.shade700,
+      );
+    case 'holiday':
+      return _CategoryVisual(
+        icon: Icons.wb_sunny_rounded,
+        backgroundColor: Colors.amber.shade50,
+        foregroundColor: Colors.amber.shade700,
+      );
+    case 'housewarming':
+    case 'house_warming':
+      return _CategoryVisual(
+        icon: Icons.home_rounded,
+        backgroundColor: Colors.brown.shade50,
+        foregroundColor: Colors.brown.shade700,
+      );
     default:
       return _CategoryVisual(
         icon: Icons.star_rounded,

@@ -47,6 +47,39 @@ _CategoryVisual _getCategoryVisual(String? categoryRaw) {
         backgroundColor: Colors.lightBlue.shade50,
         foregroundColor: Colors.lightBlue.shade700,
       );
+    case 'anniversary':
+      return _CategoryVisual(
+        icon: Icons.celebration_rounded,
+        backgroundColor: Colors.purple.shade50,
+        foregroundColor: Colors.purple.shade700,
+      );
+    case 'babyshower':
+    case 'babyShower':
+    case 'baby_shower':
+      return _CategoryVisual(
+        icon: Icons.child_care_rounded,
+        backgroundColor: Colors.cyan.shade50,
+        foregroundColor: Colors.cyan.shade700,
+      );
+    case 'christmas':
+      return _CategoryVisual(
+        icon: Icons.card_giftcard_rounded,
+        backgroundColor: Colors.red.shade50,
+        foregroundColor: Colors.red.shade700,
+      );
+    case 'holiday':
+      return _CategoryVisual(
+        icon: Icons.wb_sunny_rounded,
+        backgroundColor: Colors.amber.shade50,
+        foregroundColor: Colors.amber.shade700,
+      );
+    case 'housewarming':
+    case 'house_warming':
+      return _CategoryVisual(
+        icon: Icons.home_rounded,
+        backgroundColor: Colors.brown.shade50,
+        foregroundColor: Colors.brown.shade700,
+      );
     default:
       return _CategoryVisual(
         icon: Icons.star_rounded,
@@ -259,113 +292,99 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
     String categoryName,
     bool hasDescription,
   ) {
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // A. The Hero Icon (Left Side) - LARGE & COLORFUL
-        Container(
-          height: 60,
-          width: 60,
-          decoration: BoxDecoration(
-            color: categoryColor.withOpacity(0.15),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            categoryVisual.icon,
-            size: 30,
-            color: categoryColor,
-          ),
-        ),
-        const SizedBox(width: 16),
-        // B. Title & Metadata (Right Side)
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Flexible(
-                    child: Text(
-                      widget.title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (widget.onMenu != null)
-                    IconButton(
-                      onPressed: widget.onMenu,
-                      icon: const Icon(
-                        Icons.more_vert,
-                        color: Colors.grey,
-                      ),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 40,
-                        minHeight: 40,
-                      ),
-                      tooltip: 'Options',
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              // Metadata Row
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: categoryColor.withOpacity(0.10),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      categoryName,
-                      style: TextStyle(
-                        color: categoryColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      '• ${widget.totalItems} ${widget.totalItems == 1 ? Provider.of<LocalizationService>(context, listen: false).translate('cards.wish') : Provider.of<LocalizationService>(context, listen: false).translate('cards.wishes')}',
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 11,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              if (hasDescription) ...[
-                const SizedBox(height: 10),
-                Text(
-                  widget.description!.trim(),
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                    height: 1.3,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+        // Title Row: Icon + Title + Menu
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Small Icon next to title (same size as text)
+            Icon(
+              categoryVisual.icon,
+              size: 16, // Match font size (16px)
+              color: categoryColor,
+            ),
+            const SizedBox(width: 6), // Small spacing between icon and text
+            // Title (Expanded)
+            Expanded(
+              child: Text(
+                widget.title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
                 ),
-              ],
-            ],
-          ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            // Menu button
+            if (widget.onMenu != null)
+              IconButton(
+                onPressed: widget.onMenu,
+                icon: const Icon(
+                  Icons.more_vert,
+                  color: Colors.grey,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 40,
+                  minHeight: 40,
+                ),
+                tooltip: 'Options',
+              ),
+          ],
         ),
+        const SizedBox(height: 4),
+        // Metadata Row
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
+              decoration: BoxDecoration(
+                color: categoryColor.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                categoryName,
+                style: TextStyle(
+                  color: categoryColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                '• ${widget.totalItems} ${widget.totalItems == 1 ? Provider.of<LocalizationService>(context, listen: false).translate('cards.wish') : Provider.of<LocalizationService>(context, listen: false).translate('cards.wishes')}',
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 11,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        if (hasDescription) ...[
+          const SizedBox(height: 10),
+          Text(
+            widget.description!.trim(),
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 12,
+              height: 1.3,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ],
     );
   }

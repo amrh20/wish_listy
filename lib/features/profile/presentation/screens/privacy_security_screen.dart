@@ -31,7 +31,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
       builder: (context, localization, child) {
         return Scaffold(
           appBar: AppBar(
-            title: Text('Privacy & Security'),
+            title: Text(localization.translate('profile.privacySecurity')),
             backgroundColor: Colors.transparent,
             elevation: 0,
             leading: IconButton(
@@ -86,7 +86,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Profile Visibility',
+          localization.translate('profile.profileVisibility'),
           style: AppStyles.headingSmall.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -108,8 +108,8 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
           child: Column(
             children: [
               _buildVisibilityOption(
-                title: 'Public Profile',
-                subtitle: 'Anyone can see your profile and wishlists',
+                title: localization.translate('profile.publicProfile'),
+                subtitle: localization.translate('profile.publicProfileDescription'),
                 value: _showProfileToPublic,
                 onChanged: (value) {
                   setState(() {
@@ -119,8 +119,8 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
               ),
               Divider(height: 1, color: AppColors.surfaceVariant),
               _buildVisibilityOption(
-                title: 'Friends Only',
-                subtitle: 'Only your friends can see your profile',
+                title: localization.translate('profile.friendsOnlyProfile'),
+                subtitle: localization.translate('profile.friendsOnlyProfileDescription'),
                 value: !_showProfileToPublic,
                 onChanged: (value) {
                   setState(() {
@@ -140,7 +140,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Security',
+          localization.translate('profile.security'),
           style: AppStyles.headingSmall.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -162,8 +162,8 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
           child: Column(
             children: [
               _buildActionOption(
-                title: 'Change Password',
-                subtitle: 'Update your account password',
+                title: localization.translate('profile.changePassword'),
+                subtitle: localization.translate('profile.changePasswordDescription'),
                 icon: Icons.lock_outline,
                 onTap: _changePassword,
               ),
@@ -270,7 +270,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
     return SizedBox(
       width: double.infinity,
       child: CustomButton(
-        text: 'Save Privacy Settings',
+        text: localization.translate('profile.savePrivacySettings'),
         onPressed: _isLoading ? null : _savePrivacySettings,
         variant: ButtonVariant.primary,
         isLoading: _isLoading,
@@ -279,15 +279,16 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
   }
 
   void _changePassword() {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Change Password'),
+        title: Text(localization.translate('profile.changePasswordDialogTitle')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'A password reset link will be sent to your email address.',
+              localization.translate('profile.changePasswordDialogMessage'),
               style: AppStyles.bodyMedium,
             ),
           ],
@@ -295,16 +296,16 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: Text(localization.translate('common.cancel')),
           ),
           CustomButton(
-            text: 'Send Reset Link',
+            text: localization.translate('profile.sendResetLink'),
             onPressed: () {
               Navigator.pop(context);
               // TODO: Implement password reset
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Password reset link sent to your email!'),
+                  content: Text(localization.translate('profile.passwordResetLinkSent')),
                   backgroundColor: AppColors.success,
                 ),
               );
@@ -319,6 +320,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
   }
 
   Future<void> _savePrivacySettings() async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     setState(() {
       _isLoading = true;
     });
@@ -330,7 +332,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Privacy settings updated successfully!'),
+            content: Text(localization.translate('profile.privacySettingsUpdated')),
             backgroundColor: AppColors.success,
           ),
         );
@@ -343,7 +345,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Failed to update privacy settings. Please try again.',
+              localization.translate('profile.failedToUpdatePrivacySettings'),
             ),
             backgroundColor: AppColors.error,
           ),

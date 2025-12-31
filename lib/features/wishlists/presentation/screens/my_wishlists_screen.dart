@@ -17,6 +17,7 @@ import 'package:wish_listy/features/wishlists/data/repository/guest_data_reposit
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import '../widgets/index.dart';
+import '../widgets/wishlist_form_helpers.dart';
 
 class MyWishlistsScreen extends StatefulWidget {
   const MyWishlistsScreen({super.key});
@@ -533,6 +534,9 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
   Future<void> _deleteWishlist(WishlistSummary wishlist) async {
     try {
+      // Store current tab index to ensure we stay on "My Wishlists" tab
+      final shouldStayOnFirstTab = _mainTabController.index == 0;
+
       // Check if user is guest
       final authService = Provider.of<AuthRepository>(context, listen: false);
 
@@ -548,12 +552,17 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         await _wishlistRepository.deleteWishlist(wishlist.id);
       }
 
-      // Reload wishlists to update the screen
+      // Reload wishlists to update the screen (this will refresh the view)
       await _loadWishlists();
 
       // Ensure we stay on the "My Wishlists" tab (index 0) after deletion
-      if (mounted && _mainTabController.index != 0) {
-        _mainTabController.animateTo(0);
+      // Use post frame callback to ensure this happens after setState completes
+      if (mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _mainTabController.index != 0) {
+            _mainTabController.animateTo(0);
+          }
+        });
       }
 
       if (mounted) {
@@ -1162,7 +1171,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                 const SizedBox(width: 12),
                 // "All" tab
                 _buildCategoryChip(
-                  label: 'All',
+                  label: localization.translate('ui.all'),
                   category: null,
                   isSelected: _selectedCategory == null,
                   icon: Icons.list_rounded,

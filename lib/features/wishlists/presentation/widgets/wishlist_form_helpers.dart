@@ -67,11 +67,11 @@ class WishlistFormHelpers {
       case 'holiday':
         return localization.translate('common.holiday');
       case 'babyShower':
-        return 'Baby Shower';
+        return localization.translate('events.babyShower');
       case 'housewarming':
-        return 'Housewarming';
+        return localization.translate('events.housewarming');
       case 'custom':
-        return 'Other';
+        return localization.translate('events.other');
       default:
         return category;
     }

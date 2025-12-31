@@ -60,74 +60,7 @@ class WishlistOptionWidget extends StatelessWidget {
           const SizedBox(height: 16),
           Column(
             children: [
-              // Option 1: Create New Wishlist
-              GestureDetector(
-                onTap: () => onWishlistChanged('create'),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: wishlistOption == 'create'
-                        ? AppColors.secondary.withOpacity(0.1)
-                        : AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: wishlistOption == 'create'
-                          ? AppColors.secondary
-                          : AppColors.textTertiary.withOpacity(0.3),
-                      width: wishlistOption == 'create' ? 2 : 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.add_circle_outline,
-                        color: wishlistOption == 'create'
-                            ? AppColors.secondary
-                            : AppColors.textTertiary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              localization.translate(
-                                'events.yesCreateWishlist',
-                              ),
-                              style: AppStyles.bodyMedium.copyWith(
-                                fontWeight: wishlistOption == 'create'
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                                color: wishlistOption == 'create'
-                                    ? AppColors.secondary
-                                    : AppColors.textPrimary,
-                              ),
-                            ),
-                            Text(
-                              localization.translate(
-                                'events.yesCreateWishlistDescription',
-                              ),
-                              style: AppStyles.bodySmall.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (wishlistOption == 'create')
-                        Icon(
-                          Icons.check_circle,
-                          color: AppColors.secondary,
-                          size: 20,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Option 2: Link Existing Wishlist
+              // Option 1: Link Existing Wishlist
               GestureDetector(
                 onTap: () {
                   if (onLinkWishlistPressed != null) {

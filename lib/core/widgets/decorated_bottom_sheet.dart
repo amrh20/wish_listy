@@ -238,34 +238,40 @@ class _DecoratedBottomSheetState extends State<DecoratedBottomSheet>
         ],
       ),
       child: ClipOval(
-        child: Image.asset(
-          widget.vectorType.assetPath,
-          width: 70,
-          height: 70,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            // Fallback placeholder if image is not found
-            return Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary.withOpacity(0.8),
-                    AppColors.accent.withOpacity(0.8),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Icon(
-                _getIconForVectorType(),
-                color: Colors.white,
-                size: 35,
-              ),
-            );
-          },
+        child: widget.vectorType.assetPath != null
+            ? Image.asset(
+                widget.vectorType.assetPath!,
+                width: 70,
+                height: 70,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  // Fallback placeholder if image is not found
+                  return _buildIconPlaceholder();
+                },
+              )
+            : _buildIconPlaceholder(),
+      ),
+    );
+  }
+
+  Widget _buildIconPlaceholder() {
+    return Container(
+      width: 70,
+      height: 70,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withOpacity(0.8),
+            AppColors.accent.withOpacity(0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+      ),
+      child: Icon(
+        _getIconForVectorType(),
+        color: Colors.white,
+        size: 35,
       ),
     );
   }

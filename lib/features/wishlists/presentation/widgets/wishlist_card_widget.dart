@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/bottom_sheet_vectors.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/decorated_bottom_sheet.dart';
 import 'package:wish_listy/core/widgets/modern_wishlist_card.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
@@ -99,6 +101,7 @@ class WishlistCardWidget extends StatelessWidget {
   }
 
   void _showMenu(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     DecoratedBottomSheet.show(
       context: context,
       vectorType: BottomSheetVectorType.menu,
@@ -107,7 +110,7 @@ class WishlistCardWidget extends StatelessWidget {
         ListTile(
           leading: Icon(Icons.edit_outlined, color: AppColors.textPrimary),
           title: Text(
-            'Edit Wishlist',
+            localization.translate('events.editWishlist'),
             style: TextStyle(color: AppColors.textPrimary),
           ),
           onTap: () {
@@ -118,7 +121,7 @@ class WishlistCardWidget extends StatelessWidget {
         ListTile(
           leading: Icon(Icons.share_outlined, color: AppColors.textPrimary),
           title: Text(
-            'Share',
+            localization.translate('events.share'),
             style: TextStyle(color: AppColors.textPrimary),
           ),
           onTap: () {
@@ -129,7 +132,7 @@ class WishlistCardWidget extends StatelessWidget {
         ListTile(
           leading: Icon(Icons.delete_outline, color: AppColors.error),
           title: Text(
-            'Delete',
+            localization.translate('events.delete'),
             style: TextStyle(
                 color: AppColors.error, fontWeight: FontWeight.w600),
           ),

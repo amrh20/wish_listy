@@ -9,6 +9,7 @@ class Event {
   final String? description;
   final String? location;
   final EventType type;
+  final String? typeString; // Original type string from API (for custom types)
   final EventStatus status;
   final String? wishlistId;
   final String? wishlistName;
@@ -37,6 +38,7 @@ class Event {
     this.description,
     this.location,
     required this.type,
+    this.typeString,
     this.status = EventStatus.upcoming,
     this.wishlistId,
     this.wishlistName,
@@ -244,6 +246,21 @@ class Event {
       invitationsList = json['invited'] as List<dynamic>;
     }
 
+    // Parse event type - preserve original string if not in enum
+    final typeStringFromApi = json['type']?.toString();
+    final eventTypeFromEnum = EventType.values.firstWhere(
+      (e) => e.toString().split('.').last == typeStringFromApi,
+      orElse: () => EventType.other, // Use 'other' as default instead of 'birthday'
+    );
+    
+    // If type is not in enum, preserve the original string
+    final String? preservedTypeString = 
+        (eventTypeFromEnum == EventType.other && 
+         typeStringFromApi != null && 
+         typeStringFromApi.toLowerCase() != 'other')
+            ? typeStringFromApi
+            : null;
+
     return Event(
       id: id,
       creatorId: creatorId,
@@ -252,10 +269,8 @@ class Event {
       time: eventTime,
       description: json['description']?.toString(),
       location: json['location']?.toString(),
-      type: EventType.values.firstWhere(
-        (e) => e.toString().split('.').last == json['type']?.toString(),
-        orElse: () => EventType.birthday,
-      ),
+      type: eventTypeFromEnum,
+      typeString: preservedTypeString,
       status: EventStatus.values.firstWhere(
         (e) => e.toString().split('.').last == json['status']?.toString(),
         orElse: () => EventStatus.upcoming,
@@ -304,7 +319,7 @@ class Event {
       if (time != null) 'time': time,
       'description': description,
       'location': location,
-      'type': type.toString().split('.').last,
+      'type': typeString ?? type.toString().split('.').last,
       'status': status.toString().split('.').last,
       'wishlist_id': wishlistId,
       'invitations': invitations
@@ -328,6 +343,7 @@ class Event {
     String? description,
     String? location,
     EventType? type,
+    String? typeString,
     EventStatus? status,
     String? wishlistId,
     String? wishlistName,
@@ -356,6 +372,7 @@ class Event {
       description: description ?? this.description,
       location: location ?? this.location,
       type: type ?? this.type,
+      typeString: typeString ?? this.typeString,
       status: status ?? this.status,
       wishlistId: wishlistId ?? this.wishlistId,
       wishlistName: wishlistName ?? this.wishlistName,
@@ -717,6 +734,7 @@ class EventSummary {
   final DateTime date;
   final String? time; // HH:mm format
   final EventType type;
+  final String? typeString; // Original type string from API (for custom types)
   final String? location;
   final String? description;
   final String? hostName;
@@ -739,6 +757,7 @@ class EventSummary {
     required this.date,
     this.time,
     required this.type,
+    this.typeString,
     this.location,
     this.description,
     this.hostName,
@@ -798,6 +817,7 @@ class EventSummary {
       date: event.date,
       time: event.time,
       type: event.type,
+      typeString: event.typeString,
       location: event.location,
       description: event.description,
       hostName: null, // Would be fetched from creator/user info
@@ -826,6 +846,7 @@ class EventSummary {
     DateTime? date,
     String? time,
     EventType? type,
+    String? typeString,
     String? location,
     String? description,
     String? hostName,
@@ -848,6 +869,7 @@ class EventSummary {
       date: date ?? this.date,
       time: time ?? this.time,
       type: type ?? this.type,
+      typeString: typeString ?? this.typeString,
       location: location ?? this.location,
       description: description ?? this.description,
       hostName: hostName ?? this.hostName,

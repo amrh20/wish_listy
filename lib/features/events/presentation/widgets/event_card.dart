@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
@@ -33,6 +34,7 @@ class EventCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final isPast = event.status == EventStatus.completed;
 
     return Container(
@@ -128,8 +130,8 @@ class EventCard extends StatelessWidget {
                             spacing: 6,
                             runSpacing: 6,
                             children: [
-                              _buildCategoryBadge(),
-                              _buildStatusBadge(isPast),
+                              _buildCategoryBadge(localization),
+                              _buildStatusBadge(isPast, localization),
                             ],
                           ),
                         ],
@@ -211,8 +213,8 @@ class EventCard extends StatelessWidget {
   }
 
   /// Builds the Category Badge
-  Widget _buildCategoryBadge() {
-    final style = _getEventTypeStyle(event.type);
+  Widget _buildCategoryBadge(LocalizationService localization) {
+    final style = _getEventTypeStyle(event.type, event.typeString, localization);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -238,23 +240,23 @@ class EventCard extends StatelessWidget {
   }
 
   /// Builds the Status Badge
-  Widget _buildStatusBadge(bool isPast) {
-    String statusText = 'Upcoming';
+  Widget _buildStatusBadge(bool isPast, LocalizationService localization) {
+    String statusText = localization.translate('events.upcoming');
     if (isPast) {
-      statusText = 'Completed';
+      statusText = localization.translate('events.completed');
     } else {
       switch (event.status) {
         case EventStatus.upcoming:
-          statusText = 'Upcoming';
+          statusText = localization.translate('events.upcoming');
           break;
         case EventStatus.completed:
-          statusText = 'Completed';
+          statusText = localization.translate('events.completed');
           break;
         case EventStatus.cancelled:
-          statusText = 'Cancelled';
+          statusText = localization.translate('events.cancelled');
           break;
         case EventStatus.ongoing:
-          statusText = 'Ongoing';
+          statusText = localization.translate('events.ongoing');
           break;
       }
     }
@@ -491,64 +493,81 @@ class EventCard extends StatelessWidget {
   }
 
   /// Gets event type style (icon, color, textColor, label)
+  /// If typeString is provided (custom type), use it for label
   ({IconData icon, Color color, Color textColor, String label})
-      _getEventTypeStyle(EventType type) {
+      _getEventTypeStyle(EventType type, String? typeString, LocalizationService localization) {
+    // If custom type string is provided, use it for label
+    if (typeString != null && typeString.isNotEmpty) {
+      switch (type) {
+        case EventType.other:
+          return (
+            icon: Icons.event,
+            color: Colors.purple.shade50,
+            textColor: Colors.purple.shade700,
+            label: typeString, // Use custom type string
+          );
+        default:
+          // For predefined types with custom string, still show custom string but use appropriate styling
+          break;
+      }
+    }
+    
     switch (type) {
       case EventType.birthday:
         return (
           icon: Icons.cake,
           color: Colors.pink.shade100,
           textColor: Colors.pink.shade700,
-          label: 'Birthday',
+          label: typeString ?? localization.translate('events.birthday'),
         );
       case EventType.anniversary:
         return (
           icon: Icons.favorite,
           color: Colors.red.shade100,
           textColor: Colors.red.shade700,
-          label: 'Anniversary',
+          label: typeString ?? localization.translate('events.anniversary'),
         );
       case EventType.graduation:
         return (
           icon: Icons.school,
           color: Colors.blue.shade100,
           textColor: Colors.blue.shade700,
-          label: 'Graduation',
+          label: typeString ?? localization.translate('events.graduation'),
         );
       case EventType.wedding:
         return (
           icon: Icons.favorite,
           color: Colors.pink.shade100,
           textColor: Colors.pink.shade700,
-          label: 'Wedding',
+          label: typeString ?? localization.translate('events.wedding'),
         );
       case EventType.holiday:
         return (
           icon: Icons.celebration,
           color: Colors.orange.shade100,
           textColor: Colors.orange.shade700,
-          label: 'Holiday',
+          label: typeString ?? localization.translate('common.holiday'),
         );
       case EventType.babyShower:
         return (
           icon: Icons.child_care,
           color: Colors.purple.shade100,
           textColor: Colors.purple.shade700,
-          label: 'Baby Shower',
+          label: typeString ?? localization.translate('events.babyShower'),
         );
       case EventType.houseWarming:
         return (
           icon: Icons.home,
           color: Colors.green.shade100,
           textColor: Colors.green.shade700,
-          label: 'House Warming',
+          label: typeString ?? localization.translate('events.housewarming'),
         );
       default:
         return (
           icon: Icons.event,
           color: Colors.purple.shade50,
           textColor: Colors.purple.shade700,
-          label: 'Event',
+          label: typeString ?? localization.translate('events.other'),
         );
     }
   }
@@ -575,6 +594,7 @@ class EventCard extends StatelessWidget {
 
   /// Shows the context menu bottom sheet with event actions
   void _showContextMenu(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -602,7 +622,7 @@ class EventCard extends StatelessWidget {
               // Menu Items
               _buildMenuItem(
                 icon: Icons.share_outlined,
-                label: 'Share Event',
+                label: localization.translate('events.shareEvent'),
                 onTap: () {
                   Navigator.pop(context);
                   onShare?.call();
@@ -610,7 +630,7 @@ class EventCard extends StatelessWidget {
               ),
               _buildMenuItem(
                 icon: Icons.edit_outlined,
-                label: 'Edit Event',
+                label: localization.translate('events.editEvent'),
                 onTap: () {
                   Navigator.pop(context);
                   onEdit?.call();
@@ -618,7 +638,7 @@ class EventCard extends StatelessWidget {
               ),
               _buildMenuItem(
                 icon: Icons.delete_outline,
-                label: 'Delete Event',
+                label: localization.translate('events.deleteEvent'),
                 onTap: () {
                   Navigator.pop(context);
                   onDelete?.call();
