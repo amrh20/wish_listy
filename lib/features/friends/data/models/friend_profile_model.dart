@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart';
 class FriendProfileUserModel {
   final String id;
   final String fullName;
-  final String username;
+  final String username; // Legacy field - kept for backward compatibility
+  final String? handle; // Public handle (e.g., "@amr_hamdy_99")
   final String? profileImage;
   final DateTime? createdAt;
 
@@ -12,6 +13,7 @@ class FriendProfileUserModel {
     required this.id,
     required this.fullName,
     required this.username,
+    this.handle,
     this.profileImage,
     this.createdAt,
   });
@@ -28,9 +30,18 @@ class FriendProfileUserModel {
       id: (json['id'] ?? json['_id'])?.toString() ?? '',
       fullName: json['fullName']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
+      handle: json['handle']?.toString(),
       profileImage: json['profileImage']?.toString(),
       createdAt: createdAt,
     );
+  }
+
+  /// Get display handle for UI - returns @handle if available, otherwise "User #ID"
+  String getDisplayHandle() {
+    if (handle != null && handle!.isNotEmpty) {
+      return handle!.startsWith('@') ? handle! : '@$handle';
+    }
+    return 'User #$id';
   }
 }
 

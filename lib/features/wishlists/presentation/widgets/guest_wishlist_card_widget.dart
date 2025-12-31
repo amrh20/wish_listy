@@ -493,7 +493,6 @@ class _MoreCountBubble extends StatelessWidget {
           width: 1,
         ),
       ),
-      alignment: Alignment.center,
       child: Text(
         '+$count',
         style: AppStyles.caption.copyWith(

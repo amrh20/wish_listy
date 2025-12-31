@@ -22,7 +22,7 @@ class FriendProfileScreen extends StatefulWidget {
 class _FriendProfileScreenState extends State<FriendProfileScreen> {
   late final FriendProfileController _controller;
 
-  static const double _expandedHeaderHeight = 260.0;
+  static const double _expandedHeaderHeight = 280.0; // Increased to accommodate handle field
 
   @override
   void initState() {
@@ -73,6 +73,12 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                 icon: const Icon(
                   Icons.arrow_back_ios,
                   color: AppColors.textPrimary,
+                  size: 18,
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  padding: const EdgeInsets.all(8),
+                  shape: const CircleBorder(),
                 ),
               ),
               // IMPORTANT: No chat icons / message actions here.
@@ -158,74 +164,84 @@ class _PatternedHeader extends StatelessWidget {
               ),
               SafeArea(
                 bottom: false,
-                child: SizedBox(
-                  height: constraints.maxHeight,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                      child: Obx(() {
-                        final localization = Provider.of<LocalizationService>(context, listen: false);
-                        final p = controller.profile.value;
-                        final user = p?.user;
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Obx(() {
+                    final localization = Provider.of<LocalizationService>(context, listen: false);
+                    final p = controller.profile.value;
+                    final user = p?.user;
 
-                        final fullName = (user?.fullName.isNotEmpty ?? false)
-                            ? user!.fullName
-                            : localization.translate('friends.friend');
-                        final profileImage = user?.profileImage;
+                    final fullName = (user?.fullName.isNotEmpty ?? false)
+                        ? user!.fullName
+                        : localization.translate('friends.friend');
+                    final profileImage = user?.profileImage;
 
-                        final counts = p?.counts;
-                        final wishlistsCount = counts?.wishlists ?? 0;
-                        final friendsCount = counts?.friends ?? 0;
-                        final eventsCount = counts?.events ?? 0;
+                    final counts = p?.counts;
+                    final wishlistsCount = counts?.wishlists ?? 0;
+                    final friendsCount = counts?.friends ?? 0;
+                    final eventsCount = counts?.events ?? 0;
 
-                        final isFriend = p?.friendshipStatus.isFriend ?? false;
+                    final isFriend = p?.friendshipStatus.isFriend ?? false;
 
-                        return Column(
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _Avatar(
+                          fullName: fullName,
+                          imageUrl: profileImage,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
                           mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _Avatar(
-                              fullName: fullName,
-                              imageUrl: profileImage,
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    fullName,
-                                    style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                            Flexible(
+                              child: Text(
+                                fullName,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
                                 ),
-                                if (isFriend) ...[
-                                  const SizedBox(width: 8),
-                                  const Icon(
-                                    Icons.check_circle,
-                                    color: AppColors.success,
-                                    size: 16,
-                                  ),
-                                ],
-                              ],
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                              ),
                             ),
-                            const SizedBox(height: 10),
-                            _GlassStatsContainer(
-                              wishlists: wishlistsCount,
-                              friends: friendsCount,
-                              events: eventsCount,
-                            ),
-                            // Intentionally no "Add Friend" button in header (prevents overflow).
+                            if (isFriend) ...[
+                              const SizedBox(width: 8),
+                              const Icon(
+                                Icons.check_circle,
+                                color: AppColors.success,
+                                size: 16,
+                              ),
+                            ],
                           ],
-                        );
-                      }),
-                    ),
-                  ),
+                        ),
+                        // Handle below name - always show (will display "User #ID" if handle is null)
+                        if (user != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            user.getDisplayHandle(),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                        const SizedBox(height: 8),
+                        _GlassStatsContainer(
+                          wishlists: wishlistsCount,
+                          friends: friendsCount,
+                          events: eventsCount,
+                        ),
+                        // Intentionally no "Add Friend" button in header (prevents overflow).
+                      ],
+                    );
+                  }),
                 ),
               ),
             ],

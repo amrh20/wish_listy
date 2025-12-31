@@ -297,6 +297,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
+              // Handle below name
+              if (_userProfile?.handle != null && _userProfile!.handle!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  _userProfile!.getDisplayHandle(),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ],
           ),
         ),
@@ -1086,6 +1099,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               email: data['email'] ?? '',
               bio: data['bio'],
               profilePicture: data['profileImage'] ?? data['profilePicture'],
+              handle: data['handle'],
               joinDate: data['createdAt'] != null
                   ? DateTime.parse(data['createdAt'])
                   : DateTime.now(),
@@ -1409,6 +1423,7 @@ class UserProfile {
   final String email;
   final String? bio;
   final String? profilePicture;
+  final String? handle; // Public handle (e.g., "@amr_hamdy_99")
   final DateTime joinDate;
   final int friendsCount;
   final int wishlistsCount;
@@ -1424,6 +1439,7 @@ class UserProfile {
     required this.email,
     this.bio,
     this.profilePicture,
+    this.handle,
     required this.joinDate,
     required this.friendsCount,
     required this.wishlistsCount,
@@ -1440,6 +1456,7 @@ class UserProfile {
     String? email,
     String? bio,
     String? profilePicture,
+    String? handle,
     DateTime? joinDate,
     int? friendsCount,
     int? wishlistsCount,
@@ -1455,6 +1472,7 @@ class UserProfile {
       email: email ?? this.email,
       bio: bio ?? this.bio,
       profilePicture: profilePicture ?? this.profilePicture,
+      handle: handle ?? this.handle,
       joinDate: joinDate ?? this.joinDate,
       friendsCount: friendsCount ?? this.friendsCount,
       wishlistsCount: wishlistsCount ?? this.wishlistsCount,
@@ -1464,6 +1482,14 @@ class UserProfile {
       privacy: privacy ?? this.privacy,
       interests: interests ?? this.interests,
     );
+  }
+
+  /// Get display handle for UI - returns @handle if available, otherwise "User #ID"
+  String getDisplayHandle() {
+    if (handle != null && handle!.isNotEmpty) {
+      return handle!.startsWith('@') ? handle! : '@$handle';
+    }
+    return 'User #$id';
   }
 }
 

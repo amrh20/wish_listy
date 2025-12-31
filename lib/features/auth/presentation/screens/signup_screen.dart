@@ -352,10 +352,12 @@ class _SignupScreenState extends State<SignupScreen>
                                         icon: const Icon(
                                           Icons.arrow_back_ios,
                                           color: Colors.black,
+                                          size: 18,
                                         ),
                                         style: IconButton.styleFrom(
-                                          backgroundColor: AppColors.surface,
-                                          padding: const EdgeInsets.all(12),
+                                          backgroundColor: Colors.white,
+                                          padding: const EdgeInsets.all(8),
+                                          shape: const CircleBorder(),
                                         ),
                                       ),
 

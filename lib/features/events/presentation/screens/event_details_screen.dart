@@ -242,8 +242,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 icon: const Icon(
                   Icons.arrow_back_ios,
                   color: AppColors.textPrimary,
+                  size: 18,
                 ),
                 onPressed: _handleBackNavigation,
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  padding: const EdgeInsets.all(8),
+                  shape: const CircleBorder(),
+                ),
               ),
             ),
             body: Center(
@@ -370,8 +376,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       backgroundColor: Colors.transparent,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+        icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 18),
         onPressed: () => _handleBackNavigation(),
+        style: IconButton.styleFrom(
+          backgroundColor: Colors.white,
+          padding: const EdgeInsets.all(8),
+          shape: const CircleBorder(),
+        ),
       ),
       actions: _event?.isCreator == true ? [_buildMoreOptionsMenu()] : [],
       flexibleSpace: FlexibleSpaceBar(
@@ -2061,6 +2072,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => WishlistOptionsBottomSheet(
         onCreateNew: () {
+          Navigator.pop(context); // Close the modal bottom sheet first
           Navigator.pushNamed(
             context,
             AppRoutes.createWishlist,

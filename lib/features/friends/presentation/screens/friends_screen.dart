@@ -387,8 +387,8 @@ class FriendsScreenState extends State<FriendsScreen>
                       ? Text(
                           friend.fullName.isNotEmpty
                               ? friend.fullName[0].toUpperCase()
-                              : friend.username.isNotEmpty
-                                  ? friend.username[0].toUpperCase()
+                              : (friend.handle != null && friend.handle!.isNotEmpty)
+                                  ? friend.handle![0].toUpperCase()
                                   : '?',
                           style: AppStyles.headingSmall.copyWith(
                             color: AppColors.secondary,
@@ -408,18 +408,17 @@ class FriendsScreenState extends State<FriendsScreen>
                       Text(
                         friend.fullName.isNotEmpty
                             ? friend.fullName
-                            : friend.username,
+                            : friend.getDisplayHandle(),
                         style: AppStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
-                      if (friend.username.isNotEmpty &&
-                          friend.fullName.isNotEmpty) ...[
+                      if (friend.fullName.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Text(
-                          '@${friend.username}',
+                          friend.getDisplayHandle(),
                           style: AppStyles.bodySmall.copyWith(
                             color: AppColors.textTertiary,
                           ),
@@ -468,7 +467,7 @@ class FriendsScreenState extends State<FriendsScreen>
     final fromUser = request.from;
     final senderName = fromUser.fullName.isNotEmpty
         ? fromUser.fullName
-        : fromUser.username;
+        : fromUser.getDisplayHandle();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -546,11 +545,10 @@ class FriendsScreenState extends State<FriendsScreen>
                           ),
                         ),
                       ),
-                      if (fromUser.username.isNotEmpty &&
-                          fromUser.fullName.isNotEmpty) ...[
+                      if (fromUser.fullName.isNotEmpty) ...[
                         const SizedBox(height: 2),
                         Text(
-                          '@${fromUser.username}',
+                          fromUser.getDisplayHandle(),
                           style: AppStyles.bodySmall.copyWith(
                             color: AppColors.textTertiary,
                           ),
@@ -754,9 +752,9 @@ class FriendsScreenState extends State<FriendsScreen>
 
     return _friends.where((friend) {
       final fullName = friend.fullName.toLowerCase();
-      final username = friend.username.toLowerCase();
+      final handle = (friend.handle ?? '').toLowerCase();
       return fullName.contains(_searchQuery) ||
-          username.contains(_searchQuery);
+          handle.contains(_searchQuery);
     }).toList();
   }
 

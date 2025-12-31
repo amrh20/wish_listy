@@ -55,8 +55,13 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen> {
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+                      icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 18),
                       onPressed: () => Navigator.pop(context),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.all(8),
+                        shape: const CircleBorder(),
+                      ),
                     ),
                     Expanded(
                       child: Text(

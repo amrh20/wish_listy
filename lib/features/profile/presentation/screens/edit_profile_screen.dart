@@ -174,10 +174,11 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios),
+            icon: const Icon(Icons.arrow_back_ios, size: 18),
             style: IconButton.styleFrom(
-              backgroundColor: AppColors.surfaceVariant,
-              padding: const EdgeInsets.all(12),
+              backgroundColor: Colors.white,
+              padding: const EdgeInsets.all(8),
+              shape: const CircleBorder(),
             ),
           ),
           const SizedBox(width: 16),

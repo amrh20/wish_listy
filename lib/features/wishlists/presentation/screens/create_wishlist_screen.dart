@@ -126,40 +126,39 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       // For other routes (like eventDetails), try to find them in the stack
       bool routeFound = false;
       try {
+        // First, try to pop normally - this should work if modal was closed properly
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+          routeFound = true;
+        } else {
+          // If can't pop normally, try popUntil
+          Navigator.of(context).popUntil((route) {
+            final routeName = route.settings.name;
 
-        Navigator.of(context).popUntil((route) {
-          final routeName = route.settings.name;
-
-          if (routeName == previousRoute) {
-            routeFound = true;
-
-            return true; // Stop popping
-          }
-          // Also stop if we reach MainNavigation (to preserve bottom nav)
-          if (routeName == AppRoutes.mainNavigation) {
-
-            return true;
-          }
-          return false; // Continue popping
-        });
+            if (routeName == previousRoute) {
+              routeFound = true;
+              return true; // Stop popping
+            }
+            // Also stop if we reach MainNavigation (to preserve bottom nav)
+            if (routeName == AppRoutes.mainNavigation) {
+              return true;
+            }
+            return false; // Continue popping
+          });
+        }
       } catch (e) {
-
         routeFound = false;
       }
 
       // If route not found, just pop (will return to MainNavigation)
       if (!routeFound && mounted) {
-
         if (Navigator.of(context).canPop()) {
           try {
             Navigator.of(context).pop();
-
           } catch (e) {
-
+            // Ignore errors
           }
         }
-      } else if (routeFound) {
-
       }
     });
   }

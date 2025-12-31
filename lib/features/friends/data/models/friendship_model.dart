@@ -175,7 +175,8 @@ class FriendRequest {
 class Friend {
   final String id;
   final String fullName;
-  final String username;
+  final String username; // Legacy field - kept for backward compatibility
+  final String? handle; // Public handle (e.g., "@amr_hamdy_99")
   final String? profileImage;
   final int wishlistCount;
   final String? email;
@@ -185,6 +186,7 @@ class Friend {
     required this.id,
     required this.fullName,
     required this.username,
+    this.handle,
     this.profileImage,
     required this.wishlistCount,
     this.email,
@@ -196,6 +198,7 @@ class Friend {
       id: json['_id'] ?? json['id'] ?? '',
       fullName: json['fullName'] ?? json['name'] ?? '',
       username: json['username'] ?? '',
+      handle: json['handle']?.toString(),
       profileImage: json['profileImage'] ?? json['profile_image'],
       wishlistCount: json['wishlistCount'] ?? json['wishlist_count'] ?? 0,
       email: json['email']?.toString(),
@@ -208,6 +211,7 @@ class Friend {
       '_id': id,
       'fullName': fullName,
       'username': username,
+      if (handle != null) 'handle': handle,
       'profileImage': profileImage,
       'wishlistCount': wishlistCount,
       if (email != null) 'email': email,
@@ -219,6 +223,7 @@ class Friend {
     String? id,
     String? fullName,
     String? username,
+    String? handle,
     String? profileImage,
     int? wishlistCount,
     String? email,
@@ -228,6 +233,7 @@ class Friend {
       id: id ?? this.id,
       fullName: fullName ?? this.fullName,
       username: username ?? this.username,
+      handle: handle ?? this.handle,
       profileImage: profileImage ?? this.profileImage,
       wishlistCount: wishlistCount ?? this.wishlistCount,
       email: email ?? this.email,
@@ -235,9 +241,17 @@ class Friend {
     );
   }
 
+  /// Get display handle for UI - returns @handle if available, otherwise "User #ID"
+  String getDisplayHandle() {
+    if (handle != null && handle!.isNotEmpty) {
+      return handle!.startsWith('@') ? handle! : '@$handle';
+    }
+    return 'User #$id';
+  }
+
   @override
   String toString() {
-    return 'Friend(id: $id, fullName: $fullName, username: $username)';
+    return 'Friend(id: $id, fullName: $fullName, username: $username, handle: $handle)';
   }
 
   @override

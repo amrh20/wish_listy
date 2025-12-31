@@ -175,10 +175,11 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios),
+            icon: const Icon(Icons.arrow_back_ios, size: 18),
             style: IconButton.styleFrom(
-              backgroundColor: AppColors.surfaceVariant,
-              padding: const EdgeInsets.all(12),
+              backgroundColor: Colors.white,
+              padding: const EdgeInsets.all(8),
+              shape: const CircleBorder(),
             ),
           ),
           const SizedBox(width: 16),
@@ -383,13 +384,13 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                         ),
                       ),
                     ),
-                    if (user.username.isNotEmpty)
-                      Text(
-                        '@${user.username}',
-                        style: AppStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                    // Display handle instead of username
+                    Text(
+                      user.getDisplayHandle(),
+                      style: AppStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
                       ),
+                    ),
                     if (user.mutualFriendsCount != null && user.mutualFriendsCount! > 0)
                       Text(
                         localization.translate(

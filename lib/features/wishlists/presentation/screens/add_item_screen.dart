@@ -636,10 +636,11 @@ class _AddItemScreenState extends State<AddItemScreen>
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+            icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 18),
             style: IconButton.styleFrom(
-              backgroundColor: AppColors.surfaceVariant,
-              padding: const EdgeInsets.all(12),
+              backgroundColor: Colors.white,
+              padding: const EdgeInsets.all(8),
+              shape: const CircleBorder(),
             ),
           ),
           const SizedBox(width: 16),

@@ -23,10 +23,11 @@ class SignupHeaderWidget extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back_ios),
+                icon: const Icon(Icons.arrow_back_ios, size: 18),
                 style: IconButton.styleFrom(
-                  backgroundColor: AppColors.surface,
-                  padding: const EdgeInsets.all(12),
+                  backgroundColor: Colors.white,
+                  padding: const EdgeInsets.all(8),
+                  shape: const CircleBorder(),
                 ),
               ),
             ),

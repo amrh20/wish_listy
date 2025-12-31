@@ -25,11 +25,17 @@ class LegalInfoScreen extends StatelessWidget {
             backgroundColor: AppColors.surface,
             elevation: 0,
             leading: IconButton(
-              icon: Icon(
+              icon: const Icon(
                 Icons.arrow_back_ios,
                 color: AppColors.textPrimary,
+                size: 18,
               ),
               onPressed: () => Navigator.of(context).pop(),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white,
+                padding: const EdgeInsets.all(8),
+                shape: const CircleBorder(),
+              ),
             ),
             title: Text(
               title,
