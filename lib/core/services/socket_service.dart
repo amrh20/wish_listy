@@ -23,12 +23,15 @@ class SocketService {
   /// Get socket server URL based on platform
   /// Important: Use same base URL as API service for consistency
   /// - Android Emulator: Use 'http://10.0.2.2:4000' (maps to host's localhost)
-  /// - Android Physical Device: Use your computer's IP (e.g., 'http://192.168.1.11:4000')
+  /// - Android Physical Device: Use your computer's IP (same as ApiService baseUrl host)
   /// - iOS Simulator: Use 'http://localhost:4000' (works directly)
   /// - Web: Use 'http://localhost:4000'
   String get _socketUrl {
-    const String serverIP = '192.168.1.11'; // Your Mac IP
-    const int serverPort = 4000;
+    // Derive socket host/port from ApiService so we don't hardcode IPs.
+    // ApiService baseUrl looks like: http://<ip>:4000/api
+    final apiUri = ApiService.baseUri;
+    final host = apiUri.host;
+    final port = apiUri.hasPort ? apiUri.port : 4000;
     
     print('════════════════════════════════════════════');
     print('🔌 [Socket URL] Determining connection URL...');
@@ -37,7 +40,7 @@ class SocketService {
     
     if (kIsWeb) {
       // Web platform: use localhost
-      const url = 'http://localhost:$serverPort';
+      final url = 'http://localhost:$port';
       print('🔌 [Socket URL] Web detected → Using: $url');
       print('════════════════════════════════════════════');
       return url;
@@ -47,8 +50,8 @@ class SocketService {
     try {
       final bool isAndroid = defaultTargetPlatform == TargetPlatform.android;
       if (isAndroid) {
-        // Android Physical Device: use Mac's IP
-        final url = 'http://$serverIP:$serverPort';
+        // Android Physical Device: use API host/port
+        final url = 'http://$host:$port';
         print('🔌 [Socket URL] Android detected → Using: $url');
         print('════════════════════════════════════════════');
         return url;
@@ -60,7 +63,7 @@ class SocketService {
     // iOS Physical Device - use Mac's IP address
     // Note: On physical iPhone, localhost refers to the iPhone itself, not the Mac
     // For iOS Simulator, localhost works (but we'll use IP for consistency)
-    final url = 'http://$serverIP:$serverPort';
+    final url = 'http://$host:$port';
     print('🔌 [Socket URL] iOS/Other detected → Using: $url');
     print('════════════════════════════════════════════');
     return url;
