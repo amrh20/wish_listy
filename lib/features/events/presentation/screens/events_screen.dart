@@ -8,6 +8,7 @@ import 'package:wish_listy/core/widgets/unified_page_header.dart';
 import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
 import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/services/deep_link_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/events/data/repository/event_repository.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
@@ -822,14 +823,11 @@ class EventsScreenState extends State<EventsScreen>
     }
   }
 
-  void _shareEvent(EventSummary event) {
-    // TODO: Implement share functionality
-    final localization = Provider.of<LocalizationService>(context, listen: false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(localization.translate('dialogs.shareFunctionalityComingSoon')),
-        backgroundColor: AppColors.info,
-      ),
+  Future<void> _shareEvent(EventSummary event) async {
+    // Share event using deep link
+    await DeepLinkService.shareEvent(
+      eventId: event.id,
+      eventName: event.name,
     );
   }
 

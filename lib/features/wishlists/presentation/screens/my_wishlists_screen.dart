@@ -10,6 +10,7 @@ import 'package:wish_listy/core/widgets/unified_page_header.dart';
 import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
 import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/services/deep_link_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
@@ -383,7 +384,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     });
   }
 
-  void _shareWishlist(WishlistSummary wishlist) {
+  Future<void> _shareWishlist(WishlistSummary wishlist) async {
     // Check if user is guest
     final authService = Provider.of<AuthRepository>(context, listen: false);
 
@@ -393,13 +394,10 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
       return;
     }
 
-    // TODO: Implement share functionality for authenticated users
-    final localization = Provider.of<LocalizationService>(context, listen: false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(localization.translate('dialogs.shareWishlist').replaceAll('{wishlistName}', wishlist.name)),
-        behavior: SnackBarBehavior.floating,
-      ),
+    // Share wishlist using deep link
+    await DeepLinkService.shareWishlist(
+      wishlistId: wishlist.id,
+      wishlistName: wishlist.name,
     );
   }
 

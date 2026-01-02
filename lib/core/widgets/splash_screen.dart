@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
+import 'package:wish_listy/core/services/deep_link_service.dart';
 import 'package:wish_listy/core/widgets/app_logo.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/auth/presentation/screens/onboarding_screen.dart';
@@ -96,6 +97,16 @@ class _SplashScreenState extends State<SplashScreen>
           : const OnboardingScreen();
     }
 
+    // If a deep link already pushed a screen on top of SplashScreen,
+    // don't override it by navigating to Home/MainNavigation.
+    final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
+    if (!isCurrent) {
+      debugPrint(
+        '🟡 SplashScreen: Not current route anymore, skipping auto navigation (likely deep link).',
+      );
+      return;
+    }
+
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
@@ -108,6 +119,13 @@ class _SplashScreenState extends State<SplashScreen>
         },
       ),
     );
+
+    // If the app was opened via a deep link (cold start), navigate to it now.
+    // This MUST happen after SplashScreen pushes the target screen, otherwise
+    // SplashScreen's pushReplacement would override the deep link navigation.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      DeepLinkService().navigatePendingIfAny();
+    });
   }
 
   @override

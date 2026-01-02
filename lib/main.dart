@@ -18,6 +18,7 @@ import 'features/wishlists/data/repository/guest_data_repository.dart';
 import 'features/wishlists/data/models/wishlist_model.dart';
 import 'features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'features/profile/presentation/providers/activity_provider.dart';
+import 'core/services/deep_link_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,7 +77,7 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final LocalizationService localizationService;
   final AuthRepository authRepository;
   final GuestDataRepository guestDataRepository;
@@ -94,16 +95,30 @@ class MyApp extends StatelessWidget {
   });
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize deep link handler after widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      DeepLinkService().initialize(MyApp.navigatorKey);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<LocalizationService>(
-          create: (_) => localizationService,
+          create: (_) => widget.localizationService,
         ),
-        ChangeNotifierProvider<AuthRepository>(create: (_) => authRepository),
-        Provider<GuestDataRepository>(create: (_) => guestDataRepository),
+        ChangeNotifierProvider<AuthRepository>(create: (_) => widget.authRepository),
+        Provider<GuestDataRepository>(create: (_) => widget.guestDataRepository),
         BlocProvider<NotificationsCubit>.value(
-          value: notificationsCubit, // Use the pre-created instance
+          value: widget.notificationsCubit, // Use the pre-created instance
         ),
         ChangeNotifierProvider<ActivityProvider>(
           create: (_) => ActivityProvider(),
@@ -140,7 +155,7 @@ class MyApp extends StatelessWidget {
               );
             },
             restorationScopeId: 'wish_listy_app',
-            navigatorKey: navigatorKey,
+            navigatorKey: MyApp.navigatorKey,
             builder: (context, child) {
               // Apply RTL/LTR direction based on language
               return Directionality(

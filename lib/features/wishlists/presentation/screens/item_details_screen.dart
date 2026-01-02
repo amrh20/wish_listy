@@ -9,6 +9,7 @@ import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/services/deep_link_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
@@ -62,6 +63,80 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
       // Check if user is guest
       final authService = Provider.of<AuthRepository>(context, listen: false);
+      
+      // Deep link case: if wishlistId is empty, fetch item first to get wishlistId
+      if (widget.item.wishlistId.isEmpty && widget.item.id.isNotEmpty) {
+        final itemData = await _wishlistRepository.getItemById(widget.item.id);
+        final fetchedItem = WishlistItem.fromJson(itemData);
+        
+        // Update widget.item with fetched wishlistId
+        // Then continue with normal flow
+        final updatedItem = WishlistItem(
+          id: widget.item.id,
+          wishlistId: fetchedItem.wishlistId,
+          name: fetchedItem.name,
+          description: fetchedItem.description,
+          link: fetchedItem.link,
+          priceRange: fetchedItem.priceRange,
+          imageUrl: fetchedItem.imageUrl,
+          priority: fetchedItem.priority,
+          status: fetchedItem.status,
+          createdAt: fetchedItem.createdAt,
+          updatedAt: fetchedItem.updatedAt,
+          isReceived: fetchedItem.isReceived,
+          reservedBy: fetchedItem.reservedBy,
+          wishlist: fetchedItem.wishlist,
+        );
+        
+        if (mounted) {
+          setState(() {
+            _currentItem = updatedItem;
+          });
+        }
+        
+        // Now continue with normal fetch using the updated wishlistId
+        // But we already have the item data, so we can use it directly
+        _rawItemData = itemData;
+        
+        String wishlistName = 'Wishlist';
+        String? wishlistOwnerId;
+        
+        final directName = itemData['wishlistName']?.toString();
+        if (directName != null && directName.isNotEmpty) {
+          wishlistName = directName;
+        }
+        
+        final wishlistField = itemData['wishlist'];
+        if (wishlistField is Map<String, dynamic>) {
+          final nestedName = wishlistField['name']?.toString();
+          if (nestedName != null && nestedName.isNotEmpty) {
+            wishlistName = nestedName;
+          }
+          
+          final ownerField = wishlistField['owner'];
+          if (ownerField is Map<String, dynamic>) {
+            wishlistOwnerId = ownerField['_id']?.toString() ?? ownerField['id']?.toString();
+          } else if (ownerField is String) {
+            wishlistOwnerId = ownerField;
+          }
+          
+          if (wishlistOwnerId == null) {
+            wishlistOwnerId = wishlistField['userId']?.toString() ?? 
+                             wishlistField['user_id']?.toString();
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _currentItem = updatedItem;
+            _wishlistName = wishlistName;
+            _wishlistOwnerId = wishlistOwnerId;
+            _isLoading = false;
+          });
+          _startAnimations();
+        }
+        return;
+      }
       
       if (authService.isGuest) {
         // Load from local storage for guests
@@ -200,11 +275,18 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   Widget build(BuildContext context) {
     final item = _currentItem ?? widget.item;
 
-    return Scaffold(
-      body: DecorativeBackground(
-        showGifts: true,
-        showCircles: true, // Enable gradient blobs
-        child: SafeArea(
+    return PopScope(
+      canPop: Navigator.canPop(context),
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          _handleBackNavigation();
+        }
+      },
+      child: Scaffold(
+        body: DecorativeBackground(
+          showGifts: true,
+          showCircles: true, // Enable gradient blobs
+          child: SafeArea(
           child: _isLoading
               ? Center(
                   child: CircularProgressIndicator(color: AppColors.primary),
@@ -273,6 +355,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       bottomNavigationBar: (!_isOwner() || (item.isPurchasedValue && !item.isReceived)) 
           ? _buildStickyActionBar(item) 
           : null,
+      ),
     );
   }
 
@@ -319,7 +402,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       child: Row(
         children: [
           IconButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => _handleBackNavigation(),
             icon: const Icon(Icons.arrow_back_ios, size: 20),
             color: AppColors.textPrimary,
             style: IconButton.styleFrom(
@@ -2606,21 +2689,43 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   void _shareItem([WishlistItem? item]) {
-    // Lightweight "share": copy link (if any) or item name to clipboard
     final it = item ?? _currentItem ?? widget.item;
-    final url = _getItemUrl(it);
-    final text = (url != null && url.isNotEmpty) ? url : it.name;
+    final itemName = it.name;
+    
+    // Use DeepLinkService to share the item
+    DeepLinkService.shareItem(
+      itemId: it.id,
+      itemName: itemName,
+    );
+  }
 
-    Clipboard.setData(ClipboardData(text: text));
-    if (mounted) {
-      final localization = Provider.of<LocalizationService>(context, listen: false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localization.translate('dialogs.copiedToClipboard')),
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
-        ),
+  void _handleBackNavigation() {
+    // Check if we can pop (normal navigation)
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+      return;
+    }
+    
+    // If canPop is false, we came from deep link
+    // Navigate to parent wishlist screen
+    final item = _currentItem ?? widget.item;
+    final wishlistId = item.wishlistId;
+    
+    if (wishlistId.isNotEmpty) {
+      Navigator.pushReplacementNamed(
+        context,
+        AppRoutes.wishlistItems,
+        arguments: {
+          'wishlistId': wishlistId,
+          'wishlistName': _wishlistName ?? 'Wishlist',
+          'totalItems': 0,
+          'purchasedItems': 0,
+          'isFriendWishlist': false,
+        },
       );
+    } else {
+      // Fallback: navigate to home/main navigation
+      Navigator.pushReplacementNamed(context, AppRoutes.mainNavigation);
     }
   }
 

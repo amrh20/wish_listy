@@ -9,6 +9,7 @@ import 'package:wish_listy/core/widgets/primary_gradient_button.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/services/deep_link_service.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'package:wish_listy/features/events/data/repository/event_repository.dart';
 import 'package:wish_listy/features/events/presentation/widgets/invite_friends_bottom_sheet.dart';
@@ -1092,7 +1093,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         break;
       case 'share_event':
         // Share event
-        // TODO: Implement share functionality
+        if (_event != null) {
+          DeepLinkService.shareEvent(
+            eventId: _event!.id,
+            eventName: _event!.name,
+          );
+        }
         break;
       case 'delete_event':
         // Show delete confirmation dialog

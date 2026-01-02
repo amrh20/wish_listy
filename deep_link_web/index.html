@@ -40,10 +40,15 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 36px;
-            font-weight: bold;
             box-shadow: 0 8px 24px rgba(124, 58, 237, 0.3);
+            overflow: hidden;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
 
         h1 {
@@ -105,6 +110,14 @@
             font-size: 18px;
         }
 
+        .store-icon {
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+            display: inline-block;
+            vertical-align: -3px;
+        }
+
         @media (max-width: 480px) {
             .container {
                 padding: 32px 24px;
@@ -117,45 +130,49 @@
             .logo {
                 width: 64px;
                 height: 64px;
-                font-size: 28px;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">W</div>
+        <div class="logo">
+            <img src="app_logo.png" alt="Wish Listy app logo">
+        </div>
         <h1>Wish Listy</h1>
         <p>Open this link in the Wish Listy app, or download it now.</p>
         <div class="button-group">
-            <a href="wishlisty://" class="btn btn-primary" id="openAppBtn">
-                <span class="icon">📱</span>
-                Open in App
+            <a href="#" class="btn btn-secondary" aria-label="Get it on Google Play">
+                <img class="store-icon" src="google_play_icon.svg" alt="Google Play">
+                Get it on Google Play
             </a>
-            <a href="#" class="btn btn-secondary">
-                <span class="icon">🤖</span>
-                Download on Android
-            </a>
-            <a href="#" class="btn btn-secondary">
-                <span class="icon">🍎</span>
-                Download on iOS
+            <a href="#" class="btn btn-secondary" aria-label="Download on the App Store">
+                <img class="store-icon" src="app_store_icon.svg" alt="App Store">
+                Download on the App Store
             </a>
         </div>
     </div>
 
     <script>
+        function buildAppDeepLink() {
+            // Keep the same path so we can deep-link into the right screen:
+            // https://wish-listy-self.vercel.app/wishlist/123 -> wishlisty://wishlist/123
+            // https://wish-listy-self.vercel.app/event/456    -> wishlisty://event/456
+            // https://wish-listy-self.vercel.app/item/789     -> wishlisty://item/789
+            const path = window.location.pathname || '/';
+            const cleanPath = path.replace(/^\//, ''); // remove leading slash
+            const query = window.location.search || '';
+            return `wishlisty://${cleanPath}${query}`;
+        }
+
+        function openApp() {
+            const deepLink = buildAppDeepLink();
+            window.location.href = deepLink;
+        }
+
         // Attempt to open the app when page loads
         window.addEventListener('load', function() {
-            // Small delay to ensure page is rendered
-            setTimeout(function() {
-                window.location.href = 'wishlisty://';
-            }, 500);
-        });
-
-        // Also handle button click explicitly
-        document.getElementById('openAppBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            window.location.href = 'wishlisty://';
+            setTimeout(openApp, 500);
         });
     </script>
 </body>

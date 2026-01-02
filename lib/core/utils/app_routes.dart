@@ -69,6 +69,10 @@ class AppRoutes {
   static const String friendActivityFeed = '/friend-activity-feed';
   static const String eventGuestList = '/event-guest-list';
   static const String legalInfo = '/legal-info';
+  
+  // Deep Link Routes (for Universal/App Links)
+  static const String deepLinkWishlist = '/wishlist';
+  static const String deepLinkEvent = '/event';
 
   // Routes Map
   static Map<String, WidgetBuilder> routes = {
@@ -141,6 +145,25 @@ class AppRoutes {
       } else {
         // Legacy support for Map arguments
         final args = settings.arguments as Map<String, dynamic>;
+        
+        // Deep link support: if only itemId is provided, create minimal WishlistItem
+        // The screen will fetch full data in _fetchItemDetails
+        if (args.containsKey('itemId') && args['fromDeepLink'] == true) {
+          final itemId = args['itemId'] as String;
+          return MaterialPageRoute(
+            builder: (context) => ItemDetailsScreen(
+              item: WishlistItem(
+                id: itemId,
+                wishlistId: '', // Will be fetched from API
+                name: '', // Will be fetched from API
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              ),
+            ),
+          );
+        }
+        
+        // Legacy support for full Map arguments
         return MaterialPageRoute(
           builder: (context) => ItemDetailsScreen(
             item: WishlistItem(

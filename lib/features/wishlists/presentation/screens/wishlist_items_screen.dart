@@ -7,6 +7,7 @@ import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/widgets/animated_background.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/services/deep_link_service.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
 import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
@@ -65,6 +66,132 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
     final authService = Provider.of<AuthRepository>(context, listen: false);
     if (authService.isGuest || _ownerId == null) return false;
     return authService.userId == _ownerId;
+  }
+
+  Future<void> _shareWishlist() async {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest) {
+      showDialog(
+        context: context,
+        builder: (_) => const GuestLoginPromptDialog(),
+      );
+      return;
+    }
+
+    await DeepLinkService.shareWishlist(
+      wishlistId: widget.wishlistId,
+      wishlistName: _wishlistName.isNotEmpty ? _wishlistName : widget.wishlistName,
+    );
+  }
+
+  Future<void> _editWishlist() async {
+    await Navigator.pushNamed(
+      context,
+      AppRoutes.createWishlist,
+      arguments: {
+        'wishlistId': widget.wishlistId,
+        // Intentionally omit previousRoute so back returns here safely
+      },
+    );
+    if (!mounted) return;
+    await _loadWishlistDetails();
+  }
+
+  Future<void> _confirmAndDeleteWishlist() async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface.withOpacity(0.95),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            localization.translate('wishlists.deleteWishlist'),
+            style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'Are you sure you want to delete "${_wishlistName.isNotEmpty ? _wishlistName : widget.wishlistName}"?\nThis action cannot be undone.',
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(
+                localization.translate('app.cancel'),
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(
+                localization.translate('app.delete'),
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true) return;
+    if (!mounted) return;
+
+    try {
+      // Check if user is guest
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+
+      if (authService.isGuest) {
+        // Delete from local storage for guests
+        final guestDataRepo = Provider.of<GuestDataRepository>(
+          context,
+          listen: false,
+        );
+        await guestDataRepo.deleteWishlist(widget.wishlistId);
+      } else {
+        await _wishlistRepository.deleteWishlist(widget.wishlistId);
+      }
+
+      if (!mounted) return;
+
+      // Pop back to previous screen and let it refresh if it wants
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop(true);
+      } else {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.mainNavigation,
+          (route) => false,
+        );
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to delete wishlist: ${e.message}'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Failed to delete wishlist. Please try again.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
@@ -692,6 +819,88 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                                             size: 24,
                                           ),
                                         ),
+                                      ),
+                                    // More (3 dots) menu: Share / Edit / Delete
+                                    if (!widget.isFriendWishlist)
+                                      PopupMenuButton<String>(
+                                        tooltip: 'More',
+                                        icon: const Icon(
+                                          Icons.more_vert,
+                                          color: AppColors.textPrimary,
+                                          size: 22,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        onSelected: (value) {
+                                          switch (value) {
+                                            case 'share':
+                                              _shareWishlist();
+                                              break;
+                                            case 'edit':
+                                              _editWishlist();
+                                              break;
+                                            case 'delete':
+                                              _confirmAndDeleteWishlist();
+                                              break;
+                                          }
+                                        },
+                                        itemBuilder: (context) {
+                                          final localization = Provider.of<LocalizationService>(
+                                            context,
+                                            listen: false,
+                                          );
+                                          final items = <PopupMenuEntry<String>>[
+                                            PopupMenuItem<String>(
+                                              value: 'share',
+                                              child: Row(
+                                                children: [
+                                                  Icon(Icons.share_outlined, size: 18, color: AppColors.textPrimary),
+                                                  const SizedBox(width: 10),
+                                                  Text(
+                                                    localization.translate('wishlists.shareWishlist'),
+                                                    style: TextStyle(color: AppColors.textPrimary),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ];
+
+                                          // Edit/Delete only for owner (not guest)
+                                          if (!isGuest && _isOwner()) {
+                                            items.addAll([
+                                              const PopupMenuDivider(),
+                                              PopupMenuItem<String>(
+                                                value: 'edit',
+                                                child: Row(
+                                                  children: [
+                                                    Icon(Icons.edit_outlined, size: 18, color: AppColors.textPrimary),
+                                                    const SizedBox(width: 10),
+                                                    Text(
+                                                      localization.translate('wishlists.editWishlist'),
+                                                      style: TextStyle(color: AppColors.textPrimary),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              PopupMenuItem<String>(
+                                                value: 'delete',
+                                                child: Row(
+                                                  children: [
+                                                    Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                                                    const SizedBox(width: 10),
+                                                    Text(
+                                                      localization.translate('wishlists.deleteWishlist'),
+                                                      style: const TextStyle(color: AppColors.error),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ]);
+                                          }
+
+                                          return items;
+                                        },
                                       ),
                                   ],
                                 );
