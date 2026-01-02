@@ -58,6 +58,8 @@ class CreateWishlistHeaderWidget extends StatelessWidget {
                   style: AppStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
+                  maxLines: 3,
+                  overflow: TextOverflow.visible,
                 ),
               ],
             ),

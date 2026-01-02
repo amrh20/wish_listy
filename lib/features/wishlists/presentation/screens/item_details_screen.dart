@@ -149,7 +149,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           (item) => item.id == widget.item.id,
           orElse: () {
 
-            throw Exception('Item not found in local storage');
+            throw Exception(
+              Provider.of<LocalizationService>(context, listen: false)
+                  .translate('details.itemNotFound'),
+            );
           },
         );
 
@@ -296,7 +299,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   : _currentItem == null
                       ? Center(
                           child: Text(
-                            'Item not found',
+                            Provider.of<LocalizationService>(context, listen: false)
+                                .translate('details.itemNotFound'),
                             style: AppStyles.bodyMedium.copyWith(
                               color: AppColors.textSecondary,
                             ),
@@ -414,7 +418,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           // Only show Share and Edit if user is owner
           if (isOwner) ...[
             IconButton(
-              tooltip: 'Share',
+              tooltip: Provider.of<LocalizationService>(context, listen: false)
+                  .translate('app.share'),
               onPressed: () => _shareItem(item),
               icon: const Icon(Icons.share_outlined, size: 22),
               color: AppColors.textPrimary,
@@ -425,7 +430,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             ),
             if (!isReceived && !isReservedForOwner)
               IconButton(
-                tooltip: 'Edit',
+                tooltip: Provider.of<LocalizationService>(context, listen: false)
+                    .translate('app.edit'),
                 onPressed: _editItem,
                 icon: const Icon(Icons.edit_outlined, size: 22),
                 color: AppColors.textPrimary,
@@ -437,7 +443,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             // Show disabled Edit button if reserved (Teaser Mode)
             if (!isReceived && isReservedForOwner)
               IconButton(
-                tooltip: 'Edit',
+                tooltip: Provider.of<LocalizationService>(context, listen: false)
+                    .translate('app.edit'),
                 onPressed: _showReservedItemSnackbar,
                 icon: Icon(
                   Icons.edit_outlined, 
@@ -507,7 +514,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Reserved by a friend 🤫',
+                          Provider.of<LocalizationService>(context, listen: false)
+                              .translate('details.reservedByFriend'),
                           style: TextStyle(
                             color: const Color(0xFF6A1B9A), // Deep Purple
                             fontSize: 13,
@@ -540,7 +548,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'Gifted',
+                            Provider.of<LocalizationService>(context, listen: false)
+                                .translate('details.gifted'),
                             style: TextStyle(
                               color: AppColors.success,
                               fontSize: 12,

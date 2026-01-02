@@ -234,9 +234,9 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                     getTitle: () => widget.wishlistId != null
                         ? 'Edit Wishlist'
                         : localization.translate('wishlists.createWishlist'),
-                    getSubtitle: () => localization.translate(
-                      'wishlists.wishlistDescriptionOptional',
-                    ),
+                    getSubtitle: () => widget.wishlistId != null
+                        ? localization.translate('wishlists.wishlistDescriptionOptional')
+                        : localization.translate('wishlists.createWishlistSubtitle'),
                   ),
                   Expanded(
                     child: FadeTransition(
@@ -295,12 +295,13 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                                 CustomTextField(
                                   controller: _descriptionController,
                                   label: localization.translate(
-                                    'wishlists.description',
+                                    'wishlists.wishlistDescriptionLabel',
                                   ),
                                   hint: localization.translate(
-                                    'wishlists.wishlistDescriptionOptional',
+                                    'wishlists.wishlistDescriptionHint',
                                   ),
                                   prefixIcon: Icons.description_outlined,
+                                  minLines: 2,
                                   maxLines: 3,
                                   validator: (value) {
                                     // Description is optional, but if provided, validate length

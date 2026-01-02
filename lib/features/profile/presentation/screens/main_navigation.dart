@@ -17,7 +17,7 @@ import 'home_screen.dart' show HomeScreen, HomeScreenState;
 import 'package:wish_listy/features/wishlists/presentation/screens/my_wishlists_screen.dart';
 import 'package:wish_listy/features/events/presentation/screens/events_screen.dart';
 import 'package:wish_listy/features/friends/presentation/screens/friends_screen.dart';
-import 'profile_screen.dart';
+import 'profile_screen.dart' show ProfileScreen, ProfileScreenState;
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -41,6 +41,7 @@ class _MainNavigationState extends State<MainNavigation>
   final GlobalKey<EventsScreenState> _eventsKey = GlobalKey();
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
   final GlobalKey<FriendsScreenState> _friendsKey = GlobalKey<FriendsScreenState>();
+  final GlobalKey<ProfileScreenState> _profileKey = GlobalKey<ProfileScreenState>();
   final GlobalKey homeKey = GlobalKey();
 
   @override
@@ -138,6 +139,11 @@ class _MainNavigationState extends State<MainNavigation>
       _currentIndex = index;
     });
 
+    // Refresh newly selected tab content (important for IndexedStack tabs)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshTab(index);
+    });
+
     // Haptic feedback
     HapticFeedback.lightImpact();
 
@@ -170,9 +176,9 @@ class _MainNavigationState extends State<MainNavigation>
       key: const PageStorageKey('tab_friends'),
       child: FriendsScreen(key: _friendsKey),
     ),
-    const KeyedSubtree(
-      key: PageStorageKey('tab_profile'),
-      child: ProfileScreen(),
+    KeyedSubtree(
+      key: const PageStorageKey('tab_profile'),
+      child: ProfileScreen(key: _profileKey),
     ),
   ];
 
@@ -180,22 +186,42 @@ class _MainNavigationState extends State<MainNavigation>
     // Handle double tap actions for each tab
     switch (index) {
       case 0:
-        // Scroll to top of home feed
+        _homeKey.currentState?.refreshHome();
         break;
       case 1:
-        // Refresh wishlists
+        _wishlistsKey.currentState?.refreshWishlists();
         break;
       case 2:
-        // Refresh events
+        _eventsKey.currentState?.refreshEvents();
         break;
       case 3:
-        // Refresh friends
+        _friendsKey.currentState?.refreshFriends();
         break;
       case 4:
-        // Refresh profile
+        _profileKey.currentState?.refreshProfile();
         break;
     }
     HapticFeedback.mediumImpact();
+  }
+
+  void _refreshTab(int index) {
+    switch (index) {
+      case 0:
+        _homeKey.currentState?.refreshHome();
+        break;
+      case 1:
+        _wishlistsKey.currentState?.refreshWishlists();
+        break;
+      case 2:
+        _eventsKey.currentState?.refreshEvents();
+        break;
+      case 3:
+        _friendsKey.currentState?.refreshFriends();
+        break;
+      case 4:
+        _profileKey.currentState?.refreshProfile();
+        break;
+    }
   }
 
   @override

@@ -50,7 +50,7 @@ class ApiService {
       // To find your IP: ifconfig (Mac/Linux) or ipconfig (Windows)
       // Make sure both your computer and phone are on the same WiFi network!
       
-      const String androidIP = '192.168.1.11'; // Physical device - Your computer's IP
+      const String androidIP = '192.168.1.20'; // Physical device - Your computer's IP (updated for current WiFi)
       // const String androidIP = '10.0.2.2'; // Uncomment for Android Emulator
       
       final url = 'http://$androidIP:4000/api';
@@ -72,7 +72,7 @@ class ApiService {
       // For iOS Simulator: localhost works (can keep using this)
       // For Physical iPhone: use Mac's IP address (found: 192.168.1.11)
       
-      const String iosIP = '192.168.1.11'; // Physical iPhone - Your Mac's IP
+      const String iosIP = '192.168.1.20'; // Physical iPhone - Your Mac's IP (updated for current WiFi)
       // For iOS Simulator, you can use 'localhost' if needed:
       // const String iosIP = 'localhost'; // Uncomment for iOS Simulator
       
@@ -83,6 +83,13 @@ class ApiService {
     // Default fallback
     return 'http://localhost:4000/api';
   }
+
+  /// Public base URL used by Dio (includes `/api`)
+  /// Useful for other services (e.g., Socket) to stay in sync with API host/port.
+  static String get baseUrl => _baseUrl;
+
+  /// Public base URI parsed from [baseUrl]
+  static Uri get baseUri => Uri.parse(baseUrl);
 
   // Singleton pattern to ensure single instance across the app
   static final ApiService _instance = ApiService._internal();
@@ -112,7 +119,7 @@ class ApiService {
 
     // Log the base URL in debug mode for troubleshooting
     if (kDebugMode) {
-
+      debugPrint('🌐 ApiService baseUrl: $baseUrl');
     }
 
     _dio = Dio(

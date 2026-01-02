@@ -840,10 +840,10 @@ class _SignupScreenState extends State<SignupScreen>
     final isEn = localization.currentLanguage == 'en';
     
     // Text strings based on language
-    final prefixText = isEn ? 'I agree to the ' : 'أوافق على ';
-    final privacyPolicyText = isEn ? 'Privacy Policy' : 'سياسة الخصوصية';
-    final middleText = isEn ? ' and ' : ' و ';
-    final termsText = isEn ? 'Terms & Conditions' : 'الشروط والأحكام';
+    final prefixText = localization.translate('auth.agreePrefix');
+    final privacyPolicyText = localization.translate('auth.privacyPolicy');
+    final middleText = localization.translate('auth.and');
+    final termsText = localization.translate('auth.termsAndConditionsShort');
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -887,7 +887,7 @@ class _SignupScreenState extends State<SignupScreen>
                         final content = isEn
                             ? LegalContent.privacyPolicyEn
                             : LegalContent.privacyPolicyAr;
-                        final title = isEn ? 'Privacy Policy' : 'سياسة الخصوصية';
+                        final title = privacyPolicyText;
                         AppRoutes.pushNamed(
                           context,
                           AppRoutes.legalInfo,
@@ -911,9 +911,7 @@ class _SignupScreenState extends State<SignupScreen>
                         final content = isEn
                             ? LegalContent.termsEn
                             : LegalContent.termsAr;
-                        final title = isEn
-                            ? 'Terms & Conditions'
-                            : 'الشروط والأحكام';
+                        final title = termsText;
                         AppRoutes.pushNamed(
                           context,
                           AppRoutes.legalInfo,

@@ -570,14 +570,15 @@ class _AddItemScreenState extends State<AddItemScreen>
                                         CustomTextField(
                                           controller: _descriptionController,
                                           label: localization.translate(
-                                            'wishlists.description',
+                                            'wishlists.wishDescriptionLabel',
                                           ),
                                           hint: localization.translate(
-                                            'wishlists.addDetailsAboutItem',
+                                            'wishlists.wishDescriptionHint',
                                           ),
                                           prefixIcon:
                                               Icons.description_outlined,
-                                          maxLines: 3,
+                                          minLines: 3,
+                                          maxLines: 5,
                                           validator: null,
                                         ),
 
@@ -657,10 +658,14 @@ class _AddItemScreenState extends State<AddItemScreen>
                   ),
                 ),
                 Text(
-                  localization.translate('wishlists.addSomethingSpecial'),
+                  _isEditing
+                      ? localization.translate('wishlists.addSomethingSpecial')
+                      : localization.translate('wishlists.addWishSubtitle'),
                   style: AppStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
+                  maxLines: 3,
+                  overflow: TextOverflow.visible,
                 ),
               ],
             ),
