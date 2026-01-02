@@ -52,6 +52,11 @@ class HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  /// Public method to refresh home dashboard from outside (e.g., MainNavigation tab switch)
+  Future<void> refreshHome() async {
+    await _controller.refresh();
+  }
+
   String _getTimeBasedGreeting(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context, listen: false);
     final hour = DateTime.now().hour;
@@ -72,6 +77,8 @@ class HomeScreenState extends State<HomeScreen> {
     
     final dashboardData = controller.dashboardData.value;
     final firstName = dashboardData?.user.firstName ?? 'Friend';
+    final fullName = firstName; // Using firstName as fullName is not available in DashboardUser
+    final profileImageUrl = dashboardData?.user.avatar;
     final unreadCount = dashboardData?.stats.unreadNotificationsCount ?? 0;
 
     return Container(
@@ -97,7 +104,7 @@ class HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(36),
         child: Stack(
           children: [
-            // Decorative background elements (same as UnifiedPageHeader)
+            // Decorative background elements
             _buildDecorativeElements(),
             // Main content
             Container(
@@ -111,138 +118,183 @@ class HomeScreenState extends State<HomeScreen> {
                 bottom: false,
                 top: false, // Top SafeArea is handled by padding
                 minimum: EdgeInsets.zero,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Left: Greeting Column - Fade in animation (0ms delay)
-                    Expanded(
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween(begin: 0.0, end: 1.0),
-                        duration: const Duration(milliseconds: 400),
-                        curve: Curves.easeOut,
-                        builder: (context, value, child) {
-                          return Opacity(
-                            opacity: value,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${_getTimeBasedGreeting(context)}, $firstName',
-                                  style: AppStyles.headingLarge.copyWith(
-                                    color: AppColors.textPrimary, // Same as UnifiedPageHeader
+                    // Top Row: Profile Avatar + Greeting + Notification
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left: Profile Avatar
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor: Colors.white,
+                          backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
+                              ? NetworkImage(profileImageUrl)
+                              : null,
+                          child: profileImageUrl == null || profileImageUrl.isEmpty
+                              ? Text(
+                                  fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 28,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 24, // Same as UnifiedPageHeader
                                   ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  Provider.of<LocalizationService>(context, listen: false).translate('profile.readyToMakeWishesComeTrue'),
-                                  style: AppStyles.bodyMedium.copyWith(
-                                    color: AppColors.textSecondary, // Same as UnifiedPageHeader
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                    fontStyle: FontStyle.italic, // Same as UnifiedPageHeader subtitle
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-            // Right: Notification Bell
-            BlocBuilder<NotificationsCubit, NotificationsState>(
-              builder: (context, state) {
-                final notifications = state is NotificationsLoaded
-                    ? state.notifications
-                    : <AppNotification>[];
-                // Always use unreadCount from NotificationsCubit (uses /notifications/unread-count API)
-                // This API respects lastBadgeSeenAt, unlike /dashboard/home API
-                final unreadCount = state is NotificationsLoaded
-                    ? state.unreadCount
-                    : 0; // Don't use dashboardData fallback - it doesn't respect lastBadgeSeenAt
-
-                return Builder(
-                  builder: (buttonContext) {
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          _showNotificationDropdown(
-                            buttonContext,
-                            notifications,
-                            unreadCount,
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: AppColors.primary.withOpacity(0.2),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                offset: const Offset(0, 2),
-                                blurRadius: 8,
-                                spreadRadius: 0,
-                              ),
-                            ],
-                          ),
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Center(
-                                child: Icon(
-                                  Icons.notifications_outlined,
-                                  color: AppColors.primary,
-                                  size: 22,
-                                ),
-                              ),
-                              if (unreadCount > 0)
-                                Positioned(
-                                  top: -2,
-                                  right: -2,
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: unreadCount > 9 ? 4 : 5,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.accent,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    constraints: const BoxConstraints(
-                                      minWidth: 18,
-                                      minHeight: 18,
-                                    ),
-                                    child: Text(
-                                      unreadCount > 9 ? '9+' : '$unreadCount',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
+                                )
+                              : null,
+                        ),
+                        const SizedBox(width: 16),
+                        // Middle: Greeting Column
+                        Expanded(
+                          child: TweenAnimationBuilder<double>(
+                            tween: Tween(begin: 0.0, end: 1.0),
+                            duration: const Duration(milliseconds: 400),
+                            curve: Curves.easeOut,
+                            builder: (context, value, child) {
+                              return Opacity(
+                                opacity: value,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    // Time-based greeting (smaller, dark)
+                                    Text(
+                                      _getTimeBasedGreeting(context),
+                                      style: AppStyles.bodySmall.copyWith(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
                                       ),
-                                      textAlign: TextAlign.center,
                                     ),
-                                  ),
+                                    const SizedBox(height: 4),
+                                    // User name (large, bold, dark)
+                                    Text(
+                                      fullName,
+                                      style: AppStyles.headingLarge.copyWith(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 22,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                            ],
+                              );
+                            },
                           ),
                         ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+                        // Right: Notification Bell
+                        BlocBuilder<NotificationsCubit, NotificationsState>(
+                          builder: (context, state) {
+                            final notifications = state is NotificationsLoaded
+                                ? state.notifications
+                                : <AppNotification>[];
+                            final unreadCount = state is NotificationsLoaded
+                                ? state.unreadCount
+                                : 0;
+
+                            return Builder(
+                              builder: (buttonContext) {
+                                return Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      _showNotificationDropdown(
+                                        buttonContext,
+                                        notifications,
+                                        unreadCount,
+                                      );
+                                    },
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.1),
+                                            offset: const Offset(0, 2),
+                                            blurRadius: 8,
+                                            spreadRadius: 0,
+                                          ),
+                                        ],
+                                      ),
+                                      child: Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          Center(
+                                            child: Icon(
+                                              Icons.notifications_outlined,
+                                              color: AppColors.primary,
+                                              size: 22,
+                                            ),
+                                          ),
+                                          if (unreadCount > 0)
+                                            Positioned(
+                                              top: -2,
+                                              right: -2,
+                                              child: Container(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: unreadCount > 9 ? 4 : 5,
+                                                  vertical: 2,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.accent,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                constraints: const BoxConstraints(
+                                                  minWidth: 18,
+                                                  minHeight: 18,
+                                                ),
+                                                child: Text(
+                                                  unreadCount > 9 ? '9+' : '$unreadCount',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    // Bottom: Welcome Message
+                    const SizedBox(height: 16),
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: const Duration(milliseconds: 600),
+                      curve: Curves.easeOut,
+                      builder: (context, value, child) {
+                        return Opacity(
+                          opacity: value,
+                          child: Text(
+                            Provider.of<LocalizationService>(context, listen: false)
+                                .translate('profile.readyToMakeWishesComeTrue'),
+                            style: AppStyles.bodyMedium.copyWith(
+                              color: AppColors.textSecondary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -263,7 +315,7 @@ class HomeScreenState extends State<HomeScreen> {
         bottom: 16,
       ),
       decoration: BoxDecoration(
-        color: AppColors.cardPurple, // Same as actual header
+        color: AppColors.cardPurple, // Same as UnifiedPageHeader
         borderRadius: BorderRadius.circular(36),
         boxShadow: [
           BoxShadow(
@@ -278,7 +330,7 @@ class HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(36),
         child: Stack(
           children: [
-            // Decorative background elements (same as actual header)
+            // Decorative background elements
             _buildDecorativeElements(),
             // Main content
             Container(
@@ -292,51 +344,67 @@ class HomeScreenState extends State<HomeScreen> {
                 bottom: false,
                 top: false,
                 minimum: EdgeInsets.zero,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Left: Greeting skeleton
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 200,
-                            height: 24, // Match font size
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                    // Top Row: Avatar + Greeting + Notification skeleton
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left: Avatar skeleton
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            shape: BoxShape.circle,
                           ),
-                          const SizedBox(height: 6),
-                          Container(
-                            width: 120,
-                            height: 18,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Middle: Greeting skeleton
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 120,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade300,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Container(
+                                width: 150,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade300,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Container(
-                            width: 220,
-                            height: 15,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                        ),
+                        // Right: Notification bell skeleton
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    // Right: Notification bell skeleton
+                    // Bottom: Welcome message skeleton
+                    const SizedBox(height: 16),
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 200,
+                      height: 18,
                       decoration: BoxDecoration(
                         color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                   ],
@@ -657,17 +725,17 @@ class _FixedHeaderDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => _getHeaderHeight();
 
   double _getHeaderHeight() {
-    // Calculate approximate height:
+    // Calculate approximate height for new design:
     // - margin top: 12
     // - SafeArea top padding: ~44 (status bar)
     // - top padding: 20
-    // - greeting text: ~24
-    // - name text: ~20
-    // - subtitle text: ~16
+    // - Avatar row (avatar + greeting): ~60px (avatar height)
+    // - spacing: 16
+    // - Welcome message: ~18
     // - bottom padding: 24
     // - margin bottom: 16
-    // Total: ~176px, but we'll use a safe value
-    return 180.0;
+    // Total: ~210px, but we'll use a safe value
+    return 210.0;
   }
 
   @override

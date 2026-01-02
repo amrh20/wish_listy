@@ -99,6 +99,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
   Future<void> _confirmAndDeleteWishlist() async {
     final localization = Provider.of<LocalizationService>(context, listen: false);
+    final wishlistDisplayName =
+        _wishlistName.isNotEmpty ? _wishlistName : widget.wishlistName;
 
     final shouldDelete = await showDialog<bool>(
       context: context,
@@ -113,7 +115,10 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
             style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
           ),
           content: Text(
-            'Are you sure you want to delete "${_wishlistName.isNotEmpty ? _wishlistName : widget.wishlistName}"?\nThis action cannot be undone.',
+            localization.translate(
+              'wishlists.deleteWishlistConfirmation',
+              args: {'name': wishlistDisplayName},
+            ),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -177,7 +182,9 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to delete wishlist: ${e.message}'),
+          content: Text(
+            '${localization.translate('wishlists.failedToDeleteWishlist')}: ${e.message}',
+          ),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -186,7 +193,9 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Failed to delete wishlist. Please try again.'),
+          content: Text(
+            localization.translate('wishlists.failedToDeleteWishlistTryAgain'),
+          ),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -207,13 +216,14 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
   /// Load wishlist details and items from API or local storage
   Future<void> _loadWishlistDetails() async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
 
 
     // Validate wishlistId
     if (widget.wishlistId.isEmpty) {
 
       setState(() {
-        _errorMessage = 'Invalid wishlist ID. Please try again.';
+        _errorMessage = localization.translate('wishlists.invalidWishlistId');
         _isLoading = false;
       });
       return;
@@ -242,7 +252,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         final wishlist = await guestDataRepo.getWishlistById(widget.wishlistId);
 
         if (wishlist == null) {
-          throw Exception('Wishlist not found');
+          throw Exception(localization.translate('wishlists.wishlistNotFound'));
         }
 
         // Load items for this wishlist
@@ -296,8 +306,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         final authService = Provider.of<AuthRepository>(context, listen: false);
         throw Exception(
           authService.isGuest
-              ? 'Wishlist not found in local storage'
-              : 'Empty response from API',
+              ? localization.translate('wishlists.wishlistNotFound')
+              : localization.translate('wishlists.failedToLoadWishlist'),
         );
       }
 
@@ -441,7 +451,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       setState(() {
         _errorMessage = e.toString().contains('Exception')
             ? e.toString().replaceFirst('Exception: ', '')
-            : 'Failed to load wishlist. Please try again.';
+            : localization.translate('wishlists.failedToLoadWishlist');
         _isLoading = false;
       });
 
@@ -455,7 +465,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                 Expanded(
                   child: Text(
                     _errorMessage ??
-                        'An unexpected error occurred. Please try again.',
+                        localization.translate('wishlists.unexpectedErrorOccurred'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
@@ -477,7 +487,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             action: SnackBarAction(
-              label: 'Retry',
+              label: localization.translate('common.retry'),
               textColor: Colors.white,
               onPressed: () {
                 _loadWishlistDetails();
@@ -686,7 +696,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Loading wishlist...',
+                localization.translate('app.loading'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -717,7 +727,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                 ),
                 const SizedBox(height: 24),
                 PrimaryGradientButton(
-                  text: 'Retry',
+                  text: localization.translate('common.retry'),
                   icon: Icons.refresh,
                   onPressed: _loadWishlistDetails,
                 ),
@@ -1784,7 +1794,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'An unexpected error occurred. Please try again.',
+                    Provider.of<LocalizationService>(context, listen: false)
+                        .translate('wishlists.unexpectedErrorOccurred'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,

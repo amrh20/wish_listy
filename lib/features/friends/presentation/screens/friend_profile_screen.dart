@@ -813,13 +813,18 @@ class _BodyContent extends StatelessWidget {
           // Large spacing between sections
           const SizedBox(height: 40),
           // Events Section Header
-          const Text(
-            'Upcoming Events 📅',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
+          Builder(
+            builder: (context) {
+              final localization = Provider.of<LocalizationService>(context, listen: false);
+              return Text(
+                '${localization.translate('friends.upcomingEvents')} 📅',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              );
+            },
           ),
           // Spacing after header
           const SizedBox(height: 16),
@@ -831,10 +836,11 @@ class _BodyContent extends StatelessWidget {
               return _buildEventSkeletonList();
             }
             if (list.isEmpty) {
+              final localization = Provider.of<LocalizationService>(context, listen: false);
               return _buildEmptyState(
                 icon: Icons.event_busy,
-                title: 'No upcoming events',
-                subtitle: 'Nothing scheduled at the moment.',
+                title: localization.translate('friends.noUpcomingEvents'),
+                subtitle: localization.translate('friends.nothingScheduled'),
               );
             }
 
@@ -845,8 +851,10 @@ class _BodyContent extends StatelessWidget {
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final e = list[index];
+                final localization = Provider.of<LocalizationService>(context, listen: false);
                 return _EventTicketCard(
                   event: e,
+                  localization: localization,
                   onTap: () {
                     Navigator.pushNamed(
                       context,
@@ -989,12 +997,17 @@ class _WishlistGridCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            Text(
-                              '• ${wishlist.itemCount} ${wishlist.itemCount == 1 ? 'Wish' : 'Wishes'}',
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 11,
-                              ),
+                            Builder(
+                              builder: (context) {
+                                final localization = Provider.of<LocalizationService>(context, listen: false);
+                                return Text(
+                                  '• ${wishlist.itemCount} ${wishlist.itemCount == 1 ? localization.translate('friends.wish') : localization.translate('friends.wishes')}',
+                                  style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 11,
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -1032,13 +1045,18 @@ class _WishlistGridCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      'Wishes',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    Builder(
+                      builder: (context) {
+                        final localization = Provider.of<LocalizationService>(context, listen: false);
+                        return Text(
+                          localization.translate('friends.wishes'),
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(width: 12),
                     ..._buildPreviewBubbles(previewItems, hasMore),
@@ -1056,15 +1074,20 @@ class _WishlistGridCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Flexible(
-                      child: Text(
-                        'No wishes yet',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Builder(
+                        builder: (context) {
+                          final localization = Provider.of<LocalizationService>(context, listen: false);
+                          return Text(
+                            localization.translate('friends.noWishesYet'),
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -1243,10 +1266,12 @@ class _DashedCirclePainter extends CustomPainter {
 
 class _EventTicketCard extends StatelessWidget {
   final FriendEventModel event;
+  final LocalizationService localization;
   final VoidCallback onTap;
 
   const _EventTicketCard({
     required this.event,
+    required this.localization,
     required this.onTap,
   });
 
@@ -1274,35 +1299,35 @@ class _EventTicketCard extends StatelessWidget {
           icon: Icons.cake,
           color: Colors.pink.shade100,
           textColor: Colors.pink.shade700,
-          label: 'Birthday',
+          label: localization.translate('events.birthday'),
         );
       case 'anniversary':
         return (
           icon: Icons.favorite,
           color: Colors.red.shade100,
           textColor: Colors.red.shade700,
-          label: 'Anniversary',
+          label: localization.translate('events.anniversary'),
         );
       case 'graduation':
         return (
           icon: Icons.school,
           color: Colors.blue.shade100,
           textColor: Colors.blue.shade700,
-          label: 'Graduation',
+          label: localization.translate('events.graduation'),
         );
       case 'meeting':
         return (
           icon: Icons.business_center,
           color: Colors.orange.shade100,
           textColor: Colors.orange.shade700,
-          label: 'Meeting',
+          label: localization.translate('events.meeting'),
         );
       default:
         return (
           icon: Icons.event,
           color: Colors.purple.shade50,
           textColor: Colors.purple.shade700,
-          label: t.isEmpty ? 'Event' : t[0].toUpperCase() + t.substring(1),
+          label: t.isEmpty ? localization.translate('events.other') : t[0].toUpperCase() + t.substring(1),
         );
     }
   }
@@ -1316,13 +1341,13 @@ class _EventTicketCard extends StatelessWidget {
     final day = date != null ? date.day.toString() : '--';
 
     // Get status badge text
-    String statusText = 'Upcoming';
+    String statusText = localization.translate('friends.upcoming');
     if (event.status != null) {
       statusText = event.status!.split('_').map((s) {
         return s[0].toUpperCase() + s.substring(1);
       }).join(' ');
     } else if (event.mode == 'online') {
-      statusText = 'Online';
+      statusText = localization.translate('friends.online');
     }
 
     return Material(
@@ -1504,12 +1529,17 @@ class _EventTicketCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 2),
-                              Text(
-                                'Tap to view wishes',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 11,
-                                ),
+                              Builder(
+                                builder: (context) {
+                                  final localization = Provider.of<LocalizationService>(context, listen: false);
+                                  return Text(
+                                    localization.translate('friends.tapToViewWishes'),
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 11,
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -1558,13 +1588,18 @@ class _EventTicketCard extends StatelessWidget {
         // Label
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: Text(
-            'Invited Guests',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
+          child: Builder(
+            builder: (context) {
+              final localization = Provider.of<LocalizationService>(context, listen: false);
+              return Text(
+                localization.translate('friends.invitedGuests'),
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              );
+            },
           ),
         ),
         // Avatars Row

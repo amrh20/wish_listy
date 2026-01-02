@@ -1,36 +1,36 @@
 {
   "app": {
-    "saveChanges": "حفظ التعديلات",
+    "saveChanges": "احفظ التغييرات",
     "name": "WishListy",
-    "welcome": "مرحباً بك",
-    "loading": "جاري التحميل...",
+    "welcome": "أهلًا بيك",
+    "loading": "بنحمّل...",
     "save": "حفظ",
     "cancel": "إلغاء",
     "delete": "حذف",
-    "edit": "تعديل",
-    "add": "إضافة",
-    "view": "عرض",
+    "edit": "عدّل",
+    "add": "ضيف",
+    "view": "شوف",
     "back": "رجوع",
     "next": "التالي",
-    "done": "تم",
+    "done": "تمام",
     "search": "بحث",
-    "filter": "تصفية",
+    "filter": "فلتر",
     "sort": "ترتيب",
-    "refresh": "تحديث",
+    "refresh": "حدّث",
     "share": "مشاركة",
     "settings": "الإعدادات",
-    "profile": "الملف الشخصي",
-    "logout": "تسجيل خروج",
+    "profile": "حسابي",
+    "logout": "خروج",
     "language": "اللغة",
-    "theme": "المظهر",
+    "theme": "الشكل",
     "notifications": "الإشعارات",
     "privacy": "الخصوصية",
     "help": "المساعدة",
     "about": "حول التطبيق",
     "splashTitle": "الأمنيات",
     "splashSubtitle": "تواصل من خلال الهدايا المدروسة",
-    "tagline": "[AR: Connect through thoughtful gifting]",
-    "selectLanguage": "[AR: Select Language]"
+    "tagline": "قَرّب من اللي بتحبهم بهدية على قدّ المقام",
+    "selectLanguage": "اختار اللغة"
   },
   "navigation": {
     "home": "الرئيسية",
@@ -40,16 +40,16 @@
     "profile": "الملف الشخصي"
   },
   "auth": {
-    "logoutConfirmation": "هل أنت متأكد من تسجيل الخروج؟",
-    "logout": "تسجيل خروج",
-    "login": "تسجيل دخول",
-    "signup": "إنشاء حساب",
-    "forgotPassword": "نسيت كلمة المرور؟",
+    "logoutConfirmation": "متأكد إنك عايز تخرج؟",
+    "logout": "خروج",
+    "login": "دخول",
+    "signup": "حساب جديد",
+    "forgotPassword": "نسيت الباسورد؟",
     "email": "البريد الإلكتروني",
     "password": "كلمة المرور",
     "confirmPassword": "تأكيد كلمة المرور",
-    "confirmPasswordHint": "أكد كلمة المرور",
-    "pleaseConfirmPassword": "يرجى تأكيد كلمة المرور",
+    "confirmPasswordHint": "اكتب الباسورد تاني",
+    "pleaseConfirmPassword": "اكتب تأكيد الباسورد",
     "firstName": "الاسم الأول",
     "lastName": "اسم العائلة",
     "fullName": "الاسم الكامل",
@@ -61,7 +61,7 @@
     "other": "آخر",
     "alreadyHaveAccount": "لديك حساب بالفعل؟",
     "dontHaveAccount": "ليس لديك حساب؟ ",
-    "createAccountSubtitle": "أنشئ وشارك قوائم أمنياتك مع الأصدقاء والعائلة",
+    "createAccountSubtitle": "اعمل وشارك أمنياتك مع صحابك وعيلتك",
     "loginWithGoogle": "تسجيل الدخول بـ Google",
     "loginWithApple": "تسجيل الدخول بـ Apple",
     "or": "أو",
@@ -69,41 +69,45 @@
     "createAccount": "إنشاء حساب جديد",
     "resetPassword": "إعادة تعيين كلمة المرور",
     "sendResetLink": "إرسال رابط إعادة التعيين",
-    "checkEmail": "تحقق من بريدك الإلكتروني",
+    "checkEmail": "بُص على الإيميل",
     "signIn": "تسجيل الدخول",
-    "signInSubtitle": "سجل دخولك لمواصلة رحلة قائمة أمنياتك",
-    "welcomeBackMessage": "مرحباً بعودتك! تابع رحلة قائمة أمنياتك",
+    "signInSubtitle": "ادخل عشان تكمّل رحلتك مع الأمنيات",
+    "welcomeBackMessage": "حلو إنك رجعت! كمّل رحلتك مع الأمنيات",
     "emailOrPhone": "البريد الإلكتروني أو رقم الهاتف",
     "rememberMe": "تذكرني",
     "continueWith": "أو استمر بـ",
-    "accountCreated": "تم إنشاء الحساب!",
-    "verifyEmail": "يرجى التحقق من بريدك الإلكتروني للتحقق من حسابك.",
+    "accountCreated": "تمام! حسابك اتعمل",
+    "verifyEmail": "بُص على الإيميل وفعّل حسابك.",
     "continue": "متابعة",
     "enterEmail": "أدخل عنوان بريدك الإلكتروني",
     "enterPassword": "أدخل كلمة المرور",
     "enterFullName": "أدخل اسمك الكامل",
     "createPassword": "أنشئ كلمة مرور قوية",
-    "pleaseEnterEmail": "يرجى إدخال بريدك الإلكتروني",
-    "pleaseEnterValidEmail": "يرجى إدخال بريد إلكتروني صحيح",
-    "pleaseEnterPassword": "يرجى إدخال كلمة المرور",
-    "pleaseEnterFullName": "يرجى إدخال اسمك الكامل",
+    "pleaseEnterEmail": "اكتب الإيميل هنا",
+    "pleaseEnterValidEmail": "اكتب إيميل صح",
+    "pleaseEnterPassword": "اكتب الباسورد",
+    "pleaseEnterFullName": "اكتب اسمك",
     "passwordMinLength": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
     "nameMinLength": "الاسم يجب أن يكون حرفين على الأقل",
     "termsAndConditions": "أوافق على الشروط والأحكام وسياسة الخصوصية",
-    "agreeToTermsError": "يرجى الموافقة على الشروط والأحكام",
+    "agreePrefix": "موافق على ",
+    "privacyPolicy": "سياسة الخصوصية",
+    "and": " و ",
+    "termsAndConditionsShort": "الشروط والأحكام",
+    "agreeToTermsError": "لازم توافق على الشروط والأحكام",
     "creatingAccount": "جاري إنشاء الحساب...",
     "fieldRequired": "هذا الحقل مطلوب",
-    "invalidEmailOrPhone": "يرجى إدخال عنوان بريد إلكتروني أو رقم هاتف صحيح",
+    "invalidEmailOrPhone": "اكتب إيميل أو رقم موبايل صح",
     "passwordUppercase": "يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل",
     "passwordLowercase": "يجب أن تحتوي كلمة المرور على حرف صغير واحد على الأقل",
     "passwordNumber": "يجب أن تحتوي كلمة المرور على رقم واحد على الأقل",
     "nameMaxLength": "يجب أن يكون الاسم أقل من 50 حرف",
-    "wrongPassword": "كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.",
+    "wrongPassword": "الباسورد غلط… جرّب تاني",
     "loginFailed": "فشل تسجيل الدخول",
     "tryAgain": "حاول مرة أخرى",
     "close": "إغلاق",
     "error": "خطأ",
-    "unexpectedError": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى."
+    "unexpectedError": "حصلت مشكلة بسيطة… جرّب تاني"
   },
   "welcome": {
     "title": "مرحباً بك",
@@ -114,7 +118,7 @@
   "onboarding": {
     "createWishlists": {
       "title": "إنشاء قوائم الأمنيات",
-      "description": "نظم عناصر أحلامك وأفكار الهدايا في قوائم أمنيات جميلة ومخصصة."
+      "description": "رتّب الحاجات اللي نفسك فيها وأفكار الهدايا في أمنيات شكلها حلو وسهلة المشاركة."
     },
     "shareWithFriends": {
       "title": "شارك مع الأصدقاء",
@@ -129,7 +133,7 @@
   },
   "home": {
     "title": "الرئيسية",
-    "welcomeMessage": "مرحباً بك في قائمة الأمنيات",
+    "welcomeMessage": "أهلًا بيك في الأمنيات",
     "greeting": "مرحباً بعودتك! 👋",
     "goodMorning": "صباح الخير",
     "goodAfternoon": "مساء الخير",
@@ -155,31 +159,34 @@
       "addFriendSubtext": "تواصل",
       "createEvent": "إنشاء فعالية",
       "createEventSubtext": "خطط للاحتفال",
-      "addItem": "إضافة عنصر",
-      "addItemSubtext": "إلى قائمة الأمنيات",
-      "createWishlist": "إنشاء قائمة أمنيات",
-      "createWishlistSubtext": "ابدأ قائمة جديدة"
+      "addItem": "ضيف هدية",
+      "addItemSubtext": "للأمنيات",
+      "createWishlist": "اعمل أمنيات",
+      "createWishlistSubtext": "ابدأ جديد"
     },
     "friendActivity": "نشاط الأصدقاء",
     "giftSuggestions": "اقتراحات الهدايا",
-    "noFriendActivity": "لا يوجد نشاط للأصدقاء",
-    "noFriendActivitySubtitle": "أضف أصدقاء لرؤية تحديثات قوائم أمنياتهم",
+    "noFriendActivity": "مفيش نشاط لسه",
+    "noFriendActivitySubtitle": "ضيف أصحابك عشان تشوف تحديثاتهم",
     "noGiftSuggestions": "لا توجد اقتراحات هدايا",
-    "noGiftSuggestionsSubtitle": "سنقترح عليك هدايا بناءً على قوائم أمنيات أصدقائك"
+    "noGiftSuggestionsSubtitle": "هنقترح عليك هدايا على حسب أمنيات صحابك"
   },
   "wishlists": {
-    "viewwishlist": "عرض قائمة الأمنيات",
+    "viewwishlist": "شوف الأمنيات",
     "title": "الأمنيات",
     "myWishlists": "الأمنيات",
-    "createWishlist": "إنشاء قائمة أمنيات",
-    "wishlistName": "اسم قائمة الأمنيات",
+    "createWishlist": "اعمل أمنيات جديدة",
+    "createWishlistSubtitle": "تعال نظبط شكل القائمة الأول (الاسم ومين يشوفها). بعد الخطوة دي، هتقدر تملاها بكل الهدايا اللي نفسك فيها!",
+    "wishlistName": "اسم الأمنيات",
     "description": "الوصف",
+    "wishlistDescriptionLabel": "وصف القائمة (اختياري)",
+    "wishlistDescriptionHint": "هنا تقدر تكتب رسالة ترحيب، أو توضح لصحابك إيه الهدف من القائمة دي...",
     "privacy": "الخصوصية",
     "public": "عامة",
     "private": "خاصة",
     "friendsOnly": "للأصدقاء فقط",
-    "addItem": "إضافة عنصر",
-    "itemName": "اسم العنصر",
+    "addItem": "ضيف هدية",
+    "itemName": "اسم الهدية",
     "price": "السعر",
     "priority": "الأولوية",
     "high": "عالية",
@@ -191,35 +198,43 @@
     "notPurchased": "لم يتم الشراء",
     "reserve": "حجز",
     "unreserve": "إلغاء الحجز",
-    "viewItems": "عرض العناصر",
+    "viewItems": "شوف الهدايا",
     "viewDetails": "عرض التفاصيل",
     "editWishlist": "تعديل قائمة الأمنيات",
     "deleteWishlist": "حذف قائمة الأمنيات",
     "shareWishlist": "مشاركة قائمة الأمنيات",
-    "totalItems": "إجمالي العناصر",
-    "purchasedItems": "العناصر المشتراة",
+    "totalItems": "إجمالي الهدايا",
+    "purchasedItems": "الهدايا اللي اتشرت",
     "totalValue": "القيمة الإجمالية",
-    "noItems": "لا توجد عناصر",
-    "addFirstItem": "أضف أول عنصر",
+    "noItems": "مفيش هدايا لسه",
+    "addFirstItem": "ضيف أول هدية",
     "eventWishlists": "قوائم أمنيات الفعاليات",
     "publicWishlist": "قائمة الأمنيات العامة",
     "myGeneralWishlist": "قائمة أمنياتي العامة",
-    "updated": "تم التحديث",
+    "updated": "آخر تحديث",
     "daysAgo": "أيام مضت",
     "progress": "التقدم",
-    "items": "العناصر",
+    "items": "هدايا",
     "quickStats": "إحصائيات سريعة",
     "friends": "الأصدقاء",
     "totalWishlists": "إجمالي قوائم الأمنيات",
-    "recentItems": "العناصر الحديثة",
+    "recentItems": "هدايا جديدة",
     "viewAll": "عرض الكل",
     "noEventWishlists": "لا توجد قوائم أمنيات للفعاليات بعد",
     "noEventWishlistsDescription": "أنشئ قوائم أمنيات للفعاليات الخاصة مثل أعياد الميلاد والأعراس والعطلات لتسهيل تقديم الهدايا لأصدقائك.",
     "createEventWishlist": "إنشاء قائمة أمنيات للفعالية",
     "createEventWishlistDescription": "أنشئ قوائم أمنيات للفعاليات الخاصة مثل أعياد الميلاد والأعراس والعطلات لتسهيل تقديم الهدايا لأصدقائك.",
-    "createPersonalWishlistDescription": "أنشئ قائمة أمنيات شخصية لتتبع العناصر التي تريدها لنفسك.",
+    "createPersonalWishlistDescription": "اعمل أمنيات شخصية عشان تتابع الهدايا اللي نفسك فيها.",
     "noWishlistsYet": "لا توجد قوائم أمنيات بعد",
-    "createFirstWishlistDescription": "ابدأ بإنشاء قائمة أمنياتك الأولى. أضف العناصر التي تتمناها وشاركها مع أصدقائك!",
+    "deleteWishlistConfirmation": "متأكد إنك عايز تحذف \"{name}\"؟\nمش هتقدر ترجعها تاني.",
+    "failedToDeleteWishlist": "ماعرفناش نحذف الأمنيات",
+    "failedToDeleteWishlistTryAgain": "ماعرفناش نحذف الأمنيات… جرّب تاني.",
+    "invalidWishlistId": "فيه مشكلة في الأمنيات دي… جرّب تاني.",
+    "wishlistNotFound": "مش لاقيين الأمنيات دي",
+    "failedToLoadWishlist": "ماعرفناش نجيب تفاصيل الأمنيات… جرّب تاني.",
+    "unexpectedErrorOccurred": "حصلت مشكلة بسيطة… جرّب تاني.",
+    "retry": "جرّب تاني",
+    "createFirstWishlistDescription": "ابدأ واعمل أول أمنيات ليك… ضيف هدايا وشاركها مع أصحابك!",
     "personalWishlists": "قوائم الأمنيات الشخصية",
     "personalWishlist": "قائمة الأمنيات الشخصية",
     "eventWishlist": "قائمة أمنيات الفعالية",
@@ -228,15 +243,18 @@
     "tomorrow": "غداً",
     "inDays": "خلال {days} أيام",
     "inWeeks": "خلال {weeks} أسابيع",
-    "addNewItem": "إضافة عنصر جديد",
-    "addSomethingSpecial": "أضف شيئاً مميزاً إلى قائمة أمنياتك",
+    "addNewItem": "ضيف هدية جديدة",
+    "addSomethingSpecial": "ضيف هدية حلوة للأمنيات",
+    "addWishSubtitle": "وضح كل التفاصيل (زي البراند، المقاس، واللون...) عشان تضمن إن الهدية تجيلك زي ما في خيالك بالظبط!",
     "addToWishlist": "إضافة إلى قائمة الأمنيات",
+    "wishDescriptionLabel": "تفاصيل الهدية",
+    "wishDescriptionHint": "اكتب هنا المقاس، اللون، الموديل، أو أي حاجة تانية...",
     "whatDoYouWishFor": "ماذا تتمنى؟",
-    "pleaseEnterItemName": "يرجى إدخال اسم العنصر",
+    "pleaseEnterItemName": "اكتب اسم الهدية",
     "pleaseEnterWishName": "يرجى إدخال اسم الرغبة",
-    "addDetailsAboutItem": "أضف تفاصيل عن العنصر (اختياري)",
+    "addDetailsAboutItem": "اكتب تفاصيل الهدية (اختياري)",
     "pasteLinkFromOnlineStore": "الصق رابط من متجر إلكتروني (اختياري)",
-    "pleaseEnterValidUrl": "يرجى إدخال رابط صحيح",
+    "pleaseEnterValidUrl": "اكتب لينك صح",
     "priceRangeOptional": "نطاق السعر (اختياري)",
     "currency": "العملة",
     "minPrice": "السعر الأدنى",
@@ -248,21 +266,21 @@
     "takePhoto": "التقاط صورة",
     "addImageUrl": "إضافة رابط الصورة",
     "enterImageUrl": "أدخل رابط الصورة",
-    "saveItem": "حفظ العنصر",
+    "saveItem": "احفظ الهدية",
     "saveDraft": "حفظ كمسودة",
-    "itemAdded": "تمت إضافة العنصر!",
+    "itemAdded": "تمام! ضفنا الهدية",
     "wishAdded": "تمت إضافة الرغبة!",
     "itemAddedToWishlist": "تمت إضافة {itemName} إلى {wishlistName}.",
     "wishAddedToWishlist": "تمت إضافة {wishName} إلى {wishlistName}.",
     "addAnother": "إضافة آخر",
-    "itemSavedAsDraft": "تم حفظ العنصر كمسودة",
+    "itemSavedAsDraft": "اتحفظت كمسودة",
     "barcodeScannerComingSoon": "ماسح الباركود قريباً!",
     "birthday2024": "عيد الميلاد 2024",
     "christmas2024": "عيد الميلاد 2024",
     "friendsWishlists": "مدعو",
     "friendsWishlistsComingSoon": "قوائم أمنيات الأصدقاء قريباً",
-    "friendsWishlistsDescription": "تصفح واحجز عناصر من قوائم أمنيات أصدقائك. هذه الميزة ستكون متاحة قريباً!",
-    "itemsPurchased": "عناصر مُشتراة",
+    "friendsWishlistsDescription": "اتفرّج واحجز هدايا من أمنيات صحابك. الميزة دي هتنزل قريبًا!",
+    "itemsPurchased": "هدايا اتشرت",
     "exploreWishlists": "استكشف قوائم الأمنيات",
     "signInToCreateWishlists": "سجل دخولك لإنشاء قوائم الأمنيات الخاصة بك والتواصل مع الأصدقاء",
     "searchWishlists": "ابحث عن قوائم الأمنيات",
@@ -273,7 +291,7 @@
     "whatWouldYouLikeToDo": "ماذا تريد أن تفعل؟",
     "createNewWishlist": "إنشاء قائمة أمنيات جديدة",
     "createNewWishlistDescription": "ابدأ قائمة أمنيات جديدة لأي مناسبة",
-    "addItemToWishlistDescription": "أضف عنصراً إلى قائمة أمنيات موجودة",
+    "addItemToWishlistDescription": "ضيف هدية لأمنيات موجودة",
     "createNewEventDescription": "خطط احتفالاً وادع الأصدقاء",
     "create": "إنشاء",
     "searchResults": "نتائج البحث",
@@ -281,11 +299,11 @@
     "wishlistCreatedSuccessfully": "تم إنشاء قائمة الأمنيات بنجاح!",
     "wishlistCreatedTitle": "تم إنشاء قائمة الأمنيات!",
     "wishlistCreatedMessage": "تم إنشاء قائمة الأمنيات بنجاح. ماذا تريد أن تفعل بعد ذلك؟",
-    "addItemsToWishlist": "إضافة عناصر للقائمة",
+    "addItemsToWishlist": "ضيف هدايا",
     "viewWishlist": "عرض القائمة",
     "createAnotherWishlist": "إنشاء قائمة أخرى",
     "addNewWish": "إضافة أمنية جديدة",
-    "wishTitle": "اسم العنصر",
+    "wishTitle": "اسم الهدية",
     "giftName": "اسم الهدية",
     "uploadImage": "رفع صورة",
     "fromGallery": "من المعرض",
@@ -307,127 +325,127 @@
     "brandOrKeywords": "العلامة التجارية أو الكلمات المفتاحية",
     "enterBrandOrKeywords": "أدخل العلامة التجارية أو الكلمات المفتاحية",
     "productLink": "رابط المنتج",
-    "wishlistItemImageUploadUnknownError": "[AR: Unknown error during upload]",
-    "itemImageUrlPlaceholder": "[AR: Enter image URL (optional)]",
-    "itemDescription": "[AR: Item Description]",
-    "wishlistItemImageUploadNextWeekButton": "[AR: Next Week]",
-    "wishlistItemImageUploadTodayButton": "[AR: Today]",
-    "confirmUnreserveItem": "[AR: Confirm Unreserve Item]",
-    "wishlistItemImageUploadNetworkError": "[AR: Network error during upload]",
-    "itemPrice": "[AR: Item Price]",
-    "wishlistItemImageUploadThisMonthButton": "[AR: This Month]",
-    "wishlistItemImageUploadManyButton": "[AR: Many]",
-    "outOfStock": "[AR: Out of Stock]",
-    "wishlistItemImageUploadRetryMessage": "[AR: Please check your connection and try again]",
-    "wishlistItemImageInvalid": "[AR: Image URL must be a valid URL]",
-    "wishlistItemImageUpload": "[AR: Upload Item Image]",
-    "reserveItemMessage": "[AR: Are you sure you want to reserve this item?]",
-    "wishlistItemImageUploadProgress": "[AR: Upload progress: {progress}%]",
-    "wishlistItemImageRemove": "[AR: Remove Item Image]",
-    "wishlistSettingsError": "[AR: Error saving wishlist settings]",
-    "reserveItem": "[AR: Reserve Item]",
-    "itemCategory": "[AR: Item Category]",
-    "wishlistItemImageUploadRetryButton": "[AR: Retry]",
-    "itemDeletedSuccessfully": "[AR: Item deleted successfully]",
-    "wishlistItemImageUploadOkButton": "[AR: OK]",
-    "wishlistItemImageUploadUpcomingButton": "[AR: Upcoming]",
-    "wishlistItemUrlInvalid": "[AR: Product URL must be a valid URL]",
-    "wishlistNameRequired": "[AR: Wishlist name is required]",
-    "available": "[AR: Available]",
-    "wishlistItemImageUploadDeleteButton": "[AR: Delete]",
-    "editWishlistItem": "[AR: Edit Wishlist Item]",
-    "itemTitle": "[AR: Item Title]",
-    "deleteWishlistItem": "[AR: Delete Wishlist Item]",
-    "wishlistItemImageUploadResetButton": "[AR: Reset]",
-    "limitedStock": "[AR: Limited Stock]",
-    "wishlistItemImageUploadThisYearButton": "[AR: This Year]",
-    "wishlistItemUrlOptional": "[AR: Product URL is optional]",
-    "itemUrlPlaceholder": "[AR: Enter product URL (optional)]",
-    "wishlistItemImageUploadCancelButton": "[AR: Cancel]",
-    "wishlistItemImageUploadNextButton": "[AR: Next]",
-    "wishlistItemImageUploadClearButton": "[AR: Clear]",
-    "wishlistItemImageUploadSomeButton": "[AR: Some]",
-    "itemStatus": "[AR: Item Status]",
-    "wishlistItemCategoryRequired": "[AR: Category is required]",
-    "wishlistItemImageUploadFinishButton": "[AR: Finish]",
-    "wishlistUpdatedSuccessfully": "[AR: Wishlist updated successfully]",
-    "wishlistItemImageUploadLessButton": "[AR: Less]",
-    "wishlistItemImageUploadTomorrowButton": "[AR: Tomorrow]",
-    "wishlistItemImageUploadMoreButton": "[AR: More]",
-    "wishlistItemImageUploadSearchButton": "[AR: Search]",
-    "wishlistItemImageUploadRetry": "[AR: Retry upload]",
-    "itemDetails": "[AR: Item Details]",
-    "wishlistPrivacyChanged": "[AR: Wishlist privacy changed]",
-    "wishlistItemImageUploadPermissionError": "[AR: Permission denied for image upload]",
-    "addItemToWishlist": "[AR: Add Item to Wishlist]",
-    "itemAddedSuccessfully": "[AR: Item added successfully]",
-    "unreserveItem": "[AR: Unreserve Item]",
-    "itemImageUrl": "[AR: Item Image URL]",
-    "wishlistItemImageUploadAllButton": "[AR: All]",
-    "wishlistItemImageUploadComplete": "[AR: Upload complete]",
-    "wishlistItemPriceInvalid": "[AR: Price must be a valid number]",
-    "wishlistSharedSuccessfully": "[AR: Wishlist shared successfully]",
-    "itemNotes": "[AR: Item Notes]",
-    "wishlistItemImageUploadNextMonthButton": "[AR: Next Month]",
-    "wishlistItemImageProcessing": "[AR: Processing image...]",
-    "wishlistItemImageUploadChooseButton": "[AR: Choose]",
-    "itemReservedBy": "[AR: Reserved by {name}]",
-    "wishlistItemImageUploadYesterdayButton": "[AR: Yesterday]",
-    "wishlistItemImageUploadPastButton": "[AR: Past]",
-    "itemUpdatedSuccessfully": "[AR: Item updated successfully]",
-    "wishlistDeletedSuccessfully": "[AR: Wishlist deleted successfully]",
-    "wishlistItemImageUploadBackButton": "[AR: Back]",
-    "wishlistPrivacyRequired": "[AR: Privacy setting is required]",
-    "wishlistItemNameRequired": "[AR: Item name is required]",
-    "itemImage": "[AR: Item Image]",
-    "wishlistItemImageUploadFailed": "[AR: Image upload failed]",
-    "wishlistItemImageUploadSelectButton": "[AR: Select]",
-    "wishlistItemImageUploadError": "[AR: Upload error: {error}]",
-    "confirmReserveItem": "[AR: Confirm Reserve Item]",
-    "wishlistItemImageUploadCloseButton": "[AR: Close]",
-    "wishlistItemImageSuccess": "[AR: Image uploaded successfully]",
-    "wishlistItemImageCompressing": "[AR: Compressing image...]",
-    "unreserveItemMessage": "[AR: Are you sure you want to unreserve this item?]",
-    "wishlistItemImageUploadFilterButton": "[AR: Filter]",
-    "itemUnreservedSuccessfully": "[AR: Item unreserved successfully]",
-    "wishlistLinkCopied": "[AR: Wishlist link copied to clipboard]",
-    "itemPriority": "[AR: Item Priority]",
-    "itemUrl": "[AR: Item URL]",
-    "wishlistItemImageUploadConfirmButton": "[AR: Confirm]",
-    "wishlistItemPriorityRequired": "[AR: Priority is required]",
-    "wishlistSettingsSaved": "[AR: Wishlist settings saved]",
-    "wishlistItemImageUploadNoneButton": "[AR: None]",
+    "wishlistItemImageUploadUnknownError": "حصلت مشكلة في رفع الصورة… جرّب تاني",
+    "itemImageUrlPlaceholder": "اكتب لينك الصورة (اختياري)",
+    "itemDescription": "وصف الهدية",
+    "wishlistItemImageUploadNextWeekButton": "الأسبوع الجاي",
+    "wishlistItemImageUploadTodayButton": "النهارده",
+    "confirmUnreserveItem": "تأكيد فك الحجز",
+    "wishlistItemImageUploadNetworkError": "فيه مشكلة في النت أثناء رفع الصورة",
+    "itemPrice": "سعر الهدية",
+    "wishlistItemImageUploadThisMonthButton": "الشهر ده",
+    "wishlistItemImageUploadManyButton": "كتير",
+    "outOfStock": "مش متوفر",
+    "wishlistItemImageUploadRetryMessage": "اتأكد من النت وجرب تاني",
+    "wishlistItemImageInvalid": "لينك الصورة لازم يبقى صحيح",
+    "wishlistItemImageUpload": "ارفع صورة للهدية",
+    "reserveItemMessage": "متأكد إنك عايز تحجز الهدية دي؟",
+    "wishlistItemImageUploadProgress": "رفع الصورة: {progress}%",
+    "wishlistItemImageRemove": "امسح صورة الهدية",
+    "wishlistSettingsError": "حصلت مشكلة وإحنا بنحفظ الإعدادات",
+    "reserveItem": "احجز الهدية",
+    "itemCategory": "فئة الهدية",
+    "wishlistItemImageUploadRetryButton": "جرّب تاني",
+    "itemDeletedSuccessfully": "اتمسحت الهدية",
+    "wishlistItemImageUploadOkButton": "تمام",
+    "wishlistItemImageUploadUpcomingButton": "اللي جاي",
+    "wishlistItemUrlInvalid": "لينك المنتج لازم يبقى صحيح",
+    "wishlistNameRequired": "اكتب اسم الأمنيات",
+    "available": "متاح",
+    "wishlistItemImageUploadDeleteButton": "حذف",
+    "editWishlistItem": "عدّل الهدية",
+    "itemTitle": "اسم الهدية",
+    "deleteWishlistItem": "امسح الهدية",
+    "wishlistItemImageUploadResetButton": "إعادة ضبط",
+    "limitedStock": "كمية محدودة",
+    "wishlistItemImageUploadThisYearButton": "السنة دي",
+    "wishlistItemUrlOptional": "لينك المنتج اختياري",
+    "itemUrlPlaceholder": "اكتب لينك المنتج (اختياري)",
+    "wishlistItemImageUploadCancelButton": "إلغاء",
+    "wishlistItemImageUploadNextButton": "التالي",
+    "wishlistItemImageUploadClearButton": "مسح",
+    "wishlistItemImageUploadSomeButton": "شوية",
+    "itemStatus": "حالة الهدية",
+    "wishlistItemCategoryRequired": "اختار فئة",
+    "wishlistItemImageUploadFinishButton": "تم",
+    "wishlistUpdatedSuccessfully": "تمام! الأمنيات اتعدلت",
+    "wishlistItemImageUploadLessButton": "أقل",
+    "wishlistItemImageUploadTomorrowButton": "بُكره",
+    "wishlistItemImageUploadMoreButton": "أكتر",
+    "wishlistItemImageUploadSearchButton": "بحث",
+    "wishlistItemImageUploadRetry": "جرّب الرفع تاني",
+    "itemDetails": "تفاصيل الهدية",
+    "wishlistPrivacyChanged": "الخصوصية اتغيرت",
+    "wishlistItemImageUploadPermissionError": "مش عندنا إذن نوصل للصور",
+    "addItemToWishlist": "ضيف هدية للأمنيات",
+    "itemAddedSuccessfully": "تمام! ضفنا الهدية",
+    "unreserveItem": "فك الحجز",
+    "itemImageUrl": "لينك صورة الهدية",
+    "wishlistItemImageUploadAllButton": "الكل",
+    "wishlistItemImageUploadComplete": "رفع الصورة خلص",
+    "wishlistItemPriceInvalid": "السعر لازم يبقى رقم",
+    "wishlistSharedSuccessfully": "اتعملت مشاركة",
+    "itemNotes": "ملاحظات",
+    "wishlistItemImageUploadNextMonthButton": "الشهر الجاي",
+    "wishlistItemImageProcessing": "بنجهّز الصورة...",
+    "wishlistItemImageUploadChooseButton": "اختار",
+    "itemReservedBy": "محجوز لـ {name}",
+    "wishlistItemImageUploadYesterdayButton": "امبارح",
+    "wishlistItemImageUploadPastButton": "اللي فات",
+    "itemUpdatedSuccessfully": "تمام! الهدية اتعدلت",
+    "wishlistDeletedSuccessfully": "الأمنيات اتحذفت",
+    "wishlistItemImageUploadBackButton": "رجوع",
+    "wishlistPrivacyRequired": "اختار الخصوصية",
+    "wishlistItemNameRequired": "اكتب اسم الهدية",
+    "itemImage": "صورة الهدية",
+    "wishlistItemImageUploadFailed": "رفع الصورة ماكملش",
+    "wishlistItemImageUploadSelectButton": "اختيار",
+    "wishlistItemImageUploadError": "حصلت مشكلة في الرفع: {error}",
+    "confirmReserveItem": "تأكيد الحجز",
+    "wishlistItemImageUploadCloseButton": "إغلاق",
+    "wishlistItemImageSuccess": "الصورة اترفعت",
+    "wishlistItemImageCompressing": "بنقلّص حجم الصورة...",
+    "unreserveItemMessage": "متأكد إنك عايز تفك الحجز؟",
+    "wishlistItemImageUploadFilterButton": "فلتر",
+    "itemUnreservedSuccessfully": "تمام! فكّينا الحجز",
+    "wishlistLinkCopied": "لينك الأمنيات اتنسخ",
+    "itemPriority": "أولوية الهدية",
+    "itemUrl": "لينك الهدية",
+    "wishlistItemImageUploadConfirmButton": "تأكيد",
+    "wishlistItemPriorityRequired": "اختار أولوية",
+    "wishlistSettingsSaved": "تمام! الإعدادات اتحفظت",
+    "wishlistItemImageUploadNoneButton": "ولا حاجة",
     "wishlistDescriptionOptional": "الوصف اختياري",
-    "wishlistItemImageUploadRecentButton": "[AR: Recent]",
-    "wishlistItemImageUploadThisWeekButton": "[AR: This Week]",
-    "unavailable": "[AR: Unavailable]",
-    "itemReservedOn": "[AR: Reserved on {date}]",
-    "wishlistItemImageUploadSaveButton": "[AR: Save]",
-    "itemReserved": "[AR: Item Reserved]",
-    "wishlistItemImageUploadEditButton": "[AR: Edit]",
-    "wishlistItemImageUploading": "[AR: Uploading image...]",
-    "wishlistItemImageUploadOldButton": "[AR: Old]",
-    "wishlistItemImageUploadSortButton": "[AR: Sort]",
-    "wishlistVisibilityChanged": "[AR: Wishlist visibility changed]",
-    "wishlistItemImageUploadCancel": "[AR: Cancel upload]",
-    "itemReservedSuccessfully": "[AR: Item reserved successfully]",
-    "wishlistItemImageUploadBrowseButton": "[AR: Browse]",
-    "wishlistItemImageUploadRefreshButton": "[AR: Refresh]",
-    "wishlistItemImageUploadStorageError": "[AR: Storage error during upload]",
-    "wishlistItemImageUploadNewButton": "[AR: New]",
-    "wishlistItemNotesOptional": "[AR: Notes are optional]",
-    "wishlistItemImageError": "[AR: Error uploading image]",
-    "wishlistItemImageUploadFewButton": "[AR: Few]",
-    "wishlistItemImageUploadCancelled": "[AR: Image upload cancelled]",
-    "wishlistItemImageUploadSkipButton": "[AR: Skip]",
-    "wishlistItemImageUploadNextYearButton": "[AR: Next Year]",
-    "wishlistItemImageOptional": "[AR: Image is optional]",
-    "wishlistItemImageUploadServerError": "[AR: Server error during upload]",
-    "wishlistItemImageUploadContinueButton": "[AR: Continue]"
+    "wishlistItemImageUploadRecentButton": "الأحدث",
+    "wishlistItemImageUploadThisWeekButton": "الأسبوع ده",
+    "unavailable": "مش متاح",
+    "itemReservedOn": "اتحجز يوم {date}",
+    "wishlistItemImageUploadSaveButton": "حفظ",
+    "itemReserved": "الهدية اتحجزت",
+    "wishlistItemImageUploadEditButton": "تعديل",
+    "wishlistItemImageUploading": "بنرفع الصورة...",
+    "wishlistItemImageUploadOldButton": "الأقدم",
+    "wishlistItemImageUploadSortButton": "ترتيب",
+    "wishlistVisibilityChanged": "إعدادات الظهور اتغيرت",
+    "wishlistItemImageUploadCancel": "إلغاء الرفع",
+    "itemReservedSuccessfully": "تمام! الهدية اتحجزت 🎁",
+    "wishlistItemImageUploadBrowseButton": "تصفح",
+    "wishlistItemImageUploadRefreshButton": "تحديث",
+    "wishlistItemImageUploadStorageError": "فيه مشكلة في التخزين أثناء الرفع",
+    "wishlistItemImageUploadNewButton": "الجديد",
+    "wishlistItemNotesOptional": "الملاحظات اختيارية",
+    "wishlistItemImageError": "حصلت مشكلة في رفع الصورة",
+    "wishlistItemImageUploadFewButton": "قليل",
+    "wishlistItemImageUploadCancelled": "اتلغى رفع الصورة",
+    "wishlistItemImageUploadSkipButton": "تخطي",
+    "wishlistItemImageUploadNextYearButton": "السنة الجاية",
+    "wishlistItemImageOptional": "الصورة اختيارية",
+    "wishlistItemImageUploadServerError": "فيه مشكلة في السيرفر أثناء الرفع",
+    "wishlistItemImageUploadContinueButton": "كمّل"
   },
   "events": {
     "nocreatewishlist": "لا يوجد إنشاء قائمة أمنيات",
-    "createWishlist": "إنشاء قائمة أمنيات",
+    "createWishlist": "اعمل أمنيات",
     "createWishlistDescription": "أنشئ قائمة أمنيات لهذه الفعالية",
     "createWishlistButton": "إنشاء قائمة أمنيات",
     "title": "الفعاليات",
@@ -441,6 +459,7 @@
     "wedding": "زفاف",
     "anniversary": "ذكرى سنوية",
     "graduation": "تخرج",
+    "meeting": "اجتماع",
     "babyShower": "حفل المولود",
     "housewarming": "حفل تدشين المنزل",
     "other": "أخرى",
@@ -565,10 +584,10 @@
     "hybrid": "مختلطة",
     "hybridDescription": "حضورياً وأونلاين معاً",
     "eventWishlist": "قائمة أمنيات الفعالية",
-    "doYouWantWishlist": "هل تريد قائمة أمنيات لهذه الفعالية؟",
+    "doYouWantWishlist": "عايز تربط أمنيات بالفعالية؟",
     "wishlistQuestion": "هل تريد إنشاء أو ربط قائمة أمنيات لهذه الفعالية؟",
     "yesCreateWishlist": "نعم، أنشئ قائمة أمنيات جديدة",
-    "yesCreateWishlistDescription": "أنشئ قائمة أمنيات فارغة مربوطة بهذه الفعالية. يمكنك إضافة العناصر لاحقاً.",
+    "yesCreateWishlistDescription": "اعمل أمنيات فاضية مربوطة بالفعالية… وتقدر تضيف هدايا بعدين.",
     "linkExistingWishlist": "ربط بقائمة أمنيات موجودة",
     "linkExistingWishlistDescription": "ربط هذه الفعالية بإحدى قوائم أمنياتك الموجودة",
     "noCreateWishlist": "لا قائمة أمنيات في الوقت الحالي",
@@ -585,11 +604,11 @@
     "eventSavedAsDraft": "تم حفظ الفعالية كمسودة",
     "eventCreatedMessage": "تم إنشاء فعاليتك \"{eventName}\" بنجاح.",
     "viewEvent": "عرض الفعالية",
-    "addWishlistItems": "إضافة عناصر قائمة الأمنيات",
+    "addWishlistItems": "ضيف هدايا للأمنيات",
     "manageEvent": "إدارة الفعالية",
     "eventWishlistCreated": "تم إنشاء قائمة أمنيات الفعالية",
     "wishlistCreatedMessage": "تم إنشاء قائمة أمنيات مخصصة لهذه الفعالية. يمكن للضيوف إضافة وحجز الهدايا.",
-    "noWishlistMessage": "ستستخدم هذه الفعالية قائمة أمنياتك العامة. يمكن للضيوف الاختيار من عناصر قائمة أمنياتك العامة.",
+    "noWishlistMessage": "الفعالية دي هتستخدم أمنياتك العامة… والضيوف يختاروا منها الهدايا.",
     "nextSteps": "الخطوات التالية",
     "whatWouldYouLikeToDo": "ماذا تريد أن تفعل بعد ذلك؟",
     "eventDetails": "تفاصيل الفعالية",
@@ -599,16 +618,12 @@
     "manageEventSettings": "إدارة إعدادات الفعالية",
     "cancelEvent": "إلغاء الفعالية",
     "guestManagement": "إدارة الضيوف",
-    "inviteMoreFriends": "دعوة المزيد من الأصدقاء",
     "invitedYou": "دعاك",
-    "youAreGoing": "أنت ذاهب!",
-    "youDeclined": "لقد رفضت هذه الدعوة",
     "youMarkedMaybe": "لقد وضعت 'ربما'",
     "pendingResponse": "استجابة معلقة",
     "editResponse": "تعديل الاستجابة",
     "alreadyResponded": "تم الرد بالفعل",
     "accept": "قبول",
-    "maybe": "ربما",
     "reject": "رفض",
     "viewGuestList": "عرض قائمة الضيوف",
     "rsvpActions": "إجراءات رد الدعوة",
@@ -618,42 +633,37 @@
     "changeResponse": "تغيير الرد",
     "wishlistActions": "إجراءات قائمة الأمنيات",
     "viewEventWishlist": "عرض قائمة أمنيات الفعالية",
-    "editWishlistItems": "تعديل عناصر قائمة الأمنيات",
-    "reserveItem": "حجز العنصر",
-    "unreserveItem": "إلغاء حجز العنصر",
-    "itemReserved": "تم حجز العنصر",
-    "itemUnreserved": "تم إلغاء حجز العنصر",
-    "reservationConfirmed": "تم تأكيد الحجز",
-    "reservationCancelled": "تم إلغاء الحجز",
-    "wishlistItemDetails": "تفاصيل عنصر قائمة الأمنيات",
-    "itemName": "اسم العنصر",
-    "itemDescription": "وصف العنصر",
-    "itemPrice": "سعر العنصر",
-    "itemPriority": "أولوية العنصر",
-    "itemStatus": "حالة العنصر",
+    "editWishlistItems": "عدّل هدايا الأمنيات",
+    "reserveItem": "احجز الهدية",
+    "unreserveItem": "فك الحجز",
+    "itemReserved": "اتحجزت",
+    "itemUnreserved": "اتلغى الحجز",
+    "reservationConfirmed": "تمام! الحجز اتأكد",
+    "reservationCancelled": "تمام! الحجز اتلغى",
+    "wishlistItemDetails": "تفاصيل الهدية",
+    "itemName": "اسم الهدية",
+    "itemDescription": "وصف الهدية",
+    "itemPrice": "سعر الهدية",
+    "itemPriority": "أولوية الهدية",
+    "itemStatus": "حالة الهدية",
     "available": "متاح",
     "reserved": "محجوز",
     "purchased": "تم شراؤه",
-    "reservedBy": "محجوز بواسطة",
-    "reservedOn": "تم الحجز في",
-    "purchasedBy": "تم الشراء بواسطة",
-    "purchasedOn": "تم الشراء في",
+    "reservedBy": "محجوز لـ",
+    "reservedOn": "اتحجز يوم",
+    "purchasedBy": "اتشرت بواسطة",
+    "purchasedOn": "اتشرت يوم",
     "noOneInvitedYet": "لم يتم دعوة أحد بعد",
-    "noWishlistYet": "لا توجد قائمة أمنيات بعد",
-    "createEventWishlist": "إنشاء قائمة أمنيات للفعالية",
-    "linkWishlistDescription": "اربط قائمة أمنيات بهذه الفعالية حتى يتمكن الضيوف من رؤية ما يجب تقديمه كهدية",
-    "createWishlist": "إنشاء قائمة أمنيات",
+    "noWishlistYet": "مفيش أمنيات لسه",
+    "createEventWishlist": "اعمل أمنيات للفعالية",
+    "linkWishlistDescription": "اربط أمنيات بالفعالية عشان الضيوف يعرفوا يجيبوا إيه",
     "seeAll": "عرض الكل",
     "maybe": "ربما",
-    "inviteFriends": "دعوة الأصدقاء",
     "inviteMoreFriends": "دعوة المزيد من الأصدقاء",
     "unlinkWishlist": "إلغاء ربط قائمة الأمنيات",
-    "unlinkWishlistMessage": "هل أنت متأكد من إلغاء ربط قائمة الأمنيات من الفعالية؟ لن يتم حذف قائمة الأمنيات، لكنها لن تكون مرتبطة بهذه الفعالية بعد الآن.",
+    "unlinkWishlistMessage": "متأكد إنك عايز تفك ربط الأمنيات بالفعالية؟ (الأمنيات مش هتتحذف)",
     "unlink": "إلغاء الربط",
     "giftRegistry": "🎁 سجل الهدايا",
-    "public": "عامة",
-    "private": "خاصة",
-    "friendsOnly": "للأصدقاء فقط",
     "upcoming": "قادمة",
     "ongoing": "جارية",
     "completed": "مكتملة",
@@ -714,7 +724,6 @@
     "enterFriendEmailDescription": "أدخل عنوان البريد الإلكتروني لصديقك لإرسال طلب صداقة له.",
     "emailAddress": "عنوان البريد الإلكتروني",
     "emailAddressPlaceholder": "صديق@مثال.com",
-    "sendRequest": "إرسال طلب",
     "failedToLoadFriends": "فشل تحميل الأصدقاء. يرجى المحاولة مرة أخرى.",
     "failedToLoadFriendRequests": "فشل تحميل طلبات الصداقة. يرجى المحاولة مرة أخرى.",
     "requestIdNotFound": "تعذر معالجة طلب الصداقة. لم يتم العثور على معرف الطلب.",
@@ -737,44 +746,53 @@
     "requestPending": "طلب قيد الانتظار",
     "alreadyFriends": "أصدقاء بالفعل",
     "requestAlreadySent": "تم إرسال الطلب بالفعل",
-    "spam": "[AR: Spam]",
-    "reportSubmitted": "[AR: Report submitted successfully]",
-    "submitReport": "[AR: Submit Report]",
-    "friendRequestDeclined": "[AR: Friend request declined]",
-    "reportUser": "[AR: Report User]",
-    "friendRequestAccepted": "[AR: Friend request accepted]",
-    "pendingRequestsCount": "[AR: {count} pending requests]",
-    "friendRequestSent": "[AR: Friend request sent]",
-    "userUnblocked": "[AR: User unblocked]",
-    "reportDescriptionPlaceholder": "[AR: Describe what happened...]",
-    "basedOnLocation": "[AR: Based on location]",
-    "friendRemoved": "[AR: Friend removed]",
-    "friendRequestPending": "[AR: Friend Request Pending]",
-    "cancelReport": "[AR: Cancel Report]",
-    "searchForFriends": "[AR: Search for friends]",
-    "userBlocked": "[AR: User blocked]",
-    "searchPlaceholder": "[AR: Enter name, username, or email]",
-    "friendSuggestions": "[AR: Friend Suggestions]",
-    "inappropriateContent": "[AR: Inappropriate Content]",
-    "peopleYouMayKnow": "[AR: People you may know]",
-    "harassment": "[AR: Harassment]",
-    "basedOnInterests": "[AR: Based on interests]",
-    "reportReason": "[AR: Report Reason]",
-    "sendFriendRequest": "[AR: Send Friend Request]",
-    "online": "[AR: Online]",
-    "cancelFriendRequest": "[AR: Cancel Friend Request]",
-    "recentlyActive": "[AR: Recently active]",
-    "fakeProfile": "[AR: Fake Profile]",
-    "reportDescription": "[AR: Please describe the issue]",
-    "offline": "[AR: Offline]",
-    "friendRequestRejected": "[AR: Friend request rejected]",
-    "other": "[AR: Other]",
-    "mutualFriendsCount": "[AR: {count} mutual friends]",
-    "blockedUser": "[AR: Blocked User]",
-    "friendsCount": "[AR: {count} friends]",
-    "lastSeen": "[AR: Last seen {time}]",
-    "friendSince": "[AR: Friends since {date}]",
-    "basedOnMutualFriends": "[AR: Based on mutual friends]"
+    "spam": "سبام",
+    "reportSubmitted": "تمام! البلاغ اتبعت",
+    "submitReport": "ابعت البلاغ",
+    "friendRequestDeclined": "طلب الصداقة اترفض",
+    "reportUser": "بلّغ عن المستخدم",
+    "friendRequestAccepted": "طلب الصداقة اتقبل",
+    "pendingRequestsCount": "{count} طلب لسه",
+    "friendRequestSent": "اتبعِت طلب الصداقة",
+    "userUnblocked": "اتشال الحظر",
+    "reportDescriptionPlaceholder": "احكيلنا حصل إيه…",
+    "basedOnLocation": "حسب المكان",
+    "friendRemoved": "اتشال من الأصدقاء",
+    "friendRequestPending": "طلب الصداقة لسه مستني",
+    "cancelReport": "إلغاء",
+    "searchForFriends": "دَوّر على أصحابك",
+    "upcomingEvents": "الفعاليات القادمة",
+    "noUpcomingEvents": "لا توجد فعاليات قادمة",
+    "nothingScheduled": "لا شيء مجدول في الوقت الحالي.",
+    "wish": "أمنية",
+    "wishes": "أمنيات",
+    "noWishesYet": "لا توجد أمنيات بعد",
+    "invitedGuests": "الضيوف المدعوون",
+    "tapToViewWishes": "اضغط لعرض الأمنيات",
+    "upcoming": "قادم",
+    "userBlocked": "اتحظر",
+    "searchPlaceholder": "اكتب الاسم/اليوزر/الإيميل",
+    "friendSuggestions": "اقتراحات أصحاب",
+    "inappropriateContent": "محتوى غير لائق",
+    "peopleYouMayKnow": "أشخاص ممكن تعرفهم",
+    "harassment": "مضايقة",
+    "basedOnInterests": "حسب اهتماماتك",
+    "reportReason": "سبب البلاغ",
+    "sendFriendRequest": "ابعت طلب صداقة",
+    "online": "أونلاين",
+    "cancelFriendRequest": "إلغاء طلب الصداقة",
+    "recentlyActive": "كان نشط قريبًا",
+    "fakeProfile": "حساب وهمي",
+    "reportDescription": "قولنا المشكلة باختصار",
+    "offline": "أوفلاين",
+    "friendRequestRejected": "طلب الصداقة اترفض",
+    "other": "سبب تاني",
+    "mutualFriendsCount": "{count} صاحب مشترك",
+    "blockedUser": "مستخدم محظور",
+    "friendsCount": "{count} صاحب",
+    "lastSeen": "آخر ظهور {time}",
+    "friendSince": "أصحاب من {date}",
+    "basedOnMutualFriends": "حسب الأصحاب المشتركين"
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -782,7 +800,7 @@
     "personalInfo": "المعلومات الشخصية",
     "accountSettings": "إعدادات الحساب",
     "privacySettings": "إعدادات الخصوصية",
-    "notificationSettings": "إعدادات الإشعارات",
+    "notificationSettings": "الإشعارات",
     "languageSettings": "إعدادات اللغة",
     "themeSettings": "إعدادات المظهر",
     "helpSupport": "المساعدة والدعم",
@@ -803,122 +821,116 @@
     "profileUpdated": "تم تحديث الملف الشخصي",
     "settingsSaved": "تم حفظ الإعدادات",
     "settings": "الإعدادات",
-    "privacyLevel": "[AR: Privacy Level]",
-    "aboutWishlisty": "[AR: About Wishlisty]",
-    "darkTheme": "[AR: Dark Theme]",
-    "showOnlineStatus": "[AR: Show online status]",
-    "errorSavingChanges": "[AR: Error saving changes]",
-    "feedbackSubmitted": "[AR: Feedback submitted successfully]",
-    "public": "[AR: Public]",
-    "autoTheme": "[AR: Auto Theme]",
-    "changeProfilePicture": "[AR: Change Profile Picture]",
-    "showEmail": "[AR: Show email address]",
-    "male": "[AR: Male]",
-    "eventInvitations": "[AR: Event Invitations]",
-    "profileVisibility": "[AR: Profile Visibility]",
-    "lightTheme": "[AR: Light Theme]",
-    "friendsOnly": "[AR: Friends Only]",
-    "showPhone": "[AR: Show phone number]",
-    "showBirthDate": "[AR: Show birth date]",
-    "private": "[AR: Private]",
-    "removeProfilePicture": "[AR: Remove Profile Picture]",
-    "websitePlaceholder": "[AR: Enter your website URL]",
-    "chooseFromGallery": "[AR: Choose from Gallery]",
-    "emailNotifications": "[AR: Email Notifications]",
-    "marketingEmails": "[AR: Marketing Emails]",
-    "locationPlaceholder": "[AR: Enter your location]",
-    "bio": "[AR: Bio]",
-    "phoneNumber": "[AR: Phone Number]",
-    "copyright": "[AR: © 2024 Wishlisty. All rights reserved.]",
-    "cameraPermissionMessage": "[AR: This app needs camera access to take profile photos]",
-    "licenses": "[AR: Open Source Licenses]",
-    "troubleshooting": "[AR: Troubleshooting]",
-    "cameraPermission": "[AR: Camera Permission]",
-    "galleryPermissionMessage": "[AR: This app needs gallery access to select profile photos]",
-    "systemUpdates": "[AR: System Updates]",
-    "themePreference": "[AR: Theme Preference]",
-    "pushNotifications": "[AR: Push Notifications]",
-    "friendRequests": "[AR: Friend Requests]",
-    "wishlistUpdates": "[AR: Wishlist Updates]",
-    "whoCanSeeEvents": "[AR: Who can see your events?]",
-    "other": "[AR: Other]",
-    "arabic": "[AR: Arabic]",
-    "selectLanguage": "[AR: Select Language]",
-    "discardChanges": "[AR: Discard Changes]",
-    "feedback": "[AR: Feedback]",
-    "saveChanges": "[AR: Save Changes]",
-    "submitFeedback": "[AR: Submit Feedback]",
-    "birthdayReminders": "[AR: Birthday Reminders]",
-    "preferNotToSay": "[AR: Prefer not to say]",
-    "english": "[AR: English]",
-    "whoCanSendRequests": "[AR: Who can send you friend requests?]",
-    "showLocation": "[AR: Show location]",
-    "birthDate": "[AR: Birth Date]",
-    "notificationPreferences": "[AR: Notification Preferences]",
-    "whoCanSeeProfile": "[AR: Who can see your profile?]",
-    "fullName": "[AR: Full Name]",
-    "helpTopics": "[AR: Help Topics]",
-    "firstName": "[AR: First Name]",
-    "systemTheme": "[AR: System Theme]",
-    "website": "[AR: Website]",
-    "supportEmail": "[AR: support@wishlisty.com]",
-    "contactSupport": "[AR: Contact Support]",
-    "languagePreference": "[AR: Language Preference]",
-    "takePhoto": "[AR: Take Photo]",
-    "lastName": "[AR: Last Name]",
-    "appDescription": "[AR: Connect through thoughtful gifting]",
-    "giftReservations": "[AR: Gift Reservations]",
-    "frequentlyAskedQuestions": "[AR: Frequently Asked Questions]",
-    "showLastSeen": "[AR: Show last seen]",
-    "supportHours": "[AR: 24/7 Support Available]",
-    "whoCanSeeWishlists": "[AR: Who can see your wishlists?]",
-    "twitter": "[AR: Twitter]",
-    "galleryPermission": "[AR: Gallery Permission]",
-    "custom": "[AR: Custom]",
-    "userGuide": "[AR: User Guide]",
-    "instagram": "[AR: Instagram]",
-    "location": "[AR: Location]",
-    "thirdPartyLibraries": "[AR: Third Party Libraries]",
-    "profilePicture": "[AR: Profile Picture]",
-    "supportPhone": "[AR: +1 (555) 123-4567]",
-    "gender": "[AR: Gender]",
-    "linkedin": "[AR: LinkedIn]",
-    "smsNotifications": "[AR: SMS Notifications]",
-    "feedbackPlaceholder": "[AR: Tell us what you think...]",
-    "developedBy": "[AR: Developed by]",
-    "socialMedia": "[AR: Social Media]",
-    "changesSaved": "تم حفظ التعديلات بنجاح",
+    "privacyLevel": "مستوى الخصوصية",
+    "aboutWishlisty": "عن WishListy",
+    "darkTheme": "دارك",
+    "showOnlineStatus": "إظهار حالة الأونلاين",
+    "errorSavingChanges": "ماعرفناش نحفظ التغييرات… جرّب تاني",
+    "feedbackSubmitted": "تمام! رأيك وصلنا",
+    "public": "عام",
+    "autoTheme": "حسب الجهاز",
+    "changeProfilePicture": "غيّر الصورة",
+    "showEmail": "إظهار الإيميل",
+    "male": "ذكر",
+    "eventInvitations": "دعوات الفعاليات",
+    "profileVisibility": "رؤية الملف الشخصي",
+    "lightTheme": "فاتح",
+    "friendsOnly": "للأصحاب بس",
+    "showPhone": "إظهار رقم الموبايل",
+    "showBirthDate": "إظهار تاريخ الميلاد",
+    "private": "خاص",
+    "removeProfilePicture": "امسح الصورة",
+    "websitePlaceholder": "اكتب لينك موقعك",
+    "chooseFromGallery": "اختار من الصور",
+    "emailNotifications": "إشعارات الإيميل",
+    "marketingEmails": "رسائل عروض",
+    "locationPlaceholder": "اكتب مكانك",
+    "bio": "نبذة",
+    "phoneNumber": "رقم الموبايل",
+    "copyright": "© 2024 WishListy. كل الحقوق محفوظة.",
+    "cameraPermissionMessage": "التطبيق محتاج إذن الكاميرا عشان تقدر تاخد صور",
+    "licenses": "تراخيص المصادر المفتوحة",
+    "troubleshooting": "حلّ المشاكل",
+    "cameraPermission": "إذن الكاميرا",
+    "galleryPermissionMessage": "التطبيق محتاج إذن الصور عشان تختار صورة",
+    "systemUpdates": "تحديثات النظام",
+    "themePreference": "تفضيل الشكل",
+    "pushNotifications": "إشعارات الموبايل",
+    "friendRequests": "طلبات الصداقة",
+    "wishlistUpdates": "تحديثات الأمنيات",
+    "whoCanSeeEvents": "مين يقدر يشوف فعالياتك؟",
+    "other": "تاني",
+    "arabic": "العربية",
+    "selectLanguage": "اختار اللغة",
+    "discardChanges": "تجاهل التغييرات",
+    "feedback": "رأيك",
+    "saveChanges": "احفظ التغييرات",
+    "submitFeedback": "ابعت",
+    "birthdayReminders": "تذكير أعياد الميلاد",
+    "preferNotToSay": "مش حابب أقول",
+    "english": "الإنجليزية",
+    "whoCanSendRequests": "مين يقدر يبعتلك طلب صداقة؟",
+    "showLocation": "إظهار المكان",
+    "birthDate": "تاريخ الميلاد",
+    "notificationPreferences": "إعدادات الإشعارات",
+    "whoCanSeeProfile": "مين يقدر يشوف حسابك؟",
     "fullName": "الاسم الكامل",
+    "helpTopics": "مواضيع المساعدة",
+    "firstName": "الاسم الأول",
+    "systemTheme": "شكل الجهاز",
+    "website": "الموقع",
+    "supportEmail": "support@wishlisty.com",
+    "contactSupport": "تواصل مع الدعم",
+    "languagePreference": "اللغة",
+    "takePhoto": "صوّر",
+    "lastName": "اسم العيلة",
+    "appDescription": "قَرّب من اللي بتحبهم بهدية على قدّ المقام",
+    "giftReservations": "حجوزات الهدايا",
+    "frequentlyAskedQuestions": "أسئلة شائعة",
+    "showLastSeen": "إظهار آخر ظهور",
+    "supportHours": "الدعم متاح 24/7",
+    "whoCanSeeWishlists": "مين يقدر يشوف أمنياتك؟",
+    "twitter": "تويتر",
+    "galleryPermission": "إذن الصور",
+    "custom": "مخصص",
+    "userGuide": "دليل الاستخدام",
+    "instagram": "إنستجرام",
+    "location": "المكان",
+    "thirdPartyLibraries": "مكتبات خارجية",
+    "profilePicture": "صورة الحساب",
+    "supportPhone": "رقم الدعم",
+    "gender": "الجنس",
+    "linkedin": "لينكدإن",
+    "smsNotifications": "رسائل SMS",
+    "feedbackPlaceholder": "قولنا رأيك…",
+    "developedBy": "اتعمل بواسطة",
+    "socialMedia": "السوشيال",
+    "changesSaved": "تم حفظ التعديلات بنجاح",
     "enterFullName": "أدخل اسمك الكامل",
     "nameRequired": "الاسم مطلوب",
     "emailAddress": "عنوان البريد الإلكتروني",
     "enterEmailAddress": "أدخل عنوان بريدك الإلكتروني",
     "emailRequired": "البريد الإلكتروني مطلوب",
-    "enterValidEmail": "يرجى إدخال بريد إلكتروني صحيح",
-    "gender": "الجنس",
-    "male": "ذكر",
+    "enterValidEmail": "اكتب إيميل صح",
     "female": "أنثى",
     "dateOfBirth": "تاريخ الميلاد",
     "selectDateOfBirth": "اختر تاريخ الميلاد",
     "country": "الدولة",
     "selectCountry": "اختر دولتك",
     "searchCountry": "بحث",
-    "bio": "نبذة",
-    "tellUsAboutYourself": "أخبرنا عن نفسك...",
-    "tapToChangeProfilePicture": "اضغط لتغيير صورة الملف الشخصي",
+    "tellUsAboutYourself": "قولنا عنك شوية...",
+    "tapToChangeProfilePicture": "اضغط عشان تغيّر الصورة",
     "camera": "الكاميرا",
     "gallery": "المعرض",
-    "profileUpdatedSuccessfully": "تم تحديث الملف الشخصي بنجاح!",
-    "failedToUpdateProfile": "فشل تحديث الملف الشخصي. يرجى المحاولة مرة أخرى.",
-    "bioPlaceholder": "أخبرنا عن نفسك...",
-    "sendFeedback": "[AR: Send Feedback]",
-    "facebook": "[AR: Facebook]",
-    "accountSettings": "إعدادات الحساب",
+    "profileUpdatedSuccessfully": "تمام! بياناتك اتحدثت",
+    "failedToUpdateProfile": "ماعرفناش نحدّث بياناتك… جرّب تاني",
+    "bioPlaceholder": "قولنا عنك شوية...",
+    "sendFeedback": "ابعتلنا رأيك",
+    "facebook": "فيسبوك",
     "personalInformation": "المعلومات الشخصية",
     "nameEmailBio": "الاسم، البريد الإلكتروني، السيرة الذاتية",
     "privacySecurity": "الخصوصية والأمان",
     "passwordPrivacySettings": "كلمة المرور، إعدادات الخصوصية",
-    "profileVisibility": "رؤية الملف الشخصي",
     "publicProfile": "ملف شخصي عام",
     "publicProfileDescription": "يمكن لأي شخص رؤية ملفك الشخصي وقوائم أمنياتك",
     "friendsOnlyProfile": "للأصدقاء فقط",
@@ -928,16 +940,13 @@
     "changePasswordDescription": "تحديث كلمة مرور حسابك",
     "savePrivacySettings": "حفظ إعدادات الخصوصية",
     "changePasswordDialogTitle": "تغيير كلمة المرور",
-    "changePasswordDialogMessage": "سيتم إرسال رابط إعادة تعيين كلمة المرور إلى عنوان بريدك الإلكتروني.",
-    "sendResetLink": "إرسال رابط إعادة التعيين",
-    "passwordResetLinkSent": "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني!",
-    "privacySettingsUpdated": "تم تحديث إعدادات الخصوصية بنجاح!",
-    "failedToUpdatePrivacySettings": "فشل تحديث إعدادات الخصوصية. يرجى المحاولة مرة أخرى.",
-    "notificationSettings": "الإشعارات",
+    "changePasswordDialogMessage": "هنبعتلك لينك تغيير الباسورد على الإيميل.",
+    "sendResetLink": "ابعت اللينك",
+    "passwordResetLinkSent": "بعتنالك لينك تغيير الباسورد على الإيميل",
+    "privacySettingsUpdated": "تمام! إعدادات الخصوصية اتحدثت",
+    "failedToUpdatePrivacySettings": "ماعرفناش نحدّث الخصوصية… جرّب تاني",
     "notificationSettingsSubtitle": "دفع، بريد إلكتروني، داخل التطبيق",
     "language": "اللغة",
-    "english": "الإنجليزية",
-    "arabic": "العربية",
     "interests": "الاهتمامات",
     "appSettings": "إعدادات التطبيق",
     "selectYourInterests": "اختر اهتماماتك",
@@ -973,38 +982,53 @@
     "available": "متاح"
   },
   "details": {
-    "noWishlistLinkedToEvent": "لا توجد قائمة أمنيات أو أمنيات مرتبطة بهذه الفعالية بعد.",
-    "deleteWish": "حذف الأمنية",
+    "noWishlistLinkedToEvent": "مفيش أمنيات مرتبطة بالفعالية دي لسه.",
+    "deleteWish": "امسح الأمنية",
     "addFirstWish": "أضف أمنيتك الأولى",
-    "emptyWishlistMessage": "قائمة الأمنيات هذه فارغة. ابدأ بإضافة الأمنيات التي تحلم بها!",
-    "noWishesYet": "لا توجد أمنيات بعد",
-    "youDontHaveWishlistYet": "ليس لديك قائمة أمنيات بعد. دعنا ننشئ أول قائمة لك! 🎁",
+    "emptyWishlistMessage": "الأمنيات دي فاضية… ابدأ ضيف هدايا بتحبها! 🎁",
+    "noWishesYet": "مفيش أمنيات لسه",
+    "youDontHaveWishlistYet": "مفيش أمنيات عندك لسه… تعالى نعمل أول واحدة! 🎁",
     "reservedByFriend": "محجوز من قبل صديق 🤫",
-    "reservedByYou": "محجوز من قبلك",
-    "giftedStatus": "🎁 تم الشراء!",
+    "reservedByYou": "محجوز ليك",
+    "giftedStatus": "🎁 اتشرت!",
     "demoWishlist": "هذه قائمة أمنيات تجريبية.",
-    "demoItem": "هذا عنصر تجريبي",
+    "demoItem": "دي هدية تجريبية",
     "totalWishes": "{total} أمنية",
-    "giftReceivedPurchased": "تم استلام/شراء هذه الهدية.",
-    "purchasedAwaitingConfirmation": "تم شراؤها من قبل صديق آخر، في انتظار تأكيدك أنك استلمتها",
-    "markReceived": "تمييز كمستلم",
+    "giftReceivedPurchased": "الهدية دي اتشرت/اتسلمت.",
+    "purchasedAwaitingConfirmation": "حد من صحابك اشتراها… أكد بس إنك استلمتها.",
+    "markReceived": "استلمتها",
     "undo": "تراجع",
     "alreadyReservedByFriend": "محجوز بالفعل من قبل صديق آخر 🔒",
     "reserveGift": "احجز الهدية 🎁",
-    "byFriend": "بواسطة {name}",
-    "bySecretFriend": "بواسطة صديق سري 🤫",
+    "byFriend": "من {name}",
+    "bySecretFriend": "من حد (سرّي) 🤫",
     "priority": "الأولوية",
     "status": "الحالة",
     "store": "المتجر",
-    "added": "تمت الإضافة",
+    "added": "اتضافت",
     "description": "الوصف",
     "markAsReceived": "تمييز كمستلم",
     "markAsNotReceived": "تمييز كغير مستلم",
-    "cannotEditDeleteReserved": "لا يمكنك تعديل أو حذف هذا العنصر لأن صديقاً قد حجزه لك بالفعل! 🎁",
-    "itemInformation": "معلومات العنصر",
+    "cannotEditDeleteReserved": "مش هتقدر تعدّل أو تمسح الهدية دي عشان حد حجزها لك 🎁",
+    "itemInformation": "تفاصيل الهدية",
     "category": "الفئة",
-    "addedOn": "تمت الإضافة في",
-    "notes": "ملاحظات"
+    "addedOn": "اتضافت يوم",
+    "notes": "ملاحظات",
+    "itemNotFound": "مش لاقيين الهدية دي",
+    "gifted": "تم الشراء",
+    "whereToBuy": "تتجاب منين؟",
+    "onlineStore": "متجر إلكتروني",
+    "tapToVisitLink": "اضغط تفتح اللينك",
+    "physicalStore": "متجر فعلي",
+    "openInMaps": "افتح على الخريطة",
+    "noSpecificStoreListed": "مفيش مكان محدد… تقدر تلاقيها في أي حتة!",
+    "markedAsGifted": "اتعلمت إنها اتشرت",
+    "visitStore": "زيارة المتجر 🌐",
+    "dateAdded": "تاريخ الإضافة",
+    "purchased": "تم الشراء",
+    "reserved": "محجوز",
+    "available": "متاح",
+    "wishlist": "الأمنيات"
   },
   "notifications": {
     "title": "الإشعارات",
@@ -1052,7 +1076,7 @@
     "success": "نجح",
     "warning": "تحذير",
     "info": "معلومات",
-    "retry": "إعادة المحاولة",
+    "retry": "جرّب تاني",
     "networkError": "خطأ في الشبكة",
     "connectionError": "خطأ في الاتصال",
     "serverError": "خطأ في الخادم",
@@ -1131,11 +1155,11 @@
     "wishlistCreated": "تم إنشاء قائمة الأمنيات بنجاح",
     "wishlistUpdated": "تم تحديث قائمة الأمنيات بنجاح",
     "wishlistDeleted": "تم حذف قائمة الأمنيات بنجاح",
-    "itemAdded": "تم إضافة العنصر بنجاح",
-    "itemUpdated": "تم تحديث العنصر بنجاح",
-    "itemDeleted": "تم حذف العنصر بنجاح",
-    "itemReserved": "تم حجز العنصر بنجاح",
-    "itemUnreserved": "تم إلغاء حجز العنصر بنجاح",
+    "itemAdded": "تمام! ضفنا الهدية",
+    "itemUpdated": "تمام! الهدية اتعدلت",
+    "itemDeleted": "اتمسحت الهدية",
+    "itemReserved": "تمام! الهدية اتحجزت",
+    "itemUnreserved": "تمام! فكّينا الحجز",
     "guestAdded": "تم إضافة الضيف بنجاح",
     "guestRemoved": "تم إزالة الضيف بنجاح",
     "reminderSent": "تم إرسال التذكير بنجاح",
@@ -1161,7 +1185,7 @@
     "change": "تغيير",
     "delete": "حذف",
     "confirm": "تأكيد",
-    "pleaseSelectEventDate": "يرجى اختيار تاريخ الفعالية",
+    "pleaseSelectEventDate": "اختار تاريخ الفعالية",
     "eventSavedAsDraft": "تم حفظ الفعالية كمسودة",
     "creatingEvents": "إنشاء الفعاليات",
     "creatingEventsDescription": "الفعاليات تساعدك في التخطيط للاحتفالات ومشاركة قوائم الأمنيات مع الأصدقاء. بمجرد إنشائها، يمكنك دعوة الأصدقاء وسيتمكنون من رؤية قائمة أمنيات فعاليتك.",
@@ -1173,13 +1197,13 @@
     "arabic": "العربية",
     "shareProfile": "مشاركة الملف الشخصي",
     "exportData": "تصدير البيانات",
-    "successfullyReserved": "تم حجز \"{itemName}\" بنجاح لفعالية {hostName}!",
-    "confirmDeleteItem": "هل أنت متأكد من حذف \"{itemName}\"؟ هذا الإجراء لا يمكن التراجع عنه.",
-    "confirmReserveItem": "هل أنت متأكد من حجز \"{itemName}\"؟ سيتم تمييزه كمحجوز لك.",
-    "reservationInfo": "• العناصر المتاحة يمكن حجزها بالنقر على \"احجز هذا العنصر\"\n",
+    "successfullyReserved": "تمام! حجزت \"{itemName}\" لفعالية {hostName} 🎁",
+    "confirmDeleteItem": "متأكد إنك عايز تمسح \"{itemName}\"؟ مش هتقدر ترجّعها.",
+    "confirmReserveItem": "متأكد إنك عايز تحجز \"{itemName}\"؟ هتتبين إنها محجوزة ليك.",
+    "reservationInfo": "• الهدايا المتاحة تقدر تحجزها من زرار \"احجز الهدية دي\"\n",
     "activityNotification": "قام شخص ما بشراء \"{itemName}\" من قائمة أمنياتك",
     "friendActivity": "أنشأ فعالية جديدة: \"{eventName}\"",
-    "itemReceived": "تم تمييز \"{itemName}\" كمستلم",
+    "itemReceived": "تمام! علّمنا إنك استلمت \"{itemName}\"",
     "confirmCancelEvent": "هل أنت متأكد من إلغاء \"{eventName}\"؟ هذا الإجراء لا يمكن التراجع عنه.",
     "friendRequestMessage": "\"{message}\"",
     "youreOnGuestList": "أنت على قائمة الضيوف! 🎟️",
@@ -1215,24 +1239,24 @@
     "makeYourWishesComeTrue": "احقق أمنياتك ✨",
     "theFunWayToOrganize": "الطريقة الممتعة لتنظيم الأحلام وتلقي الهدايا التي تحبها.",
     "logIn": "تسجيل الدخول",
-    "deleteItem": "حذف العنصر",
+    "deleteItem": "امسح الهدية",
     "areYouSureDeleteItem": "هل أنت متأكد من حذف \"{itemName}\"?",
-    "itemReservedSuccessfully": "تم حجز العنصر! 🎁",
+    "itemReservedSuccessfully": "تمام! الهدية اتحجزت 🎁",
     "reservationCancelledSuccessfully": "تم إلغاء الحجز",
-    "itemMarkedAsPurchased": "تم تمييز العنصر كمشترى! 🎁",
+    "itemMarkedAsPurchased": "تمام! اتعلمت إنها اتشرت 🎁",
     "markedAsReceived": "تم تمييزه كمستلم! ✅",
     "markedAsNotReceived": "تم تمييزه كغير مستلم",
     "areYouSureDeleteItemFull": "هل أنت متأكد من حذف \"{itemName}\"؟ هذا الإجراء لا يمكن التراجع عنه.",
-    "pleaseLoginToReserve": "يرجى تسجيل الدخول لحجز العناصر",
+    "pleaseLoginToReserve": "سجّل دخولك عشان تحجز الهدايا",
     "failedToUpdateReservation": "فشل تحديث الحجز",
     "invalidUrl": "رابط غير صحيح",
     "couldNotOpenLink": "تعذر فتح الرابط",
-    "pleaseLoginToMarkReceived": "يرجى تسجيل الدخول لتمييز العناصر كمستلمة",
+    "pleaseLoginToMarkReceived": "سجّل دخولك عشان تعلّم إنك استلمت الهدايا",
     "failedToUpdateStatus": "فشل تحديث الحالة",
     "copiedToClipboard": "تم النسخ إلى الحافظة",
-    "deletingItem": "جاري حذف العنصر...",
+    "deletingItem": "بنمسح الهدية...",
     "searchWishes": "البحث في الأمنيات...",
-    "failedToMarkAsPurchased": "فشل تمييز العنصر كمشترى",
+    "failedToMarkAsPurchased": "ماعرفناش نعلّم إنها اتشرت",
     "failedToProcessFriendRequest": "فشل معالجة طلب الصداقة. يرجى المحاولة مرة أخرى.",
     "addFriend": "إضافة صديق",
     "friendRequestSent": "تم إرسال طلب الصداقة!",
@@ -1245,9 +1269,6 @@
     "unableToProcessFriendRequest": "تعذر معالجة طلب الصداقة. لم يتم العثور على معرف الطلب.",
     "allNotificationsMarkedAsRead": "تم تحديد جميع الإشعارات كمقروءة",
     "errorLoggingOut": "خطأ في تسجيل الخروج",
-    "selectLanguage": "اختيار اللغة",
-    "english": "الإنجليزية",
-    "arabic": "العربية",
     "errorOpeningNotification": "حدث خطأ أثناء فتح الإشعار."
   },
   "features": {
@@ -1301,11 +1322,11 @@
     "noEventsOnDate": "لا توجد أحداث في هذا التاريخ",
     "purchased": "تم الشراء",
     "reserved": "محجوز",
-    "totalItems": "إجمالي العناصر",
-    "reserveThisItem": "احجز هذا العنصر",
+    "totalItems": "إجمالي الهدايا",
+    "reserveThisItem": "احجز الهدية دي",
     "alreadyReserved": "محجوز بالفعل",
-    "itemsAvailable": "العناصر المتاحة",
-    "searchWishlistItems": "البحث في عناصر قائمة الأمنيات",
+    "itemsAvailable": "الهدايا المتاحة",
+    "searchWishlistItems": "دَوّر في هدايا الأمنيات",
     "all": "الكل",
     "available": "متاح",
     "gifted": "تم الشراء",
@@ -1315,7 +1336,7 @@
     "eventSettings": "إعدادات الفعالية",
     "editEventDetails": "تعديل تفاصيل الفعالية",
     "manageInvitationsAndRsvps": "إدارة الدعوات وردود الحضور",
-    "addEditOrganizeWishlistItems": "إضافة وتعديل وتنظيم عناصر قائمة الأمنيات",
+    "addEditOrganizeWishlistItems": "ضيف وعدّل ورتّب هدايا الأمنيات",
     "privacyNotificationsPreferences": "الخصوصية والإشعارات والتفضيلات",
     "changeDateLocationDescription": "تغيير التاريخ والموقع والوصف",
     "myBirthdayParty": "حفلة عيد ميلادي",
@@ -1381,8 +1402,8 @@
         "public": "عامة",
         "viewDetails": "عرض التفاصيل"
       },
-      "selectall": "[AR: Select All]",
-      "deselectall": "[AR: Deselect All]"
+      "selectall": "اختار الكل",
+      "deselectall": "فك اختيار الكل"
     },
     "onboarding": {
       "title": "أهلاً بك في WishListy!",
