@@ -238,6 +238,62 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     }
   }
 
+  Future<void> _handleCancelRequest() async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    try {
+      await _controller.cancelFriendRequest();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(localization.translate('friends.friendRequestCancelled')),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text(e.message)),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final localization = Provider.of<LocalizationService>(context, listen: false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(localization.translate('friends.failedToCancelRequest')),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
+  }
+
   Future<void> _handleDeclineRequest() async {
     final localization = Provider.of<LocalizationService>(context, listen: false);
     final requestId = _controller.incomingRequestId.value.isNotEmpty
@@ -579,6 +635,9 @@ class _PatternedHeader extends StatelessWidget {
                           onAdd: () => (context.findAncestorStateOfType<
                                   _FriendProfileScreenState>())
                               ?._handleAddFriend(),
+                          onCancel: () => (context.findAncestorStateOfType<
+                                  _FriendProfileScreenState>())
+                              ?._handleCancelRequest(),
                         ),
                       ],
                     );
@@ -678,6 +737,7 @@ class _RelationshipQuickActions extends StatelessWidget {
   final VoidCallback? onAccept;
   final VoidCallback? onDecline;
   final VoidCallback? onAdd;
+  final VoidCallback? onCancel;
 
   const _RelationshipQuickActions({
     required this.isFriend,
@@ -688,6 +748,7 @@ class _RelationshipQuickActions extends StatelessWidget {
     required this.onAccept,
     required this.onDecline,
     required this.onAdd,
+    this.onCancel,
   });
 
   @override
@@ -754,18 +815,18 @@ class _RelationshipQuickActions extends StatelessWidget {
       );
     }
 
-    // 3) Not friend + no incoming request -> Add Friend (or Pending)
+    // 3) Not friend + no incoming request -> Cancel Request (if outgoing request sent)
     if (isRequestSent) {
       return Wrap(
         alignment: WrapAlignment.center,
         children: [
           _QuickActionButton(
-            text: localization.translate('friends.requestPending'),
-            icon: Icons.hourglass_bottom,
-            backgroundColor: AppColors.textTertiary.withOpacity(0.10),
-            foregroundColor: AppColors.textTertiary,
-            borderColor: AppColors.textTertiary.withOpacity(0.20),
-            onTap: null,
+            text: localization.translate('friends.cancelFriendRequest'),
+            icon: Icons.cancel_outlined,
+            backgroundColor: AppColors.error.withOpacity(0.08),
+            foregroundColor: AppColors.error,
+            borderColor: AppColors.error.withOpacity(0.25),
+            onTap: onCancel,
           ),
         ],
       );

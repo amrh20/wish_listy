@@ -206,6 +206,22 @@ class FriendProfileController extends GetxController {
     }
   }
 
+  /// Cancel outgoing friend request.
+  Future<void> cancelFriendRequest() async {
+    final requestId = outgoingRequestId.value.trim();
+    if (requestId.isEmpty) return;
+
+    await _friendsRepository.cancelFriendRequest(requestId: requestId);
+
+    // Update state to reflect cancellation
+    relationshipStatus.value = FriendRelationshipStatus.none;
+    hasOutgoingRequest.value = false;
+    outgoingRequestId.value = '';
+
+    // Refresh profile to get latest state
+    await fetchProfile();
+  }
+
   /// RSVP from events list when invitation is pending.
   Future<void> respondToInvitation({
     required String eventId,

@@ -8,7 +8,7 @@ import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/profile/presentation/controllers/home_controller.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/home_skeleton.dart';
-import 'package:wish_listy/features/profile/presentation/widgets/onboarding_dashboard.dart';
+import 'package:wish_listy/features/profile/presentation/widgets/empty_home_screen.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/active_dashboard.dart';
 import 'package:wish_listy/features/profile/presentation/screens/guest_home_screen.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
@@ -108,12 +108,7 @@ class HomeScreenState extends State<HomeScreen> {
             _buildDecorativeElements(),
             // Main content
             Container(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: MediaQuery.of(context).padding.top + 20,
-                bottom: 24,
-              ),
+              padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
               child: SafeArea(
                 bottom: false,
                 top: false, // Top SafeArea is handled by padding
@@ -121,68 +116,67 @@ class HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top Row: Profile Avatar + Greeting + Notification
+                    // Top Row: Avatar + Greeting Column + Notification
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Left: Profile Avatar
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundColor: Colors.white,
-                          backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
-                              ? NetworkImage(profileImageUrl)
-                              : null,
-                          child: profileImageUrl == null || profileImageUrl.isEmpty
-                              ? Text(
-                                  fullName.isNotEmpty ? fullName[0].toUpperCase() : 'U',
-                                  style: TextStyle(
+                        // Left: Profile Avatar (reduced radius, tappable)
+                        GestureDetector(
+                          onTap: () {
+                            MainNavigation.switchToTab(context, 4); // Switch to Profile tab
+                          },
+                          child: CircleAvatar(
+                            radius: 25,
+                            backgroundColor: Colors.white,
+                            backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
+                                ? NetworkImage(profileImageUrl)
+                                : null,
+                            child: profileImageUrl == null || profileImageUrl.isEmpty
+                                ? Icon(
+                                    Icons.person_rounded,
                                     color: AppColors.primary,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        const SizedBox(width: 16),
-                        // Middle: Greeting Column
-                        Expanded(
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0.0, end: 1.0),
-                            duration: const Duration(milliseconds: 400),
-                            curve: Curves.easeOut,
-                            builder: (context, value, child) {
-                              return Opacity(
-                                opacity: value,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    // Time-based greeting (smaller, dark)
-                                    Text(
-                                      _getTimeBasedGreeting(context),
-                                      style: AppStyles.bodySmall.copyWith(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    // User name (large, bold, dark)
-                                    Text(
-                                      fullName,
-                                      style: AppStyles.headingLarge.copyWith(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 22,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
+                                    size: 30,
+                                  )
+                                : null,
                           ),
                         ),
-                        // Right: Notification Bell
+                        const SizedBox(width: 16),
+                        // Middle: Greeting Column (left-aligned, tappable)
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              MainNavigation.switchToTab(context, 4); // Switch to Profile tab
+                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Time-based greeting (small, grey, regular)
+                                Text(
+                                  _getTimeBasedGreeting(context),
+                                  style: AppStyles.bodySmall.copyWith(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.normal,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                // User name (larger, bold, black/dark purple, capitalized)
+                                Text(
+                                  fullName.isNotEmpty
+                                      ? '${fullName[0].toUpperCase()}${fullName.substring(1)}'
+                                      : fullName,
+                                  style: AppStyles.headingLarge.copyWith(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // Right: Notification Bell (pushed to end with Spacer)
                         BlocBuilder<NotificationsCubit, NotificationsState>(
                           builder: (context, state) {
                             final notifications = state is NotificationsLoaded
@@ -273,27 +267,17 @@ class HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    // Bottom: Welcome Message
-                    const SizedBox(height: 16),
-                    TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0.0, end: 1.0),
-                      duration: const Duration(milliseconds: 600),
-                      curve: Curves.easeOut,
-                      builder: (context, value, child) {
-                        return Opacity(
-                          opacity: value,
-                          child: Text(
-                            Provider.of<LocalizationService>(context, listen: false)
-                                .translate('profile.readyToMakeWishesComeTrue'),
-                            style: AppStyles.bodyMedium.copyWith(
-                              color: AppColors.textSecondary,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        );
-                      },
+                    // Bottom: "Ready to make wishes" text (below Row, italic, darker grey, smaller)
+                    const SizedBox(height: 12),
+                    Text(
+                      Provider.of<LocalizationService>(context, listen: false)
+                          .translate('profile.readyToMakeWishesComeTrue'),
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.textSecondary.withOpacity(0.85),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ],
                 ),
@@ -334,12 +318,7 @@ class HomeScreenState extends State<HomeScreen> {
             _buildDecorativeElements(),
             // Main content
             Container(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: MediaQuery.of(context).padding.top + 20,
-                bottom: 24,
-              ),
+              padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
               child: SafeArea(
                 bottom: false,
                 top: false,
@@ -349,14 +328,14 @@ class HomeScreenState extends State<HomeScreen> {
                   children: [
                     // Top Row: Avatar + Greeting + Notification skeleton
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Left: Avatar skeleton
+                        // Left: Avatar skeleton (reduced size to match radius 25)
                         Container(
-                          width: 60,
-                          height: 60,
+                          width: 50,
+                          height: 50,
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
+                            color: Colors.white.withOpacity(0.2),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -365,21 +344,22 @@ class HomeScreenState extends State<HomeScreen> {
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
-                                width: 120,
-                                height: 16,
+                                width: 100,
+                                height: 14,
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade300,
+                                  color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 4),
                               Container(
-                                width: 150,
-                                height: 22,
+                                width: 140,
+                                height: 20,
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.shade300,
+                                  color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
@@ -391,19 +371,19 @@ class HomeScreenState extends State<HomeScreen> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
+                            color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                       ],
                     ),
                     // Bottom: Welcome message skeleton
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Container(
-                      width: 200,
-                      height: 18,
+                      width: 180,
+                      height: 14,
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
+                        color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
@@ -549,17 +529,26 @@ class HomeScreenState extends State<HomeScreen> {
                             child: SizedBox(height: 20),
                           ),
                           // Content
-                          SliverToBoxAdapter(
-                            child: controller.isLoading
-                                ? const HomeSkeletonView()
-                                : isEmpty
-                                    ? const OnboardingDashboard()
-                                    : ActiveDashboard(
-                                        occasions: _convertEventsToOccasions(controller.upcomingOccasions ?? []),
-                                        wishlists: _convertWishlistsToSummaries(controller.myWishlists ?? []),
-                                        activities: controller.latestActivityPreview ?? [], // Use latestActivityPreview directly with null safety
-                                      ),
-                          ),
+                          if (controller.isLoading)
+                            const SliverToBoxAdapter(child: HomeSkeletonView())
+                          else if (isEmpty)
+                            const SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: EmptyHomeScreen(),
+                            )
+                          else
+                            SliverToBoxAdapter(
+                              child: ActiveDashboard(
+                                occasions: _convertEventsToOccasions(
+                                  controller.upcomingOccasions ?? [],
+                                ),
+                                wishlists: _convertWishlistsToSummaries(
+                                  controller.myWishlists ?? [],
+                                ),
+                                activities: controller.latestActivityPreview ??
+                                    [], // Use latestActivityPreview directly with null safety
+                              ),
+                            ),
                           // Bottom padding to clear Bottom Navigation Bar
                           const SliverToBoxAdapter(
                             child: SizedBox(height: 120),

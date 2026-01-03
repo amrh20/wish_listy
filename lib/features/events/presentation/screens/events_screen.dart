@@ -51,135 +51,6 @@ class EventsScreenState extends State<EventsScreen>
   // Repository
   final EventRepository _eventRepository = EventRepository();
 
-  // Mock events data for authenticated users (fallback)
-  final List<EventSummary> _mockMyEvents = [
-    EventSummary(
-      id: '1',
-      name: 'My Birthday Party 🎂',
-      date: DateTime.now().add(Duration(days: 15)),
-      type: EventType.birthday,
-      location: 'My Home',
-      description: 'Come celebrate my 25th birthday with friends and family!',
-      invitedCount: 24,
-      acceptedCount: 18,
-      wishlistItemCount: 12,
-      wishlistId: 'wishlist_1', // Has wishlist
-      isCreatedByMe: true,
-      status: EventStatus.upcoming,
-    ),
-    EventSummary(
-      id: '2',
-      name: 'Housewarming Party',
-      date: DateTime.now().add(Duration(days: 45)),
-      type: EventType.houseWarming,
-      location: 'New Apartment',
-      description: 'Help us celebrate our new home!',
-      invitedCount: 15,
-      acceptedCount: 8,
-      wishlistItemCount: 0, // No wishlist yet
-      wishlistId: null, // No wishlist linked
-      isCreatedByMe: true,
-      status: EventStatus.upcoming,
-    ),
-    EventSummary(
-      id: '3',
-      name: 'Team Building Event',
-      date: DateTime.now().add(Duration(days: 7)),
-      type: EventType.other,
-      location: 'Office',
-      description: 'Team building activities and games',
-      invitedCount: 20,
-      acceptedCount: 15,
-      wishlistItemCount: 0, // No wishlist yet
-      wishlistId: null, // No wishlist linked
-      isCreatedByMe: true,
-      status: EventStatus.upcoming,
-    ),
-  ];
-
-  // Mock public events for guest users (fallback)
-  final List<EventSummary> _mockPublicEvents = [
-    EventSummary(
-      id: 'pub1',
-      name: 'Community Birthday Celebration',
-      date: DateTime.now().add(Duration(days: 5)),
-      type: EventType.birthday,
-      location: 'Community Center',
-      description: 'Join us for a community birthday celebration!',
-      invitedCount: 50,
-      acceptedCount: 32,
-      wishlistItemCount: 25,
-      wishlistId: 'wishlist_pub1', // Has wishlist
-      isCreatedByMe: false,
-      status: EventStatus.upcoming,
-      hostName: 'Sarah Ahmed',
-    ),
-    EventSummary(
-      id: 'pub2',
-      name: 'Wedding Anniversary',
-      date: DateTime.now().add(Duration(days: 12)),
-      type: EventType.anniversary,
-      location: 'Grand Hotel',
-      description: 'Celebrating 10 years of love and happiness',
-      invitedCount: 100,
-      acceptedCount: 75,
-      wishlistItemCount: 40,
-      wishlistId: 'wishlist_pub2', // Has wishlist
-      isCreatedByMe: false,
-      status: EventStatus.upcoming,
-      hostName: 'Ahmed & Fatima',
-    ),
-  ];
-
-  // Mock invited events (fallback)
-  final List<EventSummary> _mockInvitedEvents = [
-    EventSummary(
-      id: '3',
-      name: 'Sarah\'s Wedding',
-      date: DateTime.now().add(Duration(days: 30)),
-      type: EventType.wedding,
-      location: 'Grand Hotel',
-      description: 'Join us as we celebrate the union of Sarah and John!',
-      hostName: 'Sarah Johnson',
-      invitedCount: 120,
-      acceptedCount: 95,
-      wishlistItemCount: 25,
-      wishlistId: 'wishlist_wedding', // Has wishlist
-      isCreatedByMe: false,
-      status: EventStatus.upcoming,
-    ),
-    EventSummary(
-      id: '4',
-      name: 'Ahmed\'s Graduation',
-      date: DateTime.now().add(Duration(days: 8)),
-      type: EventType.graduation,
-      location: 'University Campus',
-      description: 'Celebrating my PhD graduation!',
-      hostName: 'Ahmed Ali',
-      invitedCount: 50,
-      acceptedCount: 42,
-      wishlistItemCount: 0, // No wishlist yet
-      wishlistId: null, // No wishlist linked
-      isCreatedByMe: false,
-      status: EventStatus.upcoming,
-    ),
-    EventSummary(
-      id: '5',
-      name: 'Emma\'s Baby Shower',
-      date: DateTime.now().subtract(Duration(days: 5)),
-      type: EventType.babyShower,
-      location: 'Emma\'s House',
-      description: 'Welcome baby Emma!',
-      hostName: 'Emma Watson',
-      invitedCount: 20,
-      acceptedCount: 18,
-      wishlistItemCount: 15,
-      wishlistId: 'wishlist_baby', // Has wishlist
-      isCreatedByMe: false,
-      status: EventStatus.completed,
-    ),
-  ];
-
   bool _hasLoadedOnce = false;
 
   @override
@@ -290,10 +161,9 @@ class EventsScreenState extends State<EventsScreen>
       setState(() {
         _errorMessage = e.message;
         _isLoading = false;
-        // Use mock data as fallback
-        _myEvents = _mockMyEvents;
-        _invitedEvents = _mockInvitedEvents;
-        _publicEvents = _mockPublicEvents;
+        _myEvents = [];
+        _invitedEvents = [];
+        _publicEvents = [];
       });
       _applyFilters();
 
@@ -302,10 +172,9 @@ class EventsScreenState extends State<EventsScreen>
       setState(() {
         _errorMessage = 'Failed to load events. Please try again.';
         _isLoading = false;
-        // Use mock data as fallback
-        _myEvents = _mockMyEvents;
-        _invitedEvents = _mockInvitedEvents;
-        _publicEvents = _mockPublicEvents;
+        _myEvents = [];
+        _invitedEvents = [];
+        _publicEvents = [];
       });
       _applyFilters();
 

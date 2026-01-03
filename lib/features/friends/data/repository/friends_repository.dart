@@ -6,6 +6,7 @@ import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
 import 'package:wish_listy/features/friends/data/models/friend_wishlist_model.dart';
 import 'package:wish_listy/features/friends/data/models/friend_event_model.dart';
 import 'package:wish_listy/features/friends/data/models/friend_profile_model.dart';
+import 'package:wish_listy/features/friends/data/models/suggestion_user_model.dart';
 
 /// Friends Repository
 /// Handles all friends-related API operations
@@ -239,6 +240,41 @@ class FriendsRepository {
     }
   }
 
+  /// Cancel friend request (for outgoing requests)
+  ///
+  /// [requestId] - The friend request ID to cancel (required)
+  ///
+  /// Returns success response
+  Future<Map<String, dynamic>> cancelFriendRequest({
+    required String requestId,
+  }) async {
+    try {
+      if (requestId.isEmpty) {
+        throw Exception('Request ID is required');
+      }
+
+      final response = await _apiService.delete('/friends/request/$requestId');
+
+      // Handle different response structures
+      if (response is Map<String, dynamic>) {
+        final data = response['data'] ?? response;
+        if (data is Map<String, dynamic>) {
+          return data;
+        }
+        // If data is not a Map, return the response itself
+        return response;
+      }
+      
+      // If response is not a Map, return empty map (success case)
+      return {'success': true};
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      debugPrint('❌ FriendsRepository: Error canceling friend request: $e');
+      throw Exception('Failed to cancel friend request. Please try again.');
+    }
+  }
+
   /// Get friend requests
   ///
   /// Returns list of friend request objects
@@ -347,6 +383,74 @@ class FriendsRepository {
     } catch (e) {
       debugPrint('❌ FriendsRepository: Error removing friend: $e');
       throw Exception('Failed to remove friend. Please try again.');
+    }
+  }
+
+  /// Get friend suggestions (People You May Know)
+  ///
+  /// Returns list of suggested users
+  /// Response format: {success: true, count: 20, data: [...]}
+  Future<List<SuggestionUser>> getSuggestions() async {
+    try {
+      final response = await _apiService.get('/friends/suggestions');
+
+      // Parse response: {success: true, count: 20, data: [...]}
+      final data = response['data'] as List<dynamic>?;
+
+      if (data == null || data.isEmpty) {
+        return [];
+      }
+
+      final suggestions = data
+          .map((json) => SuggestionUser.fromJson(json as Map<String, dynamic>))
+          .toList();
+
+      return suggestions;
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      debugPrint('❌ FriendsRepository: Error getting suggestions: $e');
+      throw Exception('Failed to load suggestions. Please try again.');
+    }
+  }
+
+  /// Dismiss a suggestion (remove from suggestions list)
+  ///
+  /// [targetUserId] - The user ID to dismiss from suggestions
+  ///
+  /// Returns success response
+  Future<Map<String, dynamic>> dismissSuggestion({
+    required String targetUserId,
+  }) async {
+    try {
+      if (targetUserId.isEmpty) {
+        throw Exception('User ID is required');
+      }
+
+      final response = await _apiService.post(
+        '/friends/suggestions/dismiss',
+        data: {
+          'targetUserId': targetUserId,
+        },
+      );
+
+      // Handle different response structures
+      if (response is Map<String, dynamic>) {
+        final data = response['data'] ?? response;
+        if (data is Map<String, dynamic>) {
+          return data;
+        }
+        // If data is not a Map, return the response itself
+        return response;
+      }
+
+      // If response is not a Map, return empty map (success case)
+      return {'success': true};
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      debugPrint('❌ FriendsRepository: Error dismissing suggestion: $e');
+      throw Exception('Failed to dismiss suggestion. Please try again.');
     }
   }
 }

@@ -48,21 +48,33 @@ class WishlistSuccessDialogHelper {
       },
       additionalActions: [
         DialogAction(
-          label: localization.translate('wishlists.myWishlists'),
+          label: localization.translate('wishlists.viewwishlist'),
           onPressed: () {
-            Navigator.of(context).pop(); // Close dialog
+            // Dialog is closed automatically by ConfirmationDialog
+            // Close create wishlist screen first
+            Navigator.of(context).pop();
+            
+            // Navigate to the created wishlist details
             if (context.mounted) {
-              // Close create wishlist screen
-              Navigator.of(context).pop(); // Close create wishlist screen
+              // Pop until we reach MainNavigation (first route)
+              Navigator.popUntil(context, (route) => route.isFirst);
               
-              // Navigate directly to My Wishlists screen
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  AppRoutes.myWishlists,
-                  (route) => route.isFirst,
-                );
-              }
+              // Navigate to wishlist details after navigation completes
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.wishlistItems,
+                    arguments: {
+                      'wishlistId': wishlistId,
+                      'wishlistName': wishlistName,
+                      'totalItems': 0,
+                      'purchasedItems': 0,
+                      'isFriendWishlist': false,
+                    },
+                  );
+                }
+              });
             }
           },
           variant: ButtonVariant.outline,

@@ -290,6 +290,63 @@ class FriendsScreenState extends State<FriendsScreen>
     );
   }
 
+  Widget _buildEmptyStateInline(LocalizationService localization) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(36),
+            ),
+            child: Icon(
+              Icons.people_outline,
+              size: 34,
+              color: AppColors.secondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _searchQuery.isEmpty
+                ? localization.translate('friends.noFriendsYet')
+                : localization.translate('friends.noFriendsFound'),
+            style: AppStyles.headingMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            _searchQuery.isEmpty
+                ? localization.translate('friends.startConnectingWithFriends')
+                : localization.translate('friends.tryAdjustingSearchTerms'),
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textTertiary,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          if (_searchQuery.isEmpty) ...[
+            const SizedBox(height: 18),
+            CustomButton(
+              text: localization.translate('friends.addFriends'),
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.addFriend,
+                );
+              },
+              variant: ButtonVariant.primary,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildFriendRequestsTab(LocalizationService localization) {
     // Show loading state
     if (_isLoadingRequests && _friendRequests.isEmpty) {

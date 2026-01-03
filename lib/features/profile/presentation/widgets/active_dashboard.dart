@@ -11,6 +11,7 @@ import 'package:wish_listy/features/profile/presentation/widgets/minimal_wishlis
 import 'package:wish_listy/features/profile/data/models/activity_model.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/activity_card.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/features/friends/presentation/widgets/suggested_friends_section.dart';
 
 /// Active dashboard with all sections for users with data
 class ActiveDashboard extends StatelessWidget {
@@ -559,10 +560,11 @@ class FriendActivitySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    
     // Add null safety check before accessing activities
     final safeActivities = activities ?? [];
-    if (safeActivities.isEmpty) return const SizedBox.shrink();
-
+    
     // Limit to maximum 3 items for preview (as per new API structure)
     // Ensure displayActivities is never null and filter out any null items
     final displayActivities = (safeActivities.length > 3 
@@ -570,64 +572,73 @@ class FriendActivitySection extends StatelessWidget {
         : safeActivities)
         .where((activity) => activity != null)
         .toList();
-
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header with Title and View All
+        // Suggested Friends Section (People You May Know)
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Text(
-                  '${Provider.of<LocalizationService>(context, listen: false).translate('cards.happeningNow')} ⚡',
-                  style: AppStyles.headingMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: () {
-                  // Navigate to Friend Activity Feed
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.friendActivityFeed,
-                  );
-                },
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  Provider.of<LocalizationService>(context, listen: false).translate('home.viewAll'),
-                  style: AppStyles.bodyMedium.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-            ],
+          padding: const EdgeInsets.only(bottom: 32),
+          child: SuggestedFriendsSection(
+            localization: localization,
           ),
         ),
-        const SizedBox(height: 12),
-        // Vertical List (limited to 3 items) - Using ActivityCard widget
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            children: (displayActivities ?? [])
-                .where((activity) => activity != null)
-                .map((activity) => ActivityCard(activity: activity))
-                .toList(),
+        // Activities Section (only show if there are activities)
+        if (displayActivities.isNotEmpty) ...[
+          // Header with Title and View All
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Flexible(
+                  child: Text(
+                    '${localization.translate('cards.happeningNow')} ⚡',
+                    style: AppStyles.headingMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () {
+                    // Navigate to Friend Activity Feed
+                    Navigator.pushNamed(
+                      context,
+                      AppRoutes.friendActivityFeed,
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    localization.translate('home.viewAll'),
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          const SizedBox(height: 12),
+          // Vertical List (limited to 3 items) - Using ActivityCard widget
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: displayActivities
+                  .map((activity) => ActivityCard(activity: activity))
+                  .toList(),
+            ),
+          ),
+        ],
       ],
     );
   }
