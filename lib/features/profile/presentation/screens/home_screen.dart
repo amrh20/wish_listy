@@ -20,6 +20,9 @@ import 'package:wish_listy/features/notifications/presentation/widgets/notificat
 import 'package:wish_listy/features/notifications/data/models/notification_model.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/widgets/royal_avatar_wrapper.dart';
+import 'package:wish_listy/core/widgets/generic_error_screen.dart';
+import 'package:wish_listy/core/services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final GlobalKey<HomeScreenState>? key;
@@ -125,19 +128,22 @@ class HomeScreenState extends State<HomeScreen> {
                           onTap: () {
                             MainNavigation.switchToTab(context, 4); // Switch to Profile tab
                           },
-                          child: CircleAvatar(
-                            radius: 25,
-                            backgroundColor: Colors.white,
-                            backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
-                                ? NetworkImage(profileImageUrl)
-                                : null,
-                            child: profileImageUrl == null || profileImageUrl.isEmpty
-                                ? Icon(
-                                    Icons.person_rounded,
-                                    color: AppColors.primary,
-                                    size: 30,
-                                  )
-                                : null,
+                          child: RoyalAvatarWrapper(
+                            userName: fullName,
+                            child: CircleAvatar(
+                              radius: 25,
+                              backgroundColor: Colors.white,
+                              backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
+                                  ? NetworkImage(profileImageUrl)
+                                  : null,
+                              child: profileImageUrl == null || profileImageUrl.isEmpty
+                                  ? Icon(
+                                      Icons.person_rounded,
+                                      color: AppColors.primary,
+                                      size: 30,
+                                    )
+                                  : null,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -510,6 +516,25 @@ class HomeScreenState extends State<HomeScreen> {
               child: Consumer<HomeController>(
                   builder: (context, controller, child) {
                     final isEmpty = controller.isNewUser;
+
+                    // Offline / failed-load state:
+                    // If the API failed and we have no cached dashboard data, show a full-page error UI
+                    // instead of falling back to "empty home" + snackbars.
+                    final hasNoData = controller.dashboardData.value == null;
+                    final hasError = controller.errorMessage != null &&
+                        controller.errorMessage!.trim().isNotEmpty;
+                    if (!controller.isLoading && hasNoData && hasError) {
+                      if (controller.errorKind == ApiErrorKind.noInternet) {
+                        return GenericErrorScreen.noInternet(
+                          withScaffold: false,
+                          onRetry: () async => controller.refresh(),
+                        );
+                      }
+                      return GenericErrorScreen.serverError(
+                        withScaffold: false,
+                        onRetry: () async => controller.refresh(),
+                      );
+                    }
 
                     return RefreshIndicator(
                       onRefresh: controller.refresh,

@@ -18,6 +18,7 @@ import 'package:wish_listy/features/wishlists/presentation/screens/my_wishlists_
 import 'package:wish_listy/features/events/presentation/screens/events_screen.dart';
 import 'package:wish_listy/features/friends/presentation/screens/friends_screen.dart';
 import 'profile_screen.dart' show ProfileScreen, ProfileScreenState;
+import 'package:wish_listy/core/services/api_service.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -246,20 +247,27 @@ class _MainNavigationState extends State<MainNavigation>
             ),
           );
         } else {
-          return Scaffold(
-            backgroundColor: Colors.white,
-            extendBody: true,
-            body: PageStorage(
-              bucket: _pageStorageBucket,
-              child: IndexedStack(index: _currentIndex, children: _screens),
-            ),
-            bottomNavigationBar: Container(
-              color: Colors.transparent,
-              child: CustomBottomNavigation(
-                currentIndex: _currentIndex,
-                onTap: _onTabTapped,
-              ),
-            ),
+          return ValueListenableBuilder<bool>(
+            valueListenable: ApiService.isOffline,
+            builder: (context, isOffline, _) {
+              return Scaffold(
+                backgroundColor: Colors.white,
+                extendBody: !isOffline,
+                body: PageStorage(
+                  bucket: _pageStorageBucket,
+                  child: IndexedStack(index: _currentIndex, children: _screens),
+                ),
+                bottomNavigationBar: isOffline
+                    ? null
+                    : Container(
+                        color: Colors.transparent,
+                        child: CustomBottomNavigation(
+                          currentIndex: _currentIndex,
+                          onTap: _onTabTapped,
+                        ),
+                      ),
+              );
+            },
           );
         }
       },

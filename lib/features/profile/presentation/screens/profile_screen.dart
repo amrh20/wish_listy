@@ -10,6 +10,8 @@ import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
+import 'package:wish_listy/core/widgets/royal_avatar_wrapper.dart';
+import 'package:wish_listy/core/widgets/royal_avatar_wrapper.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -271,22 +273,27 @@ class ProfileScreenState extends State<ProfileScreen>
                         ),
                       ],
                     ),
-                    child: CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.white,
-                      backgroundImage: profileImage != null && profileImage.isNotEmpty
-                          ? NetworkImage(profileImage)
-                          : null,
-                      child: profileImage == null || profileImage.isEmpty
-                          ? Text(
-                              userInitial,
-                              style: const TextStyle(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                              ),
-                            )
-                          : null,
+                    child: RoyalAvatarWrapper(
+                      userName: userName,
+                      crownSize: 34,
+                      topOffset: -28,
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.white,
+                        backgroundImage: profileImage != null && profileImage.isNotEmpty
+                            ? NetworkImage(profileImage)
+                            : null,
+                        child: profileImage == null || profileImage.isEmpty
+                            ? Text(
+                                userInitial,
+                                style: const TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                ),
+                              )
+                            : null,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),

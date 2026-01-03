@@ -2,10 +2,26 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// High-level classification of API errors (used by UI to show the right state)
+enum ApiErrorKind {
+  noInternet,
+  timeout,
+  server,
+  unauthorized,
+  notFound,
+  validation,
+  unknown,
+}
+
 /// API Service - Main service for handling all HTTP requests
 /// This service uses Dio for advanced HTTP operations with interceptors
 /// and comprehensive error handling
 class ApiService {
+  /// Global connectivity hint for UI (e.g., hide bottom navigation when offline).
+  /// We flip this to true when requests fail with a connectivity error, and back
+  /// to false on any successful request.
+  static final ValueNotifier<bool> isOffline = ValueNotifier<bool>(false);
+
   // Backend API Base URL
   // Automatically detects the correct URL based on platform:
   // - Android Emulator: 10.0.2.2 (special IP that maps to host's localhost)
@@ -50,7 +66,7 @@ class ApiService {
       // To find your IP: ifconfig (Mac/Linux) or ipconfig (Windows)
       // Make sure both your computer and phone are on the same WiFi network!
       
-      const String androidIP = '192.168.1.20'; // Physical device - Your computer's IP (updated for current WiFi)
+      const String androidIP = '192.168.1.7'; // Physical device - Your computer's IP (updated for current WiFi)
       // const String androidIP = '10.0.2.2'; // Uncomment for Android Emulator
       
       final url = 'http://$androidIP:4000/api';
@@ -72,7 +88,7 @@ class ApiService {
       // For iOS Simulator: localhost works (can keep using this)
       // For Physical iPhone: use Mac's IP address (found: 192.168.1.11)
       
-      const String iosIP = '192.168.1.20'; // Physical iPhone - Your Mac's IP (updated for current WiFi)
+      const String iosIP = '192.168.1.7'; // Physical iPhone - Your Mac's IP (updated for current WiFi)
       // For iOS Simulator, you can use 'localhost' if needed:
       // const String iosIP = 'localhost'; // Uncomment for iOS Simulator
       
@@ -233,6 +249,45 @@ class ApiService {
     return 'Something went wrong';
   }
 
+  static ApiErrorKind _classifyDioException(DioException e) {
+    final statusCode = e.response?.statusCode;
+
+    // 1) True offline / DNS / host lookup errors.
+    if (e.type == DioExceptionType.connectionError) {
+      return ApiErrorKind.noInternet;
+    }
+
+    // Some platforms throw unknown with a SocketException message (avoid dart:io import).
+    final msg = (e.message ?? '').toLowerCase();
+    final err = (e.error ?? '').toString().toLowerCase();
+    if (e.type == DioExceptionType.unknown &&
+        (msg.contains('socketexception') ||
+            err.contains('socketexception') ||
+            msg.contains('failed host lookup') ||
+            err.contains('failed host lookup') ||
+            msg.contains('network is unreachable') ||
+            err.contains('network is unreachable'))) {
+      return ApiErrorKind.noInternet;
+    }
+
+    // 2) Timeouts (often look like connectivity issues too).
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout) {
+      return ApiErrorKind.timeout;
+    }
+
+    // 3) HTTP status-based classification.
+    if (statusCode != null) {
+      if (statusCode == 401) return ApiErrorKind.unauthorized;
+      if (statusCode == 404) return ApiErrorKind.notFound;
+      if (statusCode == 422) return ApiErrorKind.validation;
+      if (statusCode >= 500) return ApiErrorKind.server;
+    }
+
+    return ApiErrorKind.unknown;
+  }
+
   /// Generic GET request method
   Future<Map<String, dynamic>> get(
     String path, {
@@ -245,11 +300,21 @@ class ApiService {
         queryParameters: queryParameters,
         options: Options(headers: headers),
       );
+      isOffline.value = false;
       return response.data;
     } on DioException catch (e) {
+      final kind = _classifyDioException(e);
+      isOffline.value = kind == ApiErrorKind.noInternet;
       final data = e.response?.data;
-      final msg = _extractBackendMessage(data);
-      throw ApiException(msg, statusCode: e.response?.statusCode, data: data);
+      final msg = kind == ApiErrorKind.noInternet
+          ? 'No Internet Connection'
+          : _extractBackendMessage(data);
+      throw ApiException(
+        msg,
+        statusCode: e.response?.statusCode,
+        data: data,
+        kind: kind,
+      );
     } catch (e) {
       throw ApiException(e.toString());
     }
@@ -267,11 +332,21 @@ class ApiService {
         data: data,
         options: Options(headers: headers),
       );
+      isOffline.value = false;
       return response.data;
     } on DioException catch (e) {
+      final kind = _classifyDioException(e);
+      isOffline.value = kind == ApiErrorKind.noInternet;
       final resData = e.response?.data;
-      final msg = _extractBackendMessage(resData);
-      throw ApiException(msg, statusCode: e.response?.statusCode, data: resData);
+      final msg = kind == ApiErrorKind.noInternet
+          ? 'No Internet Connection'
+          : _extractBackendMessage(resData);
+      throw ApiException(
+        msg,
+        statusCode: e.response?.statusCode,
+        data: resData,
+        kind: kind,
+      );
     } catch (e) {
       throw ApiException(e.toString());
     }
@@ -289,11 +364,21 @@ class ApiService {
         data: data,
         options: Options(headers: headers),
       );
+      isOffline.value = false;
       return response.data;
     } on DioException catch (e) {
+      final kind = _classifyDioException(e);
+      isOffline.value = kind == ApiErrorKind.noInternet;
       final resData = e.response?.data;
-      final msg = _extractBackendMessage(resData);
-      throw ApiException(msg, statusCode: e.response?.statusCode, data: resData);
+      final msg = kind == ApiErrorKind.noInternet
+          ? 'No Internet Connection'
+          : _extractBackendMessage(resData);
+      throw ApiException(
+        msg,
+        statusCode: e.response?.statusCode,
+        data: resData,
+        kind: kind,
+      );
     } catch (e) {
       throw ApiException(e.toString());
     }
@@ -311,11 +396,21 @@ class ApiService {
         data: data,
         options: Options(headers: headers),
       );
+      isOffline.value = false;
       return response.data;
     } on DioException catch (e) {
+      final kind = _classifyDioException(e);
+      isOffline.value = kind == ApiErrorKind.noInternet;
       final resData = e.response?.data;
-      final msg = _extractBackendMessage(resData);
-      throw ApiException(msg, statusCode: e.response?.statusCode, data: resData);
+      final msg = kind == ApiErrorKind.noInternet
+          ? 'No Internet Connection'
+          : _extractBackendMessage(resData);
+      throw ApiException(
+        msg,
+        statusCode: e.response?.statusCode,
+        data: resData,
+        kind: kind,
+      );
     } catch (e) {
       throw ApiException(e.toString());
     }
@@ -331,11 +426,21 @@ class ApiService {
         path,
         options: Options(headers: headers),
       );
+      isOffline.value = false;
       return response.data;
     } on DioException catch (e) {
+      final kind = _classifyDioException(e);
+      isOffline.value = kind == ApiErrorKind.noInternet;
       final data = e.response?.data;
-      final msg = _extractBackendMessage(data);
-      throw ApiException(msg, statusCode: e.response?.statusCode, data: data);
+      final msg = kind == ApiErrorKind.noInternet
+          ? 'No Internet Connection'
+          : _extractBackendMessage(data);
+      throw ApiException(
+        msg,
+        statusCode: e.response?.statusCode,
+        data: data,
+        kind: kind,
+      );
     } catch (e) {
       throw ApiException(e.toString());
     }
@@ -403,9 +508,17 @@ class ApiException implements Exception {
   final String message;
   final int? statusCode;
   final dynamic data;
+  final ApiErrorKind kind;
 
-  ApiException(String message, {this.statusCode, this.data})
-      : message = _sanitizeMessage(_extractMessageFromData(data) ?? message);
+  ApiException(
+    String message, {
+    this.statusCode,
+    this.data,
+    this.kind = ApiErrorKind.unknown,
+  }) : message = _sanitizeMessage(_extractMessageFromData(data) ?? message);
+
+  bool get isNoInternet => kind == ApiErrorKind.noInternet;
+  bool get isTimeout => kind == ApiErrorKind.timeout;
 
   static String? _extractMessageFromData(dynamic data) {
     try {

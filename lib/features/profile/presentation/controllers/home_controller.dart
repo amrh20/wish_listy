@@ -10,6 +10,7 @@ import 'package:wish_listy/features/profile/data/models/activity_model.dart';
 class HomeController extends ChangeNotifier {
   bool isLoading = false;
   String? errorMessage;
+  ApiErrorKind? errorKind;
   bool _isFetching = false; // Prevent duplicate calls
   
   // Reactive variable for dashboard data
@@ -58,6 +59,7 @@ class HomeController extends ChangeNotifier {
     _isFetching = true;
     isLoading = true;
     errorMessage = null;
+    errorKind = null;
     notifyListeners();
 
     try {
@@ -84,6 +86,7 @@ class HomeController extends ChangeNotifier {
         
         isLoading = false;
         errorMessage = null;
+        errorKind = null;
         _isFetching = false;
         notifyListeners();
       } catch (parseError) {
@@ -99,18 +102,21 @@ class HomeController extends ChangeNotifier {
         );
         isLoading = false;
         errorMessage = 'Failed to parse dashboard data. Please try again.';
+        errorKind = ApiErrorKind.unknown;
         _isFetching = false;
         notifyListeners();
       }
     } on ApiException catch (e) {
       isLoading = false;
       errorMessage = e.message;
+      errorKind = e.kind;
       _isFetching = false;
       notifyListeners();
     } catch (e) {
       debugPrint('❌ HomeController: Error loading dashboard data: $e');
       isLoading = false;
       errorMessage = 'Failed to load dashboard data. Please try again.';
+      errorKind = ApiErrorKind.unknown;
       _isFetching = false;
       notifyListeners();
     }
