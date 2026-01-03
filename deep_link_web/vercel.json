@@ -1,6 +1,12 @@
 {
   "buildCommand": "",
   "outputDirectory": ".",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ],
   "headers": [
     {
       "source": "/.well-known/(.*)",
@@ -13,4 +19,3 @@
     }
   ]
 }
-
