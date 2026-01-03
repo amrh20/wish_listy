@@ -117,16 +117,84 @@ class FriendProfileFriendshipStatusModel {
   }
 }
 
+enum FriendRelationshipStatus {
+  friends,
+  incomingRequest,
+  outgoingRequest,
+  none,
+}
+
+@immutable
+class FriendProfileRelationshipModel {
+  final FriendRelationshipStatus status;
+  final bool isFriend;
+  final String? incomingRequestId;
+  final String? outgoingRequestId;
+
+  const FriendProfileRelationshipModel({
+    required this.status,
+    required this.isFriend,
+    this.incomingRequestId,
+    this.outgoingRequestId,
+  });
+
+  factory FriendProfileRelationshipModel.fromJson(Map<String, dynamic> json) {
+    final rawStatus = json['status']?.toString().toLowerCase().trim();
+    final status = switch (rawStatus) {
+      'friends' => FriendRelationshipStatus.friends,
+      'incoming_request' => FriendRelationshipStatus.incomingRequest,
+      'outgoing_request' => FriendRelationshipStatus.outgoingRequest,
+      'none' => FriendRelationshipStatus.none,
+      _ => FriendRelationshipStatus.none,
+    };
+
+    String? readRequestId(dynamic obj) {
+      if (obj is Map) {
+        final v = obj['requestId'] ?? obj['request_id'] ?? obj['_id'] ?? obj['id'];
+        final s = v?.toString();
+        return (s != null && s.isNotEmpty) ? s : null;
+      }
+      return null;
+    }
+
+    final incomingObj = json['incomingRequest'] ?? json['incoming_request'];
+    final outgoingObj = json['outgoingRequest'] ?? json['outgoing_request'];
+
+    final incomingExists = (incomingObj is Map)
+        ? (incomingObj['exists'] == true || incomingObj['exist'] == true)
+        : false;
+    final outgoingExists = (outgoingObj is Map)
+        ? (outgoingObj['exists'] == true || outgoingObj['exist'] == true)
+        : false;
+
+    final incomingRequestId = incomingExists ? readRequestId(incomingObj) : null;
+    final outgoingRequestId = outgoingExists ? readRequestId(outgoingObj) : null;
+
+    final isFriend = json['isFriend'] == true ||
+        json['is_friend'] == true ||
+        status == FriendRelationshipStatus.friends;
+
+    return FriendProfileRelationshipModel(
+      status: status,
+      isFriend: isFriend,
+      incomingRequestId: incomingRequestId,
+      outgoingRequestId: outgoingRequestId,
+    );
+  }
+}
+
 @immutable
 class FriendProfileModel {
   final FriendProfileUserModel user;
   final FriendProfileCountsModel counts;
   final FriendProfileFriendshipStatusModel friendshipStatus;
+  final FriendProfileRelationshipModel? relationship;
 
   const FriendProfileModel({
     required this.user,
     required this.counts,
     required this.friendshipStatus,
+    this.relationship,
   });
 
   factory FriendProfileModel.fromJson(Map<String, dynamic> json) {
@@ -135,37 +203,58 @@ class FriendProfileModel {
     // Shape B (seen in runtime):
     // { _id, fullName, username, profileImage, friendsCount, wishlistCount, eventsCount, ... }
 
+    Map<String, dynamic> _extractFriendshipJson(Map<String, dynamic> source) {
+      // Backends can return this field in multiple shapes/keys.
+      final raw = source['friendshipStatus'] ??
+          source['friendship_status'] ??
+          source['friendship'] ??
+          source['friendshipState'] ??
+          source['friendship_state'];
+
+      if (raw is Map<String, dynamic>) return raw;
+      if (raw is String) return <String, dynamic>{'status': raw};
+
+      // If not present as an object, some APIs return flags at the root level.
+      // We allow parsing from root by passing the whole json to the model later.
+      return const <String, dynamic>{};
+    }
+
     final hasNestedUser = json['user'] is Map<String, dynamic>;
     if (hasNestedUser) {
       final userJson = (json['user'] as Map<String, dynamic>?) ?? const {};
       final countsJson = (json['counts'] as Map<String, dynamic>?) ?? const {};
-      final friendshipRaw = json['friendshipStatus'] ?? json['friendship_status'];
-      final friendshipJson = friendshipRaw is Map<String, dynamic>
-          ? friendshipRaw
-          : (friendshipRaw is String
-              ? <String, dynamic>{'status': friendshipRaw}
-              : const <String, dynamic>{});
+      final friendshipJson = _extractFriendshipJson(json);
+      final relationshipRaw = json['relationship'];
+      final relationshipJson =
+          relationshipRaw is Map<String, dynamic> ? relationshipRaw : null;
       return FriendProfileModel(
         user: FriendProfileUserModel.fromJson(userJson),
         counts: FriendProfileCountsModel.fromJson(countsJson),
-        friendshipStatus:
-            FriendProfileFriendshipStatusModel.fromJson(friendshipJson),
+        friendshipStatus: friendshipJson.isNotEmpty
+            ? FriendProfileFriendshipStatusModel.fromJson(friendshipJson)
+            : FriendProfileFriendshipStatusModel.fromJson(json),
+        relationship: relationshipJson != null
+            ? FriendProfileRelationshipModel.fromJson(relationshipJson)
+            : null,
       );
     }
 
-    final friendshipRaw = json['friendshipStatus'] ?? json['friendship_status'];
-    final friendshipJson = friendshipRaw is Map<String, dynamic>
-        ? friendshipRaw
-        : (friendshipRaw is String
-            ? <String, dynamic>{'status': friendshipRaw}
-            : const <String, dynamic>{});
+    final friendshipJson = _extractFriendshipJson(json);
+    final relationshipRaw = json['relationship'];
+    final relationshipJson =
+        relationshipRaw is Map<String, dynamic> ? relationshipRaw : null;
     return FriendProfileModel(
       user: FriendProfileUserModel.fromJson(json),
       // counts may be embedded as flat keys
       counts: FriendProfileCountsModel.fromJson(json),
+      // If backend returns friendship flags at root (e.g., {isFriend:true}),
+      // parse from root as a safe fallback instead of defaulting to false.
       friendshipStatus: friendshipJson.isNotEmpty
           ? FriendProfileFriendshipStatusModel.fromJson(friendshipJson)
-          : const FriendProfileFriendshipStatusModel(isFriend: false),
+          : FriendProfileFriendshipStatusModel.fromJson(json),
+      relationship: relationshipJson != null
+          ? FriendProfileRelationshipModel.fromJson(relationshipJson)
+          : null,
     );
   }
 }

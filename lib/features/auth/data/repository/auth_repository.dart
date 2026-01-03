@@ -344,6 +344,39 @@ class AuthRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Delete account using real API
+  Future<void> deleteAccount() async {
+    try {
+      // Disconnect from Socket.IO
+      SocketService().disconnect();
+      
+      // Call API to delete account
+      await _apiService.delete('/auth/account');
+    } catch (e) {
+      // Even if API delete fails, clear local data for security
+      debugPrint('⚠️ [Auth] Error deleting account: $e');
+    }
+
+    // Clear local state
+    _userState = UserState.guest;
+    _userId = null;
+    _userEmail = null;
+    _userName = null;
+
+    // Clear local storage
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_logged_in', false);
+    await prefs.remove('user_id');
+    await prefs.remove('user_email');
+    await prefs.remove('user_name');
+    await prefs.remove('auth_token');
+
+    // Clear API service token
+    _apiService.clearAuthToken();
+
+    notifyListeners();
+  }
+
   // Validation methods
   bool isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');

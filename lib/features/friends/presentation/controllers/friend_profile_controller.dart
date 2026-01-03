@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/features/friends/data/models/friend_event_model.dart';
 import 'package:wish_listy/features/friends/data/models/friend_profile_model.dart';
+import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
 import 'package:wish_listy/features/friends/data/models/friend_wishlist_model.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/events/data/repository/event_repository.dart';
@@ -25,7 +26,13 @@ class FriendProfileController extends GetxController {
   final RxBool isLoading = false.obs;
   final Rx<FriendProfileModel?> profile = Rx<FriendProfileModel?>(null);
   final RxBool isSendingFriendRequest = false.obs;
-  final RxBool friendRequestSent = false.obs;
+  final RxBool isFriend = false.obs;
+  final Rx<FriendRelationshipStatus> relationshipStatus =
+      FriendRelationshipStatus.none.obs;
+  final RxString incomingRequestId = ''.obs;
+  final RxString outgoingRequestId = ''.obs;
+  final RxBool hasIncomingRequest = false.obs;
+  final RxBool hasOutgoingRequest = false.obs;
 
   @override
   void onInit() {
@@ -39,6 +46,7 @@ class FriendProfileController extends GetxController {
     try {
       final result = await _friendsRepository.getFriendProfile(friendId);
       profile.value = result;
+      _syncRelationshipFromProfile();
     } finally {
       isLoading.value = false;
     }
@@ -75,9 +83,66 @@ class FriendProfileController extends GetxController {
       profile.value = results[0] as FriendProfileModel;
       wishlists.assignAll(results[1] as List<FriendWishlistModel>);
       events.assignAll(results[2] as List<FriendEventModel>);
+      _syncRelationshipFromProfile();
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void _syncRelationshipFromProfile() {
+    final p = profile.value;
+    final rel = p?.relationship;
+    if (rel != null) {
+      relationshipStatus.value = rel.status;
+      isFriend.value = rel.isFriend;
+      incomingRequestId.value = rel.incomingRequestId ?? '';
+      outgoingRequestId.value = rel.outgoingRequestId ?? '';
+      hasIncomingRequest.value =
+          rel.status == FriendRelationshipStatus.incomingRequest &&
+              (rel.incomingRequestId?.isNotEmpty ?? false);
+      hasOutgoingRequest.value =
+          rel.status == FriendRelationshipStatus.outgoingRequest &&
+              (rel.outgoingRequestId?.isNotEmpty ?? false);
+      return;
+    }
+
+    // Backwards-compatible fallback if relationship isn't provided.
+    final legacyIsFriend = p?.friendshipStatus.isFriend ?? false;
+    isFriend.value = legacyIsFriend;
+    relationshipStatus.value =
+        legacyIsFriend ? FriendRelationshipStatus.friends : FriendRelationshipStatus.none;
+    incomingRequestId.value = '';
+    outgoingRequestId.value = '';
+    hasIncomingRequest.value = false;
+    hasOutgoingRequest.value = false;
+  }
+
+  Future<void> acceptIncomingRequest() async {
+    final requestId = incomingRequestId.value.trim();
+    if (requestId.isEmpty) return;
+    await _friendsRepository.acceptFriendRequest(requestId: requestId);
+
+    // Optimistic update (UI instant)
+    relationshipStatus.value = FriendRelationshipStatus.friends;
+    isFriend.value = true;
+    incomingRequestId.value = '';
+    outgoingRequestId.value = '';
+    hasIncomingRequest.value = false;
+    hasOutgoingRequest.value = false;
+
+    // Refresh from profile (source of truth now contains relationship)
+    await fetchProfile();
+  }
+
+  Future<void> declineIncomingRequest() async {
+    final requestId = incomingRequestId.value.trim();
+    if (requestId.isEmpty) return;
+    await _friendsRepository.rejectFriendRequest(requestId: requestId);
+    relationshipStatus.value = FriendRelationshipStatus.none;
+    isFriend.value = false;
+    incomingRequestId.value = '';
+    hasIncomingRequest.value = false;
+    await fetchProfile();
   }
 
   /// Helper: Category icon + color for wishlists grid.
@@ -130,8 +195,12 @@ class FriendProfileController extends GetxController {
     if (isSendingFriendRequest.value) return;
     isSendingFriendRequest.value = true;
     try {
-      await _friendsRepository.sendFriendRequest(toUserId: friendId);
-      friendRequestSent.value = true;
+      final res = await _friendsRepository.sendFriendRequest(toUserId: friendId);
+      // Try to capture requestId for outgoing state (best effort)
+      final id = (res['_id'] ?? res['id'] ?? res['requestId'] ?? res['request_id'])?.toString();
+      outgoingRequestId.value = (id != null && id.isNotEmpty) ? id : outgoingRequestId.value;
+      relationshipStatus.value = FriendRelationshipStatus.outgoingRequest;
+      hasOutgoingRequest.value = true;
     } finally {
       isSendingFriendRequest.value = false;
     }
@@ -179,6 +248,15 @@ class FriendProfileController extends GetxController {
       // Roll back by reloading events (keep it simple).
       await fetchEvents();
     }
+  }
+}
+
+extension _FirstWhereOrNullExt<E> on Iterable<E> {
+  E? firstWhereOrNull(bool Function(E element) test) {
+    for (final e in this) {
+      if (test(e)) return e;
+    }
+    return null;
   }
 }
 

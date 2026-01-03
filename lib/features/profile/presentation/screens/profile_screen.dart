@@ -773,6 +773,78 @@ class ProfileScreenState extends State<ProfileScreen>
 
     return Column(
       children: [
+        // Delete Account Button
+        Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.transparent,
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 4,
+              vertical: 8,
+            ),
+            leading: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.error.withOpacity(0.1),
+                    AppColors.error.withOpacity(0.2),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.error.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                Icons.delete_outline,
+                color: AppColors.error,
+                size: 22,
+              ),
+            ),
+            title: Text(
+              localization.translate('profile.deleteAccount'),
+              style: AppStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.error,
+              ),
+            ),
+            subtitle: Text(
+              localization.translate('profile.deleteAccountMessage'),
+              style: AppStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.textTertiary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: AppColors.textTertiary,
+              ),
+            ),
+            onTap: () {
+              _confirmDeleteAccount(localization);
+            },
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        // Logout Button
         Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           decoration: BoxDecoration(
@@ -932,6 +1004,48 @@ class ProfileScreenState extends State<ProfileScreen>
 
   // Action Handlers
 
+  void _confirmDeleteAccount(LocalizationService localization) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          localization.translate('profile.confirmDeleteAccount'),
+          style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          localization.translate('profile.deleteAccountMessage'),
+          style: AppStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              localization.translate('app.cancel'),
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteAccount(localization);
+            },
+            child: Text(
+              localization.translate('profile.deleteAccount'),
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _confirmLogout(LocalizationService localization) {
     showDialog(
       context: context,
@@ -972,6 +1086,65 @@ class ProfileScreenState extends State<ProfileScreen>
         ],
       ),
     );
+  }
+
+  void _deleteAccount(LocalizationService localization) async {
+    try {
+      final authRepository = Provider.of<AuthRepository>(
+        context,
+        listen: false,
+      );
+      await authRepository.deleteAccount();
+
+      if (mounted) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    localization.translate('profile.accountDeleted'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+
+        // Navigate to Welcome screen and clear navigation stack
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.welcome,
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${localization.translate('dialogs.errorDeletingAccount')}: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   void _logout() async {

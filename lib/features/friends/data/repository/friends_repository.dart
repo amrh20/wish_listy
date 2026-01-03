@@ -314,5 +314,40 @@ class FriendsRepository {
       throw Exception('Failed to load friends. Please try again.');
     }
   }
+
+  /// Remove/Unfriend a friend
+  ///
+  /// [friendId] - The friend user ID to remove (required)
+  ///
+  /// Returns success response
+  Future<Map<String, dynamic>> removeFriend({
+    required String friendId,
+  }) async {
+    try {
+      if (friendId.isEmpty) {
+        throw Exception('Friend ID is required');
+      }
+
+      final response = await _apiService.delete('/friends/$friendId');
+
+      // Handle different response structures
+      if (response is Map<String, dynamic>) {
+        final data = response['data'] ?? response;
+        if (data is Map<String, dynamic>) {
+          return data;
+        }
+        // If data is not a Map, return the response itself
+        return response;
+      }
+      
+      // If response is not a Map, return empty map (success case)
+      return {'success': true};
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      debugPrint('❌ FriendsRepository: Error removing friend: $e');
+      throw Exception('Failed to remove friend. Please try again.');
+    }
+  }
 }
 

@@ -943,6 +943,85 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     }
   }
 
+  String? _extractFriendRequestId(AppNotification notification) {
+    final d = notification.data;
+    if (d == null) return null;
+    final requestId = d['relatedId'] ??
+        d['related_id'] ??
+        d['requestId'] ??
+        d['request_id'] ??
+        d['id'] ??
+        d['_id'];
+    return requestId?.toString();
+  }
+
+  String? _extractFriendRequesterUserId(AppNotification notification) {
+    final d = notification.data;
+    if (d == null) return null;
+    final friendId = d['relatedUser']?['_id']?.toString() ??
+        d['relatedUser']?['id']?.toString() ??
+        d['relatedUserId']?.toString() ??
+        d['related_user_id']?.toString() ??
+        d['from']?['_id']?.toString() ??
+        d['from']?['id']?.toString() ??
+        d['fromUserId']?.toString() ??
+        d['from_user_id']?.toString();
+    return friendId;
+  }
+
+  /// When a friend request is accepted/declined outside Notifications UI (e.g., Friend Profile),
+  /// remove the corresponding notification from dropdown & notifications screen.
+  ///
+  /// We match by:
+  /// - friendUserId (requester user id) extracted from notification payload
+  /// - OR requestId if provided (best match)
+  Future<void> resolveFriendRequestNotification({
+    required String friendUserId,
+    String? requestId,
+  }) async {
+    try {
+      if (state is! NotificationsLoaded) return;
+      final currentState = state as NotificationsLoaded;
+
+      final matches = currentState.notifications.where((n) {
+        if (n.type != NotificationType.friendRequest) return false;
+        final extractedFriendId = _extractFriendRequesterUserId(n);
+        if (extractedFriendId != null && extractedFriendId == friendUserId) {
+          return true;
+        }
+        if (requestId != null && requestId.isNotEmpty) {
+          final extractedRequestId = _extractFriendRequestId(n);
+          return extractedRequestId != null && extractedRequestId == requestId;
+        }
+        return false;
+      }).toList();
+
+      if (matches.isEmpty) return;
+
+      final idsToRemove = matches.map((e) => e.id).toSet();
+      final updatedNotifications =
+          currentState.notifications.where((n) => !idsToRemove.contains(n.id)).toList();
+      final unreadCount = updatedNotifications.where((n) => !n.isRead).length;
+
+      emit(NotificationsLoaded(
+        notifications: updatedNotifications,
+        unreadCount: unreadCount,
+        isNewNotification: false,
+      ));
+
+      // Delete on backend (best effort). If it fails, reload to stay in sync.
+      for (final id in idsToRemove) {
+        await _apiService.delete('/notifications/$id');
+      }
+    } on ApiException catch (e) {
+      debugPrint('❌ NotificationsCubit: Error resolving friend request notification: ${e.message}');
+      loadNotifications();
+    } catch (e) {
+      debugPrint('❌ NotificationsCubit: Error resolving friend request notification: $e');
+      loadNotifications();
+    }
+  }
+
   /// Optimistically remove a notification from the list
   /// Used for immediate UI feedback before API call completes
   void removeNotificationOptimistically(String notificationId) {

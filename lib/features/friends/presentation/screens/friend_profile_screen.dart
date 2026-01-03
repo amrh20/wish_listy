@@ -1,14 +1,19 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
+import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/friends/data/models/friend_event_model.dart';
 import 'package:wish_listy/features/friends/data/models/friend_wishlist_model.dart';
+import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/presentation/controllers/friend_profile_controller.dart';
+import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 
 class FriendProfileScreen extends StatefulWidget {
   final String friendId;
@@ -22,7 +27,7 @@ class FriendProfileScreen extends StatefulWidget {
 class _FriendProfileScreenState extends State<FriendProfileScreen> {
   late final FriendProfileController _controller;
 
-  static const double _expandedHeaderHeight = 280.0; // Increased to accommodate handle field
+  static const double _expandedHeaderHeight = 350.0; // Increased to accommodate handle field + Quick Actions buttons
 
   @override
   void initState() {
@@ -81,7 +86,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                   shape: const CircleBorder(),
                 ),
               ),
-              // IMPORTANT: No chat icons / message actions here.
+              // No actions needed - Quick Actions are shown below stats
               actions: const [],
               flexibleSpace: FlexibleSpaceBar(
                 background: _PatternedHeader(controller: _controller),
@@ -119,6 +124,321 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
 
   Future<void> _refreshProfile() async {
     await _controller.fetchProfile();
+  }
+
+  Future<void> _handleAddFriend() async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    try {
+      await _controller.sendFriendRequest();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.send, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(localization.translate('friends.friendRequestSent')),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text(e.message)),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(localization.translate('friends.failedToSendFriendRequest')),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleAcceptRequest() async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final requestId = _controller.incomingRequestId.value.isNotEmpty
+        ? _controller.incomingRequestId.value
+        : null;
+    try {
+      await _controller.acceptIncomingRequest();
+      if (!mounted) return;
+      _removeFriendRequestNotification(friendUserId: widget.friendId, requestId: requestId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(localization.translate('friends.friendRequestAccepted')),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text(e.message)),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(localization.translate('friends.failedToAcceptFriendRequest')),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleDeclineRequest() async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final requestId = _controller.incomingRequestId.value.isNotEmpty
+        ? _controller.incomingRequestId.value
+        : null;
+    try {
+      await _controller.declineIncomingRequest();
+      if (!mounted) return;
+      _removeFriendRequestNotification(friendUserId: widget.friendId, requestId: requestId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.cancel, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(localization.translate('friends.friendRequestDeclined')),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text(e.message)),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(localization.translate('friends.failedToRejectFriendRequest')),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleUnfriend() async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final profile = _controller.profile.value;
+    final friendName = profile?.user.fullName ?? localization.translate('friends.friend');
+
+    // Show confirmation dialog
+    final shouldRemove = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor: AppColors.surface,
+          title: Text(
+            localization.translate('dialogs.removeFriendTitle'),
+            style: AppStyles.headingSmall.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            localization.translate('dialogs.removeFriendMessage', args: {'name': friendName}),
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(
+                localization.translate('dialogs.cancel'),
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(
+                localization.translate('friends.removeFriend'),
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldRemove != true || !mounted) return;
+
+    try {
+      final friendsRepository = FriendsRepository();
+      await friendsRepository.removeFriend(friendId: widget.friendId);
+
+      if (!mounted) return;
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.check_circle,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 8),
+              Text(localization.translate('friends.friendRemoved')),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+
+      // Navigate back
+      if (mounted) {
+        Navigator.pop(context, {
+          'unfriended': true,
+          'friendId': widget.friendId,
+        });
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(child: Text(e.message)),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  localization.translate('friends.failedToRemoveFriend') ?? 'Failed to remove friend. Please try again.',
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _removeFriendRequestNotification({
+    required String friendUserId,
+    String? requestId,
+  }) {
+    try {
+      context.read<NotificationsCubit>().resolveFriendRequestNotification(
+            friendUserId: friendUserId,
+            requestId: requestId,
+          );
+    } catch (_) {
+      // If NotificationsCubit isn't provided in the current widget tree, ignore.
+    }
   }
 }
 
@@ -181,7 +501,7 @@ class _PatternedHeader extends StatelessWidget {
                     final friendsCount = counts?.friends ?? 0;
                     final eventsCount = counts?.events ?? 0;
 
-                    final isFriend = p?.friendshipStatus.isFriend ?? false;
+                    final isFriend = controller.isFriend.value;
 
                     return Column(
                       mainAxisSize: MainAxisSize.min,
@@ -232,13 +552,34 @@ class _PatternedHeader extends StatelessWidget {
                             textAlign: TextAlign.center,
                           ),
                         ],
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         _GlassStatsContainer(
                           wishlists: wishlistsCount,
                           friends: friendsCount,
                           events: eventsCount,
                         ),
-                        // Intentionally no "Add Friend" button in header (prevents overflow).
+                        const SizedBox(height: 8),
+                        _RelationshipQuickActions(
+                          isFriend: controller.isFriend.value,
+                          hasIncomingRequest:
+                              controller.hasIncomingRequest.value,
+                          isRequestSent:
+                              controller.hasOutgoingRequest.value,
+                          isBusy: controller.isSendingFriendRequest.value ||
+                              controller.isLoading.value,
+                          onRemove: () => (context.findAncestorStateOfType<
+                                  _FriendProfileScreenState>())
+                              ?._handleUnfriend(),
+                          onAccept: () => (context.findAncestorStateOfType<
+                                  _FriendProfileScreenState>())
+                              ?._handleAcceptRequest(),
+                          onDecline: () => (context.findAncestorStateOfType<
+                                  _FriendProfileScreenState>())
+                              ?._handleDeclineRequest(),
+                          onAdd: () => (context.findAncestorStateOfType<
+                                  _FriendProfileScreenState>())
+                              ?._handleAddFriend(),
+                        ),
                       ],
                     );
                   }),
@@ -323,6 +664,175 @@ class _Avatar extends StatelessWidget {
                   color: AppColors.primary,
                 ),
               ),
+      ),
+    );
+  }
+}
+
+class _RelationshipQuickActions extends StatelessWidget {
+  final bool isFriend;
+  final bool hasIncomingRequest;
+  final bool isRequestSent;
+  final bool isBusy;
+  final VoidCallback? onRemove;
+  final VoidCallback? onAccept;
+  final VoidCallback? onDecline;
+  final VoidCallback? onAdd;
+
+  const _RelationshipQuickActions({
+    required this.isFriend,
+    required this.hasIncomingRequest,
+    required this.isRequestSent,
+    required this.isBusy,
+    required this.onRemove,
+    required this.onAccept,
+    required this.onDecline,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+
+    // Keep the header flexible: use Wrap instead of Row to avoid overflow.
+    if (isBusy) {
+      return const SizedBox(
+        height: 34,
+        child: Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    // 1) Friend -> Remove Friend
+    if (isFriend) {
+      return Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 10,
+        runSpacing: 10,
+        children: [
+          _QuickActionButton(
+            text: localization.translate('friends.removeFriend'),
+            icon: Icons.person_remove_outlined,
+            backgroundColor: AppColors.error.withOpacity(0.08),
+            foregroundColor: AppColors.error,
+            borderColor: AppColors.error.withOpacity(0.25),
+            onTap: onRemove,
+          ),
+        ],
+      );
+    }
+
+    // 2) Incoming request -> Accept / Decline
+    if (hasIncomingRequest) {
+      return Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 10,
+        runSpacing: 10,
+        children: [
+          _QuickActionButton(
+            text: localization.translate('friends.acceptRequest'),
+            icon: Icons.check_circle_outline,
+            backgroundColor: AppColors.success.withOpacity(0.10),
+            foregroundColor: AppColors.success,
+            borderColor: AppColors.success.withOpacity(0.25),
+            onTap: onAccept,
+          ),
+          _QuickActionButton(
+            text: localization.translate('friends.declineRequest'),
+            icon: Icons.cancel_outlined,
+            backgroundColor: AppColors.error.withOpacity(0.08),
+            foregroundColor: AppColors.error,
+            borderColor: AppColors.error.withOpacity(0.25),
+            onTap: onDecline,
+          ),
+        ],
+      );
+    }
+
+    // 3) Not friend + no incoming request -> Add Friend (or Pending)
+    if (isRequestSent) {
+      return Wrap(
+        alignment: WrapAlignment.center,
+        children: [
+          _QuickActionButton(
+            text: localization.translate('friends.requestPending'),
+            icon: Icons.hourglass_bottom,
+            backgroundColor: AppColors.textTertiary.withOpacity(0.10),
+            foregroundColor: AppColors.textTertiary,
+            borderColor: AppColors.textTertiary.withOpacity(0.20),
+            onTap: null,
+          ),
+        ],
+      );
+    }
+
+    return Wrap(
+      alignment: WrapAlignment.center,
+      children: [
+        _QuickActionButton(
+          text: localization.translate('friends.sendRequest'),
+          icon: Icons.person_add_alt_1_outlined,
+          backgroundColor: AppColors.primary.withOpacity(0.10),
+          foregroundColor: AppColors.primary,
+          borderColor: AppColors.primary.withOpacity(0.25),
+          onTap: onAdd,
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickActionButton extends StatelessWidget {
+  final String text;
+  final IconData icon;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final Color borderColor;
+  final VoidCallback? onTap;
+
+  const _QuickActionButton({
+    required this.text,
+    required this.icon,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.borderColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderColor, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: foregroundColor, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                text,
+                style: AppStyles.bodyMedium.copyWith(
+                  color: foregroundColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

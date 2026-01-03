@@ -977,21 +977,31 @@ class FriendsScreenState extends State<FriendsScreen>
     }
   }
 
-  void _viewFriendProfile(Friend friend) {
-    AppRoutes.pushNamed(
+  Future<void> _viewFriendProfile(Friend friend) async {
+    final result = await Navigator.pushNamed(
       context,
       AppRoutes.friendProfile,
       arguments: {'friendId': friend.id},
     );
+
+    if (!mounted) return;
+    if (result is Map && result['unfriended'] == true) {
+      await _loadFriends(resetPage: true);
+    }
   }
 
   /// Navigate to friend profile screen
-  void _navigateToFriendProfile(String friendId) {
-    AppRoutes.pushNamed(
+  Future<void> _navigateToFriendProfile(String friendId) async {
+    final result = await Navigator.pushNamed(
       context,
       AppRoutes.friendProfile,
       arguments: {'friendId': friendId},
     );
+
+    if (!mounted) return;
+    if (result is Map && result['unfriended'] == true) {
+      await _loadFriends(resetPage: true);
+    }
   }
 
   void _showAddFriendDialog() {
