@@ -62,6 +62,9 @@ dependencies:
 
   # Open store links
   url_launcher: ^6.2.6
+  
+  # Font Awesome icons
+  font_awesome_flutter: ^10.7.0
 
   # Skeleton loading effect
   skeletonizer: ^2.1.2

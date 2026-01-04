@@ -31,6 +31,8 @@ import '../../features/wishlists/presentation/screens/create_wishlist_screen.dar
 import '../../features/friends/presentation/screens/add_friend_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/activity_feed_screen.dart';
+import '../../features/profile/presentation/screens/faq_screen.dart';
+import '../../features/profile/presentation/screens/contact_us_screen.dart';
 import '../../features/wishlists/data/models/wishlist_model.dart';
 import '../../features/events/data/models/event_model.dart';
 
@@ -69,6 +71,8 @@ class AppRoutes {
   static const String friendActivityFeed = '/friend-activity-feed';
   static const String eventGuestList = '/event-guest-list';
   static const String legalInfo = '/legal-info';
+  static const String faq = '/faq';
+  static const String contactUs = '/contact-us';
   
   // Deep Link Routes (for Universal/App Links)
   static const String deepLinkWishlist = '/wishlist';
@@ -93,6 +97,8 @@ class AppRoutes {
     // createWishlist is handled in onGenerateRoute to support editing with wishlistId
     addFriend: (context) => AddFriendScreen(),
     editProfile: (context) => EditProfileScreen(),
+    faq: (context) => const FaqScreen(),
+    contactUs: (context) => const ContactUsScreen(),
   };
 
   // Route Generator for dynamic routes

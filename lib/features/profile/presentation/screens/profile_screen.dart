@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
@@ -206,6 +207,9 @@ class ProfileScreenState extends State<ProfileScreen>
                                                 const SizedBox(height: 16),
                                                 // App Settings
                                                 _buildAppSettings(),
+                                                    const SizedBox(height: 16),
+                                                    // Support & Legal
+                                                    _buildSupportLegalSection(),
                                                     const SizedBox(height: 16),
                                                     // Logout (last item)
                                                     _buildLogoutSection(),
@@ -753,6 +757,88 @@ class ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  Widget _buildSupportLegalSection() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textTertiary.withOpacity(0.1),
+            offset: const Offset(0, 4),
+            blurRadius: 20,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.secondary, AppColors.secondaryLight],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.support_agent, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                Provider.of<LocalizationService>(context, listen: false).translate('profile.supportLegal'),
+                style: AppStyles.headingSmall.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Contact Us
+          _buildSettingItem(
+            icon: Icons.email_outlined,
+            title: Provider.of<LocalizationService>(context, listen: false).translate('profile.contactUs'),
+            subtitle: Provider.of<LocalizationService>(context, listen: false).translate('profile.contactUsDescription'),
+            onTap: _contactUs,
+            color: AppColors.primary,
+          ),
+
+          // Privacy Policy
+          _buildSettingItem(
+            icon: Icons.shield_outlined,
+            title: Provider.of<LocalizationService>(context, listen: false).translate('profile.privacyPolicy'),
+            subtitle: Provider.of<LocalizationService>(context, listen: false).translate('profile.privacyPolicyDescription'),
+            onTap: _openPrivacyPolicy,
+            color: AppColors.secondary,
+          ),
+
+          // Terms & Conditions
+          _buildSettingItem(
+            icon: Icons.description_outlined,
+            title: Provider.of<LocalizationService>(context, listen: false).translate('profile.termsConditions'),
+            subtitle: Provider.of<LocalizationService>(context, listen: false).translate('profile.termsConditionsDescription'),
+            onTap: _openTermsConditions,
+            color: AppColors.accent,
+          ),
+
+          // FAQ
+          _buildSettingItem(
+            icon: Icons.help_outline,
+            title: Provider.of<LocalizationService>(context, listen: false).translate('profile.faq'),
+            subtitle: Provider.of<LocalizationService>(context, listen: false).translate('profile.faqDescription'),
+            onTap: _openFAQ,
+            showDivider: false,
+            color: AppColors.info,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLogoutSection() {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -1293,6 +1379,60 @@ class ProfileScreenState extends State<ProfileScreen>
     setState(() {
       _currentLanguage = localization.currentLanguage;
     });
+  }
+
+  /// Launch URL helper method
+  Future<void> _launchURL(String url) async {
+    final uri = Uri.parse(url);
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                Provider.of<LocalizationService>(context, listen: false)
+                    .translate('profile.couldNotLaunchUrl'),
+              ),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              Provider.of<LocalizationService>(context, listen: false)
+                  .translate('profile.couldNotLaunchUrl'),
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Contact Us - Navigate to Contact Us screen
+  void _contactUs() {
+    Navigator.pushNamed(context, AppRoutes.contactUs);
+  }
+
+  /// Open Privacy Policy
+  void _openPrivacyPolicy() {
+    _launchURL('https://wish-listy-self.vercel.app/privacy');
+  }
+
+  /// Open Terms & Conditions
+  void _openTermsConditions() {
+    _launchURL('https://wish-listy-self.vercel.app/terms');
+  }
+
+  /// Open FAQ Screen
+  void _openFAQ() {
+    Navigator.pushNamed(context, AppRoutes.faq);
   }
 
   Future<void> _loadUserProfile({bool forceRefresh = false}) async {
