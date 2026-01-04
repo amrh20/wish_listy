@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
@@ -21,6 +22,8 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
   static const double _stackCardHeight = 200; // Reduced from 230 for better fit
   static const double _stackCardRadius = 52; // Continuous squircle-like radius
 
+  late final AnimationController _watermarkController;
+
   // Card data
   final List<_CardData> _cards = [
     _CardData(
@@ -31,6 +34,7 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
       actionText: 'Create new Wishlist',
       categoryTitle: 'Wishlists',
       countPlaceholder: '0 lists',
+      watermarkIcon: Icons.card_giftcard_rounded,
     ),
     _CardData(
       icon: Icons.event_outlined,
@@ -41,6 +45,7 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
       actionText: 'Create new Event',
       categoryTitle: 'Events',
       countPlaceholder: '0 events',
+      watermarkIcon: Icons.calendar_month_rounded,
     ),
     _CardData(
       icon: Icons.people_outline_rounded,
@@ -51,8 +56,24 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
       actionText: 'Add new Friend',
       categoryTitle: 'Friends',
       countPlaceholder: '0 friends',
+      watermarkIcon: Icons.group_rounded,
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _watermarkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _watermarkController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -184,6 +205,9 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
                 shape: ContinuousRectangleBorder(
                   borderRadius: BorderRadius.circular(_stackCardRadius),
                 ),
+                // IMPORTANT: Clip card content so watermark icon is clipped to card bounds
+                // even when positioned with negative offsets (bottom-right corner effect)
+                clipBehavior: Clip.antiAlias,
                 elevation: 0,
                 child: Ink(
                   width: _stackCardWidth,
@@ -206,6 +230,18 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
                         blurRadius: 22,
                         offset: const Offset(0, 12),
                         spreadRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    // Clip within the card bounds (Material already clips to shape)
+                    clipBehavior: Clip.hardEdge,
+                    children: [
+                      _WatermarkIcon(
+                        controller: _watermarkController,
+                        icon: card.watermarkIcon,
+                        // Different phase per card so they don't breathe in sync
+                        phase: index * 0.9,
                       ),
                     ],
                   ),
@@ -340,6 +376,7 @@ class _CardData {
   final String actionText;
   final String categoryTitle;
   final String countPlaceholder;
+  final IconData watermarkIcon;
 
   _CardData({
     required this.icon,
@@ -349,6 +386,69 @@ class _CardData {
     required this.actionText,
     required this.categoryTitle,
     required this.countPlaceholder,
+    required this.watermarkIcon,
   });
+}
+
+class _WatermarkIcon extends StatelessWidget {
+  final AnimationController controller;
+  final IconData icon;
+  final double phase;
+
+  const _WatermarkIcon({
+    required this.controller,
+    required this.icon,
+    required this.phase,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Subtle watermark size
+    const iconSize = 35.0;
+    // Animation amplitude: icons start from top and fall down
+    const amplitude = 8.0;
+    // Positive offsets: icon positioned INSIDE card from top-left
+    // 15px from top and 15px from left (inside the card bounds)
+    const topOffset = 15.0; // Positive = inside card from top
+    const leftOffset = 15.0; // Positive = inside card from left
+    // Subtle rotation for dynamic feel
+    const rotationAngle = -0.2; // radians (approximately -11.5 degrees)
+    // Very subtle opacity (just a texture)
+    const iconOpacity = 0.12;
+
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        // Animation: start from top (negative) and move down (positive dy)
+        // Using sin wave: value goes from -1 to 1, so we map it to fall from top
+        final t = controller.value * 2 * math.pi;
+        // Map sin to range [0, 1] so icon starts higher and falls down
+        final normalizedValue = (math.sin(t + phase) + 1) / 2; // Range: 0 to 1
+        // Start from -amplitude (higher) and move to 0 (lower)
+        final dy = -amplitude + (normalizedValue * amplitude);
+
+        return Positioned(
+          top: topOffset,
+          left: leftOffset,
+          child: IgnorePointer(
+            child: Transform.translate(
+              offset: Offset(0, dy),
+              child: Transform.rotate(
+                angle: rotationAngle,
+                child: Opacity(
+                  opacity: iconOpacity,
+                  child: Icon(
+                    icon,
+                    size: iconSize,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 

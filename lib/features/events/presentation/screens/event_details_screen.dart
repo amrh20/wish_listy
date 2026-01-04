@@ -539,6 +539,11 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   ) {
     final hasDescription =
         _event!.description != null && _event!.description!.isNotEmpty;
+    // Invitation/Response section:
+    // Hide if user is not invited OR the event is in the past.
+    final showInvitationSection = _event!.isCreator == false &&
+        _event!.myInvitationStatus != 'not_invited' &&
+        _event!.isPast == false;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -591,14 +596,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           ],
 
           // Add spacing before Invitation Card / Status Card
-          if (_event!.isCreator == false) const SizedBox(height: 8),
+          if (showInvitationSection) const SizedBox(height: 8),
 
-          // Invitation Card (for Guest View - pending status) OR Status Card (for responded)
-          if (_event!.isCreator == false) ...[
+          // Invitation Card (pending) OR Status Card (responded)
+          if (showInvitationSection) ...[
             // Show invitation card only if status is pending
             if (_event!.myInvitationStatus == 'pending')
               _buildInvitationCard(localization)
-            // Show status card if user has responded
+            // Show status card if user has responded (accepted, declined, maybe)
             else ...[
               Text(
                 'Your Response',

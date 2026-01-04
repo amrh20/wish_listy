@@ -89,7 +89,7 @@ class HomeScreenState extends State<HomeScreen> {
         left: 8,
         right: 8,
         top: 12,
-        bottom: 16,
+        bottom: 12, // Reduced from 16
       ),
       decoration: BoxDecoration(
         color: AppColors.cardPurple, // Same as UnifiedPageHeader
@@ -111,13 +111,15 @@ class HomeScreenState extends State<HomeScreen> {
             _buildDecorativeElements(),
             // Main content
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+              // Reduced vertical padding to minimize header height
+              padding: const EdgeInsets.fromLTRB(20, 44, 20, 8), // Reduced bottom from 12 to 8
               child: SafeArea(
                 bottom: false,
                 top: false, // Top SafeArea is handled by padding
                 minimum: EdgeInsets.zero,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min, // Ensure column takes minimum space
                   children: [
                     // Top Row: Avatar + Greeting Column + Notification
                     Row(
@@ -273,8 +275,8 @@ class HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    // Bottom: "Ready to make wishes" text (below Row, italic, darker grey, smaller)
-                    const SizedBox(height: 12),
+                    // Bottom: "Ready to make wishes" text (minimal spacing)
+                    const SizedBox(height: 4), // Further reduced from 6 to 4
                     Text(
                       Provider.of<LocalizationService>(context, listen: false)
                           .translate('profile.readyToMakeWishesComeTrue'),
@@ -302,7 +304,7 @@ class HomeScreenState extends State<HomeScreen> {
         left: 8,
         right: 8,
         top: 12,
-        bottom: 16,
+        bottom: 12, // Reduced from 16 to match header
       ),
       decoration: BoxDecoration(
         color: AppColors.cardPurple, // Same as UnifiedPageHeader
@@ -324,13 +326,15 @@ class HomeScreenState extends State<HomeScreen> {
             _buildDecorativeElements(),
             // Main content
             Container(
-              padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+              // Match the tighter padding used in the real header
+              padding: const EdgeInsets.fromLTRB(20, 44, 20, 8), // Reduced to match header
               child: SafeArea(
                 bottom: false,
                 top: false,
                 minimum: EdgeInsets.zero,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min, // Ensure column takes minimum space
                   children: [
                     // Top Row: Avatar + Greeting + Notification skeleton
                     Row(
@@ -383,8 +387,8 @@ class HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
-                    // Bottom: Welcome message skeleton
-                    const SizedBox(height: 12),
+                    // Bottom: Welcome message skeleton (minimal spacing)
+                    const SizedBox(height: 4), // Further reduced from 6 to 4 to match header
                     Container(
                       width: 180,
                       height: 14,
@@ -739,23 +743,24 @@ class _FixedHeaderDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => _getHeaderHeight();
 
   double _getHeaderHeight() {
-    // Calculate approximate height for new design:
-    // - margin top: 12
-    // - SafeArea top padding: ~44 (status bar)
-    // - top padding: 20
-    // - Avatar row (avatar + greeting): ~60px (avatar height)
-    // - spacing: 16
-    // - Welcome message: ~18
-    // - bottom padding: 24
-    // - margin bottom: 16
-    // Total: ~210px, but we'll use a safe value
-    return 210.0;
+    // Keep this in sync with the visual header height.
+    //
+    // IMPORTANT:
+    // If this extent is larger than the child's actual laid-out height, Flutter
+    // can throw:
+    // "SliverGeometry is not valid: The layoutExtent exceeds the paintExtent."
+    //
+    // We intentionally keep the header compact on mobile.
+    return 160.0;
   }
 
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return child;
+    final h = _getHeaderHeight();
+    // Force the child to match the sliver's extent so we never get invalid
+    // sliver geometry when the header is compact.
+    return SizedBox(height: h, child: child);
   }
 
   @override
