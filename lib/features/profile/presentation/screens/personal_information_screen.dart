@@ -351,11 +351,11 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
           icon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
           validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return localization.translate('profile.emailRequired') ?? 'Email is required';
-            }
-            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-              return localization.translate('profile.enterValidEmail') ?? 'Please enter a valid email';
+            // Email is optional - only validate format if provided
+            if (value != null && value.trim().isNotEmpty) {
+              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                return localization.translate('profile.enterValidEmail') ?? 'Please enter a valid email';
+              }
             }
             return null;
           },

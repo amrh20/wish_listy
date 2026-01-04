@@ -14,6 +14,7 @@ import 'package:wish_listy/features/friends/data/models/friend_wishlist_model.da
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/presentation/controllers/friend_profile_controller.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
 
 class FriendProfileScreen extends StatefulWidget {
   final String friendId;
@@ -1004,6 +1005,7 @@ class _BodyContent extends StatefulWidget {
 }
 
 class _BodyContentState extends State<_BodyContent> {
+  int _selectedMainTab = 0; // 0 = wishlists, 1 = events
   String _selectedFilter = 'upcoming'; // 'upcoming' or 'past'
   String _selectedCategory = 'All'; // Wishlist category filter
 
@@ -1320,260 +1322,298 @@ class _BodyContentState extends State<_BodyContent> {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 32, 16, 28),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Wishlists Section Header
-          Builder(
-            builder: (context) {
-              final localization = Provider.of<LocalizationService>(context, listen: false);
-              return Text(
-                '${localization.translate('friends.wishlists')} 🎁',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              );
+          // Tabs
+          UnifiedTabBar(
+            tabs: [
+              UnifiedTab(
+                label: localization.translate('friends.wishlists'),
+                icon: Icons.favorite_rounded,
+              ),
+              UnifiedTab(
+                label: localization.translate('navigation.events'),
+                icon: Icons.event_outlined,
+              ),
+            ],
+            selectedIndex: _selectedMainTab,
+            onTabChanged: (index) {
+              setState(() {
+                _selectedMainTab = index;
+                // Reset filters when switching tabs
+                if (index == 0) {
+                  _selectedCategory = 'All';
+                } else {
+                  _selectedFilter = 'upcoming';
+                }
+              });
             },
           ),
-          // Spacing after header
-          const SizedBox(height: 8),
-          // Wishlists Content with Category Filter
-          Obx(() {
-            final localization = Provider.of<LocalizationService>(context, listen: false);
-            final isLoading = widget.controller.isLoading.value;
-            final allWishlists = widget.controller.wishlists;
-            
-            if (isLoading) {
-              return _buildWishlistSkeletonList();
-            }
-            
-            if (allWishlists.isEmpty) {
-              return _buildEmptyState(
-                icon: Icons.card_giftcard,
-                title: localization.translate('friends.noPublicWishlists'),
-                subtitle: localization.translate('friends.noPublicWishlistsDescription'),
-              );
-            }
+          const SizedBox(height: 20),
 
-            // Extract unique categories from wishlists
-            final Set<String> uniqueCategories = {};
-            for (final wishlist in allWishlists) {
-              if (wishlist.category != null && wishlist.category!.trim().isNotEmpty) {
-                // Capitalize category name for display
-                final categoryName = wishlist.category!.trim();
-                final capitalized = categoryName[0].toUpperCase() + categoryName.substring(1);
-                uniqueCategories.add(capitalized);
-              }
-            }
-            
-            // Build category filter options: ['All', ...uniqueCategories] (sorted)
-            final categoryOptions = ['All', ...uniqueCategories.toList()..sort()];
+          // Tab Content (no TabBarView here to avoid unbounded-height issues inside Slivers)
+          if (_selectedMainTab == 0) _buildWishlistsTab(localization) else _buildEventsTab(localization),
+        ],
+      ),
+    );
+  }
 
-            // Filter wishlists based on selected category
-            final filteredWishlists = _selectedCategory == 'All'
-                ? allWishlists
-                : allWishlists.where((w) {
-                    if (w.category == null || w.category!.trim().isEmpty) return false;
-                    final categoryName = w.category!.trim();
-                    final capitalized = categoryName[0].toUpperCase() + categoryName.substring(1);
-                    return capitalized == _selectedCategory;
-                  }).toList();
+  /// Build Wishlists Tab Content
+  Widget _buildWishlistsTab(LocalizationService localization) {
+    return Obx(() {
+      final localization = Provider.of<LocalizationService>(context, listen: false);
+      final isLoading = widget.controller.isLoading.value;
+      final allWishlists = widget.controller.wishlists;
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Category Filter Chips (only show if there are categories)
-                if (uniqueCategories.isNotEmpty) ...[
-                  SizedBox(
-                    height: 40,
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: categoryOptions.map((category) {
-                          final isSelected = category == _selectedCategory;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: ChoiceChip(
-                              label: Text(category),
-                              selected: isSelected,
-                              onSelected: (selected) {
-                                if (selected) {
-                                  setState(() {
-                                    _selectedCategory = category;
-                                  });
-                                }
-                              },
-                              selectedColor: AppColors.primary,
-                              checkmarkColor: Colors.white, // White check icon
-                              labelStyle: TextStyle(
-                                color: isSelected ? Colors.white : AppColors.textPrimary,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                                fontSize: 13,
-                              ),
-                              backgroundColor: Colors.grey.shade100,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                // Filtered Wishlists List
-                if (filteredWishlists.isEmpty)
-                  _buildEmptyState(
-                    icon: Icons.filter_alt_outlined,
-                    title: localization.translate('friends.noWishlistsInCategory'),
-                    subtitle: localization.translate('friends.tryDifferentCategory'),
-                  )
-                else
-                  ListView.separated(
-                    itemCount: filteredWishlists.length,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    separatorBuilder: (context, index) => const SizedBox(height: 14),
-                    itemBuilder: (context, index) {
-                      final w = filteredWishlists[index];
-                      return _WishlistGridCard(
-                        wishlist: w,
-                        controller: widget.controller,
-                        onTap: () {
-                          final localization = Provider.of<LocalizationService>(context, listen: false);
-                          final friendName =
-                              widget.controller.profile.value?.user.fullName ?? localization.translate('friends.friend');
-                          Navigator.pushNamed(
-                            context,
-                            AppRoutes.wishlistItems,
-                            arguments: {
-                              'wishlistId': w.id,
-                              'wishlistName': w.name,
-                              'totalItems': w.itemCount,
-                              'purchasedItems': 0,
-                              'isFriendWishlist': true,
-                              'friendName': friendName,
-                            },
-                          );
-                        },
-                      );
-                    },
-                  ),
-              ],
-            );
-          }),
-          // Large spacing between sections
-          const SizedBox(height: 40),
-          // Events Section Header with Filter Tabs
-          Builder(
-            builder: (context) {
-              final localization = Provider.of<LocalizationService>(context, listen: false);
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title (on its own line)
-                  Text(
-                    '${localization.translate('friends.events')} 📅',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Filter Tabs (SegmentedButton on its own line)
-                  SegmentedButton<String>(
-                    segments: [
-                      ButtonSegment<String>(
-                        value: 'upcoming',
-                        label: Text(localization.translate('friends.upcoming')),
-                      ),
-                      ButtonSegment<String>(
-                        value: 'past',
-                        label: Text(localization.translate('friends.past')),
-                      ),
-                    ],
-                    selected: {_selectedFilter},
-                    onSelectionChanged: (Set<String> newSelection) {
-                      setState(() {
-                        _selectedFilter = newSelection.first;
-                      });
-                    },
-                    style: SegmentedButton.styleFrom(
-                      selectedBackgroundColor: AppColors.primary,
-                      selectedForegroundColor: Colors.white,
-                      backgroundColor: Colors.grey.shade100,
-                      foregroundColor: Colors.grey.shade700,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-          // Spacing after header
-          const SizedBox(height: 16),
-          // Events Content (Filtered)
-          Obx(() {
-            final isLoading = widget.controller.isLoading.value;
-            final allEvents = widget.controller.events;
-            
-            // Filter events based on selected filter
-            final filteredEvents = allEvents.where((event) {
-              if (_selectedFilter == 'past') {
-                return event.status?.toLowerCase() == 'past';
-              } else {
-                // 'upcoming' - show all events that are NOT past
-                return event.status?.toLowerCase() != 'past';
-              }
+      if (isLoading) {
+        return _buildWishlistSkeletonList();
+      }
+
+      if (allWishlists.isEmpty) {
+        return _buildEmptyState(
+          icon: Icons.card_giftcard,
+          title: localization.translate('friends.noPublicWishlists'),
+          subtitle: localization.translate('friends.noPublicWishlistsDescription'),
+        );
+      }
+
+      // Extract unique categories from wishlists
+      final Set<String> uniqueCategories = {};
+      for (final wishlist in allWishlists) {
+        if (wishlist.category != null && wishlist.category!.trim().isNotEmpty) {
+          // Capitalize category name for display
+          final categoryName = wishlist.category!.trim();
+          final capitalized =
+              categoryName[0].toUpperCase() + categoryName.substring(1);
+          uniqueCategories.add(capitalized);
+        }
+      }
+
+      // Build category filter options: ['All', ...uniqueCategories] (sorted)
+      final categoryOptions = ['All', ...uniqueCategories.toList()..sort()];
+
+      // Filter wishlists based on selected category
+      final filteredWishlists = _selectedCategory == 'All'
+          ? allWishlists
+          : allWishlists.where((w) {
+              if (w.category == null || w.category!.trim().isEmpty) return false;
+              final categoryName = w.category!.trim();
+              final capitalized =
+                  categoryName[0].toUpperCase() + categoryName.substring(1);
+              return capitalized == _selectedCategory;
             }).toList();
 
-            if (isLoading) {
-              return _buildEventSkeletonList();
-            }
-            if (filteredEvents.isEmpty) {
-              final localization = Provider.of<LocalizationService>(context, listen: false);
-              return _buildEmptyState(
-                icon: Icons.event_busy,
-                title: _selectedFilter == 'past'
-                    ? localization.translate('friends.noPastEvents')
-                    : localization.translate('friends.noUpcomingEvents'),
-                subtitle: _selectedFilter == 'past'
-                    ? localization.translate('friends.noPastEventsDescription')
-                    : localization.translate('friends.nothingScheduled'),
-              );
-            }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Category Filter Chips (only show if there are categories)
+          if (uniqueCategories.isNotEmpty) ...[
+            SizedBox(
+              height: 40,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: categoryOptions.map((category) {
+                    final isSelected = category == _selectedCategory;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(category),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setState(() {
+                              _selectedCategory = category;
+                            });
+                          }
+                        },
+                        selectedColor: AppColors.primary,
+                        checkmarkColor: Colors.white, // White check icon
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : AppColors.textPrimary,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.normal,
+                          fontSize: 13,
+                        ),
+                        backgroundColor: Colors.grey.shade100,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
 
-            return ListView.separated(
-              itemCount: filteredEvents.length,
+          // Filtered Wishlists List
+          if (filteredWishlists.isEmpty)
+            _buildEmptyState(
+              icon: Icons.filter_alt_outlined,
+              title: localization.translate('friends.noWishlistsInCategory'),
+              subtitle: localization.translate('friends.tryDifferentCategory'),
+            )
+          else
+            ListView.separated(
+              itemCount: filteredWishlists.length,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (context, index) =>
+                  const SizedBox(height: 14),
               itemBuilder: (context, index) {
-                final e = filteredEvents[index];
-                final localization = Provider.of<LocalizationService>(context, listen: false);
-                return _EventTicketCard(
-                  event: e,
-                  localization: localization,
+                final w = filteredWishlists[index];
+                return _WishlistGridCard(
+                  wishlist: w,
+                  controller: widget.controller,
                   onTap: () {
+                    final localization =
+                        Provider.of<LocalizationService>(context, listen: false);
+                    final friendName = widget.controller.profile.value?.user
+                            .fullName ??
+                        localization.translate('friends.friend');
                     Navigator.pushNamed(
                       context,
-                      AppRoutes.eventDetails,
-                      arguments: {'eventId': e.id},
+                      AppRoutes.wishlistItems,
+                      arguments: {
+                        'wishlistId': w.id,
+                        'wishlistName': w.name,
+                        'totalItems': w.itemCount,
+                        'purchasedItems': 0,
+                        'isFriendWishlist': true,
+                        'friendName': friendName,
+                      },
                     );
                   },
                 );
               },
-            );
-          }),
+            ),
         ],
+      );
+    });
+  }
+
+  /// Build Events Tab Content
+  Widget _buildEventsTab(LocalizationService localization) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Filter Chips (match Wishlists style)
+        SizedBox(
+          height: 40,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterChip(
+                  label: localization.translate('friends.upcoming'),
+                  isSelected: _selectedFilter == 'upcoming',
+                  onTap: () => setState(() => _selectedFilter = 'upcoming'),
+                ),
+                const SizedBox(width: 10),
+                _buildFilterChip(
+                  label: localization.translate('friends.past'),
+                  isSelected: _selectedFilter == 'past',
+                  onTap: () => setState(() => _selectedFilter = 'past'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Events Content (Filtered)
+        Obx(() {
+          final isLoading = widget.controller.isLoading.value;
+          final allEvents = widget.controller.events;
+
+          // Filter events based on selected filter
+          final filteredEvents = allEvents.where((event) {
+            if (_selectedFilter == 'past') {
+              return event.status?.toLowerCase() == 'past';
+            } else {
+              // 'upcoming' - show all events that are NOT past
+              return event.status?.toLowerCase() != 'past';
+            }
+          }).toList();
+
+          if (isLoading) {
+            return _buildEventSkeletonList();
+          }
+          if (filteredEvents.isEmpty) {
+            final localization =
+                Provider.of<LocalizationService>(context, listen: false);
+            return _buildEmptyState(
+              icon: Icons.event_busy,
+              title: _selectedFilter == 'past'
+                  ? localization.translate('friends.noPastEvents')
+                  : localization.translate('friends.noUpcomingEvents'),
+              subtitle: _selectedFilter == 'past'
+                  ? localization.translate('friends.noPastEventsDescription')
+                  : localization.translate('friends.nothingScheduled'),
+            );
+          }
+
+          return ListView.separated(
+            itemCount: filteredEvents.length,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final e = filteredEvents[index];
+              final localization =
+                  Provider.of<LocalizationService>(context, listen: false);
+              return _EventTicketCard(
+                event: e,
+                localization: localization,
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.eventDetails,
+                    arguments: {'eventId': e.id},
+                  );
+                },
+              );
+            },
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) onTap();
+      },
+      selectedColor: AppColors.primary,
+      checkmarkColor: Colors.white,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : AppColors.textPrimary,
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        fontSize: 13,
+      ),
+      backgroundColor: Colors.grey.shade100,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
       ),
     );
   }

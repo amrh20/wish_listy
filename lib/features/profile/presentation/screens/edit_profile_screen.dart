@@ -406,15 +406,15 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             label: localization.translate('auth.email'),
             prefixIcon: Icons.email,
             keyboardType: TextInputType.emailAddress,
-            isRequired: true,
+            isRequired: false, // Email is optional when editing profile
             validator: (value) {
-              if (value?.isEmpty ?? true) {
-                return localization.translate('auth.pleaseEnterEmail');
-              }
-              if (!RegExp(
-                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-              ).hasMatch(value!)) {
-                return localization.translate('auth.pleaseEnterValidEmail');
+              // Email is optional - only validate format if provided
+              if (value != null && value.trim().isNotEmpty) {
+                if (!RegExp(
+                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                ).hasMatch(value)) {
+                  return localization.translate('auth.pleaseEnterValidEmail');
+                }
               }
               return null;
             },
