@@ -486,6 +486,8 @@
     "noInvitations": "لا توجد دعوات",
     "noInvitationsYet": "لا توجد دعوات بعد",
     "noInvitationsDescription": "لم تستلم أي دعوات للفعاليات بعد. الفعاليات المدعو إليها ستظهر هنا!",
+    "noUpcomingEvents": "لا توجد فعاليات قادمة",
+    "noPastEvents": "لا توجد فعاليات سابقة",
     "upcomingEvents": "الفعاليات القادمة",
     "pastEvents": "الفعاليات الماضية",
     "eventDate": "تاريخ الفعالية",

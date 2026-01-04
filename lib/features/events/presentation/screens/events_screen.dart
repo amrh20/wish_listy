@@ -38,6 +38,11 @@ class EventsScreenState extends State<EventsScreen>
   String _selectedSortOption = 'date_upcoming';
   String? _selectedEventType;
   List<EventSummary> _filteredEvents = [];
+  // Keep a copy of events filtered by search/type but BEFORE status filter,
+  // so we can show accurate counts in the filter chips.
+  List<EventSummary> _baseFilteredEvents = [];
+  // Status filter (Wishlists-style chips)
+  String _selectedStatusFilter = 'all'; // 'all' | 'upcoming' | 'past'
 
   // Events data (loaded from API)
   List<EventSummary> _myEvents = [];
@@ -226,6 +231,18 @@ class EventsScreenState extends State<EventsScreen>
           .toList();
     }
 
+    // Save base filtered list (before status filter) for chip counts per tab
+    _baseFilteredEvents = allEvents;
+
+    // Apply status filter (All / Upcoming / Past)
+    bool isPastStatus(EventStatus s) =>
+        s == EventStatus.completed || s == EventStatus.cancelled;
+    if (_selectedStatusFilter == 'upcoming') {
+      allEvents = allEvents.where((e) => !isPastStatus(e.status)).toList();
+    } else if (_selectedStatusFilter == 'past') {
+      allEvents = allEvents.where((e) => isPastStatus(e.status)).toList();
+    }
+
     // Apply sorting
     switch (_selectedSortOption) {
       case 'date_upcoming':
@@ -242,6 +259,168 @@ class EventsScreenState extends State<EventsScreen>
     setState(() {
       _filteredEvents = allEvents;
     });
+  }
+
+  Widget _buildStatusFilterTabs(
+    LocalizationService localization, {
+    required int allCount,
+    required int upcomingCount,
+    required int pastCount,
+  }) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Icon(
+            Icons.filter_list_rounded,
+            size: 20,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(width: 12),
+          _buildStatusChip(
+            label: localization.translate('ui.all'),
+            value: 'all',
+            isSelected: _selectedStatusFilter == 'all',
+            icon: Icons.list_rounded,
+            count: allCount,
+          ),
+          const SizedBox(width: 8),
+          _buildStatusChip(
+            label: localization.translate('events.upcoming'),
+            value: 'upcoming',
+            isSelected: _selectedStatusFilter == 'upcoming',
+            icon: Icons.upcoming_rounded,
+            count: upcomingCount,
+          ),
+          const SizedBox(width: 8),
+          _buildStatusChip(
+            label: localization.translate('events.past'),
+            value: 'past',
+            isSelected: _selectedStatusFilter == 'past',
+            icon: Icons.history_rounded,
+            count: pastCount,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip({
+    required String label,
+    required String value,
+    required bool isSelected,
+    required IconData icon,
+    required int count,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        if (_selectedStatusFilter == value) return;
+        setState(() {
+          _selectedStatusFilter = value;
+        });
+        _applyFilters();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.surfaceVariant,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? AppColors.primary : AppColors.textTertiary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: AppStyles.bodySmall.copyWith(
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+            if (count > 0) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.textTertiary.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  count.toString(),
+                  style: AppStyles.caption.copyWith(
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInlineFilteredEmpty(
+    LocalizationService localization, {
+    required String filter, // 'all' | 'upcoming' | 'past'
+  }) {
+    final String title = switch (filter) {
+      'past' => localization.translate('events.noPastEvents'),
+      'upcoming' => localization.translate('events.noUpcomingEvents'),
+      _ => localization.translate('events.noEvents'),
+    };
+
+    final IconData icon = switch (filter) {
+      'past' => Icons.history_rounded,
+      'upcoming' => Icons.event_busy_rounded,
+      _ => Icons.event_busy_rounded,
+    };
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.06),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 30,
+              color: AppColors.textTertiary,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            title,
+            style: AppStyles.bodyLarge.copyWith(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -381,106 +560,142 @@ class EventsScreenState extends State<EventsScreen>
   }
 
   Widget _buildMyEventsTab(LocalizationService localization) {
-    final myFilteredEvents = _filteredEvents
-        .where((e) => e.isCreatedByMe)
-        .toList();
+    final myBaseEvents = _baseFilteredEvents.where((e) => e.isCreatedByMe).toList();
+    final myFilteredEvents = _filteredEvents.where((e) => e.isCreatedByMe).toList();
+    bool isPastStatus(EventStatus s) =>
+        s == EventStatus.completed || s == EventStatus.cancelled;
+    final allCount = myBaseEvents.length;
+    final upcomingCount = myBaseEvents.where((e) => !isPastStatus(e.status)).length;
+    final pastCount = myBaseEvents.where((e) => isPastStatus(e.status)).length;
 
     return RefreshIndicator(
       onRefresh: _refreshEvents,
       color: AppColors.primary,
       child: _isLoading
           ? _buildEventSkeletonList()
-          : myFilteredEvents.isEmpty
-          ? EmptyMyEvents(localization: localization)
-          : ListView.builder(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              itemCount: myFilteredEvents.length + 1,
-              itemBuilder: (context, index) {
-                if (index == myFilteredEvents.length) {
-                  return const SizedBox(height: 100);
-                }
-                return EventCard(
-                  event: myFilteredEvents[index],
-                  localization: localization,
-                  onTap: () => _viewEventDetails(myFilteredEvents[index]),
-                  onManageEvent: () => _manageEvent(myFilteredEvents[index]),
-                  onViewWishlist: () =>
-                      _viewEventWishlist(myFilteredEvents[index], localization),
-                  onAddWishlist: () => _addWishlistToEvent(
-                    myFilteredEvents[index],
-                    localization,
-                  ),
-                  onEdit: () => _editEvent(myFilteredEvents[index]),
-                  onShare: () => _shareEvent(myFilteredEvents[index]),
-                  onDelete: () => _deleteEvent(myFilteredEvents[index]),
-                );
-              },
-            ),
+          : allCount == 0
+              ? EmptyMyEvents(localization: localization)
+              : ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _buildStatusFilterTabs(
+                        localization,
+                        allCount: allCount,
+                        upcomingCount: upcomingCount,
+                        pastCount: pastCount,
+                      ),
+                    ),
+                    if (myFilteredEvents.isEmpty)
+                      _buildInlineFilteredEmpty(
+                        localization,
+                        filter: _selectedStatusFilter,
+                      )
+                    else ...[
+                      ...myFilteredEvents.map(
+                        (e) => EventCard(
+                          event: e,
+                          localization: localization,
+                          onTap: () => _viewEventDetails(e),
+                          onManageEvent: () => _manageEvent(e),
+                          onViewWishlist: () => _viewEventWishlist(e, localization),
+                          onAddWishlist: () => _addWishlistToEvent(e, localization),
+                          onEdit: () => _editEvent(e),
+                          onShare: () => _shareEvent(e),
+                          onDelete: () => _deleteEvent(e),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 100),
+                  ],
+                ),
     );
   }
 
   Widget _buildInvitedEventsTab(LocalizationService localization) {
-    final invitedFilteredEvents = _filteredEvents
-        .where((e) => !e.isCreatedByMe)
-        .toList();
-    final upcomingEvents = invitedFilteredEvents
-        .where((e) => e.status == EventStatus.upcoming)
-        .toList();
-    final pastEvents = invitedFilteredEvents
-        .where((e) => e.status == EventStatus.completed)
-        .toList();
+    final invitedBaseEvents =
+        _baseFilteredEvents.where((e) => !e.isCreatedByMe).toList();
+    final invitedFilteredEvents =
+        _filteredEvents.where((e) => !e.isCreatedByMe).toList();
+    bool isPastStatus(EventStatus s) =>
+        s == EventStatus.completed || s == EventStatus.cancelled;
+    final allCount = invitedBaseEvents.length;
+    final upcomingCount =
+        invitedBaseEvents.where((e) => !isPastStatus(e.status)).length;
+    final pastCount = invitedBaseEvents.where((e) => isPastStatus(e.status)).length;
+
+    final upcomingEvents =
+        invitedFilteredEvents.where((e) => !isPastStatus(e.status)).toList();
+    final pastEvents =
+        invitedFilteredEvents.where((e) => isPastStatus(e.status)).toList();
 
     return RefreshIndicator(
       onRefresh: _refreshEvents,
       color: AppColors.primary,
       child: _isLoading
           ? _buildEventSkeletonList()
-          : invitedFilteredEvents.isEmpty
-          ? EmptyInvitedEvents(localization: localization)
-          : SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Upcoming Events
-                  if (upcomingEvents.isNotEmpty) ...[
-                    _buildSectionHeader(
-                      localization.translate('events.upcomingEvents'),
-                    ),
-                    const SizedBox(height: 12),
-                    ...upcomingEvents.map(
-                      (event) => InvitedEventCard(
-                        event: event,
-                        localization: localization,
-                        onTap: () => _viewEventDetails(event),
-                        onRSVP: (status) => _handleRSVP(event, status),
+          : allCount == 0
+              ? EmptyInvitedEvents(localization: localization)
+              : SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: _buildStatusFilterTabs(
+                          localization,
+                          allCount: allCount,
+                          upcomingCount: upcomingCount,
+                          pastCount: pastCount,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                      if (invitedFilteredEvents.isEmpty)
+                        _buildInlineFilteredEmpty(
+                          localization,
+                          filter: _selectedStatusFilter,
+                        )
+                      else ...[
+                        // Upcoming Events
+                        if (upcomingEvents.isNotEmpty) ...[
+                          _buildSectionHeader(
+                            localization.translate('events.upcomingEvents'),
+                          ),
+                          const SizedBox(height: 12),
+                          ...upcomingEvents.map(
+                            (event) => InvitedEventCard(
+                              event: event,
+                              localization: localization,
+                              onTap: () => _viewEventDetails(event),
+                              onRSVP: (status) => _handleRSVP(event, status),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
 
-                  // Past Events
-                  if (pastEvents.isNotEmpty) ...[
-                    _buildSectionHeader(
-                      localization.translate('events.pastEvents'),
-                    ),
-                    const SizedBox(height: 12),
-                    ...pastEvents.map(
-                      (event) => InvitedEventCard(
-                        event: event,
-                        localization: localization,
-                        onTap: () => _viewEventDetails(event),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-
-                  const SizedBox(height: 100),
-                ],
-              ),
-            ),
+                        // Past Events
+                        if (pastEvents.isNotEmpty) ...[
+                          _buildSectionHeader(
+                            localization.translate('events.pastEvents'),
+                          ),
+                          const SizedBox(height: 12),
+                          ...pastEvents.map(
+                            (event) => InvitedEventCard(
+                              event: event,
+                              localization: localization,
+                              onTap: () => _viewEventDetails(event),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+                      ],
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
     );
   }
 

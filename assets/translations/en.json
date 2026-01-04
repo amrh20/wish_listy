@@ -487,6 +487,8 @@
     "noInvitations": "No invitations",
     "noInvitationsYet": "No Invitations Yet",
     "noInvitationsDescription": "You haven't received any event invitations yet. Your invited events will appear here!",
+    "noUpcomingEvents": "No upcoming events",
+    "noPastEvents": "No past events",
     "upcomingEvents": "Upcoming Events",
     "pastEvents": "Past Events",
     "eventDate": "Event Date",
