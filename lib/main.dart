@@ -19,6 +19,7 @@ import 'features/wishlists/data/models/wishlist_model.dart';
 import 'features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'features/profile/presentation/providers/activity_provider.dart';
 import 'core/services/deep_link_service.dart';
+import 'core/navigation/app_route_observer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -156,6 +157,7 @@ class _MyAppState extends State<MyApp> {
             },
             restorationScopeId: 'wish_listy_app',
             navigatorKey: MyApp.navigatorKey,
+            navigatorObservers: [appRouteObserver],
             builder: (context, child) {
               // Apply RTL/LTR direction based on language
               return Directionality(

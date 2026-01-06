@@ -26,26 +26,37 @@ class NotificationDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context, listen: false);
-    // Get last 5 notifications
-    final recentNotifications = notifications.take(5).toList();
+    // IMPORTANT:
+    // The dropdown is shown via `showMenu` which takes a snapshot widget tree.
+    // To reflect actions (accept/decline/delete) immediately without closing,
+    // we must listen to `NotificationsCubit` changes here.
+    return BlocBuilder<NotificationsCubit, NotificationsState>(
+      builder: (context, state) {
+        final effectiveNotifications =
+            state is NotificationsLoaded ? state.notifications : notifications;
+        final effectiveUnreadCount =
+            state is NotificationsLoaded ? state.unreadCount : unreadCount;
 
-    return Container(
-      width: 360,
-      constraints: const BoxConstraints(maxHeight: 400),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+        // Get last 5 notifications
+        final recentNotifications = effectiveNotifications.take(5).toList();
+
+        return Container(
+          width: 360,
+          constraints: const BoxConstraints(maxHeight: 400),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
           // Header
           Container(
             padding: const EdgeInsets.all(16),
@@ -67,7 +78,7 @@ class NotificationDropdown extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                if (unreadCount > 0)
+                if (effectiveUnreadCount > 0)
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -78,7 +89,9 @@ class NotificationDropdown extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      localization.translate('notifications.newNotifications').replaceAll('{count}', unreadCount.toString()),
+                      localization
+                          .translate('notifications.newNotifications')
+                          .replaceAll('{count}', effectiveUnreadCount.toString()),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -161,7 +174,9 @@ class NotificationDropdown extends StatelessWidget {
             ),
           ),
         ],
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -669,6 +684,11 @@ class _NotificationItem extends StatelessWidget {
                                 Navigator.pop(context); // Close dropdown
                                 await cubit.respondToEvent(eventId, 'declined');
                                 if (context.mounted) {
+                                  context
+                                      .read<NotificationsCubit>()
+                                      .deleteNotification(notification.id);
+                                }
+                                if (context.mounted) {
                                   setState(() {
                                     isLoading = false;
                                     selectedStatus = 'declined';
@@ -744,6 +764,11 @@ class _NotificationItem extends StatelessWidget {
                                 Navigator.pop(context); // Close dropdown
                                 await cubit.respondToEvent(eventId, 'maybe');
                                 if (context.mounted) {
+                                  context
+                                      .read<NotificationsCubit>()
+                                      .deleteNotification(notification.id);
+                                }
+                                if (context.mounted) {
                                   setState(() {
                                     isLoading = false;
                                     selectedStatus = 'maybe';
@@ -818,6 +843,11 @@ class _NotificationItem extends StatelessWidget {
                                 }
                                 Navigator.pop(context); // Close dropdown
                                 await cubit.respondToEvent(eventId, 'accepted');
+                                if (context.mounted) {
+                                  context
+                                      .read<NotificationsCubit>()
+                                      .deleteNotification(notification.id);
+                                }
                                 if (context.mounted) {
                                   setState(() {
                                     isLoading = false;

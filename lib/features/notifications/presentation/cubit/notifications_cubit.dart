@@ -773,9 +773,10 @@ class NotificationsCubit extends Cubit<NotificationsState> {
           break;
         
         // Event types - navigate to event details screen
+        // For eventInvitation, we can navigate to event details (relatedId is eventId)
+        // For eventResponse (accepted/declined/maybe), check if user wants to see event or friend profile
         case NotificationType.eventInvitation:
         case NotificationType.eventUpdate:
-        case NotificationType.eventResponse:
         case NotificationType.eventReminder:
           // Get eventId from relatedId or data map
           final eventId = notification.relatedId ?? 
@@ -799,6 +800,52 @@ class NotificationsCubit extends Cubit<NotificationsState> {
                 backgroundColor: Colors.red,
               ),
             );
+          }
+          break;
+        
+        // Event response (invitation accepted/declined/maybe) - navigate to friend profile using relatedUser.id
+        case NotificationType.eventResponse:
+          // Get friendId from relatedUser._id (this is the user who responded to the invitation)
+          final friendId = notification.data?['relatedUser']?['_id']?.toString() ??
+                          notification.data?['relatedUser']?['id']?.toString() ??
+                          notification.data?['relatedUserId']?.toString() ??
+                          notification.data?['related_user_id']?.toString() ??
+                          notification.data?['from']?['_id']?.toString() ??
+                          notification.data?['from']?['id']?.toString() ??
+                          notification.data?['fromUserId']?.toString() ??
+                          notification.data?['from_user_id']?.toString();
+          
+          if (friendId != null && friendId.isNotEmpty) {
+            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Navigating to friend profile: $friendId');
+            Navigator.pushNamed(
+              context,
+              AppRoutes.friendProfile,
+              arguments: {'friendId': friendId},
+            );
+          } else {
+            // Fallback: try to navigate to event if friendId is not available
+            final eventId = notification.relatedId ?? 
+                           notification.data?['eventId']?.toString() ??
+                           notification.data?['event_id']?.toString() ??
+                           notification.data?['event']?['_id']?.toString() ??
+                           notification.data?['event']?['id']?.toString();
+            
+            if (eventId != null && eventId.isNotEmpty) {
+              debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Missing friendId, navigating to event details: $eventId');
+              Navigator.pushNamed(
+                context,
+                AppRoutes.eventDetails,
+                arguments: {'eventId': eventId},
+              );
+            } else {
+              debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing both friendId and eventId for event response notification');
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Unable to open. Missing information.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
           }
           break;
         
@@ -835,17 +882,31 @@ class NotificationsCubit extends Cubit<NotificationsState> {
           }
           break;
         
-        // Friend request accepted - navigate to friends screen (My Friends tab) or friend profile
+        // Friend request accepted - navigate to friend profile using relatedUser.id
         case NotificationType.friendRequestAccepted:
-          if (notification.relatedId != null && notification.relatedId!.isNotEmpty) {
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Navigating to friend profile: ${notification.relatedId}');
+          // Get friendId from relatedUser._id (this is the user who accepted the request)
+          // Priority: relatedUser._id (correct ID for friend profile)
+          // Note: relatedId is not the user ID, we need relatedUser._id
+          final friendId = notification.data?['relatedUser']?['_id']?.toString() ??
+                          notification.data?['relatedUser']?['id']?.toString() ??
+                          notification.data?['relatedUserId']?.toString() ??
+                          notification.data?['related_user_id']?.toString() ??
+                          notification.data?['from']?['_id']?.toString() ??
+                          notification.data?['from']?['id']?.toString() ??
+                          notification.data?['fromUserId']?.toString() ??
+                          notification.data?['from_user_id']?.toString();
+          
+          if (friendId != null && friendId.isNotEmpty) {
+            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Navigating to friend profile: $friendId');
             Navigator.pushNamed(
               context,
               AppRoutes.friendProfile,
-              arguments: {'friendId': notification.relatedId!},
+              arguments: {'friendId': friendId},
             );
           } else {
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Navigating to friends screen (My Friends tab)');
+            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Missing friendId for friend request accepted notification, navigating to friends screen');
+            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Available data keys: ${notification.data?.keys.toList()}');
+            // Fallback to friends screen if friendId is not available
             Navigator.pushNamed(
               context,
               AppRoutes.friends,
@@ -917,22 +978,31 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       if (state is! NotificationsLoaded) return;
 
       final currentState = state as NotificationsLoaded;
-      
-      // Optimistically remove from UI
-      final updatedNotifications = currentState.notifications
-          .where((n) => n.id != notificationId)
-          .toList();
+      final toDelete = currentState.notifications
+          .cast<AppNotification?>()
+          .firstWhere((n) => n?.id == notificationId, orElse: () => null);
 
-      final unreadCount = updatedNotifications.where((n) => !n.isRead).length;
+      // Optimistically remove from UI
+      final updatedNotifications =
+          currentState.notifications.where((n) => n.id != notificationId).toList();
+
+      // IMPORTANT: unreadCount is backend-driven (lastBadgeSeenAt), but for immediate UX
+      // we can decrement if the removed notification was unread, then sync in background.
+      final updatedUnreadCount = (toDelete != null && !toDelete.isRead)
+          ? (currentState.unreadCount - 1).clamp(0, 1 << 30)
+          : currentState.unreadCount;
 
       emit(NotificationsLoaded(
         notifications: updatedNotifications,
-        unreadCount: unreadCount,
+        unreadCount: updatedUnreadCount,
         isNewNotification: false, // This is a state update, not new Socket notification
       ));
 
       // Delete on backend
       await _apiService.delete('/notifications/$notificationId');
+
+      // Sync unreadCount from backend (lastBadgeSeenAt logic)
+      unawaited(getUnreadCount());
     } on ApiException catch (e) {
       debugPrint('❌ NotificationsCubit: Error deleting notification: ${e.message}');
       // Reload to sync with backend

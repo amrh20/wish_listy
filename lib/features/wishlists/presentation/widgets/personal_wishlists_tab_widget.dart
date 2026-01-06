@@ -31,119 +31,122 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context);
-
-    if (personalWishlists.isEmpty) {
-      return _buildEmptyState(localization);
-    }
-
     return RefreshIndicator(
       onRefresh: onRefresh,
       color: AppColors.primary,
-      child: ListView.separated(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom:
-              16 +
-              MediaQuery.of(context).padding.bottom +
-              100, // Extra space for bottom nav bar
-        ),
-        itemCount: personalWishlists.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 16),
-        itemBuilder: (context, index) {
-          final wishlist = personalWishlists[index];
-          if (guestStyle) {
-            return GuestWishlistCardWidget(
-              wishlist: wishlist,
-              onTap: () => onWishlistTap(wishlist),
-              onEdit: () => onMenuAction('edit', wishlist),
-              onDelete: () => onMenuAction('delete', wishlist),
-            );
-          }
+      child: personalWishlists.isEmpty
+          ? _buildEmptyState(localization)
+          : ListView.separated(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom:
+                    16 +
+                    MediaQuery.of(context).padding.bottom +
+                    100, // Extra space for bottom nav bar
+              ),
+              itemCount: personalWishlists.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 16),
+              itemBuilder: (context, index) {
+                final wishlist = personalWishlists[index];
+                if (guestStyle) {
+                  return GuestWishlistCardWidget(
+                    wishlist: wishlist,
+                    onTap: () => onWishlistTap(wishlist),
+                    onEdit: () => onMenuAction('edit', wishlist),
+                    onDelete: () => onMenuAction('delete', wishlist),
+                  );
+                }
 
-          return WishlistCardWidget(
-            wishlist: wishlist,
-            isEvent: false,
-            onTap: () => onWishlistTap(wishlist),
-            onAddItem: () => onAddItem(wishlist),
-            onMenuAction: (action) => onMenuAction(action, wishlist),
-          );
-        },
-      ),
+                return WishlistCardWidget(
+                  wishlist: wishlist,
+                  isEvent: false,
+                  onTap: () => onWishlistTap(wishlist),
+                  onAddItem: () => onAddItem(wishlist),
+                  onMenuAction: (action) => onMenuAction(action, wishlist),
+                );
+              },
+            ),
     );
   }
 
   Widget _buildEmptyState(LocalizationService localization) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return SizedBox(
-          height: constraints.maxHeight,
-          child: Stack(
-            children: [
-              // Decorative background blobs
-              _buildDecorativeBlobs(),
-              // Content
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-                child: Column(
-                  children: [
-                    const Spacer(flex: 2), // Top space (2 parts)
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 6),
+        // Keep empty state scrollable so RefreshIndicator works.
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Stack(
+              children: [
+                // Decorative background blobs
+                _buildDecorativeBlobs(),
+                // Content
+                Center(
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            gradient: AppColors.primaryGradient,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.favorite_border_rounded,
-                        size: 40,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      localization.translate('wishlists.noWishlistsYet'),
-                      style: AppStyles.headingMedium.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      localization.translate(
-                        'wishlists.createFirstWishlistDescription',
-                      ),
-                      style: AppStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 32),
-                    if (onCreateWishlist != null)
-                      CustomButton(
-                        text: localization.translate(
-                          'wishlists.createWishlist',
+                          child: const Icon(
+                            Icons.favorite_border_rounded,
+                            size: 40,
+                            color: Colors.white,
+                          ),
                         ),
-                        onPressed: onCreateWishlist,
-                        customColor: AppColors.primary,
-                        icon: Icons.add_rounded,
-                      ),
-                    const Spacer(flex: 3), // Bottom space (3 parts)
-                  ],
+                        const SizedBox(height: 16),
+                        Text(
+                          localization.translate('wishlists.noWishlistsYet'),
+                          style: AppStyles.headingMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          localization.translate(
+                            'wishlists.createFirstWishlistDescription',
+                          ),
+                          style: AppStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+                        if (onCreateWishlist != null)
+                          CustomButton(
+                            text: localization.translate(
+                              'wishlists.createWishlist',
+                            ),
+                            onPressed: onCreateWishlist,
+                            customColor: AppColors.primary,
+                            icon: Icons.add_rounded,
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

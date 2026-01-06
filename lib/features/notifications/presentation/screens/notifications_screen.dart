@@ -882,6 +882,11 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                                 }
                                 await cubit.respondToEvent(eventId, 'declined');
                                 if (mounted) {
+                                  context
+                                      .read<NotificationsCubit>()
+                                      .deleteNotification(notification.id);
+                                }
+                                if (mounted) {
                                   setState(() {
                                     isLoading = false;
                                     selectedStatus = 'declined';
@@ -956,6 +961,11 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                                 }
                                 await cubit.respondToEvent(eventId, 'maybe');
                                 if (mounted) {
+                                  context
+                                      .read<NotificationsCubit>()
+                                      .deleteNotification(notification.id);
+                                }
+                                if (mounted) {
                                   setState(() {
                                     isLoading = false;
                                     selectedStatus = 'maybe';
@@ -1029,6 +1039,11 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                                   throw Exception('Event ID not found');
                                 }
                                 await cubit.respondToEvent(eventId, 'accepted');
+                                if (mounted) {
+                                  context
+                                      .read<NotificationsCubit>()
+                                      .deleteNotification(notification.id);
+                                }
                                 if (mounted) {
                                   setState(() {
                                     isLoading = false;
@@ -1344,12 +1359,9 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       }
       
       if (!mounted) return;
-      
-      // Mark notification as read
-      context.read<NotificationsCubit>().markAsRead(notification.id);
-      
-      // Reload notifications to update the list
-      context.read<NotificationsCubit>().loadNotifications();
+
+      // Delete notification after action (Accept/Decline)
+      context.read<NotificationsCubit>().deleteNotification(notification.id);
       
       final localization = Provider.of<LocalizationService>(context, listen: false);
       final message = accept

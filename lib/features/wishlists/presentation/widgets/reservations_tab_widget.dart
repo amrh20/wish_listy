@@ -24,70 +24,81 @@ class ReservationsTabWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(
-          color: AppColors.primary,
-        ),
-      );
-    }
-
-    if (reservations.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.shopping_bag_outlined,
-                size: 64,
-                color: AppColors.textTertiary,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                "You haven't reserved any gifts for your friends yet",
-                style: AppStyles.headingMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              CustomButton(
-                text: 'Browse Friends',
-                onPressed: () {
-                  // Navigate to Friends tab (index 3 in MainNavigation)
-                  MainNavigation.switchToTab(context, 3);
-                },
-                icon: Icons.people_outlined,
-                customColor: AppColors.primary,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return RefreshIndicator(
       onRefresh: () async => onRefresh(),
       color: AppColors.primary,
-      child: ListView.builder(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        itemCount: reservations.length,
-        itemBuilder: (context, index) {
-          final item = reservations[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: ReservedItemCardWidget(
-              item: item,
-              onCancelReservation: () => onCancelReservation(item),
-              onTap: () => onItemTap(item),
-            ),
-          );
-        },
-      ),
+      child: isLoading
+          ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                const SizedBox(height: 180),
+                Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              ],
+            )
+          : reservations.isEmpty
+              ? LayoutBuilder(
+                  builder: (context, constraints) {
+                    return SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: ConstrainedBox(
+                        constraints:
+                            BoxConstraints(minHeight: constraints.maxHeight),
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.shopping_bag_outlined,
+                                  size: 64,
+                                  color: AppColors.textTertiary,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  "You haven't reserved any gifts for your friends yet",
+                                  style: AppStyles.headingMedium.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 24),
+                                CustomButton(
+                                  text: 'Browse Friends',
+                                  onPressed: () {
+                                    // Navigate to Friends tab (index 3 in MainNavigation)
+                                    MainNavigation.switchToTab(context, 3);
+                                  },
+                                  icon: Icons.people_outlined,
+                                  customColor: AppColors.primary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                )
+              : ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: reservations.length,
+                  itemBuilder: (context, index) {
+                    final item = reservations[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: ReservedItemCardWidget(
+                        item: item,
+                        onCancelReservation: () => onCancelReservation(item),
+                        onTap: () => onItemTap(item),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }

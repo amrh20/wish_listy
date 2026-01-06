@@ -13,6 +13,7 @@ import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'package:wish_listy/core/navigation/app_route_observer.dart';
 import 'home_screen.dart' show HomeScreen, HomeScreenState;
 import 'package:wish_listy/features/wishlists/presentation/screens/my_wishlists_screen.dart';
 import 'package:wish_listy/features/events/presentation/screens/events_screen.dart';
@@ -34,7 +35,7 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, RouteAware {
   int _currentIndex = 0;
   late AnimationController _fabAnimationController;
   final PageStorageBucket _pageStorageBucket = PageStorageBucket();
@@ -71,6 +72,15 @@ class _MainNavigationState extends State<MainNavigation>
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      appRouteObserver.subscribe(this, route);
+    }
+  }
+
   void _initializeFabAnimation() {
     _fabAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -82,8 +92,19 @@ class _MainNavigationState extends State<MainNavigation>
 
   @override
   void dispose() {
+    appRouteObserver.unsubscribe(this);
     _fabAnimationController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // We returned to MainNavigation from a pushed route (e.g., details/create).
+    // Refresh the currently visible tab so it reflects the latest backend state.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _refreshTab(_currentIndex);
+    });
   }
 
   void _onTabTapped(int index, {int? eventsTabIndex}) {

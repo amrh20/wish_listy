@@ -689,69 +689,83 @@ class FriendsScreenState extends State<FriendsScreen>
   }
 
   Widget _buildEmptyState() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-      child: Column(
-        children: [
-          const Spacer(flex: 2), // Top space (2 parts)
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppColors.secondary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(40),
-            ),
-            child: Icon(
-              Icons.people_outline,
-              size: 40,
-              color: AppColors.secondary,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Consumer<LocalizationService>(
-            builder: (context, localization, child) {
-              return Column(
+    // Important: Empty state still needs to be scrollable so RefreshIndicator works.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    _searchQuery.isEmpty 
-                        ? localization.translate('friends.noFriendsYet')
-                        : localization.translate('friends.noFriendsFound'),
-                    style: AppStyles.headingMedium.copyWith(
-                      color: AppColors.textSecondary,
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(40),
+                    ),
+                    child: Icon(
+                      Icons.people_outline,
+                      size: 40,
+                      color: AppColors.secondary,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _searchQuery.isEmpty
-                        ? localization.translate('friends.startConnectingWithFriends')
-                        : localization.translate('friends.tryAdjustingSearchTerms'),
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.textTertiary,
-                      height: 1.5,
-                    ),
-                    textAlign: TextAlign.center,
+                  const SizedBox(height: 24),
+                  Consumer<LocalizationService>(
+                    builder: (context, localization, child) {
+                      return Column(
+                        children: [
+                          Text(
+                            _searchQuery.isEmpty
+                                ? localization.translate('friends.noFriendsYet')
+                                : localization.translate('friends.noFriendsFound'),
+                            style: AppStyles.headingMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _searchQuery.isEmpty
+                                ? localization.translate('friends.startConnectingWithFriends')
+                                : localization.translate('friends.tryAdjustingSearchTerms'),
+                            style: AppStyles.bodyMedium.copyWith(
+                              color: AppColors.textTertiary,
+                              height: 1.5,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          if (_searchQuery.isEmpty) ...[
+                            const SizedBox(height: 32),
+                            CustomButton(
+                              text: localization.translate('friends.addFriends'),
+                              onPressed: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.addFriend,
+                                );
+                              },
+                              variant: ButtonVariant.gradient,
+                              gradientColors: [
+                                AppColors.secondary,
+                                AppColors.primary,
+                              ],
+                            ),
+                          ],
+                        ],
+                      );
+                    },
                   ),
-                  if (_searchQuery.isEmpty) ...[
-                    const SizedBox(height: 32),
-                    CustomButton(
-                      text: localization.translate('friends.addFriends'),
-              onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.addFriend,
-                );
-              },
-                      variant: ButtonVariant.gradient,
-                      gradientColors: [AppColors.secondary, AppColors.primary],
-                    ),
-                  ],
                 ],
-              );
-            },
+              ),
+            ),
           ),
-          const Spacer(flex: 3), // Bottom space (3 parts)
-        ],
-      ),
+        );
+      },
     );
   }
 
