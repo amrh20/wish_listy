@@ -75,7 +75,7 @@ class FaqScreen extends StatelessWidget {
                   child: _faqs.isEmpty
                       ? _buildEmptyState(localization)
                       : ListView.separated(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
                           itemCount: _faqs.length,
                           separatorBuilder: (context, index) => const SizedBox(height: 12),
                           itemBuilder: (context, index) {

@@ -275,26 +275,41 @@ class _ModernWishlistItemContent extends StatelessWidget {
   Widget build(BuildContext context) {
     // Determine visual state based on isOwner and item status
     // Use direct API values with fallback to computed values
-    final isPurchased = item.isPurchasedValue; // isPurchased ?? isReceived
+    // IMPORTANT:
+    // `isPurchasedValue` falls back to `isReceived`, which is correct for some calculations,
+    // but for UI states we must distinguish between:
+    // - Purchased (isPurchased == true AND isReceived == false)
+    // - Gifted/Received (isReceived == true)
+    final isReceived = item.isReceived;
+    final isPurchased = item.isPurchased ?? false;
     final isReservedByMe = item.isReservedByMe ?? (item.reservedBy?.id == currentUserId);
     final isReserved = item.isReservedValue; // isReserved ?? (reservedBy != null)
     final isReservedByOther = isReserved && !isReservedByMe;
     
     // Case A: Owner
     if (isOwner) {
-      return _buildOwnerCard(context, isPurchased);
+      return _buildOwnerCard(context, isPurchased: isPurchased, isReceived: isReceived);
     }
     
     // Case B: Guest
-    return _buildGuestCard(context, isPurchased, isReservedByMe, isReservedByOther);
+    return _buildGuestCard(
+      context,
+      isPurchased: isPurchased,
+      isReceived: isReceived,
+      isReservedByMe: isReservedByMe,
+      isReservedByOther: isReservedByOther,
+    );
   }
 
-  Widget _buildOwnerCard(BuildContext context, bool isPurchased) {
+  Widget _buildOwnerCard(
+    BuildContext context, {
+    required bool isPurchased,
+    required bool isReceived,
+  }) {
     final hasMenu = onEdit != null || onDelete != null;
     final isReserved = item.isReservedValue; // Check if item is reserved (Teaser Mode)
-    final isReceived = item.isReceived; // Check if item is received
-    // Hide edit if purchased OR if reserved (Teaser Mode)
-    final shouldShowEdit = onEdit != null && !isPurchased && !isReserved;
+    // Hide edit if purchased OR reserved (Teaser Mode) OR already received (gifted)
+    final shouldShowEdit = onEdit != null && !isPurchased && !isReserved && !isReceived;
     final theme = Theme.of(context);
     
     // Helper function to show snackbar when trying to edit/delete reserved item
@@ -317,7 +332,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
 
     // Apply subtle opacity if purchased (owner can still interact)
     // Increased opacity to make card clearer (0.85 instead of 0.75)
-    final shouldDim = isPurchased;
+    final shouldDim = isPurchased || isReceived;
     
     return Opacity(
       opacity: shouldDim ? 0.85 : 1.0,
@@ -518,7 +533,9 @@ class _ModernWishlistItemContent extends StatelessWidget {
                         color: Colors.white,
                         icon: Icon(
                           Icons.more_vert,
-                          color: (isReserved || isPurchased)
+                          // Keep menu accessible when isReceived == true (so user can delete),
+                          // but grey it out when reserved/purchased and NOT received.
+                          color: ((isReserved || isPurchased) && !isReceived)
                               ? AppColors.textTertiary.withOpacity(0.5) // Grey out if reserved or purchased
                               : AppColors.textTertiary,
                           size: 20,
@@ -533,13 +550,19 @@ class _ModernWishlistItemContent extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         onSelected: (value) {
-                          // If item is reserved or purchased, show snackbar instead of executing action
-                          if (isReserved || isPurchased) {
-                            if (isPurchased) {
+                          // Owner rules:
+                          // - Edit is disabled when reserved/purchased/received
+                          // - Delete is allowed when received (gifted) even if reserved
+                          if (value == 'edit') {
+                            if (isReserved || isPurchased || isReceived) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: const Text(
-                                    'This item has been purchased and cannot be edited or deleted.',
+                                  content: Text(
+                                    isReceived
+                                        ? 'This gift is already marked as received and can’t be edited.'
+                                        : (isPurchased
+                                            ? 'This item has been purchased and cannot be edited.'
+                                            : 'This item is reserved and cannot be edited.'),
                                   ),
                                   backgroundColor: AppColors.primary,
                                   behavior: SnackBarBehavior.floating,
@@ -550,15 +573,36 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                   margin: const EdgeInsets.all(16),
                                 ),
                               );
-                            } else {
-                              _showReservedItemSnackbar();
+                              return;
                             }
+                            onEdit?.call();
                             return;
                           }
-                          
-                          if (value == 'edit') {
-                            onEdit?.call();
-                          } else if (value == 'delete') {
+
+                          if (value == 'delete') {
+                            // Block delete only when reserved and NOT received (teaser mode),
+                            // and when purchased but NOT received.
+                            if ((isReserved && !isReceived) || (isPurchased && !isReceived)) {
+                              if (isPurchased) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Text(
+                                      'This item has been purchased and cannot be deleted.',
+                                    ),
+                                    backgroundColor: AppColors.primary,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    duration: const Duration(seconds: 3),
+                                    margin: const EdgeInsets.all(16),
+                                  ),
+                                );
+                              } else {
+                                _showReservedItemSnackbar();
+                              }
+                              return;
+                            }
                             onDelete?.call();
                           }
                         },
@@ -566,12 +610,12 @@ class _ModernWishlistItemContent extends StatelessWidget {
                           if (onEdit != null)
                             PopupMenuItem<String>(
                               value: 'edit',
-                              enabled: !isReserved && !isPurchased, // Disable if reserved or purchased
+                              enabled: !isReserved && !isPurchased && !isReceived,
                               child: Row(
                                 children: [
                                   Icon(
                                     Icons.edit,
-                                    color: (isReserved || isPurchased)
+                                    color: (isReserved || isPurchased || isReceived)
                                         ? AppColors.textTertiary.withOpacity(0.5)
                                         : AppColors.textPrimary,
                                     size: 20,
@@ -580,7 +624,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                   Text(
                                     'Edit',
                                     style: AppStyles.bodyMedium.copyWith(
-                                      color: (isReserved || isPurchased)
+                                      color: (isReserved || isPurchased || isReceived)
                                           ? AppColors.textTertiary.withOpacity(0.5)
                                           : AppColors.textPrimary,
                                     ),
@@ -591,12 +635,13 @@ class _ModernWishlistItemContent extends StatelessWidget {
                           if (onDelete != null)
                             PopupMenuItem<String>(
                               value: 'delete',
-                              enabled: !isReserved && !isPurchased, // Disable if reserved or purchased
+                              // Allow delete if received (gifted), even if reserved.
+                              enabled: !(isPurchased && !isReceived) && !(isReserved && !isReceived),
                               child: Row(
                                 children: [
                                   Icon(
                                     Icons.delete,
-                                    color: (isReserved || isPurchased)
+                                    color: ((isReserved || isPurchased) && !isReceived)
                                         ? AppColors.error.withOpacity(0.5)
                                         : AppColors.error, 
                                     size: 20,
@@ -605,7 +650,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                   Text(
                                     'Delete',
                                     style: AppStyles.bodyMedium.copyWith(
-                                      color: (isReserved || isPurchased)
+                                      color: ((isReserved || isPurchased) && !isReceived)
                                           ? AppColors.error.withOpacity(0.5)
                                           : AppColors.error,
                                       fontWeight: FontWeight.w600,
@@ -636,7 +681,8 @@ class _ModernWishlistItemContent extends StatelessWidget {
           if (isReceived)
             Positioned(
               top: 8,
-              right: 8,
+              // Move the badge slightly left so it doesn't overlap the 3-dots menu.
+              right: hasMenu ? 44 : 8,
               child: Container(
                 width: 32,
                 height: 32,
@@ -967,8 +1013,134 @@ class _ModernWishlistItemContent extends StatelessWidget {
     }
   }
 
-  Widget _buildGuestCard(BuildContext context, bool isPurchased, bool isReservedByMe, bool isReservedByOther) {
-    // Case A: Purchased (isPurchased == true) - Highest Priority
+  Widget _buildGuestCard(
+    BuildContext context, {
+    required bool isPurchased,
+    required bool isReceived,
+    required bool isReservedByMe,
+    required bool isReservedByOther,
+  }) {
+    // Case A: Gifted/Received (isReceived == true) - Highest Priority for NON-OWNER too
+    // This fixes the bug where non-owners were seeing "Reserved/Taken" instead of "Gifted".
+    if (isReceived) {
+      return Opacity(
+        opacity: 0.9,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.success.withOpacity(0.45),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.success.withOpacity(0.12),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(12),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.card_giftcard_rounded,
+                          color: AppColors.success,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              item.name,
+                              style: AppStyles.bodyMedium.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.check_circle,
+                                  size: 14,
+                                  color: AppColors.success,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Gifted',
+                                  style: AppStyles.caption.copyWith(
+                                    color: AppColors.success,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        Icons.celebration_rounded,
+                        color: AppColors.success,
+                        size: 18,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.success.withOpacity(0.18),
+                        width: 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'Marked as gifted',
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Case B: Purchased (isPurchased == true AND isReceived == false)
     if (isPurchased) {
       return Opacity(
         opacity: 0.85, // Increased opacity to make card clearer
@@ -1024,7 +1196,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        // Purchased Badge
+                        // Purchased Badge (purchased but not received yet)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(

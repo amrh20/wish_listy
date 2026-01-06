@@ -1013,6 +1013,7 @@
     "signOutOfAccount": "تسجيل الخروج من حسابك"
   },
   "cards": {
+    "saveChanges":"احفظ التغييرات",
     "wish": "أمنية",
     "wishes": "أمنيات",
     "hostedBy": "استضافه",
@@ -1524,6 +1525,7 @@
       "notNow": "ليس الآن"
     },
     "wishlists": {
+      "undo": "تراجع",
       "whereToFind": "أين يمكن العثور على هذه الهدية؟",
       "onlineStore": "متجر إلكتروني",
       "physicalStore": "متجر فعلي",

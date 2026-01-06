@@ -4,6 +4,7 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
+import 'package:wish_listy/core/theme/app_theme.dart' as theme;
 
 class EmptyMyEvents extends StatelessWidget {
   final LocalizationService localization;
@@ -21,7 +22,10 @@ class EmptyMyEvents extends StatelessWidget {
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: theme.AppTheme.spacing32,
+                  vertical: theme.AppTheme.spacing40,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -45,7 +49,7 @@ class EmptyMyEvents extends StatelessWidget {
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: theme.AppTheme.spacing16),
                     Text(
                       localization.translate('events.noEventsYet'),
                       style: AppStyles.headingMedium.copyWith(
@@ -54,7 +58,7 @@ class EmptyMyEvents extends StatelessWidget {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: theme.AppTheme.spacing12),
                     Text(
                       localization.translate('events.createFirstEventDescription'),
                       style: AppStyles.bodyMedium.copyWith(
@@ -62,7 +66,7 @@ class EmptyMyEvents extends StatelessWidget {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: theme.AppTheme.spacing24),
                     CustomButton(
                       text: localization.translate('events.createEvent'),
                       onPressed: () {
@@ -98,7 +102,10 @@ class EmptyInvitedEvents extends StatelessWidget {
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: theme.AppTheme.spacing32,
+                  vertical: theme.AppTheme.spacing40,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -126,7 +133,7 @@ class EmptyInvitedEvents extends StatelessWidget {
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: theme.AppTheme.spacing16),
                     Text(
                       localization.translate('events.noInvitationsYet'),
                       style: AppStyles.headingMedium.copyWith(
@@ -135,7 +142,7 @@ class EmptyInvitedEvents extends StatelessWidget {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: theme.AppTheme.spacing12),
                     Text(
                       localization.translate('events.noInvitationsDescription'),
                       style: AppStyles.bodyMedium.copyWith(

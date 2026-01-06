@@ -6,6 +6,7 @@ import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/data/models/suggestion_user_model.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'dart:math' as math;
 
 class SuggestedFriendsSection extends StatefulWidget {
   final LocalizationService localization;
@@ -19,7 +20,7 @@ class SuggestedFriendsSection extends StatefulWidget {
   State<SuggestedFriendsSection> createState() => _SuggestedFriendsSectionState();
 }
 
-class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> {
+class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> with SingleTickerProviderStateMixin {
   List<SuggestionUser> _suggestions = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -27,11 +28,22 @@ class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> {
   final Map<String, String> _requestIds = {}; // Track request IDs for canceling
   final FriendsRepository _friendsRepository = FriendsRepository();
   final Map<String, bool> _isLoadingAction = {}; // Track loading state per friend action
+  late AnimationController _animationController;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
     _loadSuggestions();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSuggestions() async {
@@ -258,13 +270,28 @@ class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> {
 
   @override
   Widget build(BuildContext context) {
-    // Show loading state
+    // Show loading state with skeleton
     if (_isLoading) {
-      return const SizedBox(
-        height: 200,
-        child: Center(
-          child: CircularProgressIndicator(),
-        ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              width: 200,
+              height: 24,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 200,
+            child: _buildSkeletonList(),
+          ),
+        ],
       );
     }
 
@@ -320,6 +347,32 @@ class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> {
           ),
         ),
       ],
+    );
+  }
+
+  /// Build skeleton loading list
+  Widget _buildSkeletonList() {
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        // Create pulsing effect using sine wave - lighter and smoother
+        final pulseValue = (0.15 +
+            (0.2 *
+                (0.5 +
+                    0.5 * (1 + (2 * _animationController.value - 1).abs()))));
+
+        return ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          itemCount: 3, // Show 3 skeleton cards
+          itemBuilder: (context, index) {
+            return Padding(
+              padding: EdgeInsets.only(right: index < 2 ? 12 : 0),
+              child: _SuggestionSkeletonCard(pulseValue: pulseValue),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -500,6 +553,78 @@ class _SuggestionUserCardState extends State<_SuggestionUserCard> {
                           ),
                   ),
                 ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Skeleton card for suggestion user card
+class _SuggestionSkeletonCard extends StatelessWidget {
+  final double pulseValue;
+
+  const _SuggestionSkeletonCard({required this.pulseValue});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 140,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 18, 14, 12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Avatar skeleton
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200.withOpacity(pulseValue),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Name skeleton
+            Container(
+              width: 100,
+              height: 14,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200.withOpacity(pulseValue),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(height: 6),
+            // Mutual friends count skeleton
+            Container(
+              width: 80,
+              height: 12,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200.withOpacity(pulseValue),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const Spacer(),
+            // Button skeleton
+            Container(
+              width: double.infinity,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200.withOpacity(pulseValue),
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ],

@@ -721,7 +721,7 @@
     "reject": "Reject",
     "acceptRequest": "Accept Request",
     "declineRequest": "Decline Request",
-    "removeFriend": "Remove Friend",
+    "removeFriend": "UnFriend",
     "blockUser": "Block User",
     "unblockUser": "Unblock User",
     "viewProfile": "View Profile",
@@ -1013,6 +1013,7 @@
     "signOutOfAccount": "Sign out of your account"
   },
   "cards": {
+    "saveChanges":"Save Changes",
     "wish": "Wish",
     "wishes": "Wishes",
     "hostedBy": "Hosted by",
@@ -1050,7 +1051,6 @@
     "giftReceivedPurchased": "This gift has been received/purchased.",
     "purchasedAwaitingConfirmation": "Purchased by another friend, awaiting confirmation from you that you have received it",
     "markReceived": "Mark Received",
-    "undo": "Undo",
     "alreadyReservedByFriend": "Already reserved by another friend 🔒",
     "reserveGift": "Reserve Gift 🎁",
     "byFriend": "By {name}",
@@ -1524,6 +1524,7 @@
       "notNow": "Not Now"
     },
     "wishlists": {
+      "undo": "Undo",
       "whereToFind": "Where can this gift be found?",
       "onlineStore": "Online Store",
       "physicalStore": "Physical Store",

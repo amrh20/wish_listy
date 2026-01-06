@@ -14,6 +14,7 @@ class Wishlist {
   final DateTime createdAt;
   final DateTime updatedAt;
   final friends.User? owner; // Owner of the wishlist (for nested parsing)
+  final int? _itemCountFromApi; // Store itemCount from API if items array is not populated
 
   Wishlist({
     required this.id,
@@ -28,7 +29,8 @@ class Wishlist {
     required this.createdAt,
     required this.updatedAt,
     this.owner,
-  });
+    int? itemCountFromApi,
+  }) : _itemCountFromApi = itemCountFromApi;
 
   factory Wishlist.fromJson(Map<String, dynamic> json) {
     // Parse owner if available (nested object)
@@ -38,6 +40,28 @@ class Wishlist {
         owner = friends.User.fromJson(json['owner'] as Map<String, dynamic>);
       } catch (e) {
         owner = null;
+      }
+    }
+    
+    // Parse items array
+    final itemsList = (json['items'] as List<dynamic>?)
+        ?.map((item) {
+          try {
+            return WishlistItem.fromJson(item);
+          } catch (e) {
+            return null;
+          }
+        })
+        .whereType<WishlistItem>()
+        .toList() ?? [];
+    
+    // Try to get itemCount from API response if items array is empty/null
+    // This is useful for dashboard responses where items might be omitted for performance
+    int? itemCountFromApi;
+    if (itemsList.isEmpty) {
+      final itemCountRaw = json['itemCount'] ?? json['item_count'] ?? json['totalItems'] ?? json['total_items'];
+      if (itemCountRaw != null) {
+        itemCountFromApi = (itemCountRaw is num) ? itemCountRaw.toInt() : int.tryParse(itemCountRaw.toString());
       }
     }
     
@@ -56,11 +80,7 @@ class Wishlist {
         orElse: () => WishlistVisibility.friends,
       ),
       category: json['category']?.toString(),
-      items:
-          (json['items'] as List<dynamic>?)
-              ?.map((item) => WishlistItem.fromJson(item))
-              .toList() ??
-          [],
+      items: itemsList,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'].toString())
           : (json['createdAt'] != null
@@ -72,6 +92,7 @@ class Wishlist {
               ? DateTime.parse(json['updatedAt'].toString())
               : DateTime.now()),
       owner: owner,
+      itemCountFromApi: itemCountFromApi,
     );
   }
 
@@ -104,6 +125,7 @@ class Wishlist {
     DateTime? createdAt,
     DateTime? updatedAt,
     friends.User? owner,
+    int? itemCountFromApi,
   }) {
     return Wishlist(
       id: id ?? this.id,
@@ -118,10 +140,22 @@ class Wishlist {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       owner: owner ?? this.owner,
+      itemCountFromApi: itemCountFromApi ?? this._itemCountFromApi,
     );
   }
 
-  int get totalItems => items.length;
+  int get totalItems {
+    // If items array is populated, use its length (most accurate)
+    if (items.isNotEmpty) {
+      return items.length;
+    }
+    // Otherwise, fall back to itemCount from API if available
+    if (_itemCountFromApi != null) {
+      return _itemCountFromApi!;
+    }
+    // Default to 0 if neither is available
+    return 0;
+  }
   int get purchasedItems =>
       items.where((item) => item.isPurchasedValue).length;
   int get reservedItems =>

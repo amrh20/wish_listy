@@ -618,11 +618,17 @@ class HomeScreenState extends State<HomeScreen> {
     if (wishlists == null || wishlists.isEmpty) return [];
     
     return wishlists.map((wishlist) {
+      // Use items.length for accurate count (even if items array is populated)
+      // The wishlist.totalItems getter already does this, but we want to ensure accuracy
+      final itemCount = wishlist.items.isNotEmpty 
+          ? wishlist.items.length 
+          : wishlist.totalItems;
+      
       return WishlistSummary(
         id: wishlist.id,
         name: wishlist.name,
         description: wishlist.description,
-        itemCount: wishlist.totalItems,
+        itemCount: itemCount,
         purchasedCount: wishlist.purchasedItems,
         lastUpdated: wishlist.updatedAt,
         privacy: _convertVisibilityToPrivacy(wishlist.visibility),

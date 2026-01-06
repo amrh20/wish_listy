@@ -4,6 +4,7 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
+import 'package:wish_listy/core/theme/app_theme.dart' as theme;
 import 'guest_wishlist_card_widget.dart';
 import 'wishlist_card_widget.dart';
 
@@ -88,7 +89,10 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
                 Center(
                   child: Padding(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+                        const EdgeInsets.symmetric(
+                          horizontal: theme.AppTheme.spacing32,
+                          vertical: theme.AppTheme.spacing40,
+                        ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -112,7 +116,7 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
                             color: Colors.white,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: theme.AppTheme.spacing16),
                         Text(
                           localization.translate('wishlists.noWishlistsYet'),
                           style: AppStyles.headingMedium.copyWith(
@@ -121,7 +125,7 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: theme.AppTheme.spacing12),
                         Text(
                           localization.translate(
                             'wishlists.createFirstWishlistDescription',
@@ -131,7 +135,7 @@ class PersonalWishlistsTabWidget extends StatelessWidget {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: theme.AppTheme.spacing24),
                         if (onCreateWishlist != null)
                           CustomButton(
                             text: localization.translate(

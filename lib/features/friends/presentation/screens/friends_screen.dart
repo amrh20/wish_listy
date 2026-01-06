@@ -12,6 +12,7 @@ import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
 import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/theme/app_theme.dart' as theme;
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
@@ -696,71 +697,77 @@ class FriendsScreenState extends State<FriendsScreen>
           physics: const AlwaysScrollableScrollPhysics(),
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(40),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: theme.AppTheme.spacing32,
+                  vertical: theme.AppTheme.spacing40,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(40),
+                      ),
+                      child: Icon(
+                        Icons.people_outline,
+                        size: 40,
+                        color: AppColors.secondary,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.people_outline,
-                      size: 40,
-                      color: AppColors.secondary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Consumer<LocalizationService>(
-                    builder: (context, localization, child) {
-                      return Column(
-                        children: [
-                          Text(
-                            _searchQuery.isEmpty
-                                ? localization.translate('friends.noFriendsYet')
-                                : localization.translate('friends.noFriendsFound'),
-                            style: AppStyles.headingMedium.copyWith(
-                              color: AppColors.textSecondary,
+                    const SizedBox(height: theme.AppTheme.spacing16),
+                    Consumer<LocalizationService>(
+                      builder: (context, localization, child) {
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _searchQuery.isEmpty
+                                  ? localization.translate('friends.noFriendsYet')
+                                  : localization.translate('friends.noFriendsFound'),
+                              style: AppStyles.headingMedium.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            _searchQuery.isEmpty
-                                ? localization.translate('friends.startConnectingWithFriends')
-                                : localization.translate('friends.tryAdjustingSearchTerms'),
-                            style: AppStyles.bodyMedium.copyWith(
-                              color: AppColors.textTertiary,
-                              height: 1.5,
+                            const SizedBox(height: theme.AppTheme.spacing12),
+                            Text(
+                              _searchQuery.isEmpty
+                                  ? localization.translate('friends.startConnectingWithFriends')
+                                  : localization.translate('friends.tryAdjustingSearchTerms'),
+                              style: AppStyles.bodyMedium.copyWith(
+                                color: AppColors.textTertiary,
+                                height: 1.5,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
-                          ),
-                          if (_searchQuery.isEmpty) ...[
-                            const SizedBox(height: 32),
-                            CustomButton(
-                              text: localization.translate('friends.addFriends'),
-                              onPressed: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  AppRoutes.addFriend,
-                                );
-                              },
-                              variant: ButtonVariant.gradient,
-                              gradientColors: [
-                                AppColors.secondary,
-                                AppColors.primary,
-                              ],
-                            ),
+                            if (_searchQuery.isEmpty) ...[
+                              const SizedBox(height: theme.AppTheme.spacing24),
+                              CustomButton(
+                                text: localization.translate('friends.addFriends'),
+                                onPressed: () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.addFriend,
+                                  );
+                                },
+                                variant: ButtonVariant.gradient,
+                                gradientColors: [
+                                  AppColors.secondary,
+                                  AppColors.primary,
+                                ],
+                              ),
+                            ],
                           ],
-                        ],
-                      );
-                    },
-                  ),
-                ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

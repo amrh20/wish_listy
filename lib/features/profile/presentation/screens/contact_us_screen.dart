@@ -92,7 +92,7 @@ class ContactUsScreen extends StatelessWidget {
 
                         // Social Section
                         _buildSocialSection(localization),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 60),
                       ],
                     ),
                   ),
