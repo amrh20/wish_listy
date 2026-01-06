@@ -212,6 +212,11 @@ class NotificationDropdown extends StatelessWidget {
     AppNotification notification, {
     required bool accept,
   }) async {
+    // Get ScaffoldMessenger and localization before any async operations
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final cubit = context.read<NotificationsCubit>();
+    
     try {
       // Get requestId from notification - prefer relatedId field, fallback to data map
       final requestId = notification.relatedId ??
@@ -223,17 +228,18 @@ class NotificationDropdown extends StatelessWidget {
                        notification.data?['_id'];
       
       if (requestId == null || requestId.toString().isEmpty) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Unable to process friend request. Missing request ID.'),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+            content: const Text('Unable to process friend request. Missing request ID.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
         return;
       }
+
+      // Delete notification first (optimistic update)
+      cubit.deleteNotification(notification.id);
 
       // Call API to accept/decline friend request
       final friendsRepository = FriendsRepository();
@@ -244,13 +250,8 @@ class NotificationDropdown extends StatelessWidget {
         await friendsRepository.rejectFriendRequest(requestId: requestId.toString());
       }
 
-      if (!context.mounted) return;
-
-      // Delete notification after action
-      context.read<NotificationsCubit>().deleteNotification(notification.id);
-
       // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Row(
             children: [
@@ -260,8 +261,8 @@ class NotificationDropdown extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(accept
-                  ? Provider.of<LocalizationService>(context, listen: false).translate('notifications.friendRequestAccepted')
-                  : Provider.of<LocalizationService>(context, listen: false).translate('notifications.friendRequestDeclined')),
+                  ? localization.translate('notifications.friendRequestAccepted')
+                  : localization.translate('notifications.friendRequestDeclined')),
             ],
           ),
           backgroundColor: accept ? AppColors.success : AppColors.accent,
@@ -271,9 +272,10 @@ class NotificationDropdown extends StatelessWidget {
         ),
       );
     } catch (e) {
-      if (!context.mounted) return;
+      // Restore notification on error
+      await cubit.loadNotifications();
       
-      ScaffoldMessenger.of(context).showSnackBar(
+      scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Row(
             children: [
@@ -668,10 +670,13 @@ class _NotificationItem extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: isLoading
                           ? null
-                          : () async {
+                            : () async {
                               setState(() {
                                 isLoading = true;
                               });
+                              // Get ScaffoldMessenger before closing dropdown
+                              final scaffoldMessenger = ScaffoldMessenger.of(context);
+                              final localization = Provider.of<LocalizationService>(context, listen: false);
                               try {
                                 final eventId = notification.relatedId ?? 
                                                notification.data?['eventId']?.toString() ??
@@ -681,37 +686,37 @@ class _NotificationItem extends StatelessWidget {
                                 if (eventId == null || eventId.isEmpty) {
                                   throw Exception('Event ID not found');
                                 }
-                                Navigator.pop(context); // Close dropdown
+                                // Delete notification first (optimistic update)
+                                cubit.deleteNotification(notification.id);
+                                // Close dropdown
+                                Navigator.pop(context);
+                                // Call API
                                 await cubit.respondToEvent(eventId, 'declined');
-                                if (context.mounted) {
-                                  context
-                                      .read<NotificationsCubit>()
-                                      .deleteNotification(notification.id);
-                                }
+                                // Show success snackbar (using parent context)
+                                scaffoldMessenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(localization.translate('notifications.youDeclinedInvitation')),
+                                    backgroundColor: AppColors.textSecondary,
+                                    duration: const Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              } catch (e) {
+                                // Restore notification on error
+                                await cubit.loadNotifications();
+                                scaffoldMessenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to respond: ${e.toString()}'),
+                                    backgroundColor: AppColors.error,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              } finally {
                                 if (context.mounted) {
                                   setState(() {
                                     isLoading = false;
                                     selectedStatus = 'declined';
                                   });
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(Provider.of<LocalizationService>(context, listen: false).translate('notifications.youDeclinedInvitation')),
-                                      backgroundColor: AppColors.textSecondary,
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  setState(() {
-                                    isLoading = false;
-                                  });
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Failed to respond: ${e.toString()}'),
-                                      backgroundColor: AppColors.error,
-                                    ),
-                                  );
                                 }
                               }
                             },
@@ -748,10 +753,13 @@ class _NotificationItem extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: isLoading
                           ? null
-                          : () async {
+                            : () async {
                               setState(() {
                                 isLoading = true;
                               });
+                              // Get ScaffoldMessenger before closing dropdown
+                              final scaffoldMessenger = ScaffoldMessenger.of(context);
+                              final localization = Provider.of<LocalizationService>(context, listen: false);
                               try {
                                 final eventId = notification.relatedId ?? 
                                                notification.data?['eventId']?.toString() ??
@@ -761,37 +769,37 @@ class _NotificationItem extends StatelessWidget {
                                 if (eventId == null || eventId.isEmpty) {
                                   throw Exception('Event ID not found');
                                 }
-                                Navigator.pop(context); // Close dropdown
+                                // Delete notification first (optimistic update)
+                                cubit.deleteNotification(notification.id);
+                                // Close dropdown
+                                Navigator.pop(context);
+                                // Call API
                                 await cubit.respondToEvent(eventId, 'maybe');
-                                if (context.mounted) {
-                                  context
-                                      .read<NotificationsCubit>()
-                                      .deleteNotification(notification.id);
-                                }
+                                // Show success snackbar (using parent context)
+                                scaffoldMessenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(localization.translate('notifications.youMarkedMaybe')),
+                                    backgroundColor: AppColors.warning,
+                                    duration: const Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              } catch (e) {
+                                // Restore notification on error
+                                await cubit.loadNotifications();
+                                scaffoldMessenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to respond: ${e.toString()}'),
+                                    backgroundColor: AppColors.error,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              } finally {
                                 if (context.mounted) {
                                   setState(() {
                                     isLoading = false;
                                     selectedStatus = 'maybe';
                                   });
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(Provider.of<LocalizationService>(context, listen: false).translate('notifications.youMarkedMaybe')),
-                                      backgroundColor: AppColors.warning,
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  setState(() {
-                                    isLoading = false;
-                                  });
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Failed to respond: ${e.toString()}'),
-                                      backgroundColor: AppColors.error,
-                                    ),
-                                  );
                                 }
                               }
                             },
@@ -828,10 +836,13 @@ class _NotificationItem extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: isLoading
                           ? null
-                          : () async {
+                            : () async {
                               setState(() {
                                 isLoading = true;
                               });
+                              // Get ScaffoldMessenger before closing dropdown
+                              final scaffoldMessenger = ScaffoldMessenger.of(context);
+                              final localization = Provider.of<LocalizationService>(context, listen: false);
                               try {
                                 final eventId = notification.relatedId ?? 
                                                notification.data?['eventId']?.toString() ??
@@ -841,37 +852,37 @@ class _NotificationItem extends StatelessWidget {
                                 if (eventId == null || eventId.isEmpty) {
                                   throw Exception('Event ID not found');
                                 }
-                                Navigator.pop(context); // Close dropdown
+                                // Delete notification first (optimistic update)
+                                cubit.deleteNotification(notification.id);
+                                // Close dropdown
+                                Navigator.pop(context);
+                                // Call API
                                 await cubit.respondToEvent(eventId, 'accepted');
-                                if (context.mounted) {
-                                  context
-                                      .read<NotificationsCubit>()
-                                      .deleteNotification(notification.id);
-                                }
+                                // Show success snackbar (using parent context)
+                                scaffoldMessenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(localization.translate('notifications.youAcceptedInvitation')),
+                                    backgroundColor: AppColors.success,
+                                    duration: const Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              } catch (e) {
+                                // Restore notification on error
+                                await cubit.loadNotifications();
+                                scaffoldMessenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to respond: ${e.toString()}'),
+                                    backgroundColor: AppColors.error,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              } finally {
                                 if (context.mounted) {
                                   setState(() {
                                     isLoading = false;
                                     selectedStatus = 'accepted';
                                   });
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(Provider.of<LocalizationService>(context, listen: false).translate('notifications.youAcceptedInvitation')),
-                                      backgroundColor: AppColors.success,
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  setState(() {
-                                    isLoading = false;
-                                  });
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Failed to respond: ${e.toString()}'),
-                                      backgroundColor: AppColors.error,
-                                    ),
-                                  );
                                 }
                               }
                             },

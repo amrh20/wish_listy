@@ -669,9 +669,8 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         debugPrint('🔔 [Notifications] ⏰ [$timestamp]    📢 Sent event update signal for: $eventId');
       }
       
-      // Optionally reload notifications to reflect the updated state
-      // This ensures the notification list is in sync with the backend
-      await loadNotifications();
+      // Note: loadNotifications() is called by deleteNotification() if needed
+      // No need to reload here to avoid race conditions
     } on ApiException catch (e) {
       debugPrint('❌ NotificationsCubit: Error responding to event: ${e.message}');
       rethrow; // Re-throw to allow UI to handle the error

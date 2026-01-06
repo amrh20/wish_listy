@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -1399,34 +1400,54 @@ class ProfileScreenState extends State<ProfileScreen>
   /// Launch URL helper method
   Future<void> _launchURL(String url) async {
     final uri = Uri.parse(url);
+    bool launched = false;
+    
     try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                Provider.of<LocalizationService>(context, listen: false)
-                    .translate('profile.couldNotLaunchUrl'),
-              ),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
-      }
+      // Try external application first (opens in default browser)
+      // This works better on Android real devices
+      launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              Provider.of<LocalizationService>(context, listen: false)
-                  .translate('profile.couldNotLaunchUrl'),
-            ),
-            backgroundColor: AppColors.error,
-          ),
+      debugPrint('Failed to launch with externalApplication: $e');
+    }
+    
+    // If externalApplication failed, try platformDefault as fallback
+    if (!launched) {
+      try {
+        launched = await launchUrl(
+          uri,
+          mode: LaunchMode.platformDefault,
         );
+      } catch (e) {
+        debugPrint('Failed to launch with platformDefault: $e');
       }
+    }
+    
+    // If both methods failed, try with inAppWebView as last resort
+    if (!launched) {
+      try {
+        launched = await launchUrl(
+          uri,
+          mode: LaunchMode.inAppWebView,
+        );
+      } catch (e) {
+        debugPrint('Failed to launch with inAppWebView: $e');
+      }
+    }
+    
+    // Show error if all methods failed
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            Provider.of<LocalizationService>(context, listen: false)
+                .translate('profile.couldNotLaunchUrl'),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 

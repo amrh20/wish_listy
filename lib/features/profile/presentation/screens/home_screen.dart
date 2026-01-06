@@ -711,26 +711,84 @@ class HomeScreenState extends State<HomeScreen> {
         Offset.zero & overlay.size,
       );
       
-      await showMenu(
+      final localization = Provider.of<LocalizationService>(context, listen: false);
+      final isRTL = localization.isRTL;
+      final screenWidth = MediaQuery.of(context).size.width;
+      
+      // Calculate dropdown position so it always opens inward and stays fully visible.
+      // We anchor the dropdown's right edge to the button's right edge, then clamp.
+      const dropdownWidth = 360.0;
+      const horizontalMargin = 16.0;
+
+      // Preferred: align dropdown RIGHT with button RIGHT (works well in both LTR/RTL)
+      double dropdownLeft = buttonPosition.dx + buttonSize.width - dropdownWidth;
+
+      // Clamp within screen bounds
+      final minLeft = horizontalMargin;
+      final maxLeft = screenWidth - dropdownWidth - horizontalMargin;
+      if (dropdownLeft < minLeft) dropdownLeft = minLeft;
+      if (dropdownLeft > maxLeft) dropdownLeft = maxLeft < minLeft ? minLeft : maxLeft;
+
+      final dropdownTop = buttonPosition.dy + buttonSize.height + 8;
+      
+      await showGeneralDialog(
         context: context,
-        position: position,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        constraints: const BoxConstraints(
-          maxWidth: 360,
-          maxHeight: 400,
-        ),
-        items: [
-          PopupMenuItem(
-            enabled: false,
-            padding: EdgeInsets.zero,
-            child: NotificationDropdown(
-              notifications: updatedNotifications,
-              unreadCount: updatedUnreadCount,
+        barrierDismissible: true,
+        barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+        barrierColor: Colors.black.withOpacity(0.4), // Semi-transparent overlay
+        transitionDuration: const Duration(milliseconds: 200),
+        pageBuilder: (dialogContext, animation, secondaryAnimation) {
+          return Directionality(
+            textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+            child: Material(
+              color: Colors.transparent,
+              child: Stack(
+                children: [
+                  // Backdrop overlay (tappable to close)
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onTap: () => Navigator.of(dialogContext).pop(),
+                      behavior: HitTestBehavior.opaque,
+                      child: Container(
+                        color: Colors.transparent,
+                      ),
+                    ),
+                  ),
+                  // Notification dropdown positioned below button
+                  Positioned(
+                    left: dropdownLeft,
+                    top: dropdownTop,
+                    child: GestureDetector(
+                      onTap: () {}, // Prevent tap from closing when clicking on dropdown
+                      child: NotificationDropdown(
+                        notifications: updatedNotifications,
+                        unreadCount: updatedUnreadCount,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          );
+        },
+        transitionBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOut,
+            ),
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, -0.05),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOut,
+              )),
+              child: child,
+            ),
+          );
+        },
       );
     }
   }

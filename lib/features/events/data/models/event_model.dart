@@ -127,7 +127,8 @@ class Event {
     if (eventTime != null && eventTime.isNotEmpty) {
       try {
         final timeParts = eventTime.split(':');
-        if (timeParts.length == 2) {
+        // Support both HH:mm and HH:mm:ss formats from API
+        if (timeParts.length >= 2) {
           final hour = int.parse(timeParts[0]);
           final minute = int.parse(timeParts[1]);
           eventDate = DateTime(
@@ -271,10 +272,15 @@ class Event {
       location: json['location']?.toString(),
       type: eventTypeFromEnum,
       typeString: preservedTypeString,
-      status: EventStatus.values.firstWhere(
-        (e) => e.toString().split('.').last == json['status']?.toString(),
-        orElse: () => EventStatus.upcoming,
-      ),
+      status: (() {
+        final raw = json['status']?.toString().toLowerCase();
+        // Backend returns "past" but the app enum uses "completed"
+        final normalized = raw == 'past' ? 'completed' : raw;
+        return EventStatus.values.firstWhere(
+          (e) => e.toString().split('.').last == normalized,
+          orElse: () => EventStatus.upcoming,
+        );
+      })(),
       wishlistId: wishlistId,
       wishlistName: wishlistName,
       wishlistItemCount: wishlistItemCount,

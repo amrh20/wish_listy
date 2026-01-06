@@ -539,11 +539,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   ) {
     final hasDescription =
         _event!.description != null && _event!.description!.isNotEmpty;
+    final isPastStatus =
+        _event!.status == EventStatus.completed || _event!.status == EventStatus.cancelled;
     // Invitation/Response section:
     // Hide if user is not invited OR the event is in the past.
     final showInvitationSection = _event!.isCreator == false &&
         _event!.myInvitationStatus != 'not_invited' &&
-        _event!.isPast == false;
+        isPastStatus == false;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1593,10 +1595,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Widget _buildWhosComingSection() {
     // Get all invited friends (not just accepted ones)
     final allInvitedFriends = _event?.invitedFriends ?? [];
+    final isPastStatus =
+        _event?.status == EventStatus.completed || _event?.status == EventStatus.cancelled;
     
     // If no invited friends and user is creator, show invite widget
     if (allInvitedFriends.isEmpty) {
-      if (_event?.isCreator == true) {
+      if (_event?.isCreator == true && !isPastStatus) {
         return _buildQuickInviteWidget();
       }
       // For guests, show empty state
@@ -1676,7 +1680,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           ),
         if (shouldShowSeeAll) const SizedBox(height: 8),
         // Invite Friends button (only for creator)
-        if (_event?.isCreator == true) _buildQuickInviteWidget(),
+        if (_event?.isCreator == true && !isPastStatus) _buildQuickInviteWidget(),
       ],
     );
   }
@@ -2427,6 +2431,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Widget _buildWishlistCard(LocalizationService localization) {
     final isAccepted = _event?.myInvitationStatus == 'accepted';
     final isCreator = _event?.isCreator ?? false;
+    final isPastStatus =
+        _event?.status == EventStatus.completed || _event?.status == EventStatus.cancelled;
+
+    // Hide entire section if event is past
+    if (isPastStatus) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2441,7 +2452,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         ),
         const SizedBox(height: 16),
         // Wishlist Content
-        if (_event!.wishlistId == null && isCreator)
+        if (_event!.wishlistId == null && isCreator && !isPastStatus)
       // Create Event Wishlist placeholder
           Container(
         width: double.infinity, // Full width to match main sheet
