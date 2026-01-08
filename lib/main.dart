@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'core/services/localization_service.dart';
 import 'core/services/api_service.dart';
 import 'features/auth/data/repository/auth_repository.dart';
@@ -23,6 +24,15 @@ import 'core/navigation/app_route_observer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase (required for Firebase Messaging)
+  try {
+    await Firebase.initializeApp();
+    debugPrint('✅ Firebase initialized successfully');
+  } catch (e) {
+    debugPrint('⚠️ Firebase initialization failed: $e');
+    // Continue app execution even if Firebase fails (e.g., on emulators without Firebase config)
+  }
 
   // Initialize Hive for guest local storage
   await Hive.initFlutter();

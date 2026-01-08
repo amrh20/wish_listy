@@ -23,81 +23,10 @@ class ApiService {
   static final ValueNotifier<bool> isOffline = ValueNotifier<bool>(false);
 
   // Backend API Base URL
-  // Automatically detects the correct URL based on platform:
-  // - Android Emulator: 10.0.2.2 (special IP that maps to host's localhost)
-  // - Android Physical Device: Use your computer's IP address (e.g., 192.168.1.100)
-  // - iOS Simulator: localhost (works directly)
-  // - Web: localhost (works directly)
-  static bool get _isAndroid =>
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
-  static bool get _isIOS =>
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
-
+  // Production API endpoint on Render.com
   static String get _baseUrl {
-    if (kIsWeb) {
-      // Web platform
-      return 'http://localhost:4000/api';
-    }
-
-    if (_isAndroid) {
-      // Android Emulator uses 10.0.2.2 to access host machine's localhost
-      // For physical Android device, use your computer's IP address
-      //
-      // TO FIX CONNECTION REFUSED ON PHYSICAL DEVICE:
-      // 1. Find your computer's IP: ifconfig (Mac/Linux) or ipconfig (Windows)
-      // 2. Replace the IP below with your computer's IP (e.g., 192.168.1.3)
-      // 3. Make sure backend listens on 0.0.0.0, not just localhost
-      // 4. Ensure both devices are on the same WiFi network
-      // 5. Check firewall settings on your computer
-      //
-      // For Emulator: use 'http://10.0.2.2:4000/api'
-      // For Physical Device: use 'http://YOUR_COMPUTER_IP:4000/api'
-      
-      // TODO: UPDATE THIS IP ADDRESS TO MATCH YOUR COMPUTER'S IP
-      // Find your IP with: 
-      //   - Mac/Linux: ifconfig | grep "inet " | grep -v 127.0.0.1
-      //   - Windows: ipconfig | findstr IPv4
-      //   - Or check your router's connected devices list
-      
-      // Try to detect if running on emulator or physical device
-      // For Emulator: use '10.0.2.2'
-      // For Physical Device: use your computer's IP address (found: 192.168.1.5)
-      // 
-      // To find your IP: ifconfig (Mac/Linux) or ipconfig (Windows)
-      // Make sure both your computer and phone are on the same WiFi network!
-      
-      const String androidIP = '192.168.1.7'; // Physical device - Your computer's IP (updated for current WiFi)
-      // const String androidIP = '10.0.2.2'; // Uncomment for Android Emulator
-      
-      final url = 'http://$androidIP:4000/api';
-
-      return url;
-    }
-
-    if (_isIOS) {
-      // iOS Physical Device - use Mac's IP address
-      // iOS Simulator can use localhost, but for physical device we need Mac's IP
-      // Note: On physical iPhone, localhost refers to the iPhone itself, not the Mac
-      // 
-      // TO FIX CONNECTION REFUSED ON PHYSICAL iPhone:
-      // 1. Find your Mac's IP: ifconfig | grep "inet " | grep -v 127.0.0.1
-      // 2. Make sure backend listens on 0.0.0.0, not just localhost
-      // 3. Ensure both Mac and iPhone are on the same WiFi network
-      // 4. Check firewall settings on your Mac
-      //
-      // For iOS Simulator: localhost works (can keep using this)
-      // For Physical iPhone: use Mac's IP address (found: 192.168.1.11)
-      
-      const String iosIP = '192.168.1.7'; // Physical iPhone - Your Mac's IP (updated for current WiFi)
-      // For iOS Simulator, you can use 'localhost' if needed:
-      // const String iosIP = 'localhost'; // Uncomment for iOS Simulator
-      
-      final url = 'http://$iosIP:4000/api';
-      return url;
-    }
-
-    // Default fallback
-    return 'http://localhost:4000/api';
+    // Use the production API URL for all platforms
+    return 'https://wish-listy-backend.onrender.com/api';
   }
 
   /// Public base URL used by Dio (includes `/api`)

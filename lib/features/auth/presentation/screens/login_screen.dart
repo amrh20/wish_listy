@@ -13,6 +13,7 @@ import 'package:wish_listy/core/widgets/custom_text_field.dart';
 import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -144,10 +145,22 @@ class _LoginScreenState extends State<LoginScreen>
     setState(() => _isLoading = true);
 
     try {
+      // Fetch FCM token before login (may be null on some emulators)
+      String? fcmToken;
+      try {
+        fcmToken = await FirebaseMessaging.instance.getToken();
+        debugPrint('📱 [Login] FCM Token retrieved: ${fcmToken != null ? "✅ (${fcmToken.length} chars)" : "❌ null"}');
+      } catch (e) {
+        debugPrint('⚠️ [Login] Failed to get FCM token: $e');
+        // Continue with login even if FCM token fails (e.g., on emulator)
+        fcmToken = null;
+      }
+
       final authService = Provider.of<AuthRepository>(context, listen: false);
       final success = await authService.loginUser(
         _usernameController.text.trim(),
         _passwordController.text.trim(),
+        fcmToken: fcmToken,
       );
 
       if (success && mounted) {

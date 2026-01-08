@@ -167,19 +167,24 @@ class AuthRepository extends ChangeNotifier {
   Future<Map<String, dynamic>> login({
     required String username, // username can be email or phone
     required String password,
+    String? fcmToken, // Optional FCM token for push notifications
   }) async {
     // ApiException will be thrown by ApiService interceptor if there's an error
     // No need to catch and rethrow - let ApiException propagate naturally
-    final loginData = {'username': username, 'password': password};
+    final loginData = {
+      'username': username,
+      'password': password,
+      if (fcmToken != null) 'fcmToken': fcmToken,
+    };
     final response = await _apiService.post('/auth/login', data: loginData);
     return response;
   }
 
   // Login with credentials using real API
-  Future<bool> loginUser(String username, String password) async {
+  Future<bool> loginUser(String username, String password, {String? fcmToken}) async {
     try {
       // Call the API to login
-      final response = await login(username: username, password: password);
+      final response = await login(username: username, password: password, fcmToken: fcmToken);
 
       // Check if login was successful
       if (response['success'] == true) {
