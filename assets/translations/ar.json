@@ -54,6 +54,7 @@
     "about": "حول التطبيق",
     "splashTitle": "الأمنيات",
     "splashSubtitle": "تواصل من خلال الهدايا المدروسة",
+    "max_image_size": "الحد الأقصى لحجم الصورة 5 ميجابايت",
     "tagline": "قَرّب من اللي بتحبهم بهدية على قدّ المقام",
     "selectLanguage": "اختار اللغة"
   },
@@ -86,7 +87,7 @@
     "other": "آخر",
     "alreadyHaveAccount": "لديك حساب بالفعل؟",
     "dontHaveAccount": "ليس لديك حساب؟ ",
-    "createAccountSubtitle": "اعمل وشارك أمنياتك مع صحابك وعيلتك",
+    "createAccountSubtitle": "انشئ وشارك أمنياتك مع صحابك وعيلتك",
     "loginWithGoogle": "تسجيل الدخول بـ Google",
     "loginWithApple": "تسجيل الدخول بـ Apple",
     "or": "أو",
@@ -186,7 +187,7 @@
       "createEventSubtext": "خطط للاحتفال",
       "addItem": "ضيف هدية",
       "addItemSubtext": "للأمنيات",
-      "createWishlist": "اعمل أمنيات",
+      "createWishlist": "انشئ أمنيات",
       "createWishlistSubtext": "ابدأ جديد"
     },
     "friendActivity": "نشاط الأصدقاء",
@@ -200,7 +201,7 @@
     "viewwishlist": "شوف الأمنيات",
     "title": "الأمنيات",
     "myWishlists": "الأمنيات",
-    "createWishlist": "اعمل أمنيات جديدة",
+    "createWishlist": "انشئ أمنيات جديدة",
     "createWishlistSubtitle": "تعال نظبط شكل القائمة الأول (الاسم ومين يشوفها). بعد الخطوة دي، هتقدر تملاها بكل الهدايا اللي نفسك فيها!",
     "wishlistName": "اسم الأمنيات",
     "description": "الوصف",
@@ -249,7 +250,7 @@
     "noEventWishlistsDescription": "أنشئ قوائم أمنيات للفعاليات الخاصة مثل أعياد الميلاد والأعراس والعطلات لتسهيل تقديم الهدايا لأصدقائك.",
     "createEventWishlist": "إنشاء قائمة أمنيات للفعالية",
     "createEventWishlistDescription": "أنشئ قوائم أمنيات للفعاليات الخاصة مثل أعياد الميلاد والأعراس والعطلات لتسهيل تقديم الهدايا لأصدقائك.",
-    "createPersonalWishlistDescription": "اعمل أمنيات شخصية عشان تتابع الهدايا اللي نفسك فيها.",
+    "createPersonalWishlistDescription": "انشئ أمنيات شخصية عشان تتابع الهدايا اللي نفسك فيها.",
     "noWishlistsYet": "لا توجد قوائم أمنيات بعد",
     "deleteWishlistConfirmation": "متأكد إنك عايز تحذف \"{name}\"؟\nمش هتقدر ترجعها تاني.",
     "failedToDeleteWishlist": "ماعرفناش نحذف الأمنيات",
@@ -259,7 +260,7 @@
     "failedToLoadWishlist": "ماعرفناش نجيب تفاصيل الأمنيات… جرّب تاني.",
     "unexpectedErrorOccurred": "حصلت مشكلة بسيطة… جرّب تاني.",
     "retry": "جرّب تاني",
-    "createFirstWishlistDescription": "ابدأ واعمل أول أمنيات ليك… ضيف هدايا وشاركها مع أصحابك!",
+    "createFirstWishlistDescription": "ابدأ وانشئ أول أمنيات ليك… ضيف هدايا وشاركها مع أصحابك!",
     "personalWishlists": "قوائم الأمنيات الشخصية",
     "personalWishlist": "قائمة الأمنيات الشخصية",
     "eventWishlist": "قائمة أمنيات الفعالية",
@@ -470,7 +471,7 @@
   },
   "events": {
     "nocreatewishlist": "لا يوجد إنشاء قائمة أمنيات",
-    "createWishlist": "اعمل أمنيات",
+    "createWishlist": "انشئ أمنيات",
     "createWishlistDescription": "أنشئ قائمة أمنيات لهذه الفعالية",
     "createWishlistButton": "إنشاء قائمة أمنيات",
     "title": "الفعاليات",
@@ -615,7 +616,7 @@
     "doYouWantWishlist": "عايز تربط أمنيات بالفعالية؟",
     "wishlistQuestion": "هل تريد إنشاء أو ربط قائمة أمنيات لهذه الفعالية؟",
     "yesCreateWishlist": "نعم، أنشئ قائمة أمنيات جديدة",
-    "yesCreateWishlistDescription": "اعمل أمنيات فاضية مربوطة بالفعالية… وتقدر تضيف هدايا بعدين.",
+    "yesCreateWishlistDescription": "انشئ أمنيات فاضية مربوطة بالفعالية… وتقدر تضيف هدايا بعدين.",
     "linkExistingWishlist": "ربط بقائمة أمنيات موجودة",
     "linkExistingWishlistDescription": "ربط هذه الفعالية بإحدى قوائم أمنياتك الموجودة",
     "noCreateWishlist": "لا قائمة أمنيات في الوقت الحالي",
@@ -683,7 +684,7 @@
     "purchasedOn": "اتشرت يوم",
     "noOneInvitedYet": "لم يتم دعوة أحد بعد",
     "noWishlistYet": "مفيش أمنيات لسه",
-    "createEventWishlist": "اعمل أمنيات للفعالية",
+    "createEventWishlist": "انشئ أمنيات للفعالية",
     "linkWishlistDescription": "اربط أمنيات بالفعالية عشان الضيوف يعرفوا يجيبوا إيه",
     "seeAll": "عرض الكل",
     "maybe": "ربما",
@@ -1033,7 +1034,22 @@
     "friendsEvents": "فعاليات الأصدقاء",
     "gifted": "تم الشراء",
     "reserved": "محجوز",
-    "available": "متاح"
+    "available": "متاح",
+    "addYourFirstWish": "أضف أمنيتك الأولى"
+  },
+  "activity": {
+    "happeningNow": "يحدث الآن",
+    "noMoreUpdates": "لا توجد تحديثات أخرى من آخر 15 يوم",
+    "noRecentActivity": "لا يوجد نشاط حديث",
+    "activityFromFriends": "سيظهر نشاط أصدقائك هنا",
+    "failedToLoadActivities": "فشل تحميل الأنشطة",
+    "justNow": "الآن",
+    "daysAgo": "منذ {count} {count, plural, =1 {يوم} other {أيام}}",
+    "hoursAgo": "منذ {count} {count, plural, =1 {ساعة} other {ساعات}}",
+    "minutesAgo": "منذ {count} {count, plural, =1 {دقيقة} other {دقائق}}"
+  },
+  "common": {
+    "retry": "إعادة المحاولة"
   },
   "details": {
     "noWishlistLinkedToEvent": "مفيش أمنيات مرتبطة بالفعالية دي لسه.",

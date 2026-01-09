@@ -9,6 +9,7 @@ import 'core/services/localization_service.dart';
 import 'core/services/api_service.dart';
 import 'features/auth/data/repository/auth_repository.dart';
 import 'core/theme/app_theme.dart';
+import 'core/constants/app_styles.dart';
 import 'core/utils/app_routes.dart';
 import 'core/widgets/splash_screen.dart';
 import 'core/storage/adapters/wishlist_type_adapter.dart';
@@ -57,6 +58,9 @@ void main() async {
 
   // Initialize services
   await localizationService.initialize();
+  
+  // Initialize AppStyles language cache (must be after LocalizationService.initialize)
+  await AppStyles.initializeLanguageCache();
   
   // Initialize API service language code (must be after LocalizationService)
   final apiService = ApiService();
@@ -137,13 +141,14 @@ class _MyAppState extends State<MyApp> {
       ],
       child: Consumer<LocalizationService>(
         builder: (context, localization, child) {
+          final currentLocale = Locale(localization.currentLanguage);
           return MaterialApp(
             title: 'Wish Listy',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
+            theme: AppTheme.lightTheme(locale: currentLocale),
+            darkTheme: AppTheme.darkTheme(locale: currentLocale),
             themeMode: ThemeMode.system,
-            locale: Locale(localization.currentLanguage),
+            locale: currentLocale,
             supportedLocales: const [Locale('en', 'US'), Locale('ar', 'SA')],
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,

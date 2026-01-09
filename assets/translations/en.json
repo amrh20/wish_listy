@@ -47,7 +47,8 @@
     "help": "Help",
     "about": "About",
     "splashTitle": "Wish Listy",
-    "splashSubtitle": "Connect through thoughtful gifting"
+    "splashSubtitle": "Connect through thoughtful gifting",
+    "max_image_size": "Max image size 5MB"
   },
   "navigation": {
     "home": "Home",
@@ -1033,7 +1034,22 @@
     "friendsEvents": "Friends' Events",
     "gifted": "Gifted",
     "reserved": "Reserved",
-    "available": "Available"
+    "available": "Available",
+    "addYourFirstWish": "Add Your First Wish"
+  },
+  "activity": {
+    "happeningNow": "Happening Now",
+    "noMoreUpdates": "No more updates from the last 15 days",
+    "noRecentActivity": "No recent activity",
+    "activityFromFriends": "Activity from your friends will appear here",
+    "failedToLoadActivities": "Failed to load activities",
+    "justNow": "Just now",
+    "daysAgo": "{count} {count, plural, =1 {day} other {days}} ago",
+    "hoursAgo": "{count} {count, plural, =1 {hour} other {hours}} ago",
+    "minutesAgo": "{count} {count, plural, =1 {minute} other {minutes}} ago"
+  },
+  "common": {
+    "retry": "Retry"
   },
   "details": {
     "noWishlistLinkedToEvent": "No wishlist or wishes are linked to this event yet.",

@@ -220,17 +220,17 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
                         gradient: AppColors.primaryGradient,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.add, color: Colors.white, size: 20),
-                            SizedBox(width: 8),
+                            const Icon(Icons.add, color: Colors.white, size: 20),
+                            const SizedBox(width: 8),
                             Flexible(
                               child: Text(
-                                'Add Your First Wish',
-                                style: TextStyle(
+                                Provider.of<LocalizationService>(context, listen: false).translate('cards.addYourFirstWish'),
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 13,

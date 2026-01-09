@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
+import 'package:wish_listy/core/constants/app_styles.dart';
 
 class LocalizationService extends ChangeNotifier {
   static const String _languageKey = 'selected_language';
@@ -33,8 +34,11 @@ class LocalizationService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       _currentLanguage = prefs.getString(_languageKey) ?? _defaultLanguage;
+      // Update AppStyles cache
+      AppStyles.updateLanguageCache(_currentLanguage);
     } catch (e) {
       _currentLanguage = _defaultLanguage;
+      AppStyles.updateLanguageCache(_currentLanguage);
     }
   }
 
@@ -70,6 +74,9 @@ class LocalizationService extends ChangeNotifier {
     }
 
     _currentLanguage = languageCode;
+
+    // Update AppStyles cache immediately
+    AppStyles.updateLanguageCache(languageCode);
 
     // Save to SharedPreferences
     try {

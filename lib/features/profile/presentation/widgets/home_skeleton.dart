@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 /// Skeleton loading view for Home Screen
 class HomeSkeletonView extends StatelessWidget {
@@ -73,7 +75,7 @@ class HomeSkeletonView extends StatelessWidget {
           const SizedBox(height: 24),
           // Activity section skeleton
           _buildSectionSkeleton(
-            title: 'Happening Now ⚡',
+            title: '${Provider.of<LocalizationService>(context, listen: false).translate('activity.happeningNow')} ⚡',
             child: ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),

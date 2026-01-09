@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/profile/presentation/models/home_models.dart';
@@ -139,15 +140,16 @@ class _FriendActivityFeedScreenState extends State<FriendActivityFeedScreen> {
   String _calculateTimeAgo(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
+    final localization = Provider.of<LocalizationService>(context, listen: false);
 
     if (difference.inDays > 0) {
-      return '${difference.inDays} ${difference.inDays == 1 ? 'day' : 'days'} ago';
+      return localization.translate('activity.daysAgo', args: {'count': difference.inDays});
     } else if (difference.inHours > 0) {
-      return '${difference.inHours} ${difference.inHours == 1 ? 'hour' : 'hours'} ago';
+      return localization.translate('activity.hoursAgo', args: {'count': difference.inHours});
     } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} ${difference.inMinutes == 1 ? 'minute' : 'minutes'} ago';
+      return localization.translate('activity.minutesAgo', args: {'count': difference.inMinutes});
     } else {
-      return 'Just now';
+      return localization.translate('activity.justNow');
     }
   }
 
@@ -156,7 +158,7 @@ class _FriendActivityFeedScreenState extends State<FriendActivityFeedScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Happening Now ⚡',
+          '${Provider.of<LocalizationService>(context, listen: false).translate('activity.happeningNow')} ⚡',
           style: AppStyles.headingMedium,
         ),
         backgroundColor: Colors.white,

@@ -545,6 +545,7 @@ class _PatternedHeader extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                   child: Obx(() {
                     final localization = Provider.of<LocalizationService>(context, listen: false);
+                    final isLoading = controller.isLoading.value;
                     final p = controller.profile.value;
                     final user = p?.user;
 
@@ -573,19 +574,28 @@ class _PatternedHeader extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Flexible(
-                              child: Text(
-                                fullName,
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                              ),
+                              child: isLoading
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.primary,
+                                      ),
+                                    )
+                                  : Text(
+                                      fullName,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                    ),
                             ),
-                            if (isFriend) ...[
+                            if (isFriend && !isLoading) ...[
                               const SizedBox(width: 8),
                               const Icon(
                                 Icons.check_circle,

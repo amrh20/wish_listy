@@ -106,8 +106,107 @@ class AppTheme {
     ),
   ];
 
+  // Helper method to create locale-aware TextTheme
+  static TextTheme _getTextTheme(Locale locale, ThemeData baseTheme, {bool isDark = false}) {
+    final isArabic = locale.languageCode == 'ar';
+    final textColor = isDark ? AppColors.textPrimary : onSurface;
+
+    if (isArabic) {
+      // Use Alexandria for Arabic
+      return GoogleFonts.alexandriaTextTheme(baseTheme.textTheme).copyWith(
+        displayLarge: GoogleFonts.alexandria(
+          fontSize: 57,
+          fontWeight: FontWeight.w400,
+          color: textColor,
+        ),
+        displayMedium: GoogleFonts.alexandria(
+          fontSize: 45,
+          fontWeight: FontWeight.w400,
+          color: textColor,
+        ),
+        displaySmall: GoogleFonts.alexandria(
+          fontSize: 36,
+          fontWeight: FontWeight.w400,
+          color: textColor,
+        ),
+        headlineLarge: GoogleFonts.alexandria(
+          fontSize: 32,
+          fontWeight: FontWeight.w800,
+          color: textColor,
+        ),
+        headlineMedium: GoogleFonts.alexandria(
+          fontSize: 28,
+          fontWeight: FontWeight.w800,
+          color: textColor,
+        ),
+        headlineSmall: GoogleFonts.alexandria(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: textColor,
+        ),
+        titleLarge: GoogleFonts.alexandria(
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+        ),
+        titleMedium: GoogleFonts.alexandria(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+        ),
+        titleSmall: GoogleFonts.alexandria(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+        ),
+        bodyLarge: GoogleFonts.alexandria(
+          fontSize: 16,
+          fontWeight: FontWeight.normal,
+          color: textColor,
+        ),
+        bodyMedium: GoogleFonts.alexandria(
+          fontSize: 14,
+          fontWeight: FontWeight.normal,
+          color: textColor,
+        ),
+        bodySmall: GoogleFonts.alexandria(
+          fontSize: 12,
+          fontWeight: FontWeight.normal,
+          color: textColor,
+        ),
+        labelLarge: GoogleFonts.alexandria(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: isDark ? AppColors.surface : surface,
+        ),
+        labelMedium: GoogleFonts.alexandria(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+        ),
+        labelSmall: GoogleFonts.alexandria(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+        ),
+      );
+    } else {
+      // Use Ubuntu for English
+      return GoogleFonts.ubuntuTextTheme(baseTheme.textTheme).copyWith(
+        headlineLarge: heading1.copyWith(color: textColor),
+        headlineMedium: heading2.copyWith(color: textColor),
+        headlineSmall: heading3.copyWith(color: textColor),
+        bodyLarge: bodyLarge.copyWith(color: textColor),
+        bodyMedium: bodyMedium.copyWith(color: textColor),
+        bodySmall: bodySmall.copyWith(color: textColor),
+        labelLarge: button.copyWith(color: isDark ? AppColors.surface : surface),
+      );
+    }
+  }
+
   // Theme Data
-  static ThemeData get lightTheme {
+  static ThemeData lightTheme({Locale? locale}) {
+    final currentLocale = locale ?? const Locale('en');
     final baseTheme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.light(
@@ -120,20 +219,12 @@ class AppTheme {
     );
     
     return baseTheme.copyWith(
-      textTheme: GoogleFonts.readexProTextTheme(baseTheme.textTheme).copyWith(
-        headlineLarge: heading1,
-        headlineMedium: heading2,
-        headlineSmall: heading3,
-        bodyLarge: bodyLarge,
-        bodyMedium: bodyMedium,
-        bodySmall: bodySmall,
-        labelLarge: button,
-      ),
+      textTheme: _getTextTheme(currentLocale, baseTheme, isDark: false),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
           foregroundColor: surface,
-          textStyle: button,
+          textStyle: _getTextTheme(currentLocale, baseTheme, isDark: false).labelLarge,
           padding: const EdgeInsets.symmetric(
             horizontal: spacing24,
             vertical: spacing12,
@@ -179,7 +270,8 @@ class AppTheme {
     );
   }
 
-  static ThemeData get darkTheme {
+  static ThemeData darkTheme({Locale? locale}) {
+    final currentLocale = locale ?? const Locale('en');
     final baseTheme = ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.dark(
@@ -192,22 +284,14 @@ class AppTheme {
     );
     
     return baseTheme.copyWith(
-      textTheme: GoogleFonts.readexProTextTheme(baseTheme.textTheme).copyWith(
-        headlineLarge: heading1.copyWith(color: AppColors.textPrimary),
-        headlineMedium: heading2.copyWith(color: AppColors.textPrimary),
-        headlineSmall: heading3.copyWith(color: AppColors.textPrimary),
-        bodyLarge: bodyLarge.copyWith(color: AppColors.textPrimary),
-        bodyMedium: bodyMedium.copyWith(color: AppColors.textPrimary),
-        bodySmall: bodySmall.copyWith(color: AppColors.textPrimary),
-        labelLarge: button.copyWith(color: AppColors.surface),
-      ),
+      textTheme: _getTextTheme(currentLocale, baseTheme, isDark: true),
       // Note: For primary action buttons, use PrimaryGradientButton widget instead.
       // This theme is kept for Material defaults and backward compatibility.
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
           foregroundColor: AppColors.surface,
-          textStyle: button,
+          textStyle: _getTextTheme(currentLocale, baseTheme, isDark: true).labelLarge,
           padding: const EdgeInsets.symmetric(
             horizontal: spacing24,
             vertical: spacing12,

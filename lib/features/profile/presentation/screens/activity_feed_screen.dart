@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/features/profile/presentation/providers/activity_provider.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/activity_card.dart';
@@ -65,7 +66,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen> {
                     ),
                     Expanded(
                       child: Text(
-                        'Happening Now ⚡',
+                        '${Provider.of<LocalizationService>(context, listen: false).translate('activity.happeningNow')} ⚡',
                         style: AppStyles.headingMedium,
                         textAlign: TextAlign.center,
                       ),
@@ -97,7 +98,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen> {
                                       ),
                                       const SizedBox(height: 16),
                                       Text(
-                                        provider.errorMessage ?? 'Failed to load activities',
+                                        provider.errorMessage ?? Provider.of<LocalizationService>(context, listen: false).translate('activity.failedToLoadActivities'),
                                         style: AppStyles.bodyMedium.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
@@ -109,7 +110,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen> {
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: AppColors.primary,
                                         ),
-                                        child: const Text('Retry'),
+                                        child: Text(Provider.of<LocalizationService>(context, listen: false).translate('common.retry')),
                                       ),
                                     ],
                                   ),
@@ -126,14 +127,14 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen> {
                                           ),
                                           const SizedBox(height: 16),
                                           Text(
-                                            'No recent activity',
+                                            Provider.of<LocalizationService>(context, listen: false).translate('activity.noRecentActivity'),
                                             style: AppStyles.bodyLarge.copyWith(
                                               color: AppColors.textSecondary,
                                             ),
                                           ),
                                           const SizedBox(height: 8),
                                           Text(
-                                            'Activity from your friends will appear here',
+                                            Provider.of<LocalizationService>(context, listen: false).translate('activity.activityFromFriends'),
                                             style: AppStyles.bodySmall.copyWith(
                                               color: AppColors.textTertiary,
                                             ),
@@ -170,7 +171,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen> {
                                             padding: const EdgeInsets.symmetric(vertical: 24.0),
                                             child: Center(
                                               child: Text(
-                                                'No more updates from the last 15 days',
+                                                Provider.of<LocalizationService>(context, listen: false).translate('activity.noMoreUpdates'),
                                                 style: AppStyles.bodySmall.copyWith(
                                                   color: AppColors.textTertiary,
                                                   fontSize: 12,

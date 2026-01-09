@@ -54,7 +54,7 @@
 	
 	<!-- Photo Library Permission -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>WishLink needs photo library access to let you select images for your wishlist items.</string>
+	<string>This app needs access to your gallery to update your profile picture and select images for your wishlist items.</string>
 	
 	<!-- Photo Library Add Permission -->
 	<key>NSPhotoLibraryAddUsageDescription</key>

@@ -375,6 +375,73 @@ class ApiService {
     }
   }
 
+  /// Generic POST request method for multipart/form-data
+  /// Used for uploading files (images, documents, etc.)
+  Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required Map<String, dynamic> fields,
+    String? fileKey,
+    String? filePath,
+    Map<String, String>? headers,
+  }) async {
+    try {
+      // Create FormData
+      final formData = FormData();
+
+      // Add form fields
+      fields.forEach((key, value) {
+        formData.fields.add(MapEntry(key, value.toString()));
+      });
+
+      // Add file if provided
+      if (fileKey != null && filePath != null) {
+        final fileName = filePath.split('/').last;
+        formData.files.add(
+          MapEntry(
+            fileKey,
+            await MultipartFile.fromFile(
+              filePath,
+              filename: fileName,
+            ),
+          ),
+        );
+      }
+
+      // Merge custom headers with default headers
+      final requestHeaders = <String, dynamic>{};
+      if (headers != null) {
+        requestHeaders.addAll(headers);
+      }
+
+      final response = await _dio.post(
+        path,
+        data: formData,
+        options: Options(
+          headers: requestHeaders,
+          contentType: 'multipart/form-data',
+        ),
+      );
+
+      isOffline.value = false;
+      return response.data;
+    } on DioException catch (e) {
+      final kind = _classifyDioException(e);
+      isOffline.value = kind == ApiErrorKind.noInternet;
+      final resData = e.response?.data;
+      final msg = kind == ApiErrorKind.noInternet
+          ? 'No Internet Connection'
+          : _extractBackendMessage(resData);
+      throw ApiException(
+        msg,
+        statusCode: e.response?.statusCode,
+        data: resData,
+        kind: kind,
+      );
+    } catch (e) {
+      throw ApiException(e.toString());
+    }
+  }
+
   /// Set authorization header for authenticated requests
   void setAuthToken(String token) {
     _dio.options.headers['Authorization'] = 'Bearer $token';

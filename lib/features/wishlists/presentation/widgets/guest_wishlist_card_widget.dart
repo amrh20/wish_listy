@@ -316,14 +316,14 @@ class GuestWishlistCardWidget extends StatelessWidget {
                   gradient: AppColors.primaryGradient,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Center(
+                child: Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.add, color: Colors.white, size: 20),
                       SizedBox(width: 8),
                       Text(
-                        'Add Your First Wish',
+                        Provider.of<LocalizationService>(context, listen: false).translate('cards.addYourFirstWish'),
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

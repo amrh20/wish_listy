@@ -60,6 +60,12 @@ dependencies:
   # Cached network images for better performance
   cached_network_image: ^3.3.1
 
+  # Image picking and compression
+  image_picker: ^1.0.5
+  image_cropper: ^8.0.2
+  flutter_image_compress: ^2.1.0
+  path_provider: ^2.1.1
+
   # Open store links
   url_launcher: ^6.2.6
   
@@ -118,27 +124,8 @@ flutter:
     - assets/vectors/bottom_sheets/
 
   # Fonts configuration
-  fonts:
-    - family: Mestika
-      fonts:
-        - asset: assets/fonts/Mestika-Thin.otf
-          weight: 100
-        - asset: assets/fonts/Mestika-ExtraLight.otf
-          weight: 200
-        - asset: assets/fonts/Mestika-Light.otf
-          weight: 300
-        - asset: assets/fonts/Mestika-Regular.otf
-          weight: 400
-        - asset: assets/fonts/Mestika-Medium.otf
-          weight: 500
-        - asset: assets/fonts/Mestika-SemiBold.otf
-          weight: 600
-        - asset: assets/fonts/Mestika-Bold.otf
-          weight: 700
-        - asset: assets/fonts/Mestika-ExtraBold.otf
-          weight: 800
-        - asset: assets/fonts/Mestika-Black.otf
-          weight: 900
+  # Using Google Fonts (Alexandria for Arabic, Ubuntu for English)
+  # No local font files needed
 
 # Removed heavy dependencies for faster builds:
 # - Firebase packages (firebase_core, firebase_auth, etc.) - Can be added later

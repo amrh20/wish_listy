@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
@@ -13,7 +15,10 @@ import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 import 'package:wish_listy/core/widgets/royal_avatar_wrapper.dart';
-import 'package:wish_listy/core/widgets/royal_avatar_wrapper.dart';
+import 'package:wish_listy/features/profile/presentation/cubit/profile_cubit.dart';
+import 'package:wish_listy/features/profile/presentation/cubit/profile_state.dart';
+import 'package:wish_listy/features/profile/presentation/widgets/profile_image_action_bottom_sheet.dart';
+import 'package:wish_listy/features/profile/data/repository/profile_repository.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -114,9 +119,53 @@ class ProfileScreenState extends State<ProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LocalizationService>(
-      builder: (context, localization, child) {
-        return Scaffold(
+    return BlocProvider(
+      create: (context) => ProfileCubit(),
+      child: BlocListener<ProfileCubit, ProfileImageState>(
+        listener: (context, state) {
+          if (state is ProfileImageUploadSuccess) {
+            // Update profile image URL
+            if (_userProfile != null) {
+              setState(() {
+                _userProfile = _userProfile!.copyWith(
+                  profilePicture: state.imageUrl,
+                );
+              });
+            }
+          } else if (state is ProfileImageDeleteSuccess) {
+            // Remove profile image (revert to placeholder)
+            // Update user profile with data from API response
+            if (state.userData != null && _userProfile != null) {
+              setState(() {
+                _userProfile = _userProfile!.copyWith(
+                  profilePicture: null,
+                );
+              });
+            } else if (_userProfile != null) {
+              setState(() {
+                _userProfile = _userProfile!.copyWith(
+                  profilePicture: null,
+                );
+              });
+            }
+          } else if (state is ProfileImageUploadError ||
+              state is ProfileImageDeleteError) {
+            // Show error SnackBar
+            final errorMessage = state is ProfileImageUploadError
+                ? state.message
+                : (state as ProfileImageDeleteError).message;
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+        },
+        child: Consumer<LocalizationService>(
+          builder: (context, localization, child) {
+            return Scaffold(
           backgroundColor: Colors.transparent,
           body: Stack(
               children: [
@@ -232,7 +281,9 @@ class ProfileScreenState extends State<ProfileScreen>
             ],
           ),
         );
-      },
+          },
+        ),
+      ),
     );
   }
 
@@ -265,41 +316,152 @@ class ProfileScreenState extends State<ProfileScreen>
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // White Circle with Initial
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 4),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
+                  // White Circle with Initial - Camera icon overlay for image editing
+                  BlocBuilder<ProfileCubit, ProfileImageState>(
+                    builder: (context, state) {
+                      final isUploading = state is ProfileImageUploading;
+                      final isDeleting = state is ProfileImageDeleting;
+                      final isLoading = isUploading || isDeleting;
+
+                      return Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.06),
+                              blurRadius: 16,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: RoyalAvatarWrapper(
-                      userName: userName,
-                      crownSize: 34,
-                      topOffset: -28,
-                      child: CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.white,
-                        backgroundImage: profileImage != null && profileImage.isNotEmpty
-                            ? NetworkImage(profileImage)
-                            : null,
-                        child: profileImage == null || profileImage.isEmpty
-                            ? Text(
-                                userInitial,
-                                style: const TextStyle(
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            // Avatar with Hero widget for smooth transition
+                            Hero(
+                              tag: 'profile_image_${profileImage ?? 'placeholder'}',
+                              child: GestureDetector(
+                                onTap: profileImage != null && profileImage.isNotEmpty
+                                    ? () {
+                                        // Open full-screen image viewer
+                                        _showFullScreenImageView(context, profileImage!);
+                                      }
+                                    : null,
+                                child: RoyalAvatarWrapper(
+                                  userName: userName,
+                                  crownSize: 34,
+                                  topOffset: -28,
+                                  child: ClipOval(
+                                    child: profileImage != null &&
+                                            profileImage.isNotEmpty
+                                        ? CachedNetworkImage(
+                                            imageUrl: profileImage,
+                                            width: 100,
+                                            height: 100,
+                                            fit: BoxFit.cover,
+                                            placeholder: (context, url) =>
+                                                Container(
+                                              width: 100,
+                                              height: 100,
+                                              color: Colors.white,
+                                              child: Center(
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: AppColors.primary,
+                                                ),
+                                              ),
+                                            ),
+                                            errorWidget: (context, url, error) =>
+                                                Container(
+                                              width: 100,
+                                              height: 100,
+                                              color: Colors.white,
+                                              child: Icon(
+                                                Icons.person,
+                                                size: 60,
+                                                color: AppColors.primary.withOpacity(0.5),
+                                              ),
+                                            ),
+                                          )
+                                        : Container(
+                                            width: 100,
+                                            height: 100,
+                                            color: Colors.white,
+                                            child: Icon(
+                                              Icons.person,
+                                              size: 60,
+                                              color: AppColors.primary.withOpacity(0.5),
+                                            ),
+                                          ),
+                                  ),
                                 ),
-                              )
-                            : null,
-                      ),
-                    ),
+                              ),
+                            ),
+                              // Camera/Edit Icon Overlay at bottom right
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    // Show bottom sheet for image actions
+                                    ProfileImageActionBottomSheet.show(
+                                      context,
+                                      currentImageUrl: profileImage,
+                                      hasUploadedImage: profileImage != null &&
+                                          profileImage.isNotEmpty &&
+                                          !profileImage.contains('placeholder') &&
+                                          !profileImage.contains('default'),
+                                    );
+                                  },
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.accent,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 3,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            // Loading overlay
+                            if (isLoading)
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.black.withOpacity(0.5),
+                                  ),
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 3,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 12),
                   // Name below circle with Edit button
@@ -369,11 +531,39 @@ class ProfileScreenState extends State<ProfileScreen>
                       ),
                     ),
                   ],
+                  // Max image size note
+                  const SizedBox(height: 10),
+                  Text(
+                    localization.translate('app.max_image_size'),
+                    style: AppStyles.bodySmall.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Show full-screen image viewer
+  void _showFullScreenImageView(BuildContext context, String imageUrl) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black.withOpacity(0.9),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return _FullScreenImageView(imageUrl: imageUrl);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
       ),
     );
   }
@@ -2108,6 +2298,71 @@ class _InterestsSelectionSheetState extends State<InterestsSelectionSheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Full-screen image viewer widget with zoom and pan support
+class _FullScreenImageView extends StatelessWidget {
+  final String imageUrl;
+
+  const _FullScreenImageView({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Full-screen image with zoom and pan
+          Center(
+            child: Hero(
+              tag: 'profile_image_$imageUrl',
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.contain,
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => const Center(
+                    child: Icon(
+                      Icons.error_outline,
+                      color: Colors.white,
+                      size: 48,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Close button
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

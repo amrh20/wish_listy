@@ -1,11 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'app_colors.dart';
 import '../utils/accessibility_utils.dart';
 import '../services/localization_service.dart';
 
 class AppStyles {
+  // Static cache for current language (updated when language changes)
+  static String _cachedLanguage = 'en';
+
+  // Initialize cached language (call this during app startup)
+  static Future<void> initializeLanguageCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _cachedLanguage = prefs.getString('selected_language') ?? 'en';
+    } catch (e) {
+      _cachedLanguage = 'en';
+    }
+  }
+
+  // Update cached language (call this when language changes)
+  static void updateLanguageCache(String languageCode) {
+    _cachedLanguage = languageCode;
+  }
+
+  // Get current language synchronously (uses cache)
+  static String _getCurrentLanguage() {
+    return _cachedLanguage;
+  }
   // Icon size constants for standardization
   static const double iconSizeSmall = AccessibilityUtils.iconSizeSmall;
   static const double iconSizeMedium = AccessibilityUtils.iconSizeMedium;
@@ -37,16 +60,20 @@ class AppStyles {
       try {
         final localization = Provider.of<LocalizationService>(context, listen: false);
         isArabic = localization.currentLanguage == 'ar';
+        // Update cache when we successfully get language from context
+        _cachedLanguage = localization.currentLanguage;
       } catch (e) {
-        // If Provider is not available, default to English
-        isArabic = false;
+        // If Provider is not available, use cached language
+        isArabic = _getCurrentLanguage() == 'ar';
       }
+    } else {
+      // When context is null, use cached language
+      isArabic = _getCurrentLanguage() == 'ar';
     }
 
-    // Use Mestika for Arabic, Ubuntu for English
+    // Use Alexandria for Arabic, Ubuntu for English
     if (isArabic) {
-      return TextStyle(
-        fontFamily: 'Mestika',
+      return GoogleFonts.alexandria(
         fontSize: finalFontSize,
         fontWeight: fontWeight,
         color: color,
@@ -64,7 +91,7 @@ class AppStyles {
     }
   }
 
-  // Beautiful Text Styles with Ubuntu Font for English, Mestika for Arabic
+  // Beautiful Text Styles with Ubuntu Font for English, Alexandria for Arabic
   // Font sizes optimized for mobile screens with accessibility support
   
   // Context-aware methods for accessibility (use these when you have BuildContext)
@@ -175,7 +202,7 @@ class AppStyles {
 
   static TextStyle get heading2 => _getTextStyle(
         fontSize: 24,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
         color: AppColors.textPrimary,
         height: 1.2,
         letterSpacing: -0.3,
@@ -199,7 +226,7 @@ class AppStyles {
 
   static TextStyle get headingLarge => _getTextStyle(
         fontSize: 22,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
         color: AppColors.textPrimary,
         height: 1.2,
       );
@@ -260,15 +287,14 @@ class AppStyles {
     letterSpacing: 0.2,
   );
 
-  // Context-aware button style that uses Mestika for Arabic
+  // Context-aware button style that uses Alexandria for Arabic
   static TextStyle buttonWithContext(BuildContext context) {
     try {
       final localization = Provider.of<LocalizationService>(context, listen: false);
       final isArabic = localization.currentLanguage == 'ar';
       
       if (isArabic) {
-        return const TextStyle(
-          fontFamily: 'Mestika',
+        return GoogleFonts.alexandria(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: AppColors.textWhite,
