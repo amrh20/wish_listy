@@ -6,7 +6,6 @@ import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/data/models/suggestion_user_model.dart';
 import 'package:wish_listy/core/services/api_service.dart';
-import 'dart:math' as math;
 
 class SuggestedFriendsSection extends StatefulWidget {
   final LocalizationService localization;

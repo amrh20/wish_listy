@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
-import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
-import 'package:wish_listy/features/events/data/repository/event_repository.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class EventGuestListScreen extends StatefulWidget {
   final String eventId;

@@ -12,12 +12,15 @@ import 'package:wish_listy/main.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
+import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 
 void main() {
   testWidgets('App loads successfully', (WidgetTester tester) async {
     // Create a mock localization service
     final localizationService = LocalizationService();
     await localizationService.initialize();
+    
+    final notificationsCubit = NotificationsCubit();
 
     // Build our app and trigger a frame.
     await tester.pumpWidget(
@@ -25,6 +28,7 @@ void main() {
         localizationService: localizationService,
         authRepository: AuthRepository(),
         guestDataRepository: GuestDataRepository(),
+        notificationsCubit: notificationsCubit,
       ),
     );
 

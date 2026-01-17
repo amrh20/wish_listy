@@ -27,7 +27,11 @@ class FriendsScreen extends StatefulWidget {
 }
 
 class FriendsScreenState extends State<FriendsScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  
+  @override
+  bool get wantKeepAlive => true;
+  
   late TabController _tabController;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -137,6 +141,7 @@ class FriendsScreenState extends State<FriendsScreen>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Keep alive
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
@@ -850,7 +855,7 @@ class FriendsScreenState extends State<FriendsScreen>
   }
 
   /// Load friends from API
-  Future<void> _loadFriends({bool resetPage = false}) async {
+  Future<void> _loadFriends({bool resetPage = false, bool forceShowLoading = false}) async {
     // Don't make API calls for guest users
     final authService = Provider.of<AuthRepository>(context, listen: false);
     if (authService.isGuest) {
@@ -867,14 +872,27 @@ class FriendsScreenState extends State<FriendsScreen>
 
     if (_isLoadingFriends || (_isLoadingMoreFriends && !resetPage)) return;
 
-    setState(() {
-      if (resetPage) {
-        _isLoadingFriends = true;
-      } else {
-        _isLoadingMoreFriends = true;
+    // Smart Loading: Only show loading if data doesn't exist yet
+    // If data exists, refresh in background without showing loading indicator
+    final hasExistingData = _friends.isNotEmpty;
+    if (!hasExistingData || forceShowLoading) {
+      setState(() {
+        if (resetPage) {
+          _isLoadingFriends = true;
+        } else {
+          _isLoadingMoreFriends = true;
+        }
+        _friendsError = null;
+      });
+    } else {
+      debugPrint('🔄 FriendsScreen: Background refresh (no loading indicator)');
+      // Still clear error message
+      if (_friendsError != null) {
+        setState(() {
+          _friendsError = null;
+        });
       }
-      _friendsError = null;
-    });
+    }
 
     try {
       final response = await _friendsRepository.getFriends(
@@ -938,7 +956,7 @@ class FriendsScreenState extends State<FriendsScreen>
     _loadFriendRequests();
   }
 
-  Future<void> _loadFriendRequests() async {
+  Future<void> _loadFriendRequests({bool forceShowLoading = false}) async {
     // Don't make API calls for guest users
     final authService = Provider.of<AuthRepository>(context, listen: false);
     if (authService.isGuest) {
@@ -946,10 +964,21 @@ class FriendsScreenState extends State<FriendsScreen>
       return;
     }
 
-    setState(() {
-      _isLoadingRequests = true;
-      _requestsError = null;
-    });
+    // Smart Loading: Only show loading if data doesn't exist yet
+    final hasExistingData = _friendRequests.isNotEmpty;
+    if (!hasExistingData || forceShowLoading) {
+      setState(() {
+        _isLoadingRequests = true;
+        _requestsError = null;
+      });
+    } else {
+      debugPrint('🔄 FriendsScreen: Background refresh requests (no loading indicator)');
+      if (_requestsError != null) {
+        setState(() {
+          _requestsError = null;
+        });
+      }
+    }
 
     try {
       final requests = await _friendsRepository.getFriendRequests();

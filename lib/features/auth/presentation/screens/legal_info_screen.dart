@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
-import 'package:wish_listy/core/utils/legal_content.dart';
 
 class LegalInfoScreen extends StatelessWidget {
   final String title;

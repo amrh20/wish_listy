@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/features/friends/data/models/friend_event_model.dart';
 import 'package:wish_listy/features/friends/data/models/friend_profile_model.dart';
-import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
 import 'package:wish_listy/features/friends/data/models/friend_wishlist_model.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/events/data/repository/event_repository.dart';

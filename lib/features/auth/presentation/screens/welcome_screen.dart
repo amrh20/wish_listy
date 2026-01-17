@@ -4,6 +4,7 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
+import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/language_switcher.dart';
@@ -330,6 +331,17 @@ class _WelcomeScreenState extends State<WelcomeScreen>
               listen: false,
             );
             await authService.loginAsGuest();
+
+            // Initialize dummy data for guest if no data exists
+            final guestDataRepo = Provider.of<GuestDataRepository>(
+              context,
+              listen: false,
+            );
+            final hasData = await guestDataRepo.hasGuestData();
+            if (!hasData) {
+              final currentLanguage = localization.currentLanguage;
+              await guestDataRepo.initializeDummyData(currentLanguage);
+            }
 
             // Navigate to guest user scenario
             Navigator.pushNamedAndRemoveUntil(

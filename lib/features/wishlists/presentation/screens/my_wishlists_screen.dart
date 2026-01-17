@@ -28,7 +28,11 @@ class MyWishlistsScreen extends StatefulWidget {
 }
 
 class MyWishlistsScreenState extends State<MyWishlistsScreen>
-    with TickerProviderStateMixin, WidgetsBindingObserver {
+    with TickerProviderStateMixin, WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
+  
+  @override
+  bool get wantKeepAlive => true;
+  
   late TabController _mainTabController;
   late AnimationController _animationController;
   final TextEditingController _searchController = TextEditingController();
@@ -129,6 +133,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Keep alive
     return Consumer2<LocalizationService, AuthRepository>(
       builder: (context, localization, authService, child) {
         // For guest users - show full interface with local data
@@ -658,12 +663,23 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   /// Load wishlists from local storage for guest users
-  Future<void> _loadGuestWishlists() async {
-    if (mounted) {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  Future<void> _loadGuestWishlists({bool forceShowSkeleton = false}) async {
+    // Smart Loading: Only show skeleton if data doesn't exist yet
+    final hasExistingData = _personalWishlists.isNotEmpty;
+    if (!hasExistingData || forceShowSkeleton) {
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+          _errorMessage = null;
+        });
+      }
+    } else {
+      debugPrint('🔄 MyWishlistsScreen (Guest): Background refresh (no skeleton)');
+      if (_errorMessage != null && mounted) {
+        setState(() {
+          _errorMessage = null;
+        });
+      }
     }
 
     try {
@@ -744,20 +760,33 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     }
   }
 
-  Future<void> _loadWishlists() async {
+  Future<void> _loadWishlists({bool forceShowSkeleton = false}) async {
     // Check if user is guest
     final authService = Provider.of<AuthRepository>(context, listen: false);
 
     if (authService.isGuest) {
-      await _loadGuestWishlists();
+      await _loadGuestWishlists(forceShowSkeleton: forceShowSkeleton);
       return;
     }
 
-    if (mounted) {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    // Smart Loading: Only show skeleton if data doesn't exist yet
+    // If data exists, refresh in background without showing skeleton
+    final hasExistingData = _personalWishlists.isNotEmpty;
+    if (!hasExistingData || forceShowSkeleton) {
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+          _errorMessage = null;
+        });
+      }
+    } else {
+      debugPrint('🔄 MyWishlistsScreen: Background refresh (no skeleton)');
+      // Still clear error message
+      if (_errorMessage != null && mounted) {
+        setState(() {
+          _errorMessage = null;
+        });
+      }
     }
 
     try {

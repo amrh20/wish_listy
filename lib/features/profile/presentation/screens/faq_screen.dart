@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
-import 'package:wish_listy/core/widgets/unified_page_header.dart';
 import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 

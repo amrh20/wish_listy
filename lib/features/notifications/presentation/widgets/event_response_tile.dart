@@ -3,7 +3,6 @@ import 'package:flutter/gestures.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:wish_listy/core/utils/app_routes.dart';
 
 class EventResponseTile extends StatelessWidget {
   final String notificationType; // 'event_invitation_accepted', 'event_invitation_declined', 'event_invitation_maybe'

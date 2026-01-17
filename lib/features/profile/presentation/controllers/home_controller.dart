@@ -41,7 +41,7 @@ class HomeController extends ChangeNotifier {
   
   bool get isHeaderLoading => dashboardData.value == null && isLoading;
 
-  Future<void> fetchDashboardData() async {
+  Future<void> fetchDashboardData({bool forceRefresh = false}) async {
     // Prevent duplicate calls
     if (_isFetching) {
       return;
@@ -57,10 +57,18 @@ class HomeController extends ChangeNotifier {
     }
     
     _isFetching = true;
-    isLoading = true;
-    errorMessage = null;
-    errorKind = null;
-    notifyListeners();
+    
+    // Smart Loading: Only show skeleton if data doesn't exist yet
+    // If data exists, refresh in background without showing skeleton
+    final hasExistingData = dashboardData.value != null;
+    if (!hasExistingData || forceRefresh) {
+      isLoading = true;
+      errorMessage = null;
+      errorKind = null;
+      notifyListeners();
+    } else {
+      debugPrint('🔄 HomeController: Background refresh (no skeleton)');
+    }
 
     try {
       final response = await _apiService.getDashboardData();
@@ -123,7 +131,7 @@ class HomeController extends ChangeNotifier {
   }
 
   Future<void> refresh() async {
-    await fetchDashboardData();
+    await fetchDashboardData(forceRefresh: false); // Background refresh
   }
 }
 

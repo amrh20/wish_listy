@@ -27,7 +27,11 @@ class EventsScreen extends StatefulWidget {
 }
 
 class EventsScreenState extends State<EventsScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  
+  @override
+  bool get wantKeepAlive => true;
+  
   late TabController _tabController;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -102,7 +106,7 @@ class EventsScreenState extends State<EventsScreen>
   }
 
   /// Load events from API
-  Future<void> _loadEvents() async {
+  Future<void> _loadEvents({bool forceShowSkeleton = false}) async {
     // Don't make API calls for guest users
     final authService = Provider.of<AuthRepository>(context, listen: false);
     if (authService.isGuest) {
@@ -118,10 +122,23 @@ class EventsScreenState extends State<EventsScreen>
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    // Smart Loading: Only show skeleton if data doesn't exist yet
+    // If data exists, refresh in background without showing skeleton
+    final hasExistingData = _myEvents.isNotEmpty || _invitedEvents.isNotEmpty;
+    if (!hasExistingData || forceShowSkeleton) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    } else {
+      debugPrint('🔄 EventsScreen: Background refresh (no skeleton)');
+      // Still clear error message
+      if (_errorMessage != null) {
+        setState(() {
+          _errorMessage = null;
+        });
+      }
+    }
 
     try {
 
@@ -433,6 +450,7 @@ class EventsScreenState extends State<EventsScreen>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Keep alive
     return Consumer2<LocalizationService, AuthRepository>(
       builder: (context, localization, authService, child) {
         // For guest users - show different interface

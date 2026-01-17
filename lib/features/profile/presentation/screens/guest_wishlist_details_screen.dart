@@ -9,7 +9,6 @@ import 'package:wish_listy/core/widgets/primary_gradient_button.dart';
 import 'package:wish_listy/features/profile/presentation/screens/guest_login_prompt_dialog.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
-import 'package:wish_listy/features/wishlists/presentation/widgets/wishlist_filter_chip_widget.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 
 class WishItemModel {

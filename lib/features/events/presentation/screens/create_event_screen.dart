@@ -14,7 +14,6 @@ import 'package:wish_listy/features/events/data/repository/event_repository.dart
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
-import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 import '../widgets/index.dart';
 import '../widgets/invite_friends_bottom_sheet.dart';
 

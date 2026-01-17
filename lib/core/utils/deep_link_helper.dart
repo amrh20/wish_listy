@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'app_routes.dart';
-import '../features/wishlists/presentation/screens/wishlist_items_screen.dart';
-import '../features/events/presentation/screens/event_details_screen.dart';
 
 /// Helper class to parse deep link URLs and convert them to app routes
 class DeepLinkHelper {

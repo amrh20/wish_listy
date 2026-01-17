@@ -5,7 +5,6 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
-import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/profile/presentation/models/home_models.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 
@@ -328,62 +327,64 @@ class _ActivityTile extends StatelessWidget {
                       )
                     : null,
               ),
-          const SizedBox(width: 12),
-          // Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                RichText(
-                  text: TextSpan(
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.textPrimary,
+              const SizedBox(width: 12),
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        style: AppStyles.bodyMedium.copyWith(
+                          color: AppColors.textPrimary,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: activity.friendName,
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const TextSpan(text: ' '),
+                          TextSpan(
+                            text: activity.action,
+                            style: TextStyle(
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    children: [
-                      TextSpan(
-                        text: activity.friendName,
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
+                    const SizedBox(height: 4),
+                    Text(
+                      activity.timeAgo,
+                      style: AppStyles.caption.copyWith(
+                        color: AppColors.textTertiary,
+                        fontSize: 12,
                       ),
-                      const TextSpan(text: ' '),
-                      TextSpan(
-                        text: activity.action,
-                        style: TextStyle(
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  activity.timeAgo,
-                  style: AppStyles.caption.copyWith(
-                    color: AppColors.textTertiary,
-                    fontSize: 12,
-                  ),
+              ),
+              // Item Icon
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ],
-            ),
+                child: Icon(
+                  Icons.card_giftcard_outlined,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+            ],
           ),
-          // Item Icon
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              Icons.card_giftcard_outlined,
-              color: AppColors.primary,
-              size: 20,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

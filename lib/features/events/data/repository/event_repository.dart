@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'package:wish_listy/features/events/data/models/event_attendee_model.dart';

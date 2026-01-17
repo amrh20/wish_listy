@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
-import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
-import 'package:wish_listy/core/widgets/unified_page_container.dart';
-import 'package:wish_listy/core/widgets/unified_page_header.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/profile/presentation/screens/guest_wishlist_details_screen.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
@@ -515,6 +512,57 @@ class _GuestHomeScreenState extends State<GuestHomeScreen>
                               ),
                             ],
                           ),
+                        ),
+                        // Language Toggle Button (for guests only)
+                        Consumer<LocalizationService>(
+                          builder: (context, localization, child) {
+                            return Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () async {
+                                  // Toggle language
+                                  await localization.toggleLanguage();
+                                  
+                                  // Trigger rebuild to update UI with new language
+                                  if (mounted) {
+                                    setState(() {});
+                                  }
+                                },
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: AppColors.primary.withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.05),
+                                        offset: const Offset(0, 2),
+                                        blurRadius: 8,
+                                        spreadRadius: 0,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      localization.currentLanguage == 'ar' ? 'EN' : 'AR',
+                                      style: AppStyles.bodyMedium.copyWith(
+                                        color: AppColors.primary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
                         // Log In Button (always visible for guests) - Icon style like unified header
                         Material(
