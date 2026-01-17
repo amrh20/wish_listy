@@ -862,6 +862,7 @@
     "cancelReport": "Cancel Report"
   },
   "profile": {
+    "shareProfile": "Share Profile",
     "title": "Profile",
     "editProfile": "Edit Profile",
     "personalInfo": "Personal Information",
@@ -1297,6 +1298,7 @@
     "english": "English",
     "arabic": "Arabic",
     "shareProfile": "Share Profile",
+    "errorSharing": "Error sharing profile. Please try again.",
     "exportData": "Export Data",
     "successfullyReserved": "Successfully reserved \"{itemName}\" for {hostName}'s event!",
     "confirmDeleteItem": "Are you sure you want to delete \"{itemName}\"? This action cannot be undone.",

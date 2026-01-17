@@ -15,7 +15,6 @@ class ProfileHeaderWidget extends StatelessWidget {
   final String? userHandle;
   final VoidCallback onEditPersonalInfo;
   final Function(BuildContext, String) onShowFullScreenImage;
-  final String maxImageSizeText;
 
   const ProfileHeaderWidget({
     super.key,
@@ -25,7 +24,6 @@ class ProfileHeaderWidget extends StatelessWidget {
     this.userHandle,
     required this.onEditPersonalInfo,
     required this.onShowFullScreenImage,
-    required this.maxImageSizeText,
   });
 
   @override
@@ -163,40 +161,17 @@ class ProfileHeaderWidget extends StatelessWidget {
                 },
               ),
               const SizedBox(height: 12),
-              // Name and Edit Button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: Text(
-                      userName.isNotEmpty ? userName : 'User',
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: onEditPersonalInfo,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.edit_outlined,
-                        size: 18,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ],
+              // Name
+              Text(
+                userName.isNotEmpty ? userName : 'User',
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
               // Handle
               if (userHandle != null && userHandle!.isNotEmpty) ...[
@@ -229,15 +204,6 @@ class ProfileHeaderWidget extends StatelessWidget {
                   ),
                 ),
               ],
-              // Max image size note
-              const SizedBox(height: 10),
-              Text(
-                maxImageSizeText,
-                style: AppStyles.bodySmall.copyWith(
-                  color: AppColors.textTertiary,
-                ),
-                textAlign: TextAlign.center,
-              ),
             ],
           ),
         ),

@@ -52,7 +52,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   bool _isLoading = false;
   bool _isFormValid = false; // Track if form is valid
   String _selectedPrivacy = 'public';
-  String _selectedCategory = 'birthday';
+  String? _selectedCategory; // Optional - null means no category selected
   bool _isCustomCategory = false;
   final WishlistRepository _wishlistRepository = WishlistRepository();
   final EventRepository _eventRepository = EventRepository();
@@ -169,8 +169,9 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     final isNameValid =
         name.isNotEmpty && name.length >= 2 && name.length <= 100;
 
+    // Only validate custom category if custom category is actually selected
     final isCustomCategoryValid =
-        !_isCustomCategory ||
+        _selectedCategory != 'custom' ||
         (_customCategoryController.text.trim().isNotEmpty &&
             _customCategoryController.text.trim().length >= 2 &&
             _customCategoryController.text.trim().length <= 50);
@@ -354,10 +355,18 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                                       _customCategoryController,
                                   onCategorySelected: (category) {
                                     setState(() {
-                                      _selectedCategory = category;
-                                      _isCustomCategory = category == 'custom';
-                                      if (category != 'custom') {
+                                      if (_selectedCategory == category) {
+                                        // Deselect if clicking the same category
+                                        _selectedCategory = null;
+                                        _isCustomCategory = false;
                                         _customCategoryController.clear();
+                                      } else {
+                                        // Select new category
+                                        _selectedCategory = category;
+                                        _isCustomCategory = category == 'custom';
+                                        if (category != 'custom') {
+                                          _customCategoryController.clear();
+                                        }
                                       }
                                     });
                                     _validateForm();
@@ -371,19 +380,17 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                                     'wishlists.category',
                                   ),
                                   customCategoryValidator: (value) {
-                                    if (_isCustomCategory &&
-                                        (value?.isEmpty ?? true)) {
-                                      return 'Please enter a custom category name';
-                                    }
-                                    if (_isCustomCategory &&
-                                        value != null &&
-                                        value.trim().length < 2) {
-                                      return 'Category name must be at least 2 characters';
-                                    }
-                                    if (_isCustomCategory &&
-                                        value != null &&
-                                        value.trim().length > 50) {
-                                      return 'Category name must be less than 50 characters';
+                                    // Only validate if custom category is selected
+                                    if (_selectedCategory == 'custom') {
+                                      if (value?.isEmpty ?? true) {
+                                        return 'Please enter a custom category name';
+                                      }
+                                      if (value != null && value.trim().length < 2) {
+                                        return 'Category name must be at least 2 characters';
+                                      }
+                                      if (value != null && value.trim().length > 50) {
+                                        return 'Category name must be less than 50 characters';
+                                      }
                                     }
                                     return null;
                                   },
@@ -450,7 +457,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
           'name': wishlist.name,
           'description': wishlist.description,
           'privacy': wishlist.visibility.toString().split('.').last,
-          'category': wishlist.category ?? 'general', // Load category from model
+          'category': wishlist.category, // Load category from model (can be null)
         };
       } else {
         // Load from API for authenticated users
@@ -460,23 +467,31 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       }
       // Populate form fields
       if (mounted) {
-        final category = wishlistData['category']?.toString() ?? 'general';
-        final isPredefinedCategory =
-            _categoryOptions.contains(category) && category != 'custom';
+        final category = wishlistData['category']?.toString();
         setState(() {
           _nameController.text = wishlistData['name']?.toString() ?? '';
           _descriptionController.text =
               wishlistData['description']?.toString() ?? '';
           _selectedPrivacy = wishlistData['privacy']?.toString() ?? 'public';
-          if (isPredefinedCategory) {
-            _selectedCategory = category;
+          
+          if (category == null || category.isEmpty) {
+            // No category selected
+            _selectedCategory = null;
             _isCustomCategory = false;
             _customCategoryController.clear();
           } else {
-            // It's a custom category
-            _selectedCategory = 'custom';
-            _isCustomCategory = true;
-            _customCategoryController.text = category;
+            final isPredefinedCategory =
+                _categoryOptions.contains(category) && category != 'custom';
+            if (isPredefinedCategory) {
+              _selectedCategory = category;
+              _isCustomCategory = false;
+              _customCategoryController.clear();
+            } else {
+              // It's a custom category
+              _selectedCategory = 'custom';
+              _isCustomCategory = true;
+              _customCategoryController.text = category;
+            }
           }
           _isLoading = false;
         });
@@ -501,18 +516,14 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       return;
     }
     final isEditing = widget.wishlistId != null;
-    final finalCategory = _isCustomCategory
-        ? _customCategoryController.text.trim()
-        : _selectedCategory;
-    // Validate custom category if selected
-    if (_isCustomCategory && finalCategory.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please enter a custom category name'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
+    // Calculate final category - can be null if no category selected
+    String? finalCategory;
+    if (_selectedCategory == 'custom') {
+      final customCategoryText = _customCategoryController.text.trim();
+      // Only set custom category if text is provided
+      finalCategory = customCategoryText.isNotEmpty ? customCategoryText : null;
+    } else {
+      finalCategory = _selectedCategory; // Can be null
     }
     setState(() => _isLoading = true);
 
@@ -537,7 +548,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
 
   Future<void> _handleUpdateWishlist(
     LocalizationService localization,
-    String finalCategory,
+    String? finalCategory,
   ) async {
     // Check if user is guest
     final authService = Provider.of<AuthRepository>(context, listen: false);
@@ -576,7 +587,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   }
 
   /// Update wishlist locally for guest users
-  Future<void> _handleUpdateGuestWishlist(String finalCategory) async {
+  Future<void> _handleUpdateGuestWishlist(String? finalCategory) async {
     try {
       final guestDataRepo = Provider.of<GuestDataRepository>(
         context,
@@ -619,7 +630,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
 
   Future<void> _handleCreateWishlist(
     LocalizationService localization,
-    String finalCategory,
+    String? finalCategory,
   ) async {
     // Check if user is guest
     final authService = Provider.of<AuthRepository>(context, listen: false);
@@ -743,13 +754,13 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     _customCategoryController.clear();
     setState(() {
       _selectedPrivacy = 'public';
-      _selectedCategory = 'general';
+      _selectedCategory = null; // No category selected by default
       _isCustomCategory = false;
     });
   }
 
   /// Show error message as a dialog with Lottie animation
-  Future<void> _handleCreateGuestWishlist(String finalCategory) async {
+  Future<void> _handleCreateGuestWishlist(String? finalCategory) async {
     try {
       final guestDataRepo = Provider.of<GuestDataRepository>(
         context,

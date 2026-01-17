@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 /// Widget for selecting category when creating/editing wishlist
 class CategorySelectionWidget extends StatelessWidget {
   final List<String> categoryOptions;
-  final String selectedCategory;
+  final String? selectedCategory; // Nullable - null means no category selected
   final bool isCustomCategory;
   final TextEditingController customCategoryController;
-  final Function(String) onCategorySelected;
+  final Function(String?) onCategorySelected; // Can pass null to deselect
   final String Function(String) getCategoryDisplayName;
   final String Function() getTitle;
   final String? Function(String?)? customCategoryValidator;
@@ -45,10 +47,24 @@ class CategorySelectionWidget extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                getTitle(),
-                style: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: AppStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                    children: [
+                      TextSpan(text: getTitle()),
+                      TextSpan(
+                        text: ' (${_getOptionalText(context)})',
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textTertiary,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -62,7 +78,14 @@ class CategorySelectionWidget extends StatelessWidget {
               final isCustom = category == 'custom';
 
               return GestureDetector(
-                onTap: () => onCategorySelected(category),
+                onTap: () {
+                  // Toggle behavior: if clicking the same category, deselect it
+                  if (isSelected) {
+                    onCategorySelected(null);
+                  } else {
+                    onCategorySelected(category);
+                  }
+                },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(
@@ -138,6 +161,16 @@ class CategorySelectionWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _getOptionalText(BuildContext context) {
+    return Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    ).translate('common.optional') ?? 
+        (Provider.of<LocalizationService>(context, listen: false).currentLanguage == 'ar' 
+            ? '(اختياري)' 
+            : '(Optional)');
   }
 }
 

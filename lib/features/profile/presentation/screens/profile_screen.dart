@@ -4,9 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/core/utils/app_constants.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/services/api_service.dart';
@@ -125,6 +127,8 @@ class ProfileScreenState extends State<ProfileScreen>
                   _buildBackground(),
                   // Main content
                   _buildMainContent(localization),
+                  // Popup Menu Button (Three Dots)
+                  _buildPopupMenuButton(localization),
                 ],
               ),
             );
@@ -174,7 +178,6 @@ class ProfileScreenState extends State<ProfileScreen>
           userHandle: _userProfile?.getDisplayHandle(),
           onEditPersonalInfo: _editPersonalInfo,
           onShowFullScreenImage: _showFullScreenImageView,
-          maxImageSizeText: localization.translate('app.max_image_size'),
         ),
         // Content
                 Expanded(
@@ -409,6 +412,112 @@ class ProfileScreenState extends State<ProfileScreen>
         },
       ),
     );
+  }
+
+  // Build Popup Menu Button
+  Widget _buildPopupMenuButton(LocalizationService localization) {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 8,
+      right: 16,
+      child: PopupMenuButton<String>(
+        icon: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.9),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(
+            Icons.more_vert,
+            color: AppColors.primary,
+            size: 24,
+          ),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        color: AppColors.surface,
+        elevation: 8,
+        onSelected: (value) {
+          if (value == 'edit') {
+            _editPersonalInfo();
+          } else if (value == 'share') {
+            _shareProfile(localization);
+          }
+        },
+        itemBuilder: (BuildContext context) => [
+          PopupMenuItem<String>(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+                const SizedBox(width: 12),
+                Text(
+                  localization.translate('profile.editProfile') ?? 'Edit Profile',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                    fontFamily: localization.currentLanguage == 'ar' ? 'Alexandria' : 'Ubuntu',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem<String>(
+            value: 'share',
+            child: Row(
+              children: [
+                Icon(Icons.share_outlined, color: AppColors.primary, size: 20),
+                const SizedBox(width: 12),
+                Text(
+                  localization.translate('profile.shareProfile') ?? 'Share Profile',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                    fontFamily: localization.currentLanguage == 'ar' ? 'Alexandria' : 'Ubuntu',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Share Profile Functionality
+  Future<void> _shareProfile(LocalizationService localization) async {
+    try {
+      final userName = _userProfile?.name ?? 'User';
+      final profileLink = AppConstants.profileDeepLink;
+      
+      // Create share text with localization
+      final shareText = localization.currentLanguage == 'ar'
+          ? 'تحقق من قائمة الأمنيات الخاصة بي على Wish Listy! $profileLink'
+          : 'Check out my wish list on Wish Listy! $profileLink';
+      
+      await Share.share(
+        shareText,
+        subject: localization.currentLanguage == 'ar'
+            ? 'مشاركة الملف الشخصي - $userName'
+            : 'Share Profile - $userName',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              localization.translate('dialogs.errorSharing') ?? 'Error sharing profile. Please try again.',
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   // Action methods for settings

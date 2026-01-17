@@ -11,23 +11,23 @@ class WishlistRepository {
   /// [name] - Wishlist name (required)
   /// [description] - Wishlist description (optional)
   /// [privacy] - Privacy setting: 'public', 'private', or 'friends' (required)
-  /// [category] - Category: 'general', 'birthday', 'wedding', etc. (required)
+  /// [category] - Category: 'general', 'birthday', 'wedding', etc. (optional)
   ///
   /// Returns the created wishlist data
   Future<Map<String, dynamic>> createWishlist({
     required String name,
     String? description,
     required String privacy,
-    required String category,
+    String? category,
   }) async {
     try {
       // Prepare request body according to API specification
-      final requestData = {
+      final requestData = <String, dynamic>{
         'name': name,
         if (description != null && description.isNotEmpty)
           'description': description,
         'privacy': privacy,
-        'category': category,
+        if (category != null) 'category': category,
       };
 
       // Make API call to create wishlist

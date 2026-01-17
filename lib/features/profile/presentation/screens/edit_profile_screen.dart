@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:country_picker/country_picker.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
+import 'package:wish_listy/core/services/api_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -22,21 +25,21 @@ class _EditProfileScreenState extends State<EditProfileScreen>
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _bioController = TextEditingController();
-  final _locationController = TextEditingController();
+  final _countryController = TextEditingController();
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
   bool _isLoading = false;
-  String _selectedGender = 'preferNotToSay';
+  bool _isLoadingData = false;
+  String? _selectedGender;
   DateTime? _selectedBirthDate;
+  Country? _selectedCountry;
 
   final List<String> _genderOptions = [
     'male',
     'female',
-    'other',
-    'preferNotToSay',
   ];
 
   @override
@@ -68,16 +71,120 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     _animationController.forward();
   }
 
-  void _loadUserData() {
-    // Load existing user data
-    _firstNameController.text = 'John';
-    _lastNameController.text = 'Doe';
-    _emailController.text = 'john.doe@example.com';
-    _phoneController.text = '+1234567890';
-    _bioController.text = 'Love giving and receiving thoughtful gifts!';
-    _locationController.text = 'New York, USA';
-    _selectedGender = 'male';
-    _selectedBirthDate = DateTime(1990, 1, 15);
+  Future<void> _loadUserData() async {
+    setState(() {
+      _isLoadingData = true;
+    });
+
+    try {
+      final authRepository = Provider.of<AuthRepository>(context, listen: false);
+      final response = await authRepository.getCurrentUserProfile();
+
+      final data = response['data'] ?? response;
+
+      if (mounted) {
+        setState(() {
+          _populateFields(data);
+          _isLoadingData = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingData = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load profile data. Please try again.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _populateFields(Map<String, dynamic> data) {
+    // Handle fullName - split into firstName and lastName
+    final fullName = data['fullName'] ?? data['name'] ?? '';
+    if (fullName.isNotEmpty) {
+      final nameParts = fullName.trim().split(' ');
+      if (nameParts.length >= 2) {
+        _firstNameController.text = nameParts.first;
+        _lastNameController.text = nameParts.sublist(1).join(' ');
+      } else {
+        _firstNameController.text = fullName;
+        _lastNameController.text = '';
+      }
+    }
+
+    // Handle email
+    final email = data['email'] ?? data['emailAddress'] ?? '';
+    _emailController.text = email;
+
+    // Handle phone (if available)
+    final phone = data['phone'] ?? data['phoneNumber'] ?? '';
+    _phoneController.text = phone;
+
+    // Handle bio
+    final bio = data['bio'] ?? data['biography'] ?? '';
+    _bioController.text = bio;
+
+    // Parse country - API returns 'country_code'
+    if (data['country_code'] != null) {
+      final countryCode = data['country_code'];
+      try {
+        _selectedCountry = Country.parse(countryCode.toString().toUpperCase());
+        _countryController.text = _selectedCountry!.name;
+      } catch (e) {
+        _selectedCountry = null;
+        _countryController.text = '';
+      }
+    } else if (data['countryCode'] != null || data['country'] != null) {
+      final countryCode = data['countryCode'] ?? data['country'];
+      try {
+        _selectedCountry = Country.parse(countryCode.toString().toUpperCase());
+        _countryController.text = _selectedCountry!.name;
+      } catch (e) {
+        _selectedCountry = null;
+        _countryController.text = '';
+      }
+    } else {
+      _selectedCountry = null;
+      _countryController.text = '';
+    }
+
+    // Parse gender - API returns 'male' or 'female'
+    if (data['gender'] != null) {
+      final gender = data['gender'].toString().toLowerCase();
+      _selectedGender = (gender == 'male' || gender == 'female') ? gender : null;
+    } else {
+      _selectedGender = null;
+    }
+
+    // Parse date of birth - API returns 'birth_date'
+    if (data['birth_date'] != null) {
+      final dateStr = data['birth_date'];
+      if (dateStr is String) {
+        try {
+          _selectedBirthDate = DateTime.parse(dateStr);
+        } catch (e) {
+          _selectedBirthDate = null;
+        }
+      } else if (dateStr is DateTime) {
+        _selectedBirthDate = dateStr;
+      }
+    } else if (data['dateOfBirth'] != null || data['birthDate'] != null) {
+      final dateStr = data['dateOfBirth'] ?? data['birthDate'];
+      if (dateStr is String) {
+        try {
+          _selectedBirthDate = DateTime.parse(dateStr);
+        } catch (e) {
+          _selectedBirthDate = null;
+        }
+      }
+    } else {
+      _selectedBirthDate = null;
+    }
   }
 
   @override
@@ -88,7 +195,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     _emailController.dispose();
     _phoneController.dispose();
     _bioController.dispose();
-    _locationController.dispose();
+    _countryController.dispose();
     super.dispose();
   }
 
@@ -104,49 +211,50 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                 children: [
                   _buildHeader(localization),
                   Expanded(
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: SlideTransition(
-                        position: _slideAnimation,
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Form(
-                            key: _formKey,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                const SizedBox(height: 20),
+                    child: _isLoadingData
+                        ? Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: SlideTransition(
+                              position: _slideAnimation,
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.all(24.0),
+                                child: Form(
+                                  key: _formKey,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      const SizedBox(height: 20),
 
-                                // Profile Picture Section
-                                _buildProfilePictureSection(localization),
+                                      // Personal Information
+                                      _buildPersonalInfoSection(localization),
 
-                                const SizedBox(height: 32),
+                                      const SizedBox(height: 24),
 
-                                // Personal Information
-                                _buildPersonalInfoSection(localization),
+                                      // Contact Information
+                                      _buildContactInfoSection(localization),
 
-                                const SizedBox(height: 24),
+                                      const SizedBox(height: 24),
 
-                                // Contact Information
-                                _buildContactInfoSection(localization),
+                                      // Additional Information
+                                      _buildAdditionalInfoSection(localization),
 
-                                const SizedBox(height: 24),
+                                      const SizedBox(height: 40),
 
-                                // Additional Information
-                                _buildAdditionalInfoSection(localization),
+                                      // Action Buttons
+                                      _buildActionButtons(localization),
 
-                                const SizedBox(height: 40),
-
-                                // Action Buttons
-                                _buildActionButtons(localization),
-
-                                const SizedBox(height: 100),
-                              ],
+                                      const SizedBox(height: 100),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    ),
                   ),
                 ],
               ),
@@ -199,52 +307,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfilePictureSection(LocalizationService localization) {
-    return Center(
-      child: Column(
-        children: [
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 60,
-                backgroundColor: AppColors.primary.withOpacity(0.1),
-                child: Icon(Icons.person, size: 60, color: AppColors.primary),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: () => _changeProfilePicture(localization),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: const Icon(
-                      Icons.camera_alt,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            localization.translate('profile.changeProfilePicture'),
-            style: AppStyles.bodySmall.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -469,13 +531,8 @@ class _EditProfileScreenState extends State<EditProfileScreen>
 
           const SizedBox(height: 20),
 
-          // Location
-          CustomTextField(
-            controller: _locationController,
-            label: localization.translate('profile.location'),
-            hint: localization.translate('profile.locationPlaceholder'),
-            prefixIcon: Icons.location_on,
-          ),
+          // Country
+          _buildCountryField(localization),
         ],
       ),
     );
@@ -535,6 +592,102 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     );
   }
 
+  Widget _buildCountryField(LocalizationService localization) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          localization.translate('profile.country') ?? 'Country',
+          style: AppStyles.bodySmall.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () => _showCountryPicker(localization),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.textTertiary.withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                _selectedCountry != null
+                    ? Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Text(
+                          _selectedCountry!.flagEmoji,
+                          style: const TextStyle(fontSize: 24),
+                        ),
+                      )
+                    : Icon(
+                        Icons.public_outlined,
+                        color: AppColors.textSecondary,
+                        size: 20,
+                      ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _selectedCountry != null
+                        ? _selectedCountry!.name
+                        : localization.translate('profile.selectCountry') ?? 'Select your country',
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: _selectedCountry != null
+                          ? AppColors.textPrimary
+                          : AppColors.textTertiary,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: AppColors.textTertiary,
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showCountryPicker(LocalizationService localization) {
+    showCountryPicker(
+      context: context,
+      favorite: ['EG', 'SA', 'AE', 'US', 'GB'], // Favorite countries
+      showPhoneCode: false,
+      onSelect: (Country country) {
+        setState(() {
+          _selectedCountry = country;
+          _countryController.text = country.name;
+        });
+      },
+      countryListTheme: CountryListThemeData(
+        flagSize: 28,
+        backgroundColor: Colors.white,
+        textStyle: AppStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+        searchTextStyle: AppStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+        inputDecoration: InputDecoration(
+          labelText: localization.translate('profile.searchCountry') ?? 'Search',
+          hintText: localization.translate('profile.searchCountry') ?? 'Search',
+          prefixIcon: Icon(Icons.search, color: AppColors.primary),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.primary),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppColors.primary, width: 2),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionButtons(LocalizationService localization) {
     return Column(
       children: [
@@ -565,10 +718,6 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         return localization.translate('auth.male');
       case 'female':
         return localization.translate('auth.female');
-      case 'other':
-        return localization.translate('auth.other');
-      case 'preferNotToSay':
-        return localization.translate('profile.preferNotToSay');
       default:
         return gender;
     }
@@ -602,101 +751,88 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     }
   }
 
-  void _changeProfilePicture(LocalizationService localization) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  ListTile(
-                    leading: Icon(Icons.camera_alt, color: AppColors.primary),
-                    title: Text(localization.translate('profile.takePhoto')),
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Implement take photo
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(
-                      Icons.photo_library,
-                      color: AppColors.primary,
-                    ),
-                    title: Text(
-                      localization.translate('profile.chooseFromGallery'),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Implement choose from gallery
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.delete, color: AppColors.error),
-                    title: Text(
-                      localization.translate('profile.removeProfilePicture'),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Implement remove photo
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _saveProfile(LocalizationService localization) async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final authRepository = Provider.of<AuthRepository>(context, listen: false);
 
-    setState(() => _isLoading = false);
+      // Prepare data for API - combine firstName and lastName into fullName
+      final profileData = <String, dynamic>{
+        'fullName': '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'.trim(),
+        'email': _emailController.text.trim(),
+        'bio': _bioController.text.trim(),
+      };
 
-    // Show success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 8),
-            Text(localization.translate('profile.changesSaved')),
-          ],
-        ),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
+      // Add gender if selected
+      if (_selectedGender != null) {
+        profileData['gender'] = _selectedGender;
+      }
 
-    Navigator.pop(context);
+      // Add date of birth if selected - API expects 'birth_date' in format YYYY-MM-DD
+      if (_selectedBirthDate != null) {
+        final year = _selectedBirthDate!.year;
+        final month = _selectedBirthDate!.month.toString().padLeft(2, '0');
+        final day = _selectedBirthDate!.day.toString().padLeft(2, '0');
+        profileData['birth_date'] = '$year-$month-$day';
+      }
+
+      // Add country code if selected - API expects 'country_code'
+      if (_selectedCountry != null) {
+        profileData['country_code'] = _selectedCountry!.countryCode;
+      }
+
+      // Call API to update profile
+      await authRepository.updateProfile(profileData);
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(localization.translate('profile.profileUpdatedSuccessfully') ?? 'Profile updated successfully!'),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+
+        Navigator.pop(context, profileData);
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message ?? 'Failed to update profile. Please try again.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update profile. Please try again.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+    }
   }
 }
 
