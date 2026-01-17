@@ -1360,6 +1360,8 @@
     "failedToUpdateStatus": "فشل تحديث الحالة",
     "copiedToClipboard": "تم النسخ إلى الحافظة",
     "deletingItem": "بنمسح الهدية...",
+    "deletingWishlist": "بنمسح قائمة الأمنيات...",
+    "deletingEvent": "بنمسح الحدث...",
     "searchWishes": "البحث في الأمنيات...",
     "failedToMarkAsPurchased": "ماعرفناش نعلّم إنها اتشرت",
     "failedToProcessFriendRequest": "فشل معالجة طلب الصداقة. يرجى المحاولة مرة أخرى.",

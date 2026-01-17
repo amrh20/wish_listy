@@ -6,6 +6,7 @@ import 'package:wish_listy/core/widgets/primary_gradient_button.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
+import 'package:wish_listy/core/widgets/unified_snackbar.dart';
 import 'package:wish_listy/core/widgets/unified_page_header.dart';
 import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
 import 'package:wish_listy/core/widgets/unified_page_container.dart';
@@ -466,6 +467,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   void _showDeleteConfirmation(WishlistSummary wishlist) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final itemCount = wishlist.itemCount;
     final itemCountText = itemCount > 0
         ? 'All $itemCount ${itemCount == 1 ? 'item' : 'items'} inside this wishlist will also be deleted permanently.'
@@ -474,44 +476,45 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
-          'Delete Wishlist?',
-          style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
+          localization.translate('wishlists.deleteWishlist'),
+          style: AppStyles.headingSmall.copyWith(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Are you sure you want to delete "${wishlist.name}"?',
+              localization.translate(
+                'wishlists.deleteWishlistConfirmation',
+                args: {'name': wishlist.name},
+              ),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              itemCountText,
-              style: AppStyles.bodyMedium.copyWith(
-                color: AppColors.error,
-                fontWeight: FontWeight.w600,
+            if (itemCount > 0) ...[
+              const SizedBox(height: 8),
+              Text(
+                itemCountText,
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'This action cannot be undone.',
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
+            ],
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Cancel',
+              localization.translate('app.cancel'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -523,7 +526,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
               _deleteWishlist(wishlist);
             },
             child: Text(
-              'Delete',
+              localization.translate('app.delete'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.error,
                 fontWeight: FontWeight.w600,
@@ -536,10 +539,18 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   Future<void> _deleteWishlist(WishlistSummary wishlist) async {
-    try {
-      // Store current tab index to ensure we stay on "My Wishlists" tab
-      final shouldStayOnFirstTab = _mainTabController.index == 0;
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    
+    // Show loading snackbar
+    ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? loadingSnackbar;
+    if (mounted) {
+      loadingSnackbar = UnifiedSnackbar.showLoading(
+        context: context,
+        message: localization.translate('dialogs.deletingWishlist'),
+      );
+    }
 
+    try {
       // Check if user is guest
       final authService = Provider.of<AuthRepository>(context, listen: false);
 
@@ -555,11 +566,16 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         await _wishlistRepository.deleteWishlist(wishlist.id);
       }
 
-      // Reload wishlists to update the screen (this will refresh the view)
+      // Remove from local state immediately for instant UI update
+      setState(() {
+        _personalWishlists.removeWhere((w) => w.id == wishlist.id);
+        _allPersonalWishlists.removeWhere((w) => w.id == wishlist.id);
+      });
+
+      // Reload wishlists to ensure data consistency
       await _loadWishlists();
 
       // Ensure we stay on the "My Wishlists" tab (index 0) after deletion
-      // Use post frame callback to ensure this happens after setState completes
       if (mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _mainTabController.index != 0) {
@@ -568,95 +584,28 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         });
       }
 
+      // Show success snackbar
       if (mounted) {
-        final localization = Provider.of<LocalizationService>(
-          context,
-          listen: false,
-        );
-
-        // Show success dialog with Lottie animation
-        ConfirmationDialog.show(
+        UnifiedSnackbar.hideCurrent(context);
+        UnifiedSnackbar.showSuccess(
           context: context,
-          isSuccess: true,
-          title: localization.translate(
-            'wishlists.wishlistDeletedSuccessfully',
-          ),
-          message: 'Wishlist "${wishlist.name}" has been deleted successfully.',
-          primaryActionLabel: localization.translate('app.done'),
-          onPrimaryAction: () {
-            // Dialog will close automatically
-          },
-          barrierDismissible: true,
+          message: localization.translate('wishlists.wishlistDeletedSuccessfully'),
         );
       }
     } on ApiException catch (e) {
-
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Failed to delete wishlist: ${e.message}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 4),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(
-              top: 60,
-              left: 16,
-              right: 16,
-              bottom: 0,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        UnifiedSnackbar.hideCurrent(context);
+        UnifiedSnackbar.showError(
+          context: context,
+          message: '${localization.translate('wishlists.failedToDeleteWishlist')}: ${e.message}',
         );
       }
     } catch (e) {
-
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'An unexpected error occurred. Please try again.',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 4),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(
-              top: 60,
-              left: 16,
-              right: 16,
-              bottom: 0,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        UnifiedSnackbar.hideCurrent(context);
+        UnifiedSnackbar.showError(
+          context: context,
+          message: localization.translate('wishlists.failedToDeleteWishlistTryAgain'),
         );
       }
     }

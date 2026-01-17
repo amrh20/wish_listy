@@ -13,6 +13,7 @@ import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/events/data/repository/event_repository.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/widgets/unified_snackbar.dart';
 import '../widgets/event_card.dart';
 import '../widgets/invited_event_card.dart';
 import '../widgets/guest_events_view.dart';
@@ -934,6 +935,8 @@ class EventsScreenState extends State<EventsScreen>
   }
 
   Future<void> _deleteEvent(EventSummary event) async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    
     // Show confirmation dialog
     final shouldDelete = await showDialog<bool>(
       context: context,
@@ -944,14 +947,14 @@ class EventsScreenState extends State<EventsScreen>
           ),
           backgroundColor: AppColors.surface,
           title: Text(
-            'Delete Event',
+            localization.translate('events.deleteEvent'),
             style: AppStyles.headingSmall.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
-            'Are you sure you want to delete "${event.name}"? This action cannot be undone.',
+            localization.translate('events.deleteEventMessage').replaceAll('this event', '"${event.name}"'),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -960,7 +963,7 @@ class EventsScreenState extends State<EventsScreen>
             TextButton(
               onPressed: () => Navigator.pop(context, false),
               child: Text(
-                'Cancel',
+                localization.translate('app.cancel'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -969,7 +972,7 @@ class EventsScreenState extends State<EventsScreen>
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: Text(
-                'Delete',
+                localization.translate('app.delete'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.error,
                   fontWeight: FontWeight.w600,
@@ -983,53 +986,12 @@ class EventsScreenState extends State<EventsScreen>
 
     if (shouldDelete != true) return;
 
-    // Show loading indicator with event name
+    // Show loading snackbar
+    ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? loadingSnackbar;
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Deleting Event',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '"${event.name}"',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 12,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: AppColors.warning,
-          duration: Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-        ),
+      loadingSnackbar = UnifiedSnackbar.showLoading(
+        context: context,
+        message: localization.translate('dialogs.deletingEvent'),
       );
     }
 
@@ -1037,39 +999,32 @@ class EventsScreenState extends State<EventsScreen>
       // Delete event via API
       await _eventRepository.deleteEvent(event.id);
 
-      if (mounted) {
-        // Show success message
-        final localization = Provider.of<LocalizationService>(context, listen: false);
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 8),
-                Text(localization.translate('dialogs.eventDeletedSuccessfully')),
-              ],
-            ),
-            backgroundColor: AppColors.success,
-            duration: Duration(seconds: 2),
-          ),
-        );
+      // Remove from local state immediately for instant UI update
+      setState(() {
+        _myEvents.removeWhere((e) => e.id == event.id);
+        _filteredEvents.removeWhere((e) => e.id == event.id);
+        _baseFilteredEvents.removeWhere((e) => e.id == event.id);
+      });
 
-        // Reload events list to update the screen
-        await _loadEvents();
+      // Reload events list to ensure data consistency
+      await _loadEvents();
+
+      // Show success snackbar
+      if (mounted) {
+        UnifiedSnackbar.hideCurrent(context);
+        UnifiedSnackbar.showSuccess(
+          context: context,
+          message: localization.translate('dialogs.eventDeletedSuccessfully'),
+        );
       }
     } catch (e) {
       if (mounted) {
-        final localization = Provider.of<LocalizationService>(context, listen: false);
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${localization.translate('dialogs.failedToDeleteEvent')}: ${e.toString()}'),
-            backgroundColor: AppColors.error,
-          ),
+        UnifiedSnackbar.hideCurrent(context);
+        UnifiedSnackbar.showError(
+          context: context,
+          message: '${localization.translate('dialogs.failedToDeleteEvent')}: ${e.toString()}',
         );
       }
-
     }
   }
 

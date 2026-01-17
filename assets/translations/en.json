@@ -1358,6 +1358,8 @@
     "failedToUpdateStatus": "Failed to update status",
     "copiedToClipboard": "Copied to clipboard",
     "deletingItem": "Deleting item...",
+    "deletingWishlist": "Deleting wishlist...",
+    "deletingEvent": "Deleting event...",
     "searchWishes": "Search wishes...",
     "failedToMarkAsPurchased": "Failed to mark as purchased",
     "failedToProcessFriendRequest": "Failed to process friend request. Please try again.",

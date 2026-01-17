@@ -574,26 +574,17 @@ class _PatternedHeader extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Flexible(
-                              child: isLoading
-                                  ? SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: AppColors.primary,
-                                      ),
-                                    )
-                                  : Text(
-                                      fullName,
-                                      style: const TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                    ),
+                              child: Text(
+                                fullName,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                              ),
                             ),
                             if (isFriend && !isLoading) ...[
                               const SizedBox(width: 8),
@@ -1423,45 +1414,49 @@ class _BodyContentState extends State<_BodyContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Category Filter Chips (only show if there are categories)
+          // Aligned with parent tabs by matching padding (parent has 16 + UnifiedTabBar margin 20 = 36)
           if (uniqueCategories.isNotEmpty) ...[
-            SizedBox(
-              height: 40,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: categoryOptions.map((category) {
-                    final isSelected = category == _selectedCategory;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        label: Text(category),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setState(() {
-                              _selectedCategory = category;
-                            });
-                          }
-                        },
-                        selectedColor: AppColors.primary,
-                        checkmarkColor: Colors.white, // White check icon
-                        labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : AppColors.textPrimary,
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.normal,
-                          fontSize: 13,
+            Padding(
+              padding: const EdgeInsets.only(left: 20), // Match UnifiedTabBar horizontal margin
+              child: SizedBox(
+                height: 40,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: categoryOptions.map((category) {
+                      final isSelected = category == _selectedCategory;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(category),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            if (selected) {
+                              setState(() {
+                                _selectedCategory = category;
+                              });
+                            }
+                          },
+                          selectedColor: AppColors.primary,
+                          checkmarkColor: Colors.white, // White check icon
+                          labelStyle: TextStyle(
+                            color: isSelected ? Colors.white : AppColors.textPrimary,
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.normal,
+                            fontSize: 13,
+                          ),
+                          backgroundColor: Colors.grey.shade100,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
-                        backgroundColor: Colors.grey.shade100,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
             ),
@@ -1520,24 +1515,28 @@ class _BodyContentState extends State<_BodyContent> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Filter Chips (match Wishlists style)
-        SizedBox(
-          height: 40,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildFilterChip(
-                  label: localization.translate('friends.upcoming'),
-                  isSelected: _selectedFilter == 'upcoming',
-                  onTap: () => setState(() => _selectedFilter = 'upcoming'),
-                ),
-                const SizedBox(width: 10),
-                _buildFilterChip(
-                  label: localization.translate('friends.past'),
-                  isSelected: _selectedFilter == 'past',
-                  onTap: () => setState(() => _selectedFilter = 'past'),
-                ),
-              ],
+        // Aligned with parent tabs by matching padding (parent has 16 + UnifiedTabBar margin 20 = 36)
+        Padding(
+          padding: const EdgeInsets.only(left: 20), // Match UnifiedTabBar horizontal margin
+          child: SizedBox(
+            height: 40,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterChip(
+                    label: localization.translate('friends.upcoming'),
+                    isSelected: _selectedFilter == 'upcoming',
+                    onTap: () => setState(() => _selectedFilter = 'upcoming'),
+                  ),
+                  const SizedBox(width: 10),
+                  _buildFilterChip(
+                    label: localization.translate('friends.past'),
+                    isSelected: _selectedFilter == 'past',
+                    onTap: () => setState(() => _selectedFilter = 'past'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
