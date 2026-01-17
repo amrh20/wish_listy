@@ -10,11 +10,18 @@ import 'package:wish_listy/features/profile/presentation/cubit/profile_state.dar
 class ProfileCubit extends Cubit<ProfileImageState> {
   final ProfileRepository _repository;
   final ImagePicker _imagePicker;
+  String? _currentProfileImageUrl; // Track current profile image to decide upload vs edit
 
-  ProfileCubit({ProfileRepository? repository})
+  ProfileCubit({ProfileRepository? repository, String? currentProfileImageUrl})
       : _repository = repository ?? ProfileRepository(),
         _imagePicker = ImagePicker(),
+        _currentProfileImageUrl = currentProfileImageUrl,
         super(ProfileImageInitial());
+  
+  // Update current profile image URL
+  void setCurrentProfileImage(String? imageUrl) {
+    _currentProfileImageUrl = imageUrl;
+  }
 
   /// Pick image from specified source and upload
   /// This is a unified method that can be used for both camera and gallery
@@ -40,7 +47,13 @@ class ProfileCubit extends Cubit<ProfileImageState> {
         return;
       }
 
-      await _uploadImage(image.path);
+      // Check if user has existing profile image
+      final hasExistingImage = _currentProfileImageUrl != null && 
+                               _currentProfileImageUrl!.isNotEmpty &&
+                               !_currentProfileImageUrl!.contains('placeholder') &&
+                               !_currentProfileImageUrl!.contains('default');
+      
+      await _uploadImage(image.path, hasExistingImage: hasExistingImage);
     } on PlatformException catch (e) {
       // Handle permission denied
       if (e.code == 'camera_access_denied' || 
@@ -86,7 +99,13 @@ class ProfileCubit extends Cubit<ProfileImageState> {
         return;
       }
 
-      await _uploadImage(image.path);
+      // Check if user has existing profile image
+      final hasExistingImage = _currentProfileImageUrl != null && 
+                               _currentProfileImageUrl!.isNotEmpty &&
+                               !_currentProfileImageUrl!.contains('placeholder') &&
+                               !_currentProfileImageUrl!.contains('default');
+      
+      await _uploadImage(image.path, hasExistingImage: hasExistingImage);
     } on PlatformException catch (e) {
       // Handle permission denied
       if (e.code == 'photo_access_denied' || 
@@ -118,16 +137,20 @@ class ProfileCubit extends Cubit<ProfileImageState> {
     }
   }
 
-  /// Internal method to compress and upload image
-  Future<void> _uploadImage(String imagePath) async {
+  /// Internal method to compress and upload/edit image
+  /// [imagePath] - Path to the image file
+  /// [hasExistingImage] - Whether user already has a profile image (use edit API if true)
+  Future<void> _uploadImage(String imagePath, {bool hasExistingImage = false}) async {
     try {
       emit(ProfileImageUploading());
 
       // Compress image to target size (~500KB, max 800x800)
       final compressedPath = await ImageUtils.compressImage(imagePath);
 
-      // Upload compressed image
-      final response = await _repository.uploadProfileImage(compressedPath);
+      // Use edit API if user has existing image, otherwise use upload API
+      final response = hasExistingImage
+          ? await _repository.editProfileImage(compressedPath)
+          : await _repository.uploadProfileImage(compressedPath);
 
       // Extract imageUrl and user data from response
       final data = response['data'] ?? response;
@@ -138,6 +161,9 @@ class ProfileCubit extends Cubit<ProfileImageState> {
         throw Exception('No image URL returned from server');
       }
 
+      // Update current profile image URL
+      _currentProfileImageUrl = imageUrl;
+      
       emit(ProfileImageUploadSuccess(
         imageUrl: imageUrl,
         userData: userData,
@@ -162,6 +188,9 @@ class ProfileCubit extends Cubit<ProfileImageState> {
       final data = response['data'] ?? response;
       final userData = data['user'] as Map<String, dynamic>? ?? data;
 
+      // Update current profile image URL to null
+      _currentProfileImageUrl = null;
+      
       emit(ProfileImageDeleteSuccess(userData: userData));
     } on ApiException catch (e) {
       emit(ProfileImageDeleteError(e.message));

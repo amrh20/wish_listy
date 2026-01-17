@@ -23,6 +23,7 @@ import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/royal_avatar_wrapper.dart';
 import 'package:wish_listy/core/widgets/generic_error_screen.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class HomeScreen extends StatefulWidget {
   final GlobalKey<HomeScreenState>? key;
@@ -81,7 +82,9 @@ class HomeScreenState extends State<HomeScreen> {
     final dashboardData = controller.dashboardData.value;
     final firstName = dashboardData?.user.firstName ?? 'Friend';
     final fullName = firstName; // Using firstName as fullName is not available in DashboardUser
-    final profileImageUrl = dashboardData?.user.avatar;
+    
+    // Get dashboard profile image (will be overridden by Consumer<AuthRepository> below for instant updates)
+    final dashboardProfileImageUrl = dashboardData?.user.avatar;
     final unreadCount = dashboardData?.stats.unreadNotificationsCount ?? 0;
 
     return Container(
@@ -126,27 +129,56 @@ class HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         // Left: Profile Avatar (reduced radius, tappable)
-                        GestureDetector(
-                          onTap: () {
-                            MainNavigation.switchToTab(context, 4); // Switch to Profile tab
+                        // Wrap with Consumer<AuthRepository> for instant updates
+                        Consumer<AuthRepository>(
+                          builder: (context, authRepository, child) {
+                            // Get global profile image for instant sync
+                            final globalProfileImage = authRepository.profilePicture;
+                            final displayImageUrl = globalProfileImage ?? dashboardProfileImageUrl;
+                            
+                            return GestureDetector(
+                              onTap: () {
+                                MainNavigation.switchToTab(context, 4); // Switch to Profile tab
+                              },
+                              child: RoyalAvatarWrapper(
+                                userName: fullName,
+                                child: CircleAvatar(
+                                  radius: 25,
+                                  backgroundColor: Colors.white,
+                                  child: displayImageUrl != null && displayImageUrl.isNotEmpty
+                                      ? ClipOval(
+                                          child: CachedNetworkImage(
+                                            imageUrl: displayImageUrl,
+                                            width: 50,
+                                            height: 50,
+                                            fit: BoxFit.cover,
+                                            placeholder: (context, url) => Container(
+                                              width: 50,
+                                              height: 50,
+                                              color: Colors.white,
+                                              child: Center(
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: AppColors.primary,
+                                                ),
+                                              ),
+                                            ),
+                                            errorWidget: (context, url, error) => Icon(
+                                              Icons.person_rounded,
+                                              color: AppColors.primary,
+                                              size: 30,
+                                            ),
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.person_rounded,
+                                          color: AppColors.primary,
+                                          size: 30,
+                                        ),
+                                ),
+                              ),
+                            );
                           },
-                          child: RoyalAvatarWrapper(
-                            userName: fullName,
-                            child: CircleAvatar(
-                              radius: 25,
-                              backgroundColor: Colors.white,
-                              backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
-                                  ? NetworkImage(profileImageUrl)
-                                  : null,
-                              child: profileImageUrl == null || profileImageUrl.isEmpty
-                                  ? Icon(
-                                      Icons.person_rounded,
-                                      color: AppColors.primary,
-                                      size: 30,
-                                    )
-                                  : null,
-                            ),
-                          ),
                         ),
                         const SizedBox(width: 16),
                         // Middle: Greeting Column (left-aligned, tappable)

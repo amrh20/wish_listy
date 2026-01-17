@@ -7,7 +7,7 @@ class ProfileRepository {
   ProfileRepository({ApiService? apiService})
       : _apiService = apiService ?? ApiService();
 
-  /// Upload profile image
+  /// Upload profile image (for new uploads)
   /// [imagePath] - Path to the compressed image file
   /// Returns response data containing imageUrl and updated user data
   Future<Map<String, dynamic>> uploadProfileImage(String imagePath) async {
@@ -25,6 +25,27 @@ class ProfileRepository {
       rethrow;
     } catch (e) {
       throw Exception('Failed to upload profile image: $e');
+    }
+  }
+
+  /// Edit/Update existing profile image
+  /// [imagePath] - Path to the compressed image file
+  /// Returns response data containing imageUrl and updated user data
+  Future<Map<String, dynamic>> editProfileImage(String imagePath) async {
+    try {
+      final response = await _apiService.postMultipart(
+        '/upload/edit-profile-image',
+        fields: {},
+        fileKey: 'image',
+        filePath: imagePath,
+      );
+
+      // Response structure: {success: true, message: "...", data: {imageUrl: "...", user: {...}}}
+      return response;
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Failed to edit profile image: $e');
     }
   }
 

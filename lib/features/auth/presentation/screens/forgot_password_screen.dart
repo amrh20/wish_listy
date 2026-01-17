@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
@@ -6,6 +8,8 @@ import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:wish_listy/features/auth/presentation/cubit/auth_state.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -17,6 +21,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  final _identifierController = TextEditingController();
   final _emailController = TextEditingController();
 
   late AnimationController _animationController;
@@ -26,7 +31,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   late Animation<double> _successScaleAnimation;
 
   bool _isLoading = false;
+  bool _isLoadingCheck = false; // Loading state for check account
+  bool _isLoadingReset = false; // Loading state for reset request
   bool _isSuccess = false;
+  String? _linkedEmail;
+  bool _emailLinked = false;
+  bool _accountChecked = false;
+  String? _identifier; // Store the identifier for reset request
 
   @override
   void initState() {
@@ -55,11 +66,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
     _slideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
-          ),
-        );
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+      ),
+    );
 
     _successScaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _successController, curve: Curves.elasticOut),
@@ -74,55 +85,188 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   void dispose() {
     _animationController.dispose();
     _successController.dispose();
+    _identifierController.dispose();
     _emailController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleResetPassword() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _handleCheckAccount(BuildContext context, AuthCubit cubit) async {
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('🔍 ForgotPasswordScreen: _handleCheckAccount called');
+    debugPrint('═══════════════════════════════════════════════════════');
+    
+    // Step 1: Validate form
+    debugPrint('🔍 Step 1: Validating form...');
+    if (_formKey.currentState == null) {
+      debugPrint('❌ ERROR: Form key state is null!');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(Provider.of<LocalizationService>(context, listen: false).translate('auth.unexpectedError')),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+      return;
+    }
+    
+    final isValid = _formKey.currentState!.validate();
+    debugPrint('🔍 Form validation result: $isValid');
+    
+    if (!isValid) {
+      debugPrint('❌ Form validation failed - showing error messages');
+      // Form validation errors will be shown automatically by the TextFields
+      // Trigger validation to show errors
+      _formKey.currentState!.validate();
+      return;
+    }
+    debugPrint('✅ Form validation passed');
 
-    setState(() => _isLoading = true);
+    // Step 2: Get and validate identifier
+    debugPrint('🔍 Step 2: Getting identifier from controller...');
+    final identifier = _identifierController.text.trim();
+    debugPrint('🔍 Identifier value: "$identifier"');
+    debugPrint('🔍 Identifier length: ${identifier.length}');
+    
+    if (identifier.isEmpty) {
+      debugPrint('❌ ERROR: Identifier is empty after trim!');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(Provider.of<LocalizationService>(context, listen: false).translate('auth.phoneOrEmailRequired')),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+      return;
+    }
+    debugPrint('✅ Identifier is valid: "$identifier"');
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+    _identifier = identifier;
+    debugPrint('🔍 Stored identifier: $_identifier');
 
-    setState(() {
-      _isLoading = false;
-      _isSuccess = true;
-    });
+    // Step 3: Verify cubit is not null (already passed as parameter)
+    debugPrint('🔍 Step 3: Verifying AuthCubit...');
+    if (cubit == null) {
+      debugPrint('❌ ERROR: AuthCubit is null!');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to access authentication service. Please try again.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+      return;
+    }
+    debugPrint('✅ AuthCubit is valid');
 
-    _successController.forward();
+    // Step 4: Call checkAccount
+    debugPrint('🔍 Step 4: Calling cubit.checkAccount("$identifier")...');
+    try {
+      cubit.checkAccount(identifier);
+      debugPrint('✅ checkAccount() called successfully - async operation started');
+      debugPrint('🔍 Waiting for AuthCubit to emit state changes...');
+    } catch (e, stackTrace) {
+      debugPrint('❌ ERROR: Exception thrown while calling checkAccount!');
+      debugPrint('❌ Error: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to check account. Please try again.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+    }
+    debugPrint('═══════════════════════════════════════════════════════');
   }
 
-  void _handleResendEmail() async {
-    setState(() => _isLoading = true);
+  Future<void> _handleRequestReset(BuildContext context, AuthCubit cubit) async {
+    debugPrint('🔍 ForgotPasswordScreen: _handleRequestReset called');
+    
+    if (!_formKey.currentState!.validate()) {
+      debugPrint('❌ ForgotPasswordScreen: Form validation failed for request reset');
+      return;
+    }
 
-    // Simulate resend API call
-    await Future.delayed(const Duration(seconds: 1));
+    if (_identifier == null || _identifier!.isEmpty) {
+      debugPrint('❌ ForgotPasswordScreen: Identifier is null or empty for request reset');
+      return;
+    }
 
-    setState(() => _isLoading = false);
+    final email = _emailController.text.trim();
+    debugPrint('🔍 ForgotPasswordScreen: Email for reset: $email (linked: $_emailLinked)');
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: 8),
-            Text(Provider.of<LocalizationService>(context, listen: false).translate('auth.checkEmail')),
-          ],
-        ),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
+    // AuthCubit handles all errors internally and emits error states
+    // BlocListener will handle those error states and show appropriate messages
+    debugPrint('✅ ForgotPasswordScreen: AuthCubit found, calling requestReset...');
+    if (_emailLinked && _linkedEmail != null) {
+      // Account has email, just request reset
+      cubit.requestReset(_identifier!);
+    } else {
+      // Need to bind email first
+      cubit.requestReset(_identifier!, newEmail: email);
+    }
+    debugPrint('✅ ForgotPasswordScreen: requestReset called (async operation started)');
+  }
+
+  void _handleResendEmail(BuildContext context) async {
+    debugPrint('🔍 ForgotPasswordScreen: _handleResendEmail called');
+    if (_identifier == null || _identifier!.isEmpty) {
+      debugPrint('❌ ForgotPasswordScreen: Identifier is null or empty for resend email');
+      return;
+    }
+    try {
+      final cubit = context.read<AuthCubit>();
+      debugPrint('✅ ForgotPasswordScreen: AuthCubit found, calling requestReset for resend...');
+      await cubit.requestReset(_identifier!);
+      debugPrint('✅ ForgotPasswordScreen: requestReset for resend called successfully');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(Provider.of<LocalizationService>(context, listen: false).translate('auth.checkEmail')),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ ForgotPasswordScreen: Error calling requestReset for resend: $e');
+      debugPrint('Stack trace: $stackTrace');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(Provider.of<LocalizationService>(context, listen: false).translate('auth.unexpectedError')),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+    }
   }
 
   void _handleBackNavigation() {
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     } else {
-      // If no route to pop, navigate to login screen
       Navigator.pushNamedAndRemoveUntil(
         context,
         AppRoutes.login,
@@ -133,106 +277,189 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvoked: (didPop) async {
-        if (!didPop) {
-          _handleBackNavigation();
-        }
-      },
-      child: Scaffold(
-        backgroundColor: Colors.grey.shade50,
-        body: Stack(
-        children: [
-          // Content
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  return FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: SlideTransition(
-                      position: _slideAnimation,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const SizedBox(height: 40),
+    // BlocProvider<AuthCubit> is now provided at the route level in app_routes.dart
+    return BlocListener<AuthCubit, AuthState>(
+        listener: (context, state) {
+          if (state is CheckAccountSuccess) {
+            setState(() {
+              _accountChecked = true;
+              _emailLinked = state.emailLinked;
+              _linkedEmail = state.email;
+            });
+          } else if (state is CheckAccountError) {
+            debugPrint('🔍 BlocListener: CheckAccountError received - resetting loading state');
+            setState(() {
+              _isLoading = false;
+              _isLoadingCheck = false; // Ensure loading state is reset
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            );
+          } else if (state is RequestResetSuccess) {
+            setState(() {
+              _isLoading = false;
+              _isSuccess = true;
+            });
+            _successController.forward();
+          } else if (state is RequestResetError) {
+            debugPrint('🔍 BlocListener: RequestResetError received - resetting loading state');
+            setState(() {
+              _isLoading = false;
+              _isLoadingReset = false; // Ensure loading state is reset
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            );
+          }
+        },
+        child: BlocBuilder<AuthCubit, AuthState>(
+          builder: (context, state) {
+            // Only show loading when checking account (not when requesting reset)
+            final wasLoadingCheck = _isLoadingCheck;
+            final wasLoadingReset = _isLoadingReset;
+            
+            _isLoadingCheck = state is AuthLoading && !_accountChecked;
+            _isLoadingReset = state is AuthLoading && _accountChecked;
+            _isLoading = _isLoadingCheck || _isLoadingReset;
+            
+            // Debug logging for state changes
+            if (wasLoadingCheck != _isLoadingCheck) {
+              debugPrint('🔍 Button State Changed: _isLoadingCheck: $wasLoadingCheck -> $_isLoadingCheck');
+            }
+            if (wasLoadingReset != _isLoadingReset) {
+              debugPrint('🔍 Button State Changed: _isLoadingReset: $wasLoadingReset -> $_isLoadingReset');
+            }
+            
+            // Debug button state
+            debugPrint('🔍 Button State Debug: state=$state, _accountChecked=$_accountChecked, _isLoadingCheck=$_isLoadingCheck, _isLoadingReset=$_isLoadingReset, buttonEnabled=${!(_isLoadingCheck || _isLoadingReset)}');
 
-                          // Back Button
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: IconButton(
-                              onPressed: _handleBackNavigation,
-                              icon: const Icon(Icons.arrow_back_ios),
-                              style: IconButton.styleFrom(
-                                backgroundColor: AppColors.surface,
-                                padding: const EdgeInsets.all(12),
+            return PopScope(
+              canPop: false,
+              onPopInvoked: (didPop) async {
+                if (!didPop) {
+                  _handleBackNavigation();
+                }
+              },
+              child: Scaffold(
+                backgroundColor: Colors.grey.shade50,
+                body: Stack(
+                  children: [
+                    // Content
+                    SafeArea(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24.0),
+                        child: AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            return FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: SlideTransition(
+                                position: _slideAnimation,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    const SizedBox(height: 40),
+
+                                    // Back Button
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: IconButton(
+                                        onPressed: _handleBackNavigation,
+                                        icon: const Icon(Icons.arrow_back_ios),
+                                        style: IconButton.styleFrom(
+                                          backgroundColor: AppColors.surface,
+                                          padding: const EdgeInsets.all(12),
+                                        ),
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 60),
+
+                                    // Illustration
+                                    Center(
+                                      child: Container(
+                                        width: 120,
+                                        height: 120,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.accent.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(60),
+                                        ),
+                                        child: Icon(
+                                          _isSuccess
+                                              ? Icons.mark_email_read_outlined
+                                              : Icons.lock_reset,
+                                          size: 60,
+                                          color: _isSuccess
+                                              ? AppColors.success
+                                              : AppColors.accent,
+                                        ),
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 40),
+
+                                    // Content based on state
+                                    if (!_isSuccess)
+                                      ..._buildResetForm(state)
+                                    else
+                                      ..._buildSuccessContent(context),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 60),
-
-                          // Illustration
-                          Center(
-                            child: Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: AppColors.accent.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(60),
-                              ),
-                              child: Icon(
-                                _isSuccess
-                                    ? Icons.mark_email_read_outlined
-                                    : Icons.lock_reset,
-                                size: 60,
-                                color: _isSuccess
-                                    ? AppColors.success
-                                    : AppColors.accent,
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 40),
-
-                          // Content based on state
-                          if (!_isSuccess)
-                            ..._buildResetForm()
-                          else
-                            ..._buildSuccessContent(),
-                        ],
+                            );
+                          },
+                        ),
                       ),
                     ),
-                  );
-                },
+                  ],
+                ),
               ),
-            ),
-          ),
-        ],
-      ),
-      ),
+            );
+          },
+        ),
     );
   }
 
-  List<Widget> _buildResetForm() {
+  List<Widget> _buildResetForm(AuthState state) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+
     return [
       // Header
       Column(
         children: [
           Text(
-            'Forgot Password?',
-            style: AppStyles.headingLarge.copyWith(fontSize: 28),
+            localization.translate('auth.forgotPassword'),
+            style: AppStyles.headingLarge.copyWith(
+              fontSize: 28,
+              fontFamily: 'Alexandria',
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
           Text(
-            'Don\'t worry! Enter your email address and we\'ll send you a link to reset your password.',
+            _accountChecked
+                ? (_emailLinked
+                    ? localization.translate('auth.emailLinked')
+                    : localization.translate('auth.emailNotLinked'))
+                : localization.translate('auth.forgotPasswordDescription'),
             style: AppStyles.bodyLarge.copyWith(
               color: AppColors.textSecondary,
               height: 1.5,
+              fontFamily: 'Alexandria',
             ),
             textAlign: TextAlign.center,
           ),
@@ -246,34 +473,114 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         key: _formKey,
         child: Column(
           children: [
-            // Email Field
-            CustomTextField(
-              controller: _emailController,
-              label: 'Email Address',
-              hint: 'Enter your registered email',
-              keyboardType: TextInputType.emailAddress,
-              prefixIcon: Icons.email_outlined,
-              isRequired: true,
-              validator: (value) {
-                if (value?.isEmpty ?? true) {
-                  return 'Please enter your email address';
-                }
-                if (!RegExp(
-                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                ).hasMatch(value!)) {
-                  return 'Please enter a valid email address';
-                }
-                return null;
-              },
-            ),
+            // Identifier Field (Phone/Email) - shown first
+            if (!_accountChecked)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CustomTextField(
+                    controller: _identifierController,
+                    label: localization.translate('auth.phoneOrEmail'),
+                    hint: localization.translate('auth.enterPhoneOrEmail'),
+                    keyboardType: TextInputType.text,
+                    prefixIcon: Icons.person_outline,
+                    isRequired: true,
+                    validator: (value) {
+                      if (value?.isEmpty ?? true) {
+                        return localization.translate('auth.phoneOrEmailRequired');
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0),
+                    child: Text(
+                      localization.translate('auth.phoneOrEmailHint'),
+                      style: AppStyles.bodySmall.copyWith(
+                        color: AppColors.textTertiary,
+                        fontFamily: 'Alexandria',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+            // Email Field - shown if account checked and email linked (read-only)
+            if (_accountChecked && _emailLinked && _linkedEmail != null) ...[
+              const SizedBox(height: 24),
+              CustomTextField(
+                controller: TextEditingController(text: _linkedEmail)
+                  ..selection = TextSelection.fromPosition(
+                    TextPosition(offset: _linkedEmail!.length),
+                  ),
+                label: localization.translate('auth.email'),
+                hint: _linkedEmail,
+                keyboardType: TextInputType.emailAddress,
+                prefixIcon: Icons.email_outlined,
+                readOnly: true,
+                enabled: false,
+              ),
+            ],
+
+            // Email Field - shown if account checked but no email linked
+            if (_accountChecked && !_emailLinked) ...[
+              const SizedBox(height: 24),
+              CustomTextField(
+                controller: _emailController,
+                label: localization.translate('auth.email'),
+                hint: localization.translate('auth.enterEmailToBind'),
+                keyboardType: TextInputType.emailAddress,
+                prefixIcon: Icons.email_outlined,
+                isRequired: true,
+                validator: (value) {
+                  if (value?.isEmpty ?? true) {
+                    return localization.translate('auth.emailRequired');
+                  }
+                  if (!RegExp(
+                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                  ).hasMatch(value!)) {
+                    return localization.translate('auth.invalidEmail');
+                  }
+                  return null;
+                },
+              ),
+            ],
 
             const SizedBox(height: 32),
 
-            // Reset Button
+            // Action Button
             CustomButton(
-              text: 'Send Reset Link',
-              onPressed: _handleResetPassword,
-              isLoading: _isLoading,
+              text: _accountChecked
+                  ? localization.translate('auth.sendResetLink')
+                  : localization.translate('auth.checkAccount'),
+              onPressed: (_isLoadingCheck || _isLoadingReset)
+                  ? null
+                  : () {
+                      debugPrint('🔍 ForgotPasswordScreen: Button pressed (_accountChecked: $_accountChecked, _isLoadingCheck: $_isLoadingCheck, _isLoadingReset: $_isLoadingReset)');
+                      // Get cubit from context here, before calling async function
+                      try {
+                        final cubit = context.read<AuthCubit>();
+                        if (_accountChecked) {
+                          _handleRequestReset(context, cubit);
+                        } else {
+                          _handleCheckAccount(context, cubit);
+                        }
+                      } catch (e, stackTrace) {
+                        debugPrint('❌ ERROR: Failed to get AuthCubit in button callback!');
+                        debugPrint('❌ Error: $e');
+                        debugPrint('❌ Stack trace: $stackTrace');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to access authentication service. Please try again.'),
+                            backgroundColor: AppColors.error,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                        );
+                      }
+                    },
+              isLoading: _isLoadingCheck, // Only show loading spinner when checking account
               variant: ButtonVariant.gradient,
               gradientColors: [AppColors.accent, AppColors.primary],
             ),
@@ -282,7 +589,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
             // Back to Login
             CustomButton(
-              text: 'Back to Sign In',
+              text: localization.translate('auth.backToSignIn'),
               onPressed: () => Navigator.pop(context),
               variant: ButtonVariant.text,
             ),
@@ -292,7 +599,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     ];
   }
 
-  List<Widget> _buildSuccessContent() {
+  List<Widget> _buildSuccessContent(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final email = _emailLinked && _linkedEmail != null
+        ? _linkedEmail!
+        : _emailController.text;
+
     return [
       // Success Animation
       AnimatedBuilder(
@@ -321,9 +633,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
                 // Success Header
                 Text(
-                  'Check Your Email!',
+                  localization.translate('auth.checkEmail'),
                   style: AppStyles.headingMedium.copyWith(
                     color: AppColors.success,
+                    fontFamily: 'Alexandria',
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -332,9 +645,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
                 // Success Message
                 Text(
-                  'We\'ve sent a password reset link to:',
+                  localization.translate('auth.resetLinkSentMessage'),
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
+                    fontFamily: 'Alexandria',
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -352,9 +666,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    _emailController.text,
+                    email,
                     style: AppStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.w600,
+                      fontFamily: 'Alexandria',
                     ),
                   ),
                 ),
@@ -363,10 +678,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
                 // Instructions
                 Text(
-                  'Please check your email and click on the link to reset your password. The link will expire in 15 minutes.',
+                  localization.translate('auth.resetLinkInstructions'),
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.textSecondary,
                     height: 1.5,
+                    fontFamily: 'Alexandria',
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -377,9 +693,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 Column(
                   children: [
                     CustomButton(
-                      text: 'Open Email App',
+                      text: localization.translate('auth.openEmailApp'),
                       onPressed: () {
-                        // Open default email app
+                        // TODO: Implement open email app functionality
                       },
                       variant: ButtonVariant.primary,
                     ),
@@ -390,8 +706,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                       children: [
                         Expanded(
                           child: CustomButton(
-                            text: 'Resend Email',
-                            onPressed: _handleResendEmail,
+                            text: localization.translate('auth.resendEmail'),
+                            onPressed: _isLoading ? null : () => _handleResendEmail(context),
                             variant: ButtonVariant.outline,
                             isLoading: _isLoading,
                           ),
@@ -399,7 +715,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                         const SizedBox(width: 12),
                         Expanded(
                           child: CustomButton(
-                            text: 'Back to Login',
+                            text: localization.translate('auth.backToSignIn'),
                             onPressed: () {
                               AppRoutes.pushReplacementNamed(
                                 context,

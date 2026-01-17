@@ -171,6 +171,23 @@ class DeepLinkService {
       return;
     }
 
+    // /reset-password?token=...
+    if (path == '/reset-password') {
+      final token = uri.queryParameters['token'];
+      if (token != null && token.isNotEmpty) {
+        _markHandled(uri.toString());
+        debugPrint('🔗 DeepLinkService: Navigating to reset password with token');
+        navigator.pushNamed(
+          AppRoutes.resetPassword,
+          arguments: {'token': token},
+        );
+        return;
+      } else {
+        debugPrint('⚠️ DeepLinkService: Reset password link missing token parameter');
+        return;
+      }
+    }
+
     debugPrint('⚠️ DeepLinkService: Unknown deep link path: $path');
   }
 
@@ -210,6 +227,18 @@ class DeepLinkService {
         name: AppRoutes.itemDetails,
         arguments: {'itemId': itemId, 'fromDeepLink': true},
       );
+    }
+
+    // /reset-password?token=...
+    if (path == '/reset-password') {
+      final token = uri.queryParameters['token'];
+      if (token != null && token.isNotEmpty) {
+        return RouteSettings(
+          name: AppRoutes.resetPassword,
+          arguments: {'token': token},
+        );
+      }
+      return null;
     }
 
     return null;

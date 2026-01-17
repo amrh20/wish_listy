@@ -36,30 +36,37 @@ class ProfileScreenState extends State<ProfileScreen>
   // User profile data
   UserProfile? _userProfile;
   bool _isLoading = false;
-  bool _hasLoaded = false; // Flag to track if we've loaded data
+  bool _hasLoaded = false; // Flag to track if we've loaded data - once true, never reload unless force refresh
   String? _errorMessage;
   String _currentLanguage = 'en';
 
   @override
   void initState() {
     super.initState();
+    debugPrint('ProfileScreen: initState called (_hasLoaded: $_hasLoaded)');
     _initializeAnimations();
     _startAnimations();
     _loadCurrentLanguage();
-    // Don't load profile here - wait until screen is visible
+    
+    // Load profile only once when screen is first created
+    // Use postFrameCallback to ensure context is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_hasLoaded && !_isLoading) {
+        debugPrint('ProfileScreen: Loading profile from initState');
+        _loadUserProfile();
+      } else {
+        debugPrint('ProfileScreen: Skipping load from initState (_hasLoaded: $_hasLoaded, _isLoading: $_isLoading)');
+      }
+    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Load profile only when screen becomes visible and hasn't loaded yet
-    if (!_hasLoaded && !_isLoading) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _loadUserProfile();
-        }
-      });
-    }
+    // Intentionally empty - we load profile only once in initState
+    // This prevents redundant API calls when returning from other screens
+    // (e.g., full-screen image viewer, personal information screen, etc.)
+    debugPrint('ProfileScreen: didChangeDependencies called (_hasLoaded: $_hasLoaded, _isLoading: $_isLoading) - NO ACTION TAKEN');
   }
 
   void _loadCurrentLanguage() {
@@ -120,11 +127,13 @@ class ProfileScreenState extends State<ProfileScreen>
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ProfileCubit(),
+      create: (context) => ProfileCubit(
+        currentProfileImageUrl: _userProfile?.profilePicture,
+      ),
       child: BlocListener<ProfileCubit, ProfileImageState>(
         listener: (context, state) {
           if (state is ProfileImageUploadSuccess) {
-            // Update profile image URL
+            // Update profile image URL locally
             if (_userProfile != null) {
               setState(() {
                 _userProfile = _userProfile!.copyWith(
@@ -132,22 +141,27 @@ class ProfileScreenState extends State<ProfileScreen>
                 );
               });
             }
+            // Update global AuthRepository for sync across app
+            final authRepository = Provider.of<AuthRepository>(context, listen: false);
+            authRepository.updateProfilePicture(state.imageUrl);
+            
+            // Update ProfileCubit's current image reference
+            context.read<ProfileCubit>().setCurrentProfileImage(state.imageUrl);
           } else if (state is ProfileImageDeleteSuccess) {
             // Remove profile image (revert to placeholder)
-            // Update user profile with data from API response
-            if (state.userData != null && _userProfile != null) {
-              setState(() {
-                _userProfile = _userProfile!.copyWith(
-                  profilePicture: null,
-                );
-              });
-            } else if (_userProfile != null) {
+            if (_userProfile != null) {
               setState(() {
                 _userProfile = _userProfile!.copyWith(
                   profilePicture: null,
                 );
               });
             }
+            // Update global AuthRepository for sync across app
+            final authRepository = Provider.of<AuthRepository>(context, listen: false);
+            authRepository.updateProfilePicture(null);
+            
+            // Update ProfileCubit's current image reference
+            context.read<ProfileCubit>().setCurrentProfileImage(null);
           } else if (state is ProfileImageUploadError ||
               state is ProfileImageDeleteError) {
             // Show error SnackBar
@@ -317,11 +331,20 @@ class ProfileScreenState extends State<ProfileScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // White Circle with Initial - Camera icon overlay for image editing
+                  // BlocBuilder listens to ProfileCubit state changes for instant UI updates
                   BlocBuilder<ProfileCubit, ProfileImageState>(
                     builder: (context, state) {
                       final isUploading = state is ProfileImageUploading;
                       final isDeleting = state is ProfileImageDeleting;
                       final isLoading = isUploading || isDeleting;
+                      
+                      // Get current profile image - prefer from state if available, otherwise from _userProfile
+                      String? currentProfileImage = profileImage;
+                      if (state is ProfileImageUploadSuccess) {
+                        currentProfileImage = state.imageUrl;
+                      } else if (state is ProfileImageDeleteSuccess) {
+                        currentProfileImage = null;
+                      }
 
                       return Container(
                         decoration: BoxDecoration(
@@ -340,12 +363,12 @@ class ProfileScreenState extends State<ProfileScreen>
                           children: [
                             // Avatar with Hero widget for smooth transition
                             Hero(
-                              tag: 'profile_image_${profileImage ?? 'placeholder'}',
+                              tag: 'profile_image_${currentProfileImage ?? 'placeholder'}',
                               child: GestureDetector(
-                                onTap: profileImage != null && profileImage.isNotEmpty
+                                onTap: currentProfileImage != null && currentProfileImage.isNotEmpty
                                     ? () {
                                         // Open full-screen image viewer
-                                        _showFullScreenImageView(context, profileImage!);
+                                        _showFullScreenImageView(context, currentProfileImage!);
                                       }
                                     : null,
                                 child: RoyalAvatarWrapper(
@@ -353,10 +376,10 @@ class ProfileScreenState extends State<ProfileScreen>
                                   crownSize: 34,
                                   topOffset: -28,
                                   child: ClipOval(
-                                    child: profileImage != null &&
-                                            profileImage.isNotEmpty
+                                    child: currentProfileImage != null &&
+                                            currentProfileImage.isNotEmpty
                                         ? CachedNetworkImage(
-                                            imageUrl: profileImage,
+                                            imageUrl: currentProfileImage,
                                             width: 100,
                                             height: 100,
                                             fit: BoxFit.cover,
@@ -404,14 +427,18 @@ class ProfileScreenState extends State<ProfileScreen>
                                 right: 0,
                                 child: GestureDetector(
                                   onTap: () {
+                                    // Update ProfileCubit with current image before showing bottom sheet
+                                    final cubit = context.read<ProfileCubit>();
+                                    cubit.setCurrentProfileImage(currentProfileImage);
+                                    
                                     // Show bottom sheet for image actions
                                     ProfileImageActionBottomSheet.show(
                                       context,
-                                      currentImageUrl: profileImage,
-                                      hasUploadedImage: profileImage != null &&
-                                          profileImage.isNotEmpty &&
-                                          !profileImage.contains('placeholder') &&
-                                          !profileImage.contains('default'),
+                                      currentImageUrl: currentProfileImage,
+                                      hasUploadedImage: currentProfileImage != null &&
+                                          currentProfileImage.isNotEmpty &&
+                                          !currentProfileImage.contains('placeholder') &&
+                                          !currentProfileImage.contains('default'),
                                     );
                                   },
                                   child: Container(
@@ -432,8 +459,14 @@ class ProfileScreenState extends State<ProfileScreen>
                                         ),
                                       ],
                                     ),
-                                    child: const Icon(
-                                      Icons.camera_alt,
+                                    child: Icon(
+                                      // Show edit icon if profile image exists, camera icon otherwise
+                                      (currentProfileImage != null && 
+                                       currentProfileImage.isNotEmpty &&
+                                       !currentProfileImage.contains('placeholder') &&
+                                       !currentProfileImage.contains('default'))
+                                          ? Icons.edit_outlined
+                                          : Icons.camera_alt,
                                       color: Colors.white,
                                       size: 18,
                                     ),
@@ -550,6 +583,7 @@ class ProfileScreenState extends State<ProfileScreen>
   }
 
   /// Show full-screen image viewer
+  /// No need for special handling - didChangeDependencies won't reload after first load
   void _showFullScreenImageView(BuildContext context, String imageUrl) {
     Navigator.of(context).push(
       PageRouteBuilder(
@@ -566,6 +600,7 @@ class ProfileScreenState extends State<ProfileScreen>
         },
       ),
     );
+    // No callback needed - _hasLoaded flag prevents didChangeDependencies from reloading
   }
 
   /// Build decorative background elements (same as unified header)
@@ -1663,8 +1698,13 @@ class ProfileScreenState extends State<ProfileScreen>
 
   Future<void> _loadUserProfile({bool forceRefresh = false}) async {
     // Don't reload if already loaded unless force refresh
-    if (_hasLoaded && !forceRefresh) return;
+    if (_hasLoaded && !forceRefresh) {
+      debugPrint('ProfileScreen: Skipping reload - already loaded (forceRefresh: $forceRefresh)');
+      return;
+    }
 
+    debugPrint('ProfileScreen: Loading profile (forceRefresh: $forceRefresh, _hasLoaded: $_hasLoaded)');
+    
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -1681,9 +1721,9 @@ class ProfileScreenState extends State<ProfileScreen>
       if (response['success'] == true) {
         final data = response['data'] ?? response;
         
-        // Parse the response data
+        // Parse the response data with error handling
         if (mounted) {
-          setState(() {
+          try {
             // Parse interests from API response
             List<String> interests = [];
             if (data['interests'] != null) {
@@ -1691,53 +1731,106 @@ class ProfileScreenState extends State<ProfileScreen>
                 interests = List<String>.from(data['interests']);
               } else if (data['interests'] is String) {
                 // Handle case where interests might be a comma-separated string
-                interests = (data['interests'] as String).split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+                interests = (data['interests'] as String)
+                    .split(',')
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty)
+                    .toList();
               }
             }
             
-            _userProfile = UserProfile(
-              id: data['_id'] ?? data['id'] ?? '',
-              name: data['fullName'] ?? data['name'] ?? '',
-              email: data['email'] ?? '',
-              bio: data['bio'],
-              profilePicture: data['profileImage'] ?? data['profilePicture'],
-              handle: data['handle'],
-              joinDate: data['createdAt'] != null
-                  ? DateTime.parse(data['createdAt'])
-                  : DateTime.now(),
-              friendsCount: data['friendsCount'] ?? 0,
-              wishlistsCount: data['wishlistCount'] ?? data['wishlistsCount'] ?? 0,
-              eventsCreated: data['eventsCount'] ?? data['eventsCreated'] ?? 0,
-              giftsReceived: data['giftsReceived'] ?? 0,
-              giftsGiven: data['giftsGiven'] ?? 0,
-              privacy: PrivacySettings(
-                profileVisibility: _parseProfileVisibility(
-                  data['privacySettings']?['profileVisibility'] ??
-                      data['privacySettings']?['publicWishlistVisibility'],
-                ),
-                showOnlineStatus:
-                    data['privacySettings']?['showOnlineStatus'] ?? true,
-                allowFriendRequests:
-                    data['privacySettings']?['allowFriendRequests'] ?? true,
-                showWishlistActivity:
-                    data['privacySettings']?['showWishlistActivity'] ?? true,
-              ),
-              interests: interests,
+            final profilePictureUrl = data['profileImage'] ?? data['profilePicture'];
+            
+            // Parse privacy settings safely
+            final privacySettingsData = data['privacySettings'];
+            final profileVisibility = _parseProfileVisibility(
+              privacySettingsData?['profileVisibility'] ??
+                  privacySettingsData?['publicWishlistVisibility'],
             );
-            _isLoading = false;
-            _hasLoaded = true;
-          });
+            
+            // Parse join date safely
+            DateTime joinDate;
+            try {
+              joinDate = data['createdAt'] != null
+                  ? DateTime.parse(data['createdAt'])
+                  : DateTime.now();
+            } catch (e) {
+              debugPrint('Error parsing createdAt: $e');
+              joinDate = DateTime.now();
+            }
+            
+            setState(() {
+              _userProfile = UserProfile(
+                id: data['_id']?.toString() ?? data['id']?.toString() ?? '',
+                name: data['fullName']?.toString() ?? data['name']?.toString() ?? '',
+                email: data['email']?.toString() ?? '',
+                bio: data['bio']?.toString(),
+                profilePicture: profilePictureUrl?.toString(),
+                handle: data['handle']?.toString(),
+                joinDate: joinDate,
+                friendsCount: (data['friendsCount'] as num?)?.toInt() ?? 0,
+                wishlistsCount: (data['wishlistCount'] as num?)?.toInt() ??
+                    (data['wishlistsCount'] as num?)?.toInt() ?? 0,
+                eventsCreated: (data['eventsCount'] as num?)?.toInt() ??
+                    (data['eventsCreated'] as num?)?.toInt() ?? 0,
+                giftsReceived: (data['giftsReceived'] as num?)?.toInt() ?? 0,
+                giftsGiven: (data['giftsGiven'] as num?)?.toInt() ?? 0,
+                privacy: PrivacySettings(
+                  profileVisibility: profileVisibility,
+                  showOnlineStatus:
+                      privacySettingsData?['showOnlineStatus'] as bool? ?? true,
+                  allowFriendRequests:
+                      privacySettingsData?['allowFriendRequests'] as bool? ?? true,
+                  showWishlistActivity:
+                      privacySettingsData?['showWishlistActivity'] as bool? ?? true,
+                ),
+                interests: interests,
+              );
+              
+              _isLoading = false;
+              _hasLoaded = true;
+              _errorMessage = null;
+            });
+            
+            // Update global AuthRepository profile picture for sync across app
+            authRepository.updateProfilePicture(profilePictureUrl?.toString());
+            
+            // Update ProfileCubit with current profile image (if available)
+            // Use try-catch to handle cases where ProfileCubit is not available yet
+            // Also check if context is still mounted before accessing BlocProvider
+            if (mounted) {
+              try {
+                final cubit = context.read<ProfileCubit>();
+                cubit.setCurrentProfileImage(profilePictureUrl?.toString());
+              } catch (e) {
+                // ProfileCubit not available yet - will be set when BlocProvider is created
+                // This is normal if _loadUserProfile is called before build() completes
+                debugPrint('ProfileCubit not available in _loadUserProfile (this is normal): $e');
+              }
+            }
+          } catch (parseError) {
+            // Handle parsing errors specifically
+            debugPrint('Error parsing profile data: $parseError');
+            if (mounted) {
+              setState(() {
+                _errorMessage = 'Failed to parse profile data: $parseError';
+                _isLoading = false;
+                _hasLoaded = true;
+              });
+            }
+          }
         }
       } else {
         if (mounted) {
           setState(() {
-            _errorMessage = response['message'] ?? 'Failed to load profile';
+            _errorMessage = response['message']?.toString() ?? 'Failed to load profile';
             _isLoading = false;
             _hasLoaded = true; // Mark as loaded even on error to prevent retry loops
           });
         }
       }
     } on ApiException catch (e) {
+      debugPrint('ApiException in _loadUserProfile: ${e.message}');
       if (mounted) {
         setState(() {
           _errorMessage = e.message;
@@ -1745,7 +1838,9 @@ class ProfileScreenState extends State<ProfileScreen>
           _hasLoaded = true;
         });
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('Unexpected error in _loadUserProfile: $e');
+      debugPrint('Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load profile. Please try again.';
@@ -1753,7 +1848,6 @@ class ProfileScreenState extends State<ProfileScreen>
           _hasLoaded = true;
         });
       }
-
     }
   }
 
@@ -1857,7 +1951,14 @@ class ProfileScreenState extends State<ProfileScreen>
 
   // Public method to refresh profile from outside (e.g., from MainNavigation)
   void refreshProfile() {
-    _loadUserProfile(forceRefresh: true);
+    // Only refresh if not already loading and data exists
+    // This prevents unnecessary reloads when returning from full-screen viewer
+    if (!_isLoading && _hasLoaded) {
+      debugPrint('ProfileScreen: refreshProfile called - refreshing...');
+      _loadUserProfile(forceRefresh: true);
+    } else {
+      debugPrint('ProfileScreen: refreshProfile called but skipping (_isLoading: $_isLoading, _hasLoaded: $_hasLoaded)');
+    }
   }
 
   /// Build Interests Section Widget

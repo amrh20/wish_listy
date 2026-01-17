@@ -101,9 +101,14 @@ class _MainNavigationState extends State<MainNavigation>
   void didPopNext() {
     // We returned to MainNavigation from a pushed route (e.g., details/create).
     // Refresh the currently visible tab so it reflects the latest backend state.
+    // EXCEPT for Profile tab - it should only refresh on explicit pull-to-refresh
+    // to prevent redundant API calls when returning from full-screen image viewer
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _refreshTab(_currentIndex);
+      // Skip refresh for Profile tab (index 4) to prevent reload when closing full-screen viewer
+      if (_currentIndex != 4) {
+        _refreshTab(_currentIndex);
+      }
     });
   }
 

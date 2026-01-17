@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wish_listy/core/services/api_service.dart';
@@ -22,6 +23,7 @@ class AuthRepository extends ChangeNotifier {
   String? _userId;
   String? _userEmail;
   String? _userName;
+  String? _profilePicture; // Global profile picture for sync across screens
 
   // Getters
   UserState get userState => _userState;
@@ -31,6 +33,13 @@ class AuthRepository extends ChangeNotifier {
   String? get userId => _userId;
   String? get userEmail => _userEmail;
   String? get userName => _userName;
+  String? get profilePicture => _profilePicture;
+  
+  // Update profile picture globally
+  void updateProfilePicture(String? imageUrl) {
+    _profilePicture = imageUrl;
+    notifyListeners();
+  }
 
   // Initialize auth state and load saved token
   Future<void> initialize() async {
@@ -483,17 +492,83 @@ class AuthRepository extends ChangeNotifier {
     }
   }
 
-  Future<void> resetPassword({
+  /// Check if account exists and has linked email
+  /// Returns: {"success": true, "email": "..."} or {"success": true, "email_linked": false} or {"success": false, "message": "..."}
+  Future<Map<String, dynamic>> checkAccount(String username) async {
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('🔍 AuthRepository: checkAccount called');
+    debugPrint('🔍 AuthRepository: Username: "$username"');
+    try {
+      debugPrint('🔍 AuthRepository: Step 1 - Preparing API call...');
+      debugPrint('🔍 AuthRepository: Endpoint: POST /auth/check-account');
+      debugPrint('🔍 AuthRepository: Request data: {username: "$username"}');
+      
+      debugPrint('🔍 AuthRepository: Step 2 - Calling _apiService.post()...');
+      final response = await _apiService.post(
+        '/auth/check-account',
+        data: {'username': username},
+      );
+      
+      debugPrint('✅ AuthRepository: API call completed successfully');
+      debugPrint('🔍 AuthRepository: Response received: $response');
+      debugPrint('═══════════════════════════════════════════════════════');
+      return response;
+    } on ApiException catch (e) {
+      debugPrint('❌ AuthRepository: ApiException caught');
+      debugPrint('❌ ApiException message: ${e.message}');
+      debugPrint('❌ ApiException statusCode: ${e.statusCode}');
+      debugPrint('❌ ApiException kind: ${e.kind}');
+      debugPrint('═══════════════════════════════════════════════════════');
+      rethrow;
+    } catch (e, stackTrace) {
+      debugPrint('❌ AuthRepository: Unexpected exception caught');
+      debugPrint('❌ Error: $e');
+      debugPrint('❌ Stack trace: $stackTrace');
+      debugPrint('═══════════════════════════════════════════════════════');
+      throw Exception('Failed to check account: $e');
+    }
+  }
+
+  /// Request password reset link
+  /// [username] can be email or phone
+  /// [newEmail] is optional - used when account doesn't have linked email
+  Future<Map<String, dynamic>> requestReset(
+    String username, {
+    String? newEmail,
+  }) async {
+    try {
+      final data = <String, dynamic>{'username': username};
+      if (newEmail != null && newEmail.isNotEmpty) {
+        data['email'] = newEmail;
+      }
+
+      final response = await _apiService.post(
+        '/auth/request-reset',
+        data: data,
+      );
+      return response;
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Failed to request reset: $e');
+    }
+  }
+
+  /// Reset password using token from email link
+  Future<Map<String, dynamic>> resetPassword({
     required String token,
     required String newPassword,
   }) async {
     try {
-      await _apiService.post(
+      final response = await _apiService.post(
         '/auth/reset-password',
-        data: {'token': token, 'password': newPassword},
+        data: {'token': token, 'newPassword': newPassword},
       );
+      return response;
+    } on ApiException {
+      rethrow;
     } catch (e) {
-      throw Exception('Failed to reset password');
+      throw Exception('Failed to reset password: $e');
     }
   }
 

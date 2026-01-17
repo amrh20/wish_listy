@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wish_listy/core/widgets/splash_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/signup_screen.dart';
 import '../../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../../features/auth/presentation/screens/new_password_screen.dart';
 import '../../features/auth/presentation/screens/legal_info_screen.dart';
+import '../../features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:wish_listy/features/profile/presentation/screens/home_screen.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 import '../../features/wishlists/presentation/screens/my_wishlists_screen.dart';
@@ -44,6 +47,7 @@ class AppRoutes {
   static const String login = '/login';
   static const String signup = '/signup';
   static const String forgotPassword = '/forgot-password';
+  static const String resetPassword = '/reset-password';
   static const String home = '/home';
   static const String mainNavigation = '/main';
   static const String myWishlists = '/my-wishlists';
@@ -84,7 +88,8 @@ class AppRoutes {
     welcome: (context) => OnboardingScreen(),
     login: (context) => LoginScreen(),
     signup: (context) => SignupScreen(),
-    forgotPassword: (context) => ForgotPasswordScreen(),
+    // forgotPassword is handled in onGenerateRoute to provide BlocProvider
+    // forgotPassword: (context) => ForgotPasswordScreen(),
     home: (context) => HomeScreen(),
     mainNavigation: (context) => MainNavigation(),
     myWishlists: (context) => MyWishlistsScreen(),
@@ -263,6 +268,32 @@ class AppRoutes {
         builder: (context) => LegalInfoScreen(
           title: args['title'] ?? 'Legal Information',
           content: args['content'] ?? '',
+        ),
+      );
+    } else if (settings.name == forgotPassword) {
+      // Wrap ForgotPasswordScreen with BlocProvider to ensure AuthCubit is available
+      return MaterialPageRoute(
+        builder: (context) => BlocProvider<AuthCubit>(
+          create: (context) => AuthCubit(),
+          child: const ForgotPasswordScreen(),
+        ),
+      );
+    } else if (settings.name == resetPassword) {
+      final args = settings.arguments as Map<String, dynamic>?;
+      final token = args?['token'] as String?;
+      if (token != null && token.isNotEmpty) {
+        return MaterialPageRoute(
+          builder: (context) => BlocProvider<AuthCubit>(
+            create: (context) => AuthCubit(),
+            child: NewPasswordScreen(token: token),
+          ),
+        );
+      }
+      // If token is missing, redirect to forgot password or login
+      return MaterialPageRoute(
+        builder: (context) => BlocProvider<AuthCubit>(
+          create: (context) => AuthCubit(),
+          child: const ForgotPasswordScreen(),
         ),
       );
     }

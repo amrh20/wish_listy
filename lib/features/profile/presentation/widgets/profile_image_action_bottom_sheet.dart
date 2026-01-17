@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_utils.dart';
 import 'package:wish_listy/features/profile/presentation/cubit/profile_cubit.dart';
 
@@ -42,6 +44,8 @@ class ProfileImageActionBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
@@ -49,7 +53,7 @@ class ProfileImageActionBottomSheet extends StatelessWidget {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -70,7 +74,7 @@ class ProfileImageActionBottomSheet extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 height: 56,
-                child: ElevatedButton.icon(
+                child: ElevatedButton(
                   onPressed: () async {
                     // Get the cubit before closing the bottom sheet
                     final cubit = context.read<ProfileCubit>();
@@ -79,18 +83,6 @@ class ProfileImageActionBottomSheet extends StatelessWidget {
                     await Future.delayed(const Duration(milliseconds: 100));
                     await cubit.pickImage(ImageSource.camera);
                   },
-                  icon: const Icon(
-                    Icons.camera_alt_outlined,
-                    size: 24,
-                    color: Colors.white,
-                  ),
-                  label: Text(
-                    'Take Photo',
-                    style: AppStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -98,6 +90,29 @@ class ProfileImageActionBottomSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 0,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.camera_alt_outlined,
+                        size: 24,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          localization.translate('profile.takePhoto'),
+                          style: AppStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -107,7 +122,7 @@ class ProfileImageActionBottomSheet extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 height: 56,
-                child: OutlinedButton.icon(
+                child: OutlinedButton(
                   onPressed: () async {
                     // Get the cubit before closing the bottom sheet
                     final cubit = context.read<ProfileCubit>();
@@ -116,24 +131,35 @@ class ProfileImageActionBottomSheet extends StatelessWidget {
                     await Future.delayed(const Duration(milliseconds: 100));
                     await cubit.pickImage(ImageSource.gallery);
                   },
-                  icon: Icon(
-                    Icons.photo_library_outlined,
-                    size: 24,
-                    color: AppColors.primary,
-                  ),
-                  label: Text(
-                    'Choose from Gallery',
-                    style: AppStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
-                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary, width: 2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.photo_library_outlined,
+                        size: 24,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          localization.translate('profile.chooseFromGallery'),
+                          style: AppStyles.bodyMedium.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -144,15 +170,15 @@ class ProfileImageActionBottomSheet extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   height: 56,
-                  child: TextButton.icon(
+                  child: TextButton(
                     onPressed: () async {
                       // Show confirmation dialog
                       final confirmed = await AppUtils.showConfirmDialog(
                         context,
-                        title: 'Remove Photo',
-                        message: 'Are you sure you want to remove your profile photo?',
-                        confirmText: 'Remove',
-                        cancelText: 'Cancel',
+                        title: localization.translate('profile.removePhoto'),
+                        message: localization.translate('profile.confirmRemovePhoto'),
+                        confirmText: localization.translate('app.remove'),
+                        cancelText: localization.translate('app.cancel'),
                         confirmColor: AppColors.error,
                       );
 
@@ -161,23 +187,34 @@ class ProfileImageActionBottomSheet extends StatelessWidget {
                         context.read<ProfileCubit>().deleteProfileImage();
                       }
                     },
-                    icon: const Icon(
-                      Icons.delete_outline,
-                      size: 24,
-                      color: AppColors.error,
-                    ),
-                    label: Text(
-                      'Remove Photo',
-                      style: AppStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.error,
-                      ),
-                    ),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.error,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.delete_outline,
+                          size: 24,
+                          color: AppColors.error,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            localization.translate('profile.removePhoto'),
+                            style: AppStyles.bodyMedium.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.error,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
