@@ -233,7 +233,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                     isEditing: widget.wishlistId != null,
                     onBack: _handleBackNavigation,
                     getTitle: () => widget.wishlistId != null
-                        ? 'Edit Wishlist'
+                        ? localization.translate('wishlists.editWishlist')
                         : localization.translate('wishlists.createWishlist'),
                     getSubtitle: () => widget.wishlistId != null
                         ? localization.translate('wishlists.wishlistDescriptionOptional')
@@ -407,7 +407,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                                   onCancel: () => Navigator.pop(context),
                                   getCreateButtonText: () =>
                                       widget.wishlistId != null
-                                      ? 'Update Wishlist'
+                                      ? localization.translate('wishlists.updateWishlist') ?? localization.translate('wishlists.editWishlist')
                                       : localization.translate(
                                           'wishlists.createWishlist',
                                         ),
@@ -501,12 +501,15 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     } on ApiException catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showErrorSnackBar('Failed to load wishlist: ${e.message}');
+        final localization = Provider.of<LocalizationService>(context, listen: false);
+        final errorMsg = e.message ?? localization.translate('wishlists.failedToLoadWishlist') ?? 'Failed to load wishlist. Please try again.';
+        _showErrorSnackBar(errorMsg);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        _showErrorSnackBar('Failed to load wishlist. Please try again.');
+        final localization = Provider.of<LocalizationService>(context, listen: false);
+        _showErrorSnackBar(localization.translate('wishlists.failedToLoadWishlist') ?? 'Failed to load wishlist. Please try again.');
       }
     }
   }
@@ -812,12 +815,13 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
 
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     ConfirmationDialog.show(
       context: context,
       isSuccess: false,
-      title: 'Failed to Create Wishlist',
+      title: localization.translate('wishlists.failedToCreateWishlist') ?? 'Failed to Create Wishlist',
       message: message,
-      primaryActionLabel: 'Try Again',
+      primaryActionLabel: localization.translate('common.tryAgain'),
       onPrimaryAction: () {
         // User can try again by submitting the form again
       },

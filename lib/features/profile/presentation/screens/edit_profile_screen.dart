@@ -93,9 +93,10 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         setState(() {
           _isLoadingData = false;
         });
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to load profile data. Please try again.'),
+            content: Text(localization.translate('profile.failedToLoadProfile') ?? 'Failed to load profile data. Please try again.'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -453,7 +454,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               ),
               const SizedBox(width: 8),
               Text(
-                'Contact Information',
+                localization.translate('profile.contactInformation') ?? 'Contact Information',
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -511,7 +512,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
               Icon(Icons.info_outline, color: AppColors.accent, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Additional Information',
+                localization.translate('profile.additionalInformation') ?? 'Additional Information',
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -813,7 +814,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.message ?? 'Failed to update profile. Please try again.'),
+            content: Text(e.message ?? localization.translate('profile.failedToUpdateProfile') ?? 'Failed to update profile. Please try again.'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -825,7 +826,7 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update profile. Please try again.'),
+            content: Text(localization.translate('profile.failedToUpdateProfile') ?? 'Failed to update profile. Please try again.'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

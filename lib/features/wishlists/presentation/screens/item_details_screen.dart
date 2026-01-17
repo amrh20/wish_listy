@@ -1206,6 +1206,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       return;
     }
     
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1219,7 +1220,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Delete Item',
+                localization.translate('details.deleteItem'),
                 style: AppStyles.headingSmall.copyWith(
                   fontWeight: FontWeight.bold,
                 ),

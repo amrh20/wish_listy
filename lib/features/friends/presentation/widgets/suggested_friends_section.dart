@@ -536,7 +536,7 @@ class _SuggestionUserCardState extends State<_SuggestionUserCard> {
                               ),
                               child: Text(
                                 widget.isRequested
-                                    ? widget.localization.translate('wishlists.undo')
+                                    ? widget.localization.translate('common.undo')
                                     : widget.localization.translate('add'),
                                 style: AppStyles.bodyMedium.copyWith(
                                   color: widget.isRequested

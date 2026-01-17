@@ -152,8 +152,8 @@ class CategorySelectionWidget extends StatelessWidget {
             const SizedBox(height: 16),
             CustomTextField(
               controller: customCategoryController,
-              label: 'Custom Category',
-              hint: 'Enter your custom category name',
+              label: Provider.of<LocalizationService>(context, listen: false).translate('wishlists.customCategory') ?? 'Custom Category',
+              hint: Provider.of<LocalizationService>(context, listen: false).translate('wishlists.customCategoryHint') ?? 'Enter your custom category name',
               prefixIcon: Icons.edit_outlined,
               validator: customCategoryValidator,
             ),

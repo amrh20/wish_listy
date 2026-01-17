@@ -408,6 +408,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   void _showGuestShareDialog() {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -425,7 +426,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
             ),
             const SizedBox(height: 20),
             Text(
-              'Save Your Wishlist & Share it!',
+              localization.translate('wishlists.saveYourWishlistAndShare') ?? 'Save Your Wishlist & Share it!',
               style: AppStyles.headingMediumWithContext(
                 context,
               ).copyWith(fontWeight: FontWeight.bold),
@@ -433,7 +434,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
             ),
             const SizedBox(height: 12),
             Text(
-              'To get a unique shareable link and ensure your wishlist is saved permanently, please create a quick, free account.',
+              localization.translate('wishlists.getShareableLinkDescription') ?? 'To get a unique shareable link and ensure your wishlist is saved permanently, please create a quick, free account.',
               style: AppStyles.bodyMediumWithContext(
                 context,
               ).copyWith(color: AppColors.textSecondary, height: 1.5),
@@ -441,7 +442,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
             ),
             const SizedBox(height: 24),
             CustomButton(
-              text: 'Create Account & Get Link',
+              text: localization.translate('wishlists.createAccountGetLink') ?? 'Create Account & Get Link',
               onPressed: () {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, AppRoutes.signup);
@@ -454,7 +455,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
-                'Not Now',
+                localization.translate('dialogs.notNow'),
                 style: AppStyles.bodyMediumWithContext(
                   context,
                 ).copyWith(color: AppColors.textSecondary),
@@ -1159,7 +1160,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: _buildCategoryChip(
-                      label: _getCategoryDisplayName(category),
+                      label: WishlistFormHelpers.getCategoryDisplayName(category, localization),
                       category: category,
                       isSelected: _selectedCategory == category,
                       icon: _getCategoryIcon(category),
@@ -1246,31 +1247,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         ),
       ),
     );
-  }
-
-  /// Get display name for category
-  String _getCategoryDisplayName(String category) {
-    switch (category.toLowerCase()) {
-      case 'general':
-        return 'General';
-      case 'birthday':
-        return 'Birthday';
-      case 'wedding':
-        return 'Wedding';
-      case 'graduation':
-        return 'Graduation';
-      case 'anniversary':
-        return 'Anniversary';
-      case 'holiday':
-        return 'Holiday';
-      case 'babyshower':
-        return 'Baby Shower';
-      case 'housewarming':
-        return 'Housewarming';
-      default:
-        // Return category as is (no transformation)
-        return category;
-    }
   }
 
   /// Get icon for category
