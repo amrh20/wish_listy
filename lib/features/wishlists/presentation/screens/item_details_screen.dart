@@ -394,9 +394,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   /// Determine if bottom action bar should be shown
-  /// Hide when item is purchased/gifted for non-owners
-  /// Hide when item is received (gifted) for everyone
-  /// Show "Mark as Received" only for owner when purchased but not received
+  /// Owner: Only show "Mark as Received" if item is Reserved or Purchased (and not received)
+  /// Non-Owner: Show standard guest actions (Reserve, Cancel Reservation, etc.)
   bool _shouldShowBottomActionBar(WishlistItem item) {
     // Hide during loading
     if (_isLoading || _currentItem == null) {
@@ -405,8 +404,28 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
     final isPurchased = item.isPurchasedValue;
     final isReceived = item.isReceived;
+    final isReserved = item.isReservedValue;
     final isOwner = _isOwner();
 
+    // Owner View Logic
+    if (isOwner) {
+      // Owner should NOT see Reserve, Buy, or Undo actions
+      // Only show "Mark as Received" if item is Reserved or Purchased (and not received)
+      if (isReceived) {
+        // Item is already received - no action needed
+        return false;
+      }
+      
+      // Show "Mark as Received" button if item is Reserved or Purchased
+      if (isReserved || isPurchased) {
+        return true;
+      }
+      
+      // Item is Available - owner sees no action button (Edit is in top bar)
+      return false;
+    }
+
+    // Non-Owner View Logic
     // Hide if item is received (gifted) - for everyone
     if (isReceived) {
       return false;
@@ -418,8 +437,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       return false;
     }
 
-    // Show for owner when purchased but not received (to show "Mark as Received")
-    // Show for available or reserved items
+    // Show for available or reserved items (non-owner)
     return true;
   }
 

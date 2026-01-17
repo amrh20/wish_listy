@@ -31,14 +31,33 @@ class ItemActionBarWidget extends StatelessWidget {
     final isReserved = item.isReservedValue;
     final isReservedByOther = isReserved && !isReservedByMe;
 
+    // Owner View: Only show "Mark as Received" for Reserved or Purchased items
+    if (isOwner) {
+      // Owner should NOT see Reserve, Buy, or Undo actions
+      // Only show "Mark as Received" if item is Reserved or Purchased (and not received)
+      if (item.isReceived) {
+        // Item is already received - no action needed
+        return const SizedBox.shrink();
+      }
+      
+      // Show "Mark as Received" if item is Reserved or Purchased
+      if (isReserved || isPurchased) {
+        return _buildOwnerMarkReceivedBar(localization);
+      }
+      
+      // Item is Available - owner sees no action button (Edit is in top bar)
+      return const SizedBox.shrink();
+    }
+
+    // Non-Owner View: Standard guest actions
     // Case A: Item is Received - No action needed
     if (item.isReceived) {
       return _buildReceivedBar(localization);
     }
 
-    // Case A.5: Purchased but not Received (Owner view)
-    if (isOwner && isPurchased && !item.isReceived) {
-      return _buildPurchasedAwaitingBar(localization);
+    // Case A.5: Purchased but not Received (should not show for non-owners)
+    if (isPurchased && !item.isReceived) {
+      return const SizedBox.shrink();
     }
 
     // Case B: Reserved by ME
@@ -327,6 +346,62 @@ class ItemActionBarWidget extends StatelessWidget {
                   gradientColors: const [AppColors.primary, AppColors.secondary],
                   icon: Icons.bookmark_outline,
                   size: ButtonSize.large,
+                )
+              : const SizedBox.shrink(),
+        ),
+      ),
+    );
+  }
+
+  /// Build "Mark as Received" button for owner view
+  /// Matches the style from wishlist_item_card_widget.dart
+  Widget _buildOwnerMarkReceivedBar(LocalizationService localization) {
+    return Container(
+      padding: const EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 16,
+        bottom: 16,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          width: double.infinity,
+          child: onMarkReceived != null
+              ? ElevatedButton.icon(
+                  onPressed: onMarkReceived,
+                  icon: const Icon(
+                    Icons.check_circle_outline,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                  label: Text(
+                    localization.translate('details.markReceived'),
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    elevation: 0,
+                  ),
                 )
               : const SizedBox.shrink(),
         ),
