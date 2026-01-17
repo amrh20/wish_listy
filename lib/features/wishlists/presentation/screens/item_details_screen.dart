@@ -346,7 +346,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                                     ItemDescriptionWidget(description: item.description),
                                     
                                     // Add bottom padding for sticky bar
-                                    if (!_isOwner() || (item.isPurchasedValue && !item.isReceived)) 
+                                    if (_shouldShowBottomActionBar(item)) 
                                       const SizedBox(height: 100),
                                   ],
                                 ),
@@ -357,9 +357,12 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                         ),
         ),
       ),
-      // Sticky Bottom Action Bar (Guest View or Owner when purchased but not received)
+      // Sticky Bottom Action Bar
       // Hide during loading to prevent showing button before data is ready
-      bottomNavigationBar: (!_isLoading && _currentItem != null && (!_isOwner() || (item.isPurchasedValue && !item.isReceived))) 
+      // Hide when item is purchased/gifted for non-owners
+      // Hide when item is received (gifted) for everyone
+      // Show "Mark as Received" only for owner when purchased but not received
+      bottomNavigationBar: _shouldShowBottomActionBar(item)
           ? ItemActionBarWidget(
               item: item,
               isOwner: _isOwner(),
@@ -388,6 +391,36 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     }
     
     return authService.userId == _wishlistOwnerId;
+  }
+
+  /// Determine if bottom action bar should be shown
+  /// Hide when item is purchased/gifted for non-owners
+  /// Hide when item is received (gifted) for everyone
+  /// Show "Mark as Received" only for owner when purchased but not received
+  bool _shouldShowBottomActionBar(WishlistItem item) {
+    // Hide during loading
+    if (_isLoading || _currentItem == null) {
+      return false;
+    }
+
+    final isPurchased = item.isPurchasedValue;
+    final isReceived = item.isReceived;
+    final isOwner = _isOwner();
+
+    // Hide if item is received (gifted) - for everyone
+    if (isReceived) {
+      return false;
+    }
+
+    // Hide if purchased and user is NOT the owner
+    // (purchaser should not see "Undo" action once purchase is confirmed)
+    if (isPurchased && !isOwner) {
+      return false;
+    }
+
+    // Show for owner when purchased but not received (to show "Mark as Received")
+    // Show for available or reserved items
+    return true;
   }
 
   IconData _getPriorityIcon(ItemPriority priority) {
