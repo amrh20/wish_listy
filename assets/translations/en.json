@@ -158,7 +158,24 @@
     "passwordResetSuccess": "Password Reset Successful!",
     "passwordResetSuccessMessage": "Your password has been reset successfully. You can now sign in with your new password.",
     "invalidResetToken": "Invalid or expired reset token. Please request a new reset link.",
-    "redirectingToLogin": "Redirecting to login..."
+    "redirectingToLogin": "Redirecting to login...",
+    "biometricAuth": "Biometric Authentication",
+    "useBiometric": "Use Fingerprint or Face ID",
+    "biometricReason": "Use your fingerprint or Face ID to access your account",
+    "biometricNotAvailable": "Biometric authentication is not available on this device",
+    "biometricNotEnrolled": "Please set up fingerprint or Face ID in device settings",
+    "biometricLockedOut": "Biometric authentication is temporarily disabled. Try again later",
+    "biometricPermanentlyLockedOut": "Biometric authentication is permanently disabled. Please use password",
+    "biometricCancelled": "Authentication cancelled",
+    "biometricFailed": "Biometric authentication failed. Please try again",
+    "enableBiometric": "Enable Biometric Login",
+    "enableBiometricTitle": "Enable Biometric Login for faster access?",
+    "enableBiometricMessage": "You can use your fingerprint or Face ID to quickly sign in to your account without entering your password.",
+    "enable": "Enable",
+    "notNow": "Not Now",
+    "biometricEnabled": "Biometric login enabled successfully!",
+    "verifyIdentity": "Please verify your identity to continue",
+    "biometricTokenMissing": "Please login manually once to re-sync biometrics."
   },
   "welcome": {
     "title": "Welcome",
@@ -1177,6 +1194,7 @@
     "newNotifications": "{count} new"
   },
   "common": {
+    "pleaseWait": "Please wait...",
     "cancel": "Cancel",
     "general": "General",
     "holiday": "Holiday",

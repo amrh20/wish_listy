@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/socket_service.dart';
+import 'package:wish_listy/core/services/biometric_service.dart';
 
 /// Authentication Repository
 /// Handles all authentication-related operations including:
@@ -34,7 +35,7 @@ class AuthRepository extends ChangeNotifier {
   String? get userEmail => _userEmail;
   String? get userName => _userName;
   String? get profilePicture => _profilePicture;
-  
+
   // Update profile picture globally
   void updateProfilePicture(String? imageUrl) {
     _profilePicture = imageUrl;
@@ -64,11 +65,13 @@ class AuthRepository extends ChangeNotifier {
           print('🔥 User ID: $_userId');
           print('🔥 Token exists: ${token.isNotEmpty}');
           print('═══════════════════════════════════════════════════════');
-          
-          debugPrint('🔌 [Auth] ⏰ [$timestamp] Calling SocketService.connect() from initialize()');
+
+          debugPrint(
+            '🔌 [Auth] ⏰ [$timestamp] Calling SocketService.connect() from initialize()',
+          );
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User ID: $_userId');
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Email: $_userEmail');
-          
+
           try {
             // Use timeout to prevent hanging
             await SocketService().connect().timeout(
@@ -190,10 +193,18 @@ class AuthRepository extends ChangeNotifier {
   }
 
   // Login with credentials using real API
-  Future<bool> loginUser(String username, String password, {String? fcmToken}) async {
+  Future<bool> loginUser(
+    String username,
+    String password, {
+    String? fcmToken,
+  }) async {
     try {
       // Call the API to login
-      final response = await login(username: username, password: password, fcmToken: fcmToken);
+      final response = await login(
+        username: username,
+        password: password,
+        fcmToken: fcmToken,
+      );
 
       // Check if login was successful
       if (response['success'] == true) {
@@ -206,7 +217,10 @@ class AuthRepository extends ChangeNotifier {
         _userId =
             userData?['id'] ?? 'user_${DateTime.now().millisecondsSinceEpoch}';
         _userEmail = userData?['username'] ?? userData?['email'] ?? username;
-        _userName = userData?['fullName'] ?? userData?['name'] ?? username.split('@').first;
+        _userName =
+            userData?['fullName'] ??
+            userData?['name'] ??
+            username.split('@').first;
 
         // Save to local storage
         final prefs = await SharedPreferences.getInstance();
@@ -217,17 +231,26 @@ class AuthRepository extends ChangeNotifier {
 
         // Save auth token if available
         if (token != null) {
+          // Save to SharedPreferences for backward compatibility
           await prefs.setString('auth_token', token);
+
+          // Note: Token will be saved to secure storage after user enables biometric
+          // This happens in the post-login prompt (see login_screen.dart)
+
           // Set token in API service for future requests
           _apiService.setAuthToken(token);
           // Connect to Socket.IO for real-time notifications
           // Use forceReconnect=true to ensure clean connection after logout/login
           final timestamp = DateTime.now().toIso8601String();
-          debugPrint('🔌 [Auth] ⏰ [$timestamp] Calling SocketService.connect(forceReconnect: true) from loginUser()');
+          debugPrint(
+            '🔌 [Auth] ⏰ [$timestamp] Calling SocketService.connect(forceReconnect: true) from loginUser()',
+          );
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User ID: $_userId');
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Email: $_userEmail');
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Name: $_userName');
-          debugPrint('🔌 [Auth] ⏰ [$timestamp]    Token length: ${token.length}');
+          debugPrint(
+            '🔌 [Auth] ⏰ [$timestamp]    Token length: ${token.length}',
+          );
           await SocketService().connect(forceReconnect: true);
         }
 
@@ -235,12 +258,13 @@ class AuthRepository extends ChangeNotifier {
         return true;
       } else {
         // Login failed - extract error message from response and throw ApiException
-        final errorMessage = response['message'] ?? 
-                            response['error'] ?? 
-                            'Login failed. Please check your credentials.';
-        
+        final errorMessage =
+            response['message'] ??
+            response['error'] ??
+            'Login failed. Please check your credentials.';
+
         debugPrint('❌ Login failed: $errorMessage');
-        
+
         // Throw ApiException with the actual error message from backend
         throw ApiException(
           errorMessage,
@@ -306,11 +330,15 @@ class AuthRepository extends ChangeNotifier {
           _apiService.setAuthToken(token);
           // Connect to Socket.IO for real-time notifications
           final timestamp = DateTime.now().toIso8601String();
-          debugPrint('🔌 [Auth] ⏰ [$timestamp] Calling SocketService.connect() from registerUser()');
+          debugPrint(
+            '🔌 [Auth] ⏰ [$timestamp] Calling SocketService.connect() from registerUser()',
+          );
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User ID: $_userId');
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Email: $_userEmail');
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Name: $_userName');
-          debugPrint('🔌 [Auth] ⏰ [$timestamp]    Token length: ${token.length}');
+          debugPrint(
+            '🔌 [Auth] ⏰ [$timestamp]    Token length: ${token.length}',
+          );
           await SocketService().connect();
         }
 
@@ -331,18 +359,33 @@ class AuthRepository extends ChangeNotifier {
     try {
       // Disconnect from Socket.IO
       SocketService().disconnect();
-      
+
       // Call API to logout
       await _apiService.post('/auth/logout');
     } catch (e) {
       // Even if API logout fails, clear local data
     }
 
+    // IMPORTANT: Do NOT clear biometric token on logout!
+    // The biometric token should remain in secure storage so the user can
+    // log back in using biometrics without needing to re-enable it.
+    // We only clear the session token from SharedPreferences.
+    // The biometric token will be used on next login if biometrics are enabled.
+    
+    // Get user identifier before clearing local state (for logging only)
+    final currentEmail = _userEmail;
+
     // Clear local state
     _userState = UserState.guest;
     _userId = null;
     _userEmail = null;
     _userName = null;
+
+    // Log that we're keeping biometric data
+    if (currentEmail != null && currentEmail.isNotEmpty) {
+      debugPrint('🔐 [Auth] Logout: Keeping biometric data for $currentEmail');
+      debugPrint('   ✅ User can log back in using biometrics without re-enabling');
+    }
 
     // Clear local storage
     final prefs = await SharedPreferences.getInstance();
@@ -363,7 +406,7 @@ class AuthRepository extends ChangeNotifier {
     try {
       // Disconnect from Socket.IO
       SocketService().disconnect();
-      
+
       // Call API to delete account
       await _apiService.delete('/auth/account');
     } catch (e) {
@@ -401,11 +444,13 @@ class AuthRepository extends ChangeNotifier {
     // Accept phone numbers with or without +, spaces, dashes, parentheses
     // Remove all non-digit characters except +
     final cleanPhone = phone.replaceAll(RegExp(r'[\s\-()]'), '');
-    
+
     // Check if starts with + (international format) or just digits
     if (cleanPhone.startsWith('+')) {
       // International format: + followed by 7-15 digits
-      final digitsOnly = cleanPhone.substring(1).replaceAll(RegExp(r'[^\d]'), '');
+      final digitsOnly = cleanPhone
+          .substring(1)
+          .replaceAll(RegExp(r'[^\d]'), '');
       return digitsOnly.length >= 7 && digitsOnly.length <= 15;
     } else {
       // Local format: 7-15 digits only
@@ -502,13 +547,13 @@ class AuthRepository extends ChangeNotifier {
       debugPrint('🔍 AuthRepository: Step 1 - Preparing API call...');
       debugPrint('🔍 AuthRepository: Endpoint: POST /auth/check-account');
       debugPrint('🔍 AuthRepository: Request data: {username: "$username"}');
-      
+
       debugPrint('🔍 AuthRepository: Step 2 - Calling _apiService.post()...');
       final response = await _apiService.post(
         '/auth/check-account',
         data: {'username': username},
       );
-      
+
       debugPrint('✅ AuthRepository: API call completed successfully');
       debugPrint('🔍 AuthRepository: Response received: $response');
       debugPrint('═══════════════════════════════════════════════════════');
@@ -550,15 +595,11 @@ class AuthRepository extends ChangeNotifier {
       return response;
     } on ApiException catch (e) {
       // Check if this is a 400 error with requiresEmail flag
-      if (e.statusCode == 400 && 
-          e.data is Map && 
+      if (e.statusCode == 400 &&
+          e.data is Map &&
           e.data['requiresEmail'] == true) {
         // Return special response instead of throwing
-        return {
-          'success': false,
-          'requiresEmail': true,
-          'message': e.message,
-        };
+        return {'success': false, 'requiresEmail': true, 'message': e.message};
       }
       rethrow;
     } catch (e) {
@@ -640,13 +681,14 @@ class AuthRepository extends ChangeNotifier {
       // Re-throw ApiException to preserve error details
       rethrow;
     } catch (e) {
-
       throw Exception('Failed to load profile. Please try again.');
     }
   }
 
   // Update user profile via PATCH API
-  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> profileData) async {
+  Future<Map<String, dynamic>> updateProfile(
+    Map<String, dynamic> profileData,
+  ) async {
     try {
       if (_userId == null) {
         throw Exception('User not authenticated');

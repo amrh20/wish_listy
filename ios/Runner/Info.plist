@@ -86,5 +86,9 @@
 	<!-- Flutter Deep Linking Support -->
 	<key>FlutterDeepLinkingEnabled</key>
 	<true/>
+	
+	<!-- Face ID Usage Description (English & Arabic) -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>WishListy uses Face ID to securely authenticate and protect your account. Enable biometric login for faster and more secure access to your wishlists.</string>
 </dict>
 </plist>

@@ -165,7 +165,24 @@
     "passwordResetSuccess": "تم إعادة تعيين كلمة المرور بنجاح!",
     "passwordResetSuccessMessage": "تم إعادة تعيين كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.",
     "invalidResetToken": "رمز إعادة التعيين غير صالح أو منتهي الصلاحية. يرجى طلب رابط إعادة تعيين جديد.",
-    "redirectingToLogin": "جاري التوجيه إلى صفحة تسجيل الدخول..."
+    "redirectingToLogin": "جاري التوجيه إلى صفحة تسجيل الدخول...",
+    "biometricAuth": "المصادقة البيومترية",
+    "useBiometric": "استخدم البصمة أو Face ID",
+    "biometricReason": "استخدم البصمة أو Face ID للوصول إلى حسابك",
+    "biometricNotAvailable": "المصادقة البيومترية غير متاحة على هذا الجهاز",
+    "biometricNotEnrolled": "يرجى إعداد البصمة أو Face ID في إعدادات الجهاز",
+    "biometricLockedOut": "تم تعطيل المصادقة البيومترية مؤقتاً. حاول مرة أخرى لاحقاً",
+    "biometricPermanentlyLockedOut": "تم تعطيل المصادقة البيومترية بشكل دائم. يرجى استخدام كلمة المرور",
+    "biometricCancelled": "تم إلغاء المصادقة",
+    "biometricFailed": "فشلت المصادقة البيومترية. يرجى المحاولة مرة أخرى",
+    "enableBiometric": "تفعيل تسجيل الدخول البيومتري",
+    "enableBiometricTitle": "تفعيل تسجيل الدخول البيومتري للوصول السريع؟",
+    "enableBiometricMessage": "يمكنك استخدام البصمة أو Face ID لتسجيل الدخول السريع إلى حسابك دون إدخال كلمة المرور.",
+    "enable": "تفعيل",
+    "notNow": "ليس الآن",
+    "biometricEnabled": "تم تفعيل تسجيل الدخول البيومتري بنجاح!",
+    "verifyIdentity": "يرجى التحقق من هويتك للمتابعة",
+    "biometricTokenMissing": "يرجى تسجيل الدخول يدوياً مرة واحدة لمزامنة البيومترية."
   },
   "welcome": {
     "title": "مرحباً بك",
@@ -1177,6 +1194,7 @@
     "newNotifications": "{count} جديد"
   },
   "common": {
+    "pleaseWait": "يرجى الإنتظار...",
     "cancel": "إلغاء",
     "general": "عام",
     "holiday": "عطلة",
