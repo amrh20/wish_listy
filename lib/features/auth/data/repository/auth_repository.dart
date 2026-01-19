@@ -239,11 +239,11 @@ class AuthRepository extends ChangeNotifier {
 
           // Set token in API service for future requests
           _apiService.setAuthToken(token);
-          // Connect to Socket.IO for real-time notifications
+          // Authenticate Socket.IO for real-time notifications (Option B: emit auth event)
           // Use forceReconnect=true to ensure clean connection after logout/login
           final timestamp = DateTime.now().toIso8601String();
           debugPrint(
-            '🔌 [Auth] ⏰ [$timestamp] Calling SocketService.connect(forceReconnect: true) from loginUser()',
+            '🔌 [Auth] ⏰ [$timestamp] Calling SocketService.authenticateSocket() from loginUser()',
           );
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User ID: $_userId');
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Email: $_userEmail');
@@ -251,7 +251,7 @@ class AuthRepository extends ChangeNotifier {
           debugPrint(
             '🔌 [Auth] ⏰ [$timestamp]    Token length: ${token.length}',
           );
-          await SocketService().connect(forceReconnect: true);
+          await SocketService().authenticateSocket(token);
         }
 
         notifyListeners();
@@ -328,10 +328,10 @@ class AuthRepository extends ChangeNotifier {
           await prefs.setString('auth_token', token);
           // Set token in API service for future requests
           _apiService.setAuthToken(token);
-          // Connect to Socket.IO for real-time notifications
+          // Authenticate Socket.IO for real-time notifications (Option B: emit auth event)
           final timestamp = DateTime.now().toIso8601String();
           debugPrint(
-            '🔌 [Auth] ⏰ [$timestamp] Calling SocketService.connect() from registerUser()',
+            '🔌 [Auth] ⏰ [$timestamp] Calling SocketService.authenticateSocket() from registerUser()',
           );
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User ID: $_userId');
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Email: $_userEmail');
@@ -339,7 +339,7 @@ class AuthRepository extends ChangeNotifier {
           debugPrint(
             '🔌 [Auth] ⏰ [$timestamp]    Token length: ${token.length}',
           );
-          await SocketService().connect();
+          await SocketService().authenticateSocket(token);
         }
 
         notifyListeners();
@@ -498,6 +498,47 @@ class AuthRepository extends ChangeNotifier {
     }
 
     return null; // Username is valid
+  }
+
+  // Verify JWT token by calling API endpoint
+  // Returns user data if token is valid, throws exception if invalid
+  Future<Map<String, dynamic>> verifyToken(String token) async {
+    try {
+      // Temporarily set the token in API service for this request
+      _apiService.setAuthToken(token);
+      
+      // Call API endpoint to verify token (e.g., /auth/me or /users/me)
+      // This endpoint should return user data if token is valid
+      final response = await _apiService.get('/auth/me');
+      
+      // Extract user data from response
+      final userData = response['user'] ?? response['data'] ?? response;
+      
+      // Update local state with verified user data
+      _userState = UserState.authenticated;
+      _userId = userData['id'] ?? userData['_id'];
+      _userEmail = userData['username'] ?? userData['email'];
+      _userName = userData['fullName'] ?? userData['name'];
+      
+      return {
+        'success': true,
+        'user': userData,
+        'token': token,
+      };
+    } on ApiException catch (e) {
+      // Token is invalid or expired
+      _apiService.clearAuthToken();
+      return {
+        'success': false,
+        'message': e.message,
+      };
+    } catch (e) {
+      _apiService.clearAuthToken();
+      return {
+        'success': false,
+        'message': 'Token verification failed: ${e.toString()}',
+      };
+    }
   }
 
   // Additional API methods

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/auth/presentation/cubit/auth_state.dart';
@@ -148,6 +149,45 @@ class AuthCubit extends Cubit<AuthState> {
       emit(ResetPasswordError(
         'Failed to reset password: ${e.toString()}',
       ));
+    }
+  }
+
+  /// Login with a stored JWT token (e.g., from biometric authentication)
+  /// Verifies the token with the API, syncs to SharedPreferences, and initializes AuthRepository
+  Future<void> loginWithToken(String token) async {
+    try {
+      emit(AuthLoading());
+
+      // Verify token by calling API
+      final response = await _repository.verifyToken(token);
+
+      if (response['success'] == true) {
+        // Token is valid, sync to SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', token);
+        await prefs.setBool('is_logged_in', true);
+
+        // Extract user data from response
+        final userData = response['user'];
+        if (userData != null) {
+          await prefs.setString('user_id', userData['id'] ?? userData['_id'] ?? '');
+          await prefs.setString('user_email', userData['username'] ?? userData['email'] ?? '');
+          await prefs.setString('user_name', userData['fullName'] ?? userData['name'] ?? '');
+        }
+
+        // Initialize AuthRepository to sync state
+        await _repository.initialize();
+
+        emit(const AuthAuthenticated());
+      } else {
+        emit(AuthError(
+          response['message'] ?? 'Invalid token. Please login again.',
+        ));
+      }
+    } on ApiException catch (e) {
+      emit(AuthError('Token verification failed: ${e.message}'));
+    } catch (e) {
+      emit(AuthError('Token verification failed: ${e.toString()}'));
     }
   }
 }

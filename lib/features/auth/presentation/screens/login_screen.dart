@@ -297,9 +297,9 @@ class _LoginScreenState extends State<LoginScreen>
         // This will set the user state correctly
         await authService.initialize();
 
-        // Connect to Socket.IO
+        // Authenticate Socket.IO (Option B: emit auth event)
         try {
-          await SocketService().connect(forceReconnect: true);
+          await SocketService().authenticateSocket(token);
         } catch (e) {
           debugPrint('⚠️ [BiometricLogin] Socket connection failed: $e');
         }
@@ -1767,6 +1767,14 @@ class _LoginScreenState extends State<LoginScreen>
                                   backgroundColor: AppColors.error,
                                 ),
                               );
+                            }
+
+                            // Authenticate Socket.IO after enabling biometric (user already logged in)
+                            try {
+                              await SocketService().authenticateSocket(token);
+                              debugPrint('✅ [BiometricEnable] Socket authenticated');
+                            } catch (e) {
+                              debugPrint('⚠️ [BiometricEnable] Socket authentication failed: $e');
                             }
 
                             // Navigate to main app IMMEDIATELY after enabling (or failing)

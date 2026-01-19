@@ -63,10 +63,26 @@ class BiometricService {
     return '$_userNameKeyPrefix$sanitized';
   }
 
-  /// Sanitize identifier by trimming whitespace and converting to lowercase
-  /// This ensures consistent key generation
+  /// Sanitize identifier by trimming whitespace, converting to lowercase,
+  /// and normalizing Arabic numbers (٠-٩) to English numbers (0-9)
+  /// This ensures consistent key generation regardless of input format
   String _sanitizeIdentifier(String identifier) {
-    return identifier.trim().toLowerCase();
+    String normalized = identifier.trim().toLowerCase();
+    
+    // Normalize Arabic numbers to English numbers
+    normalized = normalized
+        .replaceAll('٠', '0')
+        .replaceAll('١', '1')
+        .replaceAll('٢', '2')
+        .replaceAll('٣', '3')
+        .replaceAll('٤', '4')
+        .replaceAll('٥', '5')
+        .replaceAll('٦', '6')
+        .replaceAll('٧', '7')
+        .replaceAll('٨', '8')
+        .replaceAll('٩', '9');
+    
+    return normalized;
   }
 
   /// Check if biometric authentication is available on the device

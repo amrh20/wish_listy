@@ -52,7 +52,9 @@ class SocketService {
   /// Connect to socket server with JWT token
   /// [forceReconnect] If true, will disconnect existing socket first, then connect
   /// This is useful after logout/login to ensure clean reconnection
-  Future<void> connect({bool forceReconnect = false}) async {
+  /// [token] Optional token to use instead of reading from SharedPreferences
+  /// This is useful when connecting immediately after login before token is saved
+  Future<void> connect({bool forceReconnect = false, String? token}) async {
     print('═══════════════════════════════════════════════════════');
     print('🚀 SOCKET CONNECT METHOD CALLED!!!');
     print('═══════════════════════════════════════════════════════');
@@ -96,15 +98,19 @@ class SocketService {
       _isConnecting = true;
       debugPrint('🔌 [Socket] ⏰ [$timestamp] Set _isConnecting = true');
 
-      // Get JWT token from SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token');
+      // Get JWT token: use provided token or read from SharedPreferences
+      String? finalToken = token;
+      if (finalToken == null || finalToken.isEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        finalToken = prefs.getString('auth_token');
+      }
       
       final socketUrl = _socketUrl;
       debugPrint('🔌 [Socket] ⏰ [$timestamp] Socket URL: $socketUrl');
-      debugPrint('🔌 [Socket] ⏰ [$timestamp] Token status: ${token != null && token.isNotEmpty ? "✅ Found (${token.length} chars)" : "❌ Missing or empty"}');
+      debugPrint('🔌 [Socket] ⏰ [$timestamp] Token source: ${token != null ? "✅ Provided as parameter" : "📦 From SharedPreferences"}');
+      debugPrint('🔌 [Socket] ⏰ [$timestamp] Token status: ${finalToken != null && finalToken.isNotEmpty ? "✅ Found (${finalToken.length} chars)" : "❌ Missing or empty"}');
 
-      if (token == null || token.isEmpty) {
+      if (finalToken == null || finalToken.isEmpty) {
         _isConnecting = false;
         debugPrint('🔌 [Socket] ⏰ [$timestamp] ❌ Cannot connect: No token available');
         return;
@@ -113,8 +119,8 @@ class SocketService {
       debugPrint('🔌 [Socket] ⏰ [$timestamp] Creating Socket.IO instance...');
       debugPrint('🔌 [Socket] ⏰ [$timestamp] Socket Options:');
       debugPrint('   - Transports: [websocket, polling]');
-      debugPrint('   - Auth: {token: ***${token.substring(token.length > 10 ? token.length - 10 : 0)}}');
-      debugPrint('   - Headers: {Authorization: Bearer ***${token.substring(token.length > 10 ? token.length - 10 : 0)}}');
+      debugPrint('   - Auth: {token: ***${finalToken.substring(finalToken.length > 10 ? finalToken.length - 10 : 0)}}');
+      debugPrint('   - Headers: {Authorization: Bearer ***${finalToken.substring(finalToken.length > 10 ? finalToken.length - 10 : 0)}}');
       debugPrint('   - AutoConnect: disabled (will connect explicitly)');
       debugPrint('   - Timeout: 20000ms');
       
@@ -122,8 +128,8 @@ class SocketService {
         socketUrl,
         IO.OptionBuilder()
             .setTransports(['websocket', 'polling']) // Important: Use both for compatibility
-            .setAuth({'token': token}) // Send token in auth object
-            .setExtraHeaders({'Authorization': 'Bearer $token'}) // Also send in headers as per requirements
+            .setAuth({'token': finalToken}) // Send token in auth object
+            .setExtraHeaders({'Authorization': 'Bearer $finalToken'}) // Also send in headers as per requirements
             .disableAutoConnect() // Disable auto-connect, we'll connect explicitly
             .setTimeout(20000) // 20 seconds timeout
             .build(),
@@ -563,6 +569,53 @@ class SocketService {
       _isConnected = false;
       _isConnecting = false;
       debugPrint('🔌 [Socket] ⏰ [$timestamp]    ⚠️ No socket to disconnect, but flags reset');
+    }
+  }
+
+  /// Authenticate socket with JWT token (Option B: emit auth event without restarting connection)
+  /// If socket is not connected, it will connect first using the provided token
+  /// Emits 'auth' event with token to authenticate the existing connection
+  Future<void> authenticateSocket(String token) async {
+    final timestamp = DateTime.now().toIso8601String();
+    
+    if (_socket == null || !_isConnected) {
+      debugPrint('⚠️ [Socket] ⏰ [$timestamp] Cannot authenticate: Socket not connected');
+      debugPrint('⚠️ [Socket] ⏰ [$timestamp]    Socket exists: ${_socket != null}');
+      debugPrint('⚠️ [Socket] ⏰ [$timestamp]    Is connected: $_isConnected');
+      debugPrint('⚠️ [Socket] ⏰ [$timestamp]    Connecting first with provided token...');
+      
+      // If not connected, connect first using the provided token
+      // This ensures we use the fresh token even if SharedPreferences hasn't been updated yet
+      await connect(token: token);
+      
+      // Wait for connection to establish and listeners to be set up
+      // Use a more reliable approach: wait for _isConnected flag
+      int attempts = 0;
+      while (!_isConnected && attempts < 20) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        attempts++;
+      }
+      
+      if (!_isConnected) {
+        debugPrint('❌ [Socket] ⏰ [$timestamp] Failed to connect after ${attempts * 100}ms, cannot authenticate');
+        return;
+      }
+      
+      debugPrint('✅ [Socket] ⏰ [$timestamp] Connection established, proceeding with auth event...');
+    }
+    
+    debugPrint('🔐 [Socket] ⏰ [$timestamp] Authenticating socket with token...');
+    debugPrint('🔐 [Socket] ⏰ [$timestamp]    Token length: ${token.length}');
+    debugPrint('🔐 [Socket] ⏰ [$timestamp]    Socket ID: ${_socket?.id}');
+    
+    try {
+      // Emit 'auth' event with token (Option B: without restarting connection)
+      // This is important for immediate authentication after login
+      _socket!.emit('auth', {'token': token});
+      debugPrint('✅ [Socket] ⏰ [$timestamp] Auth event emitted successfully');
+      debugPrint('✅ [Socket] ⏰ [$timestamp] Socket is now authenticated and ready to receive notifications');
+    } catch (e) {
+      debugPrint('❌ [Socket] ⏰ [$timestamp] Error emitting auth event: $e');
     }
   }
 
