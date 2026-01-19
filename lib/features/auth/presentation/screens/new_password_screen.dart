@@ -6,14 +6,15 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
+import 'package:wish_listy/core/widgets/unified_snackbar.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:wish_listy/features/auth/presentation/cubit/auth_state.dart';
 
 class NewPasswordScreen extends StatefulWidget {
-  final String? token;
+  final String? identifier; // Username/phone from forgot password screen
 
-  const NewPasswordScreen({super.key, this.token});
+  const NewPasswordScreen({super.key, this.identifier});
 
   @override
   _NewPasswordScreenState createState() => _NewPasswordScreenState();
@@ -22,6 +23,7 @@ class NewPasswordScreen extends StatefulWidget {
 class _NewPasswordScreenState extends State<NewPasswordScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  final _otpController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -35,12 +37,12 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
   bool _obscureConfirmPassword = true;
   bool _isSuccess = false;
 
-  String? get _token {
-    // Get token from widget parameter or route arguments
-    if (widget.token != null) return widget.token;
+  String? get _identifier {
+    // Get identifier from widget parameter or route arguments
+    if (widget.identifier != null) return widget.identifier;
     final args = ModalRoute.of(context)?.settings.arguments;
-    if (args is Map && args['token'] != null) {
-      return args['token'] as String;
+    if (args is Map && args['identifier'] != null) {
+      return args['identifier'] as String;
     }
     return null;
   }
@@ -51,10 +53,10 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
     _initializeAnimations();
     _startAnimations();
 
-    // Validate token on init
-    if (_token == null || _token!.isEmpty) {
+    // Validate identifier on init
+    if (_identifier == null || _identifier!.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showTokenError();
+        _showIdentifierError();
       });
     }
   }
@@ -94,11 +96,11 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
     _animationController.forward();
   }
 
-  void _showTokenError() {
+  void _showIdentifierError() {
     final localization = Provider.of<LocalizationService>(context, listen: false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(localization.translate('auth.invalidResetToken')),
+        content: Text(localization.translate('auth.invalidIdentifier') ?? 'Invalid identifier. Please try again.'),
         backgroundColor: AppColors.error,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -121,6 +123,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
   void dispose() {
     _animationController.dispose();
     _successController.dispose();
+    _otpController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -129,13 +132,19 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
   Future<void> _handleResetPassword() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_token == null || _token!.isEmpty) {
-      _showTokenError();
+    if (_identifier == null || _identifier!.isEmpty) {
+      _showIdentifierError();
       return;
     }
 
+    final otp = _otpController.text.trim();
     final newPassword = _newPasswordController.text.trim();
-    context.read<AuthCubit>().resetPassword(_token!, newPassword);
+    
+    context.read<AuthCubit>().resetPassword(
+      identifier: _identifier!,
+      otp: otp,
+      newPassword: newPassword,
+    );
   }
 
   void _handleBackNavigation() {
@@ -148,40 +157,41 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => AuthCubit(),
-      child: BlocListener<AuthCubit, AuthState>(
-        listener: (context, state) {
-          if (state is ResetPasswordSuccess) {
-            setState(() {
-              _isSuccess = true;
-            });
-            _successController.forward();
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is ResetPasswordSuccess) {
+          final localization = Provider.of<LocalizationService>(context, listen: false);
+          
+          // Show success snackbar
+          UnifiedSnackbar.showSuccess(
+            context: context,
+            message: localization.translate('auth.passwordResetSuccess') ?? 'Password reset successfully!',
+          );
 
-            // Navigate to login after 2 seconds
-            Future.delayed(const Duration(seconds: 2), () {
-              if (mounted) {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  AppRoutes.login,
-                  (route) => false,
-                );
-              }
-            });
-          } else if (state is ResetPasswordError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+          // Navigate to login page after showing snackbar (give user time to see the message)
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (mounted) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.login,
+                (route) => false,
+              );
+            }
+          });
+        } else if (state is ResetPasswordError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
-            );
-          }
-        },
-        child: BlocBuilder<AuthCubit, AuthState>(
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<AuthCubit, AuthState>(
           builder: (context, state) {
             final isLoading = state is AuthLoading;
 
@@ -273,7 +283,6 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
             );
           },
         ),
-      ),
     );
   }
 
@@ -312,6 +321,31 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
         key: _formKey,
         child: Column(
           children: [
+            // OTP Field (6 digits)
+            CustomTextField(
+              controller: _otpController,
+              label: localization.translate('auth.otp') ?? 'OTP Code',
+              hint: localization.translate('auth.enterOtp') ?? 'Enter 6-digit OTP',
+              keyboardType: TextInputType.number,
+              prefixIcon: Icons.pin_outlined,
+              isRequired: true,
+              maxLength: 6,
+              validator: (value) {
+                if (value?.isEmpty ?? true) {
+                  return localization.translate('auth.otpRequired') ?? 'OTP is required';
+                }
+                if (value!.length != 6) {
+                  return localization.translate('auth.otpInvalid') ?? 'OTP must be 6 digits';
+                }
+                if (!RegExp(r'^\d{6}$').hasMatch(value)) {
+                  return localization.translate('auth.otpInvalid') ?? 'OTP must be 6 digits';
+                }
+                return null;
+              },
+            ),
+
+            const SizedBox(height: 24),
+
             // New Password Field
             CustomTextField(
               controller: _newPasswordController,

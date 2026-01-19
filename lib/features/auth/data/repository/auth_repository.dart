@@ -530,16 +530,17 @@ class AuthRepository extends ChangeNotifier {
   }
 
   /// Request password reset link
-  /// [username] can be email or phone
+  /// [identifier] can be email or phone
   /// [newEmail] is optional - used when account doesn't have linked email
+  /// Returns response or throws ApiException with requiresEmail flag in data
   Future<Map<String, dynamic>> requestReset(
-    String username, {
+    String identifier, {
     String? newEmail,
   }) async {
     try {
-      final data = <String, dynamic>{'username': username};
+      final data = <String, dynamic>{'identifier': identifier};
       if (newEmail != null && newEmail.isNotEmpty) {
-        data['email'] = newEmail;
+        data['newEmail'] = newEmail;
       }
 
       final response = await _apiService.post(
@@ -547,22 +548,41 @@ class AuthRepository extends ChangeNotifier {
         data: data,
       );
       return response;
-    } on ApiException {
+    } on ApiException catch (e) {
+      // Check if this is a 400 error with requiresEmail flag
+      if (e.statusCode == 400 && 
+          e.data is Map && 
+          e.data['requiresEmail'] == true) {
+        // Return special response instead of throwing
+        return {
+          'success': false,
+          'requiresEmail': true,
+          'message': e.message,
+        };
+      }
       rethrow;
     } catch (e) {
       throw Exception('Failed to request reset: $e');
     }
   }
 
-  /// Reset password using token from email link
+  /// Reset password using OTP verification
+  /// [identifier] is the username/phone used in request-reset
+  /// [otp] is the 6-digit OTP code
+  /// [newPassword] is the new password
   Future<Map<String, dynamic>> resetPassword({
-    required String token,
+    required String identifier,
+    required String otp,
     required String newPassword,
   }) async {
     try {
-      final response = await _apiService.post(
+      final response = await _apiService.patch(
         '/auth/reset-password',
-        data: {'token': token, 'newPassword': newPassword},
+        data: {
+          'identifier': identifier,
+          'otp': otp,
+          'newPassword': newPassword,
+        },
       );
       return response;
     } on ApiException {

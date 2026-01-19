@@ -302,12 +302,31 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 ),
               ),
             );
-          } else if (state is RequestResetSuccess) {
+          } else if (state is AuthForgotPasswordEmailRequired) {
+            // Handle requiresEmail case - show email field dynamically
+            debugPrint('🔍 BlocListener: AuthForgotPasswordEmailRequired received');
             setState(() {
               _isLoading = false;
-              _isSuccess = true;
+              _isLoadingCheck = false;
+              _accountChecked = true; // Mark as checked to show email field
+              _emailLinked = false; // Show email input field
             });
-            _successController.forward();
+            // Don't show error snackbar - just show email field
+          } else if (state is RequestResetSuccess) {
+            // Navigate to OTP verification screen (NewPasswordScreen) with identifier
+            if (_identifier != null && _identifier!.isNotEmpty) {
+              Navigator.pushNamed(
+                context,
+                AppRoutes.resetPassword,
+                arguments: {'identifier': _identifier!},
+              );
+            } else {
+              setState(() {
+                _isLoading = false;
+                _isSuccess = true;
+              });
+              _successController.forward();
+            }
           } else if (state is RequestResetError) {
             debugPrint('🔍 BlocListener: RequestResetError received - resetting loading state');
             setState(() {

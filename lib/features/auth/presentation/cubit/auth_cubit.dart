@@ -88,6 +88,12 @@ class AuthCubit extends Cubit<AuthState> {
         newEmail: newEmail,
       );
 
+      // Check if requiresEmail flag is set (from 400 error)
+      if (response['requiresEmail'] == true) {
+        emit(AuthForgotPasswordEmailRequired(identifier));
+        return;
+      }
+
       if (response['success'] == true) {
         emit(RequestResetSuccess(
           response['message'] ?? 'Reset link sent successfully',
@@ -98,7 +104,14 @@ class AuthCubit extends Cubit<AuthState> {
         ));
       }
     } on ApiException catch (e) {
-      emit(RequestResetError(e.message));
+      // Check if this is a requiresEmail case (should be handled above, but double-check)
+      if (e.statusCode == 400 && 
+          e.data is Map && 
+          e.data['requiresEmail'] == true) {
+        emit(AuthForgotPasswordEmailRequired(identifier));
+      } else {
+        emit(RequestResetError(e.message));
+      }
     } catch (e) {
       emit(RequestResetError(
         'Failed to request reset: ${e.toString()}',
@@ -106,12 +119,17 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> resetPassword(String token, String newPassword) async {
+  Future<void> resetPassword({
+    required String identifier,
+    required String otp,
+    required String newPassword,
+  }) async {
     try {
       emit(AuthLoading());
 
       final response = await _repository.resetPassword(
-        token: token,
+        identifier: identifier,
+        otp: otp,
         newPassword: newPassword,
       );
 

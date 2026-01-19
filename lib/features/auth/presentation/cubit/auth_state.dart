@@ -51,6 +51,15 @@ class RequestResetError extends AuthState {
   List<Object?> get props => [message];
 }
 
+class AuthForgotPasswordEmailRequired extends AuthState {
+  final String identifier;
+
+  const AuthForgotPasswordEmailRequired(this.identifier);
+
+  @override
+  List<Object?> get props => [identifier];
+}
+
 class ResetPasswordSuccess extends AuthState {
   final String message;
 

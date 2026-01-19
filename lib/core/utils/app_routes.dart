@@ -280,16 +280,16 @@ class AppRoutes {
       );
     } else if (settings.name == resetPassword) {
       final args = settings.arguments as Map<String, dynamic>?;
-      final token = args?['token'] as String?;
-      if (token != null && token.isNotEmpty) {
+      final identifier = args?['identifier'] as String?;
+      if (identifier != null && identifier.isNotEmpty) {
         return MaterialPageRoute(
           builder: (context) => BlocProvider<AuthCubit>(
             create: (context) => AuthCubit(),
-            child: NewPasswordScreen(token: token),
+            child: NewPasswordScreen(identifier: identifier),
           ),
         );
       }
-      // If token is missing, redirect to forgot password or login
+      // If identifier is missing, redirect to forgot password or login
       return MaterialPageRoute(
         builder: (context) => BlocProvider<AuthCubit>(
           create: (context) => AuthCubit(),
