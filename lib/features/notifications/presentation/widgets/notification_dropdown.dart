@@ -32,6 +32,11 @@ class NotificationDropdown extends StatelessWidget {
     // we must listen to `NotificationsCubit` changes here.
     return BlocBuilder<NotificationsCubit, NotificationsState>(
       builder: (context, state) {
+        // Show loading state if notifications are being loaded
+        if (state is NotificationsLoading) {
+          return _buildLoadingState(context);
+        }
+
         final effectiveNotifications =
             state is NotificationsLoaded ? state.notifications : notifications;
         final effectiveUnreadCount =
@@ -177,6 +182,79 @@ class NotificationDropdown extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLoadingState(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    
+    return Container(
+      width: 360,
+      constraints: const BoxConstraints(maxHeight: 400),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey.shade200,
+                  width: 1,
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  localization.translate('app.notifications'),
+                  style: AppStyles.headingMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Loading indicator
+          Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  localization.translate('common.loading') ?? 'Loading...',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                    fontFamily: 'Alexandria',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

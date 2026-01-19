@@ -36,6 +36,8 @@ class HomeScreen extends StatefulWidget {
 
 class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
   late HomeController _controller;
+  bool _isNotificationDropdownOpen = false;
+  DateTime? _lastNotificationTapTime;
 
   @override
   bool get wantKeepAlive => true;
@@ -233,8 +235,22 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                               builder: (buttonContext) {
                                 return Material(
                                   color: Colors.transparent,
-                                  child: InkWell(
+                                    child: InkWell(
                                     onTap: () {
+                                      // Debounce: prevent rapid taps (within 300ms)
+                                      final now = DateTime.now();
+                                      if (_lastNotificationTapTime != null &&
+                                          now.difference(_lastNotificationTapTime!) <
+                                              const Duration(milliseconds: 300)) {
+                                        return;
+                                      }
+                                      _lastNotificationTapTime = now;
+
+                                      // Prevent opening if already open
+                                      if (_isNotificationDropdownOpen) {
+                                        return;
+                                      }
+
                                       _showNotificationDropdown(
                                         buttonContext,
                                         notifications,
@@ -712,21 +728,16 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
     List<AppNotification> notifications,
     int unreadCount,
   ) async {
-    // Load notifications from API
-    final cubit = context.read<NotificationsCubit>();
-    await cubit.loadNotifications();
-    
-    // Dismiss badge (reset unread count)
-    await cubit.dismissBadge();
-    
-    // Get updated state
-    final state = cubit.state;
-    final updatedNotifications = state is NotificationsLoaded
-        ? state.notifications
-        : notifications;
-    final updatedUnreadCount = state is NotificationsLoaded
-        ? state.unreadCount
-        : 0;
+    // Prevent opening if already open
+    if (_isNotificationDropdownOpen) {
+      return;
+    }
+
+    // Mark as open immediately to prevent multiple opens
+    _isNotificationDropdownOpen = true;
+
+    // Show dropdown immediately with current data (no delay)
+    // Load fresh data in the background after opening
     
     // Show dropdown menu positioned below the button
     final RenderBox? button = context.findRenderObject() as RenderBox?;
@@ -797,8 +808,8 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                     child: GestureDetector(
                       onTap: () {}, // Prevent tap from closing when clicking on dropdown
                       child: NotificationDropdown(
-                        notifications: updatedNotifications,
-                        unreadCount: updatedUnreadCount,
+                        notifications: notifications, // Use current data immediately
+                        unreadCount: unreadCount, // Use current count immediately
                       ),
                     ),
                   ),
@@ -825,7 +836,18 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
             ),
           );
         },
-      );
+      ).then((_) {
+        // Reset flag when dialog is closed
+        _isNotificationDropdownOpen = false;
+      });
+
+      // Load fresh notifications in the background (non-blocking)
+      // This updates the dropdown if it's still open via BlocBuilder
+      final cubit = context.read<NotificationsCubit>();
+      cubit.loadNotifications().then((_) {
+        // Dismiss badge after loading (non-blocking)
+        cubit.dismissBadge();
+      });
     }
   }
 }
