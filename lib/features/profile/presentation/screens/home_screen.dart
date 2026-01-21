@@ -10,6 +10,7 @@ import 'package:wish_listy/features/profile/presentation/controllers/home_contro
 import 'package:wish_listy/features/profile/presentation/widgets/home_skeleton.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/empty_home_screen.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/active_dashboard.dart';
+import 'package:wish_listy/features/profile/presentation/widgets/compact_empty_wishlist.dart';
 import 'package:wish_listy/features/profile/presentation/screens/guest_home_screen.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 import 'package:wish_listy/features/profile/presentation/models/home_models.dart';
@@ -594,6 +595,17 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                       );
                     }
 
+                    // Determine layout state
+                    final hasWishlists = (controller.myWishlists ?? []).isNotEmpty;
+                    final hasActivities = (controller.latestActivityPreview ?? []).isNotEmpty;
+                    final hasOccasions = (controller.upcomingOccasions ?? []).isNotEmpty;
+                    
+                    // Conditional layout logic:
+                    // 1. If wishlists empty AND activities exist -> Compact empty + Happening Now
+                    // 2. If everything empty (true new user) -> Full EmptyHomeScreen
+                    // 3. Otherwise -> ActiveDashboard
+                    final showCompactEmptyWithActivities = isEmpty && hasActivities;
+
                     return RefreshIndicator(
                       onRefresh: controller.refresh,
                       color: AppColors.primary,
@@ -607,19 +619,26 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                               child: _buildRichHeader(controller),
                             ),
                           ),
-                          // Spacing between Header and My Wishlists section
+                          // Spacing between Header and content
                           const SliverToBoxAdapter(
                             child: SizedBox(height: 20),
                           ),
-                          // Content
+                          // Content - Conditional Layout
                           if (controller.isLoading)
                             const SliverToBoxAdapter(child: HomeSkeletonView())
+                          else if (showCompactEmptyWithActivities)
+                            // Layout: Compact empty wishlist card + Happening Now section
+                            SliverToBoxAdapter(
+                              child: _buildCompactEmptyWithActivities(controller),
+                            )
                           else if (isEmpty)
+                            // Full empty state (no wishlists, no activities)
                             const SliverFillRemaining(
                               hasScrollBody: false,
                               child: EmptyHomeScreen(),
                             )
                           else
+                            // Active dashboard with all data
                             SliverToBoxAdapter(
                               child: ActiveDashboard(
                                 occasions: _convertEventsToOccasions(
@@ -628,8 +647,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                                 wishlists: _convertWishlistsToSummaries(
                                   controller.myWishlists ?? [],
                                 ),
-                                activities: controller.latestActivityPreview ??
-                                    [], // Use latestActivityPreview directly with null safety
+                                activities: controller.latestActivityPreview ?? [],
                               ),
                             ),
                           // Bottom padding to clear Bottom Navigation Bar
@@ -690,6 +708,36 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
         previewItems: wishlist.items.take(3).toList(),
       );
     }).toList();
+  }
+
+  /// Build compact empty wishlist state with "Happening Now" activities section
+  /// Used when user has no wishlists but has friend activities to show
+  Widget _buildCompactEmptyWithActivities(HomeController controller) {
+    final activities = controller.latestActivityPreview ?? [];
+    final occasions = controller.upcomingOccasions ?? [];
+    
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Compact Empty Wishlist Card
+          const CompactEmptyWishlistCard(),
+          const SizedBox(height: 24),
+          
+          // Upcoming Occasions (if any)
+          if (occasions.isNotEmpty) ...[
+            UpcomingOccasionsSection(
+              occasions: _convertEventsToOccasions(occasions),
+            ),
+            const SizedBox(height: 24),
+          ],
+          
+          // Happening Now Section (activities)
+          HappeningNowSection(activities: activities),
+        ],
+      ),
+    );
   }
 
   String _calculateTimeAgo(DateTime dateTime) {
