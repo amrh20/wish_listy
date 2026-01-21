@@ -145,7 +145,7 @@ class ContactUsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'support@wishlisty.app',
+                      'wishlistyapp@gmail.com',
                       style: AppStyles.bodyMedium.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
@@ -253,7 +253,7 @@ class ContactUsScreen extends StatelessWidget {
 
   /// Send Email
   Future<void> _sendEmail() async {
-    final uri = Uri.parse('mailto:support@wishlisty.app');
+    final uri = Uri.parse('mailto:wishlistyapp@gmail.com');
     try {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);

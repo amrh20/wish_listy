@@ -7,19 +7,19 @@ class ProfileRepository {
   ProfileRepository({ApiService? apiService})
       : _apiService = apiService ?? ApiService();
 
-  /// Upload profile image (for new uploads)
+  /// Upload profile image (for new uploads) using PUT /api/auth/profile/edit
   /// [imagePath] - Path to the compressed image file
   /// Returns response data containing imageUrl and updated user data
   Future<Map<String, dynamic>> uploadProfileImage(String imagePath) async {
     try {
-      final response = await _apiService.postMultipart(
-        '/upload/profile',
+      final response = await _apiService.putMultipart(
+        '/auth/profile/edit',
         fields: {},
         fileKey: 'image',
         filePath: imagePath,
       );
 
-      // Response structure: {success: true, message: "...", data: {imageUrl: "...", user: {...}}}
+      // Response structure: {success: true, message: "Profile updated successfully", ...}
       return response;
     } on ApiException {
       rethrow;
@@ -28,19 +28,19 @@ class ProfileRepository {
     }
   }
 
-  /// Edit/Update existing profile image
+  /// Edit/Update existing profile image using PUT /api/auth/profile/edit
   /// [imagePath] - Path to the compressed image file
   /// Returns response data containing imageUrl and updated user data
   Future<Map<String, dynamic>> editProfileImage(String imagePath) async {
     try {
-      final response = await _apiService.postMultipart(
-        '/upload/edit-profile-image',
+      final response = await _apiService.putMultipart(
+        '/auth/profile/edit',
         fields: {},
         fileKey: 'image',
         filePath: imagePath,
       );
 
-      // Response structure: {success: true, message: "...", data: {imageUrl: "...", user: {...}}}
+      // Response structure: {success: true, message: "Profile updated successfully", ...}
       return response;
     } on ApiException {
       rethrow;

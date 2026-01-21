@@ -683,6 +683,29 @@ class AuthRepository extends ChangeNotifier {
     }
   }
 
+  /// Change password for authenticated user
+  /// Endpoint: PATCH /api/auth/change-password
+  /// Request body: { "currentPassword": "...", "newPassword": "..." }
+  Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _apiService.patch(
+        '/auth/change-password',
+        data: {
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        },
+      );
+      return response;
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Failed to change password. Please try again.');
+    }
+  }
+
   // Check if a feature is available for current user
   bool isFeatureAvailable(String feature) {
     if (isAuthenticated) return true;

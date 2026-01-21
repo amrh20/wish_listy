@@ -7,17 +7,34 @@ import 'package:wish_listy/core/services/localization_service.dart';
 class LegalInfoScreen extends StatelessWidget {
   final String title;
   final String content;
+  final String? type; // 'privacy' or 'terms' - used to fetch localized content
 
   const LegalInfoScreen({
     super.key,
     required this.title,
     required this.content,
+    this.type,
   });
 
   @override
   Widget build(BuildContext context) {
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
+        // Determine title and content based on type or use provided values
+        String displayTitle;
+        String displayContent;
+        
+        if (type == 'privacy') {
+          displayTitle = localization.translate('profile.privacyPolicy');
+          displayContent = localization.translate('legal.privacyPolicyContent');
+        } else if (type == 'terms') {
+          displayTitle = localization.translate('profile.termsConditions');
+          displayContent = localization.translate('legal.termsConditionsContent');
+        } else {
+          displayTitle = title.isNotEmpty ? title : localization.translate('app.legalInformation');
+          displayContent = content;
+        }
+        
         return Scaffold(
           backgroundColor: AppColors.background,
           appBar: AppBar(
@@ -37,15 +54,16 @@ class LegalInfoScreen extends StatelessWidget {
               ),
             ),
             title: Text(
-              title,
+              displayTitle,
               style: AppStyles.heading3.copyWith(
                 color: AppColors.textPrimary,
+                fontFamily: 'Alexandria',
               ),
             ),
             centerTitle: true,
           ),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(16.0),
             child: Container(
               decoration: BoxDecoration(
                 color: AppColors.surface,
@@ -59,8 +77,8 @@ class LegalInfoScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              padding: const EdgeInsets.all(24.0),
-              child: _buildContent(context, localization),
+              padding: const EdgeInsets.all(20.0),
+              child: _buildContent(context, localization, displayContent),
             ),
           ),
         );
@@ -68,9 +86,37 @@ class LegalInfoScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, LocalizationService localization) {
+  Widget _buildContent(BuildContext context, LocalizationService localization, String displayContent) {
+    // If content is empty, show a placeholder message
+    if (displayContent.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.description_outlined,
+                size: 64,
+                color: AppColors.textTertiary.withOpacity(0.5),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                localization.translate('legal.contentComingSoon'),
+                style: AppStyles.bodyLarge.copyWith(
+                  color: AppColors.textSecondary,
+                  fontFamily: 'Alexandria',
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     // Split content by lines and process markdown-like formatting
-    final lines = content.split('\n');
+    final lines = displayContent.split('\n');
     final textSpans = <TextSpan>[];
     final isRTL = localization.isRTL;
 
@@ -89,6 +135,7 @@ class LegalInfoScreen extends StatelessWidget {
             style: AppStyles.heading3.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w700,
+              fontFamily: 'Alexandria',
             ),
           ),
         );
@@ -104,6 +151,7 @@ class LegalInfoScreen extends StatelessWidget {
               fontSize: 16,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
+              fontFamily: 'Alexandria',
             ),
           ),
         );
@@ -139,6 +187,8 @@ class LegalInfoScreen extends StatelessWidget {
             text: text.substring(lastIndex, match.start),
             style: AppStyles.bodyLarge.copyWith(
               color: AppColors.textPrimary,
+              fontFamily: 'Alexandria',
+              height: 1.6,
             ),
           ),
         );
@@ -150,6 +200,8 @@ class LegalInfoScreen extends StatelessWidget {
           style: AppStyles.bodyLarge.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
+            fontFamily: 'Alexandria',
+            height: 1.6,
           ),
         ),
       );
@@ -163,6 +215,8 @@ class LegalInfoScreen extends StatelessWidget {
           text: text.substring(lastIndex),
           style: AppStyles.bodyLarge.copyWith(
             color: AppColors.textPrimary,
+            fontFamily: 'Alexandria',
+            height: 1.6,
           ),
         ),
       );
@@ -174,6 +228,8 @@ class LegalInfoScreen extends StatelessWidget {
               text: text,
               style: AppStyles.bodyLarge.copyWith(
                 color: AppColors.textPrimary,
+                fontFamily: 'Alexandria',
+                height: 1.6,
               ),
             )
           ]

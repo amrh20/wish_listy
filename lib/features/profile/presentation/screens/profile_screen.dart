@@ -273,10 +273,10 @@ class ProfileScreenState extends State<ProfileScreen>
             color: AppColors.primary,
           ),
                         ProfileSettingItem(
-            icon: Icons.security_outlined,
-                          title: localization.translate('profile.privacySecurity'),
-                          subtitle: localization.translate('profile.passwordPrivacySettings'),
-            onTap: _privacySettings,
+            icon: Icons.lock_outline,
+                          title: localization.translate('profile.changePassword'),
+                          subtitle: localization.translate('profile.changePasswordSubtitle'),
+            onTap: _changePassword,
             color: AppColors.secondary,
           ),
                         ProfileSettingItem(
@@ -468,22 +468,23 @@ class ProfileScreenState extends State<ProfileScreen>
               ],
             ),
           ),
-          PopupMenuItem<String>(
-            value: 'share',
-            child: Row(
-              children: [
-                Icon(Icons.share_outlined, color: AppColors.primary, size: 20),
-                const SizedBox(width: 12),
-                Text(
-                  localization.translate('profile.shareProfile') ?? 'Share Profile',
-                  style: AppStyles.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
-                    fontFamily: localization.currentLanguage == 'ar' ? 'Alexandria' : 'Ubuntu',
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // TODO: Re-enable share profile when HTTPS deep links are configured
+          // PopupMenuItem<String>(
+          //   value: 'share',
+          //   child: Row(
+          //     children: [
+          //       Icon(Icons.share_outlined, color: AppColors.primary, size: 20),
+          //       const SizedBox(width: 12),
+          //       Text(
+          //         localization.translate('profile.shareProfile') ?? 'Share Profile',
+          //         style: AppStyles.bodyMedium.copyWith(
+          //           color: AppColors.textPrimary,
+          //           fontFamily: localization.currentLanguage == 'ar' ? 'Alexandria' : 'Ubuntu',
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
         ],
       ),
     );
@@ -526,8 +527,8 @@ class ProfileScreenState extends State<ProfileScreen>
     _loadUserProfile(forceRefresh: true);
   }
 
-  void _privacySettings() {
-    Navigator.pushNamed(context, AppRoutes.privacySecurity);
+  void _changePassword() {
+    Navigator.pushNamed(context, AppRoutes.changePassword);
   }
 
   void _notificationSettings() {

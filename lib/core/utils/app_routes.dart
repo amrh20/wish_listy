@@ -25,6 +25,7 @@ import '../../features/friends/presentation/screens/friend_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/personal_information_screen.dart';
 import '../../features/profile/presentation/screens/privacy_security_screen.dart';
+import '../../features/profile/presentation/screens/change_password_screen.dart';
 import '../../features/profile/presentation/screens/blocked_users_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/events/presentation/screens/guest_management_screen.dart';
@@ -68,6 +69,7 @@ class AppRoutes {
   static const String eventSettings = '/event-settings';
   static const String personalInformation = '/personal-information';
   static const String privacySecurity = '/privacy-security';
+  static const String changePassword = '/change-password';
   static const String blockedUsers = '/blocked-users';
   static const String createWishlist = '/create-wishlist';
   static const String addFriend = '/add-friend';
@@ -232,6 +234,10 @@ class AppRoutes {
       return MaterialPageRoute(
         builder: (context) => PrivacySecurityScreen(privacySettings: args),
       );
+    } else if (settings.name == changePassword) {
+      return MaterialPageRoute(
+        builder: (context) => const ChangePasswordScreen(),
+      );
     } else if (settings.name == blockedUsers) {
       final args = settings.arguments as List<Map<String, dynamic>>;
       return MaterialPageRoute(
@@ -263,11 +269,17 @@ class AppRoutes {
         ),
       );
     } else if (settings.name == legalInfo) {
-      final args = settings.arguments as Map<String, dynamic>;
+      final args = settings.arguments as Map<String, dynamic>?;
+      // Support both 'type' (privacy/terms) and direct 'title'/'content' arguments
+      final type = args?['type'] as String?;
+      final title = args?['title'] as String?;
+      final content = args?['content'] as String?;
+      
       return MaterialPageRoute(
         builder: (context) => LegalInfoScreen(
-          title: args['title'] ?? 'Legal Information',
-          content: args['content'] ?? '',
+          title: title ?? 'Legal Information',
+          content: content ?? '',
+          type: type, // Pass type to screen for localization lookup
         ),
       );
     } else if (settings.name == forgotPassword) {

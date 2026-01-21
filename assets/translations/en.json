@@ -49,7 +49,8 @@
     "about": "About",
     "splashTitle": "Wish Listy",
     "splashSubtitle": "Connect through thoughtful gifting",
-    "max_image_size": "Max image size 5MB"
+    "max_image_size": "Max image size 5MB",
+    "legalInformation": "Legal Information"
   },
   "navigation": {
     "home": "Home",
@@ -892,6 +893,7 @@
     "cancelReport": "Cancel Report"
   },
   "profile": {
+    "contactUsSubtitle": "Get help or send us feedback",
     "shareProfile": "Share Profile",
     "title": "Profile",
     "editProfile": "Edit Profile",
@@ -911,10 +913,13 @@
     "followUs": "Follow us",
     "email": "Email",
     "privacyPolicyDescription": "Read our privacy policy",
+    "privacyPolicySubtitle": "How we protect your data",
     "termsConditions": "Terms & Conditions",
     "termsConditionsDescription": "View our terms of service",
+    "termsConditionsSubtitle": "Rules for using our app",
     "faq": "FAQ",
     "faqDescription": "Frequently asked questions",
+    "faqSubtitle": "Common questions answered",
     "faqComingSoon": "FAQ Coming Soon",
     "faqComingSoonDescription": "We're working on adding frequently asked questions. Check back soon!",
     "couldNotLaunchUrl": "Could not launch URL",
@@ -1027,7 +1032,7 @@
     "userGuide": "User Guide",
     "troubleshooting": "Troubleshooting",
     "contactSupport": "Contact Support",
-    "supportEmail": "support@wishlisty.com",
+    "supportEmail": "wishlistyapp@gmail.com",
     "supportPhone": "+1 (555) 123-4567",
     "supportHours": "24/7 Support Available",
     "feedback": "Feedback",
@@ -1053,6 +1058,23 @@
     "security": "Security",
     "changePassword": "Change Password",
     "changePasswordDescription": "Update your account password",
+    "changePasswordSubtitle": "Update your account password",
+    "changePasswordInstruction": "Enter your current password and choose a new password to update your account security.",
+    "currentPassword": "Current Password",
+    "enterCurrentPassword": "Enter your current password",
+    "currentPasswordRequired": "Current password is required",
+    "newPassword": "New Password",
+    "enterNewPassword": "Enter your new password",
+    "newPasswordRequired": "New password is required",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "confirmNewPassword": "Confirm New Password",
+    "enterConfirmPassword": "Re-enter your new password",
+    "confirmPasswordRequired": "Please confirm your new password",
+    "passwordsDoNotMatch": "Passwords do not match",
+    "updatePassword": "Update Password",
+    "passwordRequirements": "Your password must be at least 6 characters long. For better security, use a mix of letters, numbers, and symbols.",
+    "passwordChangedSuccess": "Password changed successfully!",
+    "passwordChangeFailed": "Failed to change password. Please try again.",
     "savePrivacySettings": "Save Privacy Settings",
     "changePasswordDialogTitle": "Change Password",
     "changePasswordDialogMessage": "A password reset link will be sent to your email address.",
@@ -1681,5 +1703,11 @@
     "faq_a11": "Open any of your wishlists and tap 'Add Item'. You can manually enter details or paste a link from any store, and we'll help you fill in the rest.",
     "faq_q12": "How to reserve a gift?",
     "faq_a12": "When viewing a friend's wishlist, tap on a gift you want to buy. Click 'Reserve' to let others know it's taken, preventing duplicate gifts!"
+  },
+  "legal": {
+    "contentComingSoon": "Content coming soon. Please check back later.",
+    "legalInformation": "Legal Information",
+    "privacyPolicyContent": "**Privacy Policy**\n\nLast Updated: January 2026\n\n**1. Information We Collect**\n\nWe collect information you provide directly to us, such as when you create an account, create wishlists, or contact us for support.\n\n* **Account Information**: Name, email address, phone number, and profile picture.\n* **Wishlist Data**: Items you add to your wishlists, including names, descriptions, prices, and images.\n* **Usage Information**: How you interact with our app, including features you use and actions you take.\n\n**2. How We Use Your Information**\n\nWe use the information we collect to:\n\n* Provide, maintain, and improve our services\n* Send you notifications about your wishlists and events\n* Connect you with friends and family\n* Respond to your comments, questions, and requests\n\n**3. Information Sharing**\n\nWe do not sell your personal information. We may share your information with:\n\n* Other users based on your privacy settings\n* Service providers who assist in operating our app\n* Law enforcement when required by law\n\n**4. Data Security**\n\nWe implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.\n\n**5. Your Rights**\n\nYou have the right to:\n\n* Access your personal data\n* Correct inaccurate data\n* Delete your account and data\n* Export your data\n\n**6. Contact Us**\n\nIf you have any questions about this Privacy Policy, please contact us at wishlistyapp@gmail.com",
+    "termsConditionsContent": "**Terms & Conditions**\n\nLast Updated: January 2026\n\n**1. Acceptance of Terms**\n\nBy accessing or using Wish Listy, you agree to be bound by these Terms and Conditions. If you do not agree, please do not use our services.\n\n**2. Account Registration**\n\n* You must provide accurate and complete information when creating an account.\n* You are responsible for maintaining the security of your account.\n* You must be at least 13 years old to use our services.\n\n**3. User Content**\n\n* You retain ownership of content you create on Wish Listy.\n* By posting content, you grant us a license to use, display, and share your content as part of our services.\n* You agree not to post content that is illegal, harmful, or violates others' rights.\n\n**4. Acceptable Use**\n\nYou agree not to:\n\n* Use our services for any illegal purpose\n* Harass, abuse, or harm other users\n* Attempt to gain unauthorized access to our systems\n* Use automated systems to access our services without permission\n\n**5. Intellectual Property**\n\nWish Listy and its original content, features, and functionality are owned by us and are protected by international copyright, trademark, and other intellectual property laws.\n\n**6. Termination**\n\nWe may terminate or suspend your account at any time for violations of these terms or for any other reason at our discretion.\n\n**7. Disclaimer**\n\nOur services are provided \"as is\" without warranties of any kind. We do not guarantee that our services will be uninterrupted or error-free.\n\n**8. Limitation of Liability**\n\nTo the maximum extent permitted by law, we shall not be liable for any indirect, incidental, special, or consequential damages.\n\n**9. Changes to Terms**\n\nWe may modify these terms at any time. Continued use of our services after changes constitutes acceptance of the modified terms.\n\n**10. Contact Us**\n\nFor questions about these Terms, please contact us at wishlistyapp@gmail.com"
   }
 }

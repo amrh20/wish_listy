@@ -68,7 +68,17 @@ class ProfileImageActionBottomSheet extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 8),
+              // Title
+              Text(
+                localization.translate('profile.changeProfilePicture'),
+                style: AppStyles.heading3.copyWith(
+                  color: AppColors.textPrimary,
+                  fontFamily: 'Alexandria',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              
+              const SizedBox(height: 20),
 
               // Take Photo Button
               SizedBox(
