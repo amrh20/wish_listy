@@ -683,240 +683,122 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
   /// Handle notification tap with smart navigation
   /// 
+  /// Centralized redirection logic for all notification types.
   /// First marks the notification as read, then navigates to the appropriate screen
   /// based on the notification type.
+  /// 
+  /// Navigation Rules:
+  /// - Social (friend_request, friend_request_accepted): User Profile Screen (relatedUser._id)
+  /// - Events (event_invite, event_update, event_response): Event Details Screen (relatedId)
+  /// - Gifts (item_reserved, item_unreserved, item_purchased, item_received): Item Details Screen (relatedId + relatedWishlistId)
   Future<void> handleNotificationTap(AppNotification notification, BuildContext context) async {
     final timestamp = DateTime.now().toIso8601String();
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp] Handling notification tap');
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Notification ID: ${notification.id}');
+    debugPrint('🔔 [Notifications] ⏰ [$timestamp] ========== NOTIFICATION TAP HANDLER ==========');
+    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    ID: ${notification.id}');
     debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Type: ${notification.type}');
+    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    RelatedId: ${notification.relatedId}');
+    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    RelatedWishlistId: ${notification.relatedWishlistId}');
+    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Data keys: ${notification.data?.keys.toList()}');
     
-    // First, mark as read
-    await markAsRead(notification.id);
+    // Get localization service early
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    
+    // First, mark as read (non-blocking for better UX)
+    markAsRead(notification.id);
+    
+    // Helper to show error toast
+    void showErrorToast(String messageKey) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(localization.translate(messageKey)),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      }
+    }
+    
+    // Helper to extract user ID from notification data
+    String? extractUserId() {
+      final data = notification.data;
+      if (data == null) return null;
+      
+      // Check relatedUser first (most common)
+      final relatedUser = data['relatedUser'];
+      if (relatedUser is Map<String, dynamic>) {
+        final id = relatedUser['_id']?.toString() ?? relatedUser['id']?.toString();
+        if (id != null && id.isNotEmpty) return id;
+      }
+      
+      // Fallback to other fields
+      return data['relatedUserId']?.toString() ??
+             data['related_user_id']?.toString() ??
+             (data['from'] is Map ? data['from']['_id']?.toString() ?? data['from']['id']?.toString() : null) ??
+             data['fromUserId']?.toString() ??
+             data['from_user_id']?.toString();
+    }
+    
+    // Helper to extract event ID
+    String? extractEventId() {
+      return notification.relatedId ?? 
+             notification.data?['eventId']?.toString() ??
+             notification.data?['event_id']?.toString() ??
+             (notification.data?['event'] is Map ? notification.data!['event']['_id']?.toString() ?? notification.data!['event']['id']?.toString() : null);
+    }
+    
+    // Helper to extract item ID
+    String? extractItemId() {
+      return notification.relatedId ?? 
+             notification.data?['itemId']?.toString() ??
+             notification.data?['item_id']?.toString() ??
+             (notification.data?['item'] is Map ? notification.data!['item']['_id']?.toString() ?? notification.data!['item']['id']?.toString() : null);
+    }
+    
+    // Helper to extract wishlist ID
+    String? extractWishlistId() {
+      return notification.relatedWishlistId ?? 
+             notification.data?['wishlistId']?.toString() ??
+             notification.data?['wishlist_id']?.toString() ??
+             (notification.data?['wishlist'] is Map ? notification.data!['wishlist']['_id']?.toString() ?? notification.data!['wishlist']['id']?.toString() : null);
+    }
     
     // Navigate based on notification type
     try {
+      if (!context.mounted) return;
+      
       switch (notification.type) {
-        // Item types - navigate to wishlist items screen or item details
-        case NotificationType.itemReserved:
-        case NotificationType.itemUnreserved:
-        case NotificationType.itemPurchased:
-          // Check if this is item_received (special handling for giver)
-          final isItemReceived = notification.data?['type']?.toString().toLowerCase() == 'item_received' ||
-                                notification.data?['notificationType']?.toString().toLowerCase() == 'item_received' ||
-                                notification.type.toString().contains('received');
-          
-          // Get itemId and wishlistId
-          final itemId = notification.relatedId ?? 
-                        notification.data?['itemId']?.toString() ??
-                        notification.data?['item_id']?.toString() ??
-                        notification.data?['item']?['_id']?.toString() ??
-                        notification.data?['item']?['id']?.toString();
-          
-          final wishlistId = notification.relatedWishlistId ?? 
-                            notification.data?['wishlistId']?.toString() ??
-                            notification.data?['wishlist_id']?.toString() ??
-                            notification.data?['wishlist']?['_id']?.toString() ??
-                            notification.data?['wishlist']?['id']?.toString();
-          
-          // For item_received, try to navigate to Item Details if itemId is available
-          if (isItemReceived && itemId != null && itemId.isNotEmpty && wishlistId != null && wishlistId.isNotEmpty) {
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Navigating to item details for item_received: $itemId');
-            try {
-              // Import WishlistRepository to fetch item details
-              final wishlistRepository = WishlistRepository();
-              final itemData = await wishlistRepository.getItemById(itemId);
-              final item = WishlistItem.fromJson(itemData);
-              
-              if (context.mounted) {
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.itemDetails,
-                  arguments: item,
-                );
-              }
-            } catch (e) {
-              debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Failed to fetch item details: $e');
-              // Fallback to wishlist items screen
-              if (context.mounted) {
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.wishlistItems,
-                  arguments: {
-                    'wishlistId': wishlistId,
-                    'wishlistName': notification.title,
-                  },
-                );
-              }
-            }
-          } else if (wishlistId != null && wishlistId.isNotEmpty) {
-            // For other item types or if itemId is not available, navigate to wishlist items
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Navigating to wishlist items: $wishlistId');
-            Navigator.pushNamed(
-              context,
-              AppRoutes.wishlistItems,
-              arguments: {
-                'wishlistId': wishlistId,
-                'wishlistName': notification.title, // Use title as fallback name
-              },
-            );
-          } else {
-            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing wishlistId for item notification');
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Unable to open wishlist. Missing information.'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          break;
-        
-        // Event types - navigate to event details screen
-        // For eventInvitation, we can navigate to event details (relatedId is eventId)
-        // For eventResponse (accepted/declined/maybe), check if user wants to see event or friend profile
-        case NotificationType.eventInvitation:
-        case NotificationType.eventUpdate:
-        case NotificationType.eventReminder:
-          // Get eventId from relatedId or data map
-          final eventId = notification.relatedId ?? 
-                         notification.data?['eventId']?.toString() ??
-                         notification.data?['event_id']?.toString() ??
-                         notification.data?['event']?['_id']?.toString() ??
-                         notification.data?['event']?['id']?.toString();
-          
-          if (eventId != null && eventId.isNotEmpty) {
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Navigating to event details: $eventId');
-            Navigator.pushNamed(
-              context,
-              AppRoutes.eventDetails,
-              arguments: {'eventId': eventId},
-            );
-          } else {
-            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing eventId for event notification');
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Unable to open event. Missing information.'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          break;
-        
-        // Event response (invitation accepted/declined/maybe) - navigate to friend profile using relatedUser.id
-        case NotificationType.eventResponse:
-          // Get friendId from relatedUser._id (this is the user who responded to the invitation)
-          final friendId = notification.data?['relatedUser']?['_id']?.toString() ??
-                          notification.data?['relatedUser']?['id']?.toString() ??
-                          notification.data?['relatedUserId']?.toString() ??
-                          notification.data?['related_user_id']?.toString() ??
-                          notification.data?['from']?['_id']?.toString() ??
-                          notification.data?['from']?['id']?.toString() ??
-                          notification.data?['fromUserId']?.toString() ??
-                          notification.data?['from_user_id']?.toString();
-          
-          if (friendId != null && friendId.isNotEmpty) {
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Navigating to friend profile: $friendId');
-            Navigator.pushNamed(
-              context,
-              AppRoutes.friendProfile,
-              arguments: {'friendId': friendId},
-            );
-          } else {
-            // Fallback: try to navigate to event if friendId is not available
-            final eventId = notification.relatedId ?? 
-                           notification.data?['eventId']?.toString() ??
-                           notification.data?['event_id']?.toString() ??
-                           notification.data?['event']?['_id']?.toString() ??
-                           notification.data?['event']?['id']?.toString();
-            
-            if (eventId != null && eventId.isNotEmpty) {
-              debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Missing friendId, navigating to event details: $eventId');
-              Navigator.pushNamed(
-                context,
-                AppRoutes.eventDetails,
-                arguments: {'eventId': eventId},
-              );
-            } else {
-              debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing both friendId and eventId for event response notification');
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Unable to open. Missing information.'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          }
-          break;
-        
-        // Friend request - navigate to friend profile screen
+        // ==========================================
+        // SOCIAL (Friendships) - Navigate to User Profile
+        // Types: friend_request, friend_request_accepted
+        // ==========================================
         case NotificationType.friendRequest:
-          // Get friendId from relatedUser._id (this is the user who sent the request)
-          // Priority: relatedUser._id (correct ID for friend profile)
-          // Note: relatedId is the friend request ID, not the user ID
-          final friendId = notification.data?['relatedUser']?['_id']?.toString() ??
-                          notification.data?['relatedUser']?['id']?.toString() ??
-                          notification.data?['relatedUserId']?.toString() ??
-                          notification.data?['related_user_id']?.toString() ??
-                          notification.data?['from']?['_id']?.toString() ??
-                          notification.data?['from']?['id']?.toString() ??
-                          notification.data?['fromUserId']?.toString() ??
-                          notification.data?['from_user_id']?.toString();
-          
-          if (friendId != null && friendId.isNotEmpty) {
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Navigating to friend profile: $friendId');
-            Navigator.pushNamed(
-              context,
-              AppRoutes.friendProfile,
-              arguments: {'friendId': friendId},
-            );
-          } else {
-            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing friendId for friend request notification, navigating to friends screen');
-            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Available data keys: ${notification.data?.keys.toList()}');
-            // Fallback to friends screen if friendId is not available
-            Navigator.pushNamed(
-              context,
-              AppRoutes.friends,
-              arguments: {'initialTabIndex': 1}, // Requests tab
-            );
-          }
-          break;
-        
-        // Friend request accepted - navigate to friend profile using relatedUser.id
         case NotificationType.friendRequestAccepted:
-          // Get friendId from relatedUser._id (this is the user who accepted the request)
-          // Priority: relatedUser._id (correct ID for friend profile)
-          // Note: relatedId is not the user ID, we need relatedUser._id
-          final friendId = notification.data?['relatedUser']?['_id']?.toString() ??
-                          notification.data?['relatedUser']?['id']?.toString() ??
-                          notification.data?['relatedUserId']?.toString() ??
-                          notification.data?['related_user_id']?.toString() ??
-                          notification.data?['from']?['_id']?.toString() ??
-                          notification.data?['from']?['id']?.toString() ??
-                          notification.data?['fromUserId']?.toString() ??
-                          notification.data?['from_user_id']?.toString();
+          final userId = extractUserId();
           
-          if (friendId != null && friendId.isNotEmpty) {
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Navigating to friend profile: $friendId');
+          if (userId != null && userId.isNotEmpty) {
+            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    → Navigating to friend profile: $userId');
             Navigator.pushNamed(
               context,
               AppRoutes.friendProfile,
-              arguments: {'friendId': friendId},
+              arguments: {'friendId': userId},
             );
           } else {
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Missing friendId for friend request accepted notification, navigating to friends screen');
-            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Available data keys: ${notification.data?.keys.toList()}');
-            // Fallback to friends screen if friendId is not available
+            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing userId for ${notification.type}');
+            showErrorToast('dialogs.userNoLongerAvailable');
+            // Fallback to friends screen
             Navigator.pushNamed(
               context,
               AppRoutes.friends,
-              arguments: {'initialTabIndex': 0}, // My Friends tab
+              arguments: {'initialTabIndex': notification.type == NotificationType.friendRequest ? 1 : 0},
             );
           }
           break;
         
         // Friend request rejected - navigate to friends screen (Requests tab)
         case NotificationType.friendRequestRejected:
-          debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Navigating to friends screen (Requests tab)');
+          debugPrint('🔔 [Notifications] ⏰ [$timestamp]    → Navigating to friends screen (Requests tab)');
           Navigator.pushNamed(
             context,
             AppRoutes.friends,
@@ -924,50 +806,123 @@ class NotificationsCubit extends Cubit<NotificationsState> {
           );
           break;
         
-        // Wishlist shared - navigate to wishlist items if relatedWishlistId is available
-        case NotificationType.wishlistShared:
-          if (notification.relatedWishlistId != null && notification.relatedWishlistId!.isNotEmpty) {
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Navigating to shared wishlist: ${notification.relatedWishlistId}');
+        // ==========================================
+        // EVENTS (Occasions) - Navigate to Event Details
+        // Types: event_invite, event_update, event_response
+        // ==========================================
+        case NotificationType.eventInvitation:
+        case NotificationType.eventUpdate:
+        case NotificationType.eventReminder:
+        case NotificationType.eventResponse:
+          final eventId = extractEventId();
+          
+          if (eventId != null && eventId.isNotEmpty) {
+            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    → Navigating to event details: $eventId');
             Navigator.pushNamed(
               context,
+              AppRoutes.eventDetails,
+              arguments: {'eventId': eventId},
+            );
+          } else {
+            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing eventId for ${notification.type}');
+            showErrorToast('dialogs.eventNoLongerAvailable');
+          }
+          break;
+        
+        // ==========================================
+        // GIFTS & WISHLISTS - Navigate to Item Details
+        // Types: item_reserved, item_unreserved, item_purchased, item_received
+        // ==========================================
+        case NotificationType.itemReserved:
+        case NotificationType.itemUnreserved:
+        case NotificationType.itemPurchased:
+          final itemId = extractItemId();
+          final wishlistId = extractWishlistId();
+          
+          debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Item notification - itemId: $itemId, wishlistId: $wishlistId');
+          
+          // IMPORTANT: Capture navigator BEFORE any async operations
+          // The context may become invalid after the dropdown is closed
+          final navigator = Navigator.of(context);
+          
+          if (itemId != null && itemId.isNotEmpty && wishlistId != null && wishlistId.isNotEmpty) {
+            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    → Navigating to item details: $itemId');
+            try {
+              // Fetch item details and navigate
+              final wishlistRepository = WishlistRepository();
+              final itemData = await wishlistRepository.getItemById(itemId);
+              final item = WishlistItem.fromJson(itemData);
+              
+              debugPrint('🔔 [Notifications] ⏰ [$timestamp]    ✅ Item fetched, navigating...');
+              navigator.pushNamed(
+                AppRoutes.itemDetails,
+                arguments: item,
+              );
+            } catch (e) {
+              debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Failed to fetch item: $e');
+              // Fallback to wishlist items screen
+              navigator.pushNamed(
+                AppRoutes.wishlistItems,
+                arguments: {
+                  'wishlistId': wishlistId,
+                  'wishlistName': notification.title,
+                },
+              );
+            }
+          } else if (wishlistId != null && wishlistId.isNotEmpty) {
+            // Navigate to wishlist if only wishlistId is available
+            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    → Navigating to wishlist items: $wishlistId');
+            navigator.pushNamed(
               AppRoutes.wishlistItems,
               arguments: {
-                'wishlistId': notification.relatedWishlistId!,
+                'wishlistId': wishlistId,
                 'wishlistName': notification.title,
               },
             );
           } else {
-            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing relatedWishlistId for wishlist shared notification');
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Unable to open wishlist. Missing information.'),
-                backgroundColor: Colors.red,
-              ),
-            );
+            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing required IDs for item notification');
+            showErrorToast('dialogs.itemNoLongerAvailable');
           }
           break;
         
-        // Default - show message
+        // Wishlist shared - navigate to wishlist items
+        case NotificationType.wishlistShared:
+          final wishlistId = extractWishlistId();
+          
+          if (wishlistId != null && wishlistId.isNotEmpty) {
+            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    → Navigating to shared wishlist: $wishlistId');
+            Navigator.pushNamed(
+              context,
+              AppRoutes.wishlistItems,
+              arguments: {
+                'wishlistId': wishlistId,
+                'wishlistName': notification.title,
+              },
+            );
+          } else {
+            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing wishlistId for wishlist shared notification');
+            showErrorToast('dialogs.wishlistNoLongerAvailable');
+          }
+          break;
+        
+        // Default - show message as snackbar
         default:
-          debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Unknown notification type, showing message');
+          debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Unknown type, showing message');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(notification.message),
               backgroundColor: Colors.blue,
+              behavior: SnackBarBehavior.floating,
             ),
           );
           break;
       }
+      
+      debugPrint('🔔 [Notifications] ⏰ [$timestamp] ========== NAVIGATION COMPLETE ==========');
     } catch (e, stackTrace) {
       debugPrint('❌ NotificationsCubit: Error handling notification tap: $e');
       debugPrint('❌ Stack trace: $stackTrace');
-      final localization = Provider.of<LocalizationService>(context, listen: false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(localization.translate('dialogs.errorOpeningNotification')),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showErrorToast('dialogs.errorOpeningNotification');
     }
   }
 

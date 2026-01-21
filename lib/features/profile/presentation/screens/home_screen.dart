@@ -251,6 +251,8 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                                         return;
                                       }
 
+                                      // Always open dropdown immediately with current data (cached or empty)
+                                      // The dropdown uses BlocBuilder and will update automatically when data loads
                                       _showNotificationDropdown(
                                         buttonContext,
                                         notifications,
@@ -778,7 +780,17 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
 
       final dropdownTop = buttonPosition.dy + buttonSize.height + 8;
       
-      await showGeneralDialog(
+      // 1. Start loading notifications immediately (non-blocking)
+      // This ensures API is called BEFORE dialog opens
+      final cubit = context.read<NotificationsCubit>();
+      cubit.loadNotifications().then((_) {
+        // Dismiss badge only after successful fetch
+        cubit.dismissBadge();
+      });
+
+      // 2. Open dialog immediately (no await - non-blocking)
+      // The dropdown uses BlocBuilder and will update automatically when data arrives
+      showGeneralDialog(
         context: context,
         barrierDismissible: true,
         barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -839,14 +851,6 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
       ).then((_) {
         // Reset flag when dialog is closed
         _isNotificationDropdownOpen = false;
-      });
-
-      // Load fresh notifications in the background (non-blocking)
-      // This updates the dropdown if it's still open via BlocBuilder
-      final cubit = context.read<NotificationsCubit>();
-      cubit.loadNotifications().then((_) {
-        // Dismiss badge after loading (non-blocking)
-        cubit.dismissBadge();
       });
     }
   }

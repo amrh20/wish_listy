@@ -1191,7 +1191,16 @@
     "friendRequestDeclined": "Friend request declined",
     "failedToAcceptRequest": "Failed to accept friend request. Please try again.",
     "failedToDeclineRequest": "Failed to decline friend request. Please try again.",
-    "newNotifications": "{count} new"
+    "newNotifications": "{count} new",
+    "sentYouFriendRequest": "sent you a friend request",
+    "acceptedYourFriendRequest": "accepted your friend request",
+    "declinedYourFriendRequest": "declined your friend request",
+    "invitedYouTo": "invited you to",
+    "invitedYouToEvent": "invited you to an event",
+    "acceptedYourInvitation": "accepted your invitation",
+    "maybeYourInvitation": "marked maybe for your invitation",
+    "declinedYourInvitation": "declined your invitation",
+    "respondedToYourInvitation": "responded to your invitation"
   },
   "common": {
     "pleaseWait": "Please wait...",
@@ -1408,7 +1417,11 @@
     "allNotificationsMarkedAsRead": "All notifications marked as read",
     "errorLoggingOut": "Error logging out",
     "errorDeletingAccount": "Error deleting account",
-    "errorOpeningNotification": "An error occurred while opening the notification."
+    "errorOpeningNotification": "An error occurred while opening the notification.",
+    "itemNoLongerAvailable": "This item is no longer available.",
+    "eventNoLongerAvailable": "This event is no longer available.",
+    "userNoLongerAvailable": "This user is no longer available.",
+    "wishlistNoLongerAvailable": "This wishlist is no longer available."
   },
   "features": {
     "createWishlists": "Create Wishlists",

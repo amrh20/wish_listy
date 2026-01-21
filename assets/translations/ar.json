@@ -1191,7 +1191,16 @@
     "friendRequestDeclined": "تم رفض طلب الصداقة",
     "failedToAcceptRequest": "فشل قبول طلب الصداقة. يرجى المحاولة مرة أخرى.",
     "failedToDeclineRequest": "فشل رفض طلب الصداقة. يرجى المحاولة مرة أخرى.",
-    "newNotifications": "{count} جديد"
+    "newNotifications": "{count} جديد",
+    "sentYouFriendRequest": "بعتلك طلب صداقة",
+    "acceptedYourFriendRequest": "قبل طلب صداقتك",
+    "declinedYourFriendRequest": "رفض طلب صداقتك",
+    "invitedYouTo": "دعاك لـ",
+    "invitedYouToEvent": "دعاك لفعالية",
+    "acceptedYourInvitation": "قبل دعوتك",
+    "maybeYourInvitation": "حط يمكن على دعوتك",
+    "declinedYourInvitation": "رفض دعوتك",
+    "respondedToYourInvitation": "رد على دعوتك"
   },
   "common": {
     "pleaseWait": "يرجى الإنتظار...",
@@ -1372,7 +1381,7 @@
     "noPendingInvitations": "لا توجد دعوات معلقة",
     "noFriendsInvitedYet": "لم يتم دعوة أصدقاء بعد",
     "noFriendsFoundMatching": "لم يتم العثور على أصدقاء يطابقون \"{query}\"",
-    "makeYourWishesComeTrue": "احقق أمنياتك ✨",
+    "makeYourWishesComeTrue": "حقق أمنياتك ✨",
     "theFunWayToOrganize": "الطريقة الممتعة لتنظيم الأحلام وتلقي الهدايا التي تحبها.",
     "logIn": "تسجيل الدخول",
     "deleteItem": "امسح الهدية",
@@ -1408,7 +1417,11 @@
     "allNotificationsMarkedAsRead": "تم تحديد جميع الإشعارات كمقروءة",
     "errorLoggingOut": "خطأ في تسجيل الخروج",
     "errorDeletingAccount": "خطأ في حذف الحساب",
-    "errorOpeningNotification": "حدث خطأ أثناء فتح الإشعار."
+    "errorOpeningNotification": "حدث خطأ أثناء فتح الإشعار.",
+    "itemNoLongerAvailable": "هذا العنصر لم يعد متاحاً.",
+    "eventNoLongerAvailable": "هذه الفعالية لم تعد متاحة.",
+    "userNoLongerAvailable": "هذا المستخدم لم يعد متاحاً.",
+    "wishlistNoLongerAvailable": "هذه القائمة لم تعد متاحة."
   },
   "features": {
     "createWishlists": "إنشاء قوائم الأمنيات",

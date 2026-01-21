@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
@@ -32,11 +34,12 @@ class NotificationDropdown extends StatelessWidget {
     // we must listen to `NotificationsCubit` changes here.
     return BlocBuilder<NotificationsCubit, NotificationsState>(
       builder: (context, state) {
-        // Show loading state if notifications are being loaded
-        if (state is NotificationsLoading) {
+        // Show loading state ONLY if we're loading AND have no cached data
+        if (state is NotificationsLoading && notifications.isEmpty) {
           return _buildLoadingState(context);
         }
 
+        // Use fresh data from state if loaded, otherwise use cached notifications
         final effectiveNotifications =
             state is NotificationsLoaded ? state.notifications : notifications;
         final effectiveUnreadCount =
@@ -186,6 +189,12 @@ class NotificationDropdown extends StatelessWidget {
   }
 
   Widget _buildLoadingState(BuildContext context) {
+    // Use shimmer state for better UX
+    return _buildShimmerState(context);
+  }
+
+  /// Build shimmer loading state (skeleton screen)
+  Widget _buildShimmerState(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context, listen: false);
     
     return Container(
@@ -228,26 +237,72 @@ class NotificationDropdown extends StatelessWidget {
               ],
             ),
           ),
-          // Loading indicator
+          // Shimmer loading items
           Padding(
-            padding: const EdgeInsets.all(32),
+            padding: const EdgeInsets.all(16),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              children: List.generate(3, (index) => _buildShimmerItem()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build individual shimmer item (skeleton for notification)
+  Widget _buildShimmerItem() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Avatar shimmer
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Text shimmer
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                // Title shimmer
+                Container(
+                  height: 14,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(4),
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  localization.translate('common.loading') ?? 'Loading...',
-                  style: AppStyles.bodyMedium.copyWith(
-                    color: AppColors.textSecondary,
-                    fontFamily: 'Alexandria',
+                const SizedBox(height: 8),
+                // Message shimmer
+                Container(
+                  height: 12,
+                  width: 200,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // Time shimmer
+                Container(
+                  height: 10,
+                  width: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(4),
                   ),
                 ),
               ],
@@ -377,7 +432,7 @@ class NotificationDropdown extends StatelessWidget {
   }
 }
 
-/// Individual Notification Item
+/// Individual Notification Item - Compact dropdown design matching full screen
 class _NotificationItem extends StatelessWidget {
   final AppNotification notification;
   final NotificationsCubit cubit;
@@ -395,19 +450,34 @@ class _NotificationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final isFriendRequest = notification.type == NotificationType.friendRequest;
+    final isFriendRequestAccepted = notification.type == NotificationType.friendRequestAccepted;
+    final isEventResponse = notification.type == NotificationType.eventResponse;
+    final isEventInvitation = notification.type == NotificationType.eventInvitation;
+    
+    // Check if this notification involves a user (show avatar)
+    final hasUserAvatar = isFriendRequest || 
+                          isFriendRequestAccepted || 
+                          isEventResponse ||
+                          isEventInvitation ||
+                          notification.type == NotificationType.friendRequestRejected;
+    
+    // Extract user info from notification data
+    final senderName = _extractSenderName();
+    final senderImage = _extractSenderImage();
     
     return InkWell(
       onTap: () {
-        // Handle tap using cubit's smart navigation
+        Navigator.pop(context); // Close dropdown first
         cubit.handleNotificationTap(notification, context);
       },
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: notification.isRead
               ? Colors.white
-              : AppColors.primary.withOpacity(0.05),
+              : AppColors.primary.withOpacity(0.03),
           border: Border(
             bottom: BorderSide(
               color: Colors.grey.shade100,
@@ -415,134 +485,554 @@ class _NotificationItem extends StatelessWidget {
             ),
           ),
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Icon using helper method
-                _buildLeadingIcon(notification.type, data: notification.data),
-                const SizedBox(width: 12),
-                // Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title - Always Bold
-                      Text(
-                        notification.title,
-                        style: AppStyles.bodyMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: _getTitleColor(notification.type, data: notification.data),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        notification.message,
-                        style: AppStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        notification.timeAgo,
-                        style: AppStyles.caption.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Unread indicator
-                if (!notification.isRead)
-                  Container(
-                    width: 8,
-                    height: 8,
-                    margin: const EdgeInsets.only(left: 8),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-              ],
-            ),
-            // Accept/Decline buttons for friend requests
-            if (isFriendRequest && (onAccept != null || onDecline != null)) ...[
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+            // Avatar or Icon
+            _buildLeadingWidget(hasUserAvatar, senderName, senderImage),
+            const SizedBox(width: 10),
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Decline button
-                  if (onDecline != null)
-                    SizedBox(
-                      height: 32,
-                      child: OutlinedButton(
-                        onPressed: onDecline,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          minimumSize: const Size(0, 32),
-                          side: BorderSide(color: Colors.grey.shade300),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
-                          Provider.of<LocalizationService>(context, listen: false).translate('dialogs.decline'),
-                          style: AppStyles.bodySmall.copyWith(
-                            color: AppColors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                  // Rich text message with bold name
+                  _buildRichTextMessage(context, senderName, localization),
+                  const SizedBox(height: 4),
+                  // Timestamp
+                  Text(
+                    notification.timeAgo,
+                    style: AppStyles.caption.copyWith(
+                      color: AppColors.textTertiary,
+                      fontFamily: 'Alexandria',
+                      fontSize: 11,
                     ),
-                  if (onAccept != null && onDecline != null)
-                    const SizedBox(width: 8),
-                  // Accept button
-                  if (onAccept != null)
-                    SizedBox(
-                      height: 32,
-                      child: ElevatedButton(
-                        onPressed: onAccept,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          minimumSize: const Size(0, 32),
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          Provider.of<LocalizationService>(context, listen: false).translate('dialogs.accept'),
-                          style: AppStyles.bodySmall.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
+                  ),
+                  // Compact Action Buttons for friend requests
+                  if (isFriendRequest && (onAccept != null || onDecline != null)) ...[
+                    const SizedBox(height: 8),
+                    _buildCompactFriendRequestButtons(context, localization),
+                  ],
+                  // Compact RSVP Buttons for event invitations
+                  if (isEventInvitation) ...[
+                    const SizedBox(height: 8),
+                    _buildCompactRSVPButtons(context, localization),
+                  ],
                 ],
               ),
-            ],
-            // Action Buttons (RSVP) - Only for event_invite
-            if (notification.type == NotificationType.eventInvitation) ...[
-              const SizedBox(height: 12),
-              Builder(
-                builder: (context) {
-                  return _buildActionButtons(context, notification.type, notification, cubit);
-                },
+            ),
+            // Unread indicator (subtle pink dot)
+            if (!notification.isRead)
+              Container(
+                width: 6,
+                height: 6,
+                margin: const EdgeInsets.only(left: 6, top: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.accent,
+                  shape: BoxShape.circle,
+                ),
               ),
-            ],
           ],
         ),
       ),
     );
+  }
+
+  /// Build leading widget - circular avatar for user notifications, icon for others
+  Widget _buildLeadingWidget(bool hasUserAvatar, String? senderName, String? senderImage) {
+    if (hasUserAvatar) {
+      return _buildAvatarWithBadge(senderName, senderImage);
+    }
+    return _buildLeadingIcon(notification.type, data: notification.data);
+  }
+
+  /// Build circular avatar with status badge
+  Widget _buildAvatarWithBadge(String? senderName, String? senderImage) {
+    final statusBadge = _getStatusBadge();
+    
+    return Stack(
+      children: [
+        // Circular Avatar
+        CircleAvatar(
+          radius: 20,
+          backgroundColor: AppColors.primary.withOpacity(0.1),
+          backgroundImage: senderImage != null && senderImage.isNotEmpty
+              ? CachedNetworkImageProvider(senderImage)
+              : null,
+          child: senderImage == null || senderImage.isEmpty
+              ? Text(
+                  _getInitials(senderName ?? ''),
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Alexandria',
+                  ),
+                )
+              : null,
+        ),
+        // Status badge (bottom right)
+        if (statusBadge != null)
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: statusBadge['color'] as Color,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 1.5),
+              ),
+              child: Icon(
+                statusBadge['icon'] as IconData,
+                size: 9,
+                color: Colors.white,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Get status badge info based on notification type
+  Map<String, dynamic>? _getStatusBadge() {
+    switch (notification.type) {
+      case NotificationType.friendRequestAccepted:
+        return {'icon': Icons.check, 'color': Colors.green};
+      case NotificationType.friendRequestRejected:
+        return {'icon': Icons.close, 'color': Colors.red};
+      case NotificationType.eventResponse:
+        final response = notification.data?['response']?.toString().toLowerCase() ??
+                        notification.data?['status']?.toString().toLowerCase() ?? '';
+        if (response.contains('accepted')) {
+          return {'icon': Icons.check, 'color': Colors.green};
+        } else if (response.contains('maybe')) {
+          return {'icon': Icons.help_outline, 'color': Colors.orange};
+        } else if (response.contains('declined')) {
+          return {'icon': Icons.close, 'color': Colors.red};
+        }
+        return {'icon': Icons.event_available, 'color': Colors.green};
+      case NotificationType.friendRequest:
+        return {'icon': Icons.person_add, 'color': Colors.blue};
+      case NotificationType.eventInvitation:
+        return {'icon': Icons.event, 'color': Colors.orange};
+      default:
+        return null;
+    }
+  }
+
+  /// Build rich text message with bold sender name
+  Widget _buildRichTextMessage(BuildContext context, String? senderName, LocalizationService localization) {
+    // For notifications with sender, show "Name action" format
+    if (senderName != null && senderName.isNotEmpty) {
+      final actionText = _getActionText(localization);
+      
+      return RichText(
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        text: TextSpan(
+          style: AppStyles.bodySmall.copyWith(
+            fontFamily: 'Alexandria',
+            fontSize: 13,
+            height: 1.3,
+          ),
+          children: [
+            TextSpan(
+              text: senderName,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+              recognizer: TapGestureRecognizer()
+                ..onTap = () {
+                  // Navigate to user profile if available
+                  final userId = notification.data?['senderId'] ?? 
+                                notification.data?['sender']?['_id'] ??
+                                notification.data?['fromUser']?['_id'];
+                  if (userId != null) {
+                    Navigator.pop(context);
+                    AppRoutes.pushNamed(context, AppRoutes.friendProfile, 
+                      arguments: {'friendId': userId});
+                  }
+                },
+            ),
+            TextSpan(
+              text: ' $actionText',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    // Fallback: show title and message
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          notification.title,
+          style: AppStyles.bodySmall.copyWith(
+            fontWeight: FontWeight.w600,
+            color: _getTitleColor(notification.type, data: notification.data),
+            fontFamily: 'Alexandria',
+            fontSize: 13,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        if (notification.message.isNotEmpty && notification.message != notification.title) ...[
+          const SizedBox(height: 2),
+          Text(
+            notification.message,
+            style: AppStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+              fontFamily: 'Alexandria',
+              fontSize: 12,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Get action text based on notification type
+  String _getActionText(LocalizationService localization) {
+    switch (notification.type) {
+      case NotificationType.friendRequest:
+        return localization.translate('notifications.sentYouFriendRequest');
+      case NotificationType.friendRequestAccepted:
+        return localization.translate('notifications.acceptedYourFriendRequest');
+      case NotificationType.friendRequestRejected:
+        return localization.translate('notifications.declinedYourFriendRequest');
+      case NotificationType.eventInvitation:
+        final eventName = notification.data?['eventName'] ?? 
+                         notification.data?['event']?['name'] ?? '';
+        if (eventName.isNotEmpty) {
+          return '${localization.translate('notifications.invitedYouTo')} $eventName';
+        }
+        return localization.translate('notifications.invitedYouToEvent');
+      case NotificationType.eventResponse:
+        final response = notification.data?['response']?.toString().toLowerCase() ??
+                        notification.data?['status']?.toString().toLowerCase() ?? '';
+        if (response.contains('accepted')) {
+          return localization.translate('notifications.acceptedYourInvitation');
+        } else if (response.contains('maybe')) {
+          return localization.translate('notifications.maybeYourInvitation');
+        } else if (response.contains('declined')) {
+          return localization.translate('notifications.declinedYourInvitation');
+        }
+        return localization.translate('notifications.respondedToYourInvitation');
+      default:
+        return notification.message;
+    }
+  }
+
+  /// Build compact friend request buttons (smaller for dropdown)
+  Widget _buildCompactFriendRequestButtons(BuildContext context, LocalizationService localization) {
+    return Row(
+      children: [
+        // Decline button - compact
+        Expanded(
+          child: SizedBox(
+            height: 28,
+            child: OutlinedButton(
+              onPressed: onDecline,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: const Size(0, 28),
+                side: BorderSide(color: Colors.grey.shade300),
+                shape: const StadiumBorder(),
+              ),
+              child: Text(
+                localization.translate('dialogs.decline'),
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                  fontFamily: 'Alexandria',
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Accept button - compact
+        Expanded(
+          child: SizedBox(
+            height: 28,
+            child: ElevatedButton(
+              onPressed: onAccept,
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: const Size(0, 28),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: const StadiumBorder(),
+                elevation: 0,
+              ),
+              child: Text(
+                localization.translate('dialogs.accept'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                  fontFamily: 'Alexandria',
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build compact RSVP buttons for event invitations
+  Widget _buildCompactRSVPButtons(BuildContext context, LocalizationService localization) {
+    final eventId = notification.relatedId ?? 
+                   notification.data?['eventId']?.toString() ??
+                   notification.data?['event_id']?.toString() ??
+                   notification.data?['event']?['_id']?.toString() ??
+                   notification.data?['event']?['id']?.toString();
+    
+    if (eventId == null || eventId.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Row(
+      children: [
+        // Decline - compact
+        SizedBox(
+          height: 26,
+          child: OutlinedButton(
+            onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              cubit.deleteNotification(notification.id);
+              Navigator.pop(context);
+              try {
+                await cubit.respondToEvent(eventId, 'declined');
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text(localization.translate('notifications.youDeclinedInvitation')),
+                    backgroundColor: AppColors.textSecondary,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              } catch (e) {
+                await cubit.loadNotifications();
+              }
+            },
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              minimumSize: const Size(0, 26),
+              side: BorderSide(color: Colors.grey.shade300),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            ),
+            child: Text(
+              localization.translate('dialogs.decline'),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+                fontSize: 10,
+                fontFamily: 'Alexandria',
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        // Maybe - compact
+        SizedBox(
+          height: 26,
+          child: OutlinedButton(
+            onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              cubit.deleteNotification(notification.id);
+              Navigator.pop(context);
+              try {
+                await cubit.respondToEvent(eventId, 'maybe');
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text(localization.translate('notifications.youMarkedMaybe')),
+                    backgroundColor: AppColors.warning,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              } catch (e) {
+                await cubit.loadNotifications();
+              }
+            },
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              minimumSize: const Size(0, 26),
+              side: BorderSide(color: Colors.orange.shade300),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            ),
+            child: Text(
+              localization.translate('dialogs.maybe'),
+              style: TextStyle(
+                color: Colors.orange.shade700,
+                fontWeight: FontWeight.w600,
+                fontSize: 10,
+                fontFamily: 'Alexandria',
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        // Accept - compact
+        Expanded(
+          child: SizedBox(
+            height: 26,
+            child: ElevatedButton(
+              onPressed: () async {
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                cubit.deleteNotification(notification.id);
+                Navigator.pop(context);
+                try {
+                  await cubit.respondToEvent(eventId, 'accepted');
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(
+                      content: Text(localization.translate('notifications.youAcceptedInvitation')),
+                      backgroundColor: AppColors.success,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                } catch (e) {
+                  await cubit.loadNotifications();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                minimumSize: const Size(0, 26),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                elevation: 0,
+              ),
+              child: Text(
+                localization.translate('dialogs.accept'),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 10,
+                  fontFamily: 'Alexandria',
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Extract sender name from notification data
+  String? _extractSenderName() {
+    final data = notification.data;
+    if (data == null) return null;
+    
+    // Try direct name fields first
+    if (data['senderName'] is String) return data['senderName'] as String;
+    if (data['responderName'] is String) return data['responderName'] as String;
+    
+    // Try relatedUser (from API response)
+    final relatedUser = data['relatedUser'];
+    if (relatedUser is Map<String, dynamic>) {
+      if (relatedUser['fullName'] is String) return relatedUser['fullName'] as String;
+      if (relatedUser['name'] is String) return relatedUser['name'] as String;
+    }
+    
+    // Try sender
+    final sender = data['sender'];
+    if (sender is Map<String, dynamic>) {
+      if (sender['fullName'] is String) return sender['fullName'] as String;
+      if (sender['name'] is String) return sender['name'] as String;
+    }
+    
+    // Try fromUser
+    final fromUser = data['fromUser'];
+    if (fromUser is Map<String, dynamic>) {
+      if (fromUser['fullName'] is String) return fromUser['fullName'] as String;
+      if (fromUser['name'] is String) return fromUser['name'] as String;
+    }
+    
+    // Try responder
+    final responder = data['responder'];
+    if (responder is Map<String, dynamic>) {
+      if (responder['fullName'] is String) return responder['fullName'] as String;
+      if (responder['name'] is String) return responder['name'] as String;
+    }
+    
+    // Try user
+    final user = data['user'];
+    if (user is Map<String, dynamic>) {
+      if (user['fullName'] is String) return user['fullName'] as String;
+      if (user['name'] is String) return user['name'] as String;
+    }
+    
+    return null;
+  }
+
+  /// Extract sender profile image from notification data
+  String? _extractSenderImage() {
+    final data = notification.data;
+    if (data == null) return null;
+    
+    // Try direct image fields first
+    if (data['senderImage'] is String) return data['senderImage'] as String;
+    if (data['senderProfileImage'] is String) return data['senderProfileImage'] as String;
+    if (data['responderImage'] is String) return data['responderImage'] as String;
+    
+    // Try relatedUser (from API response)
+    final relatedUser = data['relatedUser'];
+    if (relatedUser is Map<String, dynamic>) {
+      if (relatedUser['profileImage'] is String) return relatedUser['profileImage'] as String;
+      if (relatedUser['profile_image'] is String) return relatedUser['profile_image'] as String;
+    }
+    
+    // Try sender
+    final sender = data['sender'];
+    if (sender is Map<String, dynamic>) {
+      if (sender['profileImage'] is String) return sender['profileImage'] as String;
+      if (sender['profile_image'] is String) return sender['profile_image'] as String;
+    }
+    
+    // Try fromUser
+    final fromUser = data['fromUser'];
+    if (fromUser is Map<String, dynamic>) {
+      if (fromUser['profileImage'] is String) return fromUser['profileImage'] as String;
+      if (fromUser['profile_image'] is String) return fromUser['profile_image'] as String;
+    }
+    
+    // Try responder
+    final responder = data['responder'];
+    if (responder is Map<String, dynamic>) {
+      if (responder['profileImage'] is String) return responder['profileImage'] as String;
+      if (responder['profile_image'] is String) return responder['profile_image'] as String;
+    }
+    
+    // Try user
+    final user = data['user'];
+    if (user is Map<String, dynamic>) {
+      if (user['profileImage'] is String) return user['profileImage'] as String;
+      if (user['profile_image'] is String) return user['profile_image'] as String;
+    }
+    
+    return null;
+  }
+
+  /// Get initials from name
+  String _getInitials(String name) {
+    if (name.isEmpty) return '?';
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name[0].toUpperCase();
   }
 
   /// Build leading icon with color based on notification type
@@ -555,53 +1045,45 @@ class _NotificationItem extends StatelessWidget {
       height: 40,
       decoration: BoxDecoration(
         color: iconColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
+        shape: BoxShape.circle,
       ),
       child: Icon(
         iconData,
         color: iconColor,
-        size: 20,
+        size: 18,
       ),
     );
   }
 
   /// Get icon data based on notification type
   IconData _getNotificationIcon(NotificationType type, {Map<String, dynamic>? data}) {
-    // Check if this is item_received (even if mapped to itemPurchased)
     final isItemReceived = data?['type']?.toString().toLowerCase() == 'item_received' ||
                           data?['notificationType']?.toString().toLowerCase() == 'item_received';
     
     switch (type) {
-      // Event types
       case NotificationType.eventInvitation:
-        return Icons.event; // event_invite
+        return Icons.event;
       case NotificationType.eventResponse:
-        return Icons.event_available; // event_invitation_accepted
+        return Icons.event_available;
       case NotificationType.eventUpdate:
-        return Icons.edit_calendar; // event_update
+        return Icons.edit_calendar;
       case NotificationType.eventReminder:
         return Icons.calendar_today;
-      
-      // Friend types
       case NotificationType.friendRequest:
         return Icons.person_add;
       case NotificationType.friendRequestAccepted:
         return Icons.how_to_reg;
       case NotificationType.friendRequestRejected:
         return Icons.person_remove;
-      
-      // Item types
       case NotificationType.itemReserved:
-        return Icons.visibility_off; // Deep Purple - "Secret"
+        return Icons.visibility_off;
       case NotificationType.itemPurchased:
-        // Check if this is actually item_received
         if (isItemReceived) {
-          return Icons.check_circle_outline; // Success/happiness icon for item_received
+          return Icons.check_circle_outline;
         }
-        return Icons.card_giftcard; // Purple
+        return Icons.card_giftcard;
       case NotificationType.itemUnreserved:
-        return Icons.lock_open; // Grey
-      
+        return Icons.lock_open;
       case NotificationType.wishlistShared:
         return Icons.share_outlined;
       default:
@@ -611,41 +1093,33 @@ class _NotificationItem extends StatelessWidget {
 
   /// Get icon color based on notification type
   Color _getIconColor(NotificationType type, {Map<String, dynamic>? data}) {
-    // Check if this is item_received (even if mapped to itemPurchased)
     final isItemReceived = data?['type']?.toString().toLowerCase() == 'item_received' ||
                           data?['notificationType']?.toString().toLowerCase() == 'item_received';
     
     switch (type) {
-      // Event types
       case NotificationType.eventInvitation:
-        return Colors.orange; // event_invite
+        return Colors.orange;
       case NotificationType.eventResponse:
-        return Colors.green; // event_invitation_accepted (Green)
+        return Colors.green;
       case NotificationType.eventUpdate:
-        return Colors.amber; // event_update (Amber)
+        return Colors.amber;
       case NotificationType.eventReminder:
         return Colors.orange;
-      
-      // Friend types
       case NotificationType.friendRequest:
         return Colors.blue;
       case NotificationType.friendRequestAccepted:
         return Colors.green;
       case NotificationType.friendRequestRejected:
-        return Colors.blue;
-      
-      // Item types
+        return Colors.red;
       case NotificationType.itemReserved:
-        return Colors.deepPurple; // Deep Purple - "Secret"
+        return Colors.deepPurple;
       case NotificationType.itemPurchased:
-        // Check if this is actually item_received
         if (isItemReceived) {
-          return Colors.teal; // Teal for item_received (Mission Accomplished)
+          return Colors.teal;
         }
         return Colors.purple;
       case NotificationType.itemUnreserved:
         return Colors.grey;
-      
       case NotificationType.wishlistShared:
         return AppColors.primary;
       default:
@@ -653,18 +1127,15 @@ class _NotificationItem extends StatelessWidget {
     }
   }
 
-  /// Get title color based on notification type (for highlighting)
+  /// Get title color based on notification type
   Color _getTitleColor(NotificationType type, {Map<String, dynamic>? data}) {
-    // Check if this is item_received
     final isItemReceived = data?['type']?.toString().toLowerCase() == 'item_received' ||
                           data?['notificationType']?.toString().toLowerCase() == 'item_received';
     
-    // Highlight event_invitation_accepted with green
     if (type == NotificationType.eventResponse) {
       return Colors.green.shade700;
     }
     
-    // Highlight item_received with teal
     if (type == NotificationType.itemPurchased && isItemReceived) {
       return Colors.teal.shade700;
     }
@@ -672,333 +1143,5 @@ class _NotificationItem extends StatelessWidget {
     return AppColors.textPrimary;
   }
 
-  /// Build action buttons (RSVP) - Only for event_invite
-  Widget _buildActionButtons(BuildContext context, NotificationType type, AppNotification notification, NotificationsCubit cubit) {
-    // Only show buttons for event_invite
-    if (type != NotificationType.eventInvitation) {
-      return const SizedBox.shrink();
-    }
-    
-    // Get eventId from relatedId or data map
-    final eventId = notification.relatedId ?? 
-                   notification.data?['eventId']?.toString() ??
-                   notification.data?['event_id']?.toString() ??
-                   notification.data?['event']?['_id']?.toString() ??
-                   notification.data?['event']?['id']?.toString();
-    
-    if (eventId == null || eventId.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return _buildRSVPButtons(context, notification.copyWith(relatedId: eventId), cubit);
-  }
-
-  /// Build RSVP buttons for event invitation notifications
-  Widget _buildRSVPButtons(BuildContext context, AppNotification notification, NotificationsCubit cubit) {
-    if (notification.type != NotificationType.eventInvitation) {
-      return const SizedBox.shrink();
-    }
-    
-    // Get eventId from relatedId or data map
-    final eventId = notification.relatedId ?? 
-                   notification.data?['eventId']?.toString() ??
-                   notification.data?['event_id']?.toString() ??
-                   notification.data?['event']?['_id']?.toString() ??
-                   notification.data?['event']?['id']?.toString();
-    
-    if (eventId == null || eventId.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return StatefulBuilder(
-      builder: (context, setState) {
-        bool isLoading = false;
-        String? selectedStatus; // 'accepted', 'maybe', 'declined'
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Show success message if response was sent
-            if (selectedStatus != null) ...[
-              Row(
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    size: 16,
-                    color: AppColors.success,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    Provider.of<LocalizationService>(context, listen: false).translate('notifications.responseSent'),
-                    style: AppStyles.bodySmall.copyWith(
-                      color: AppColors.success,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ] else ...[
-              // Show action buttons - Same style as Friend Request buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  // Decline Button
-                  SizedBox(
-                    height: 32,
-                    child: OutlinedButton(
-                      onPressed: isLoading
-                          ? null
-                            : () async {
-                              setState(() {
-                                isLoading = true;
-                              });
-                              // Get ScaffoldMessenger before closing dropdown
-                              final scaffoldMessenger = ScaffoldMessenger.of(context);
-                              final localization = Provider.of<LocalizationService>(context, listen: false);
-                              try {
-                                final eventId = notification.relatedId ?? 
-                                               notification.data?['eventId']?.toString() ??
-                                               notification.data?['event_id']?.toString() ??
-                                               notification.data?['event']?['_id']?.toString() ??
-                                               notification.data?['event']?['id']?.toString();
-                                if (eventId == null || eventId.isEmpty) {
-                                  throw Exception('Event ID not found');
-                                }
-                                // Delete notification first (optimistic update)
-                                cubit.deleteNotification(notification.id);
-                                // Close dropdown
-                                Navigator.pop(context);
-                                // Call API
-                                await cubit.respondToEvent(eventId, 'declined');
-                                // Show success snackbar (using parent context)
-                                scaffoldMessenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(localization.translate('notifications.youDeclinedInvitation')),
-                                    backgroundColor: AppColors.textSecondary,
-                                    duration: const Duration(seconds: 2),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              } catch (e) {
-                                // Restore notification on error
-                                await cubit.loadNotifications();
-                                scaffoldMessenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text('Failed to respond: ${e.toString()}'),
-                                    backgroundColor: AppColors.error,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              } finally {
-                                if (context.mounted) {
-                                  setState(() {
-                                    isLoading = false;
-                                    selectedStatus = 'declined';
-                                  });
-                                }
-                              }
-                            },
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        minimumSize: const Size(0, 32),
-                        side: BorderSide(color: Colors.grey.shade300),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: isLoading
-                          ? SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-                              ),
-                            )
-                          : Text(
-                              Provider.of<LocalizationService>(context, listen: false).translate('dialogs.decline'),
-                              style: AppStyles.bodySmall.copyWith(
-                                color: AppColors.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Maybe Button
-                  SizedBox(
-                    height: 32,
-                    child: OutlinedButton(
-                      onPressed: isLoading
-                          ? null
-                            : () async {
-                              setState(() {
-                                isLoading = true;
-                              });
-                              // Get ScaffoldMessenger before closing dropdown
-                              final scaffoldMessenger = ScaffoldMessenger.of(context);
-                              final localization = Provider.of<LocalizationService>(context, listen: false);
-                              try {
-                                final eventId = notification.relatedId ?? 
-                                               notification.data?['eventId']?.toString() ??
-                                               notification.data?['event_id']?.toString() ??
-                                               notification.data?['event']?['_id']?.toString() ??
-                                               notification.data?['event']?['id']?.toString();
-                                if (eventId == null || eventId.isEmpty) {
-                                  throw Exception('Event ID not found');
-                                }
-                                // Delete notification first (optimistic update)
-                                cubit.deleteNotification(notification.id);
-                                // Close dropdown
-                                Navigator.pop(context);
-                                // Call API
-                                await cubit.respondToEvent(eventId, 'maybe');
-                                // Show success snackbar (using parent context)
-                                scaffoldMessenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(localization.translate('notifications.youMarkedMaybe')),
-                                    backgroundColor: AppColors.warning,
-                                    duration: const Duration(seconds: 2),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              } catch (e) {
-                                // Restore notification on error
-                                await cubit.loadNotifications();
-                                scaffoldMessenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text('Failed to respond: ${e.toString()}'),
-                                    backgroundColor: AppColors.error,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              } finally {
-                                if (context.mounted) {
-                                  setState(() {
-                                    isLoading = false;
-                                    selectedStatus = 'maybe';
-                                  });
-                                }
-                              }
-                            },
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        minimumSize: const Size(0, 32),
-                        side: BorderSide(color: Colors.orange.shade300),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: isLoading
-                          ? SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
-                              ),
-                            )
-                          : Text(
-                              Provider.of<LocalizationService>(context, listen: false).translate('dialogs.maybe'),
-                              style: AppStyles.bodySmall.copyWith(
-                                color: Colors.orange,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Accept Button
-                  SizedBox(
-                    height: 32,
-                    child: ElevatedButton(
-                      onPressed: isLoading
-                          ? null
-                            : () async {
-                              setState(() {
-                                isLoading = true;
-                              });
-                              // Get ScaffoldMessenger before closing dropdown
-                              final scaffoldMessenger = ScaffoldMessenger.of(context);
-                              final localization = Provider.of<LocalizationService>(context, listen: false);
-                              try {
-                                final eventId = notification.relatedId ?? 
-                                               notification.data?['eventId']?.toString() ??
-                                               notification.data?['event_id']?.toString() ??
-                                               notification.data?['event']?['_id']?.toString() ??
-                                               notification.data?['event']?['id']?.toString();
-                                if (eventId == null || eventId.isEmpty) {
-                                  throw Exception('Event ID not found');
-                                }
-                                // Delete notification first (optimistic update)
-                                cubit.deleteNotification(notification.id);
-                                // Close dropdown
-                                Navigator.pop(context);
-                                // Call API
-                                await cubit.respondToEvent(eventId, 'accepted');
-                                // Show success snackbar (using parent context)
-                                scaffoldMessenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(localization.translate('notifications.youAcceptedInvitation')),
-                                    backgroundColor: AppColors.success,
-                                    duration: const Duration(seconds: 2),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              } catch (e) {
-                                // Restore notification on error
-                                await cubit.loadNotifications();
-                                scaffoldMessenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text('Failed to respond: ${e.toString()}'),
-                                    backgroundColor: AppColors.error,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              } finally {
-                                if (context.mounted) {
-                                  setState(() {
-                                    isLoading = false;
-                                    selectedStatus = 'accepted';
-                                  });
-                                }
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        minimumSize: const Size(0, 32),
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: isLoading
-                          ? SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : Text(
-                              Provider.of<LocalizationService>(context, listen: false).translate('dialogs.accept'),
-                              style: AppStyles.bodySmall.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
 }
 

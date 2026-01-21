@@ -24,14 +24,11 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
   Timer? _debounceTimer;
 
   bool _isSearching = false;
-  String _searchMethod = 'email'; // Default to email
   List<User> _searchResults = [];
   String? _searchError;
 
   // Track which user is currently sending a request (for loading state)
   String? _sendingRequestToUserId;
-
-  final List<String> _searchMethods = ['email', 'phone']; // Removed username
 
   @override
   void initState() {
@@ -202,21 +199,6 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSearchMethodSelection(LocalizationService localization) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-      ),
-      child: Text(
-        localization.translate('friends.searchFriends'),
-        style: AppStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -608,30 +590,8 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
     return const SizedBox.shrink();
   }
 
-  IconData _getSearchMethodIcon(String method) {
-    switch (method) {
-      case 'email':
-        return Icons.email;
-      case 'phone':
-        return Icons.phone;
-      default:
-        return Icons.email;
-    }
-  }
-
-  String _getSearchMethodName(String method, LocalizationService localization) {
-    switch (method) {
-      case 'email':
-        return localization.translate('friends.email');
-      case 'phone':
-        return localization.translate('auth.phone');
-      default:
-        return method;
-    }
-  }
-
   String _getSearchLabel(LocalizationService localization) {
-    // Unified label for email/phone search
+    // Unified label for search
     return localization.translate('friends.emailOrPhoneLabel');
   }
 
@@ -656,11 +616,8 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
     });
 
     try {
-      // Always use 'username' as type, but send the actual value (email or phone)
-      final users = await _friendsRepository.searchUsers(
-        type: 'username', // Always username type
-        value: query, // The actual value (email or phone number)
-      );
+      // Use unified search API - backend handles matching across fullName, handle, email, phone
+      final users = await _friendsRepository.searchUsers(query);
 
       if (mounted) {
         final timestamp = DateTime.now().toIso8601String();

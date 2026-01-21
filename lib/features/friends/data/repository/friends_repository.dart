@@ -13,26 +13,23 @@ import 'package:wish_listy/features/friends/data/models/suggestion_user_model.da
 class FriendsRepository {
   final ApiService _apiService = ApiService();
 
-  /// Search users by username, email, or phone
+  /// Search users using unified search API
   ///
-  /// [type] - Search type: 'username', 'email', or 'phone'
-  /// [value] - Search value (case-insensitive, starts with)
+  /// [query] - Search query that matches across fullName, handle, username, email, or phone
   ///
+  /// The backend handles matching across all fields automatically.
   /// Returns list of matching users
-  Future<List<User>> searchUsers({
-    required String type,
-    required String value,
-  }) async {
+  Future<List<User>> searchUsers(String query) async {
     try {
-      if (value.isEmpty || value.length < 2) {
+      final trimmedQuery = query.trim();
+      if (trimmedQuery.isEmpty || trimmedQuery.length < 2) {
         return [];
       }
 
       final response = await _apiService.get(
         '/users/search',
         queryParameters: {
-          'type': type,
-          'value': value,
+          'q': trimmedQuery,
         },
       );
 
@@ -40,7 +37,6 @@ class FriendsRepository {
       final data = response['data'] as List<dynamic>?;
 
       if (data == null || data.isEmpty) {
-
         return [];
       }
 
@@ -53,7 +49,6 @@ class FriendsRepository {
       // Re-throw ApiException to preserve error details
       rethrow;
     } catch (e) {
-
       throw Exception('Failed to search users. Please try again.');
     }
   }
