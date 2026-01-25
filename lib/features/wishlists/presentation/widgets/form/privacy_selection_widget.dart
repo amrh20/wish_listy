@@ -119,4 +119,3 @@ class PrivacySelectionWidget extends StatelessWidget {
     );
   }
 }
-

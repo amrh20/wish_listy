@@ -5,7 +5,6 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/primary_gradient_button.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
-import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/core/widgets/unified_snackbar.dart';
 import 'package:wish_listy/core/widgets/unified_page_header.dart';
 import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
@@ -19,7 +18,6 @@ import 'package:wish_listy/features/wishlists/data/repository/guest_data_reposit
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import '../widgets/index.dart';
-import '../widgets/wishlist_form_helpers.dart';
 
 class MyWishlistsScreen extends StatefulWidget {
   const MyWishlistsScreen({super.key});
@@ -227,13 +225,33 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                                 top: 16,
                                 bottom: 8,
                               ),
-                              child: _buildCategoryFilterTabs(),
+                              child: Consumer<LocalizationService>(
+                                builder: (context, localization, _) {
+                                  return CategoryFilterTabsWidget(
+                                    categories: _availableCategories,
+                                    categoryCounts: _categoryCounts,
+                                    selectedCategory: _selectedCategory,
+                                    onCategorySelected: (c) {
+                                      if (mounted) {
+                                        setState(() {
+                                          _selectedCategory = c;
+                                          _applyCategoryFilter();
+                                        });
+                                      }
+                                    },
+                                    localization: localization,
+                                  );
+                                },
+                              ),
                             ),
                           ],
                           // Main Content
                           Expanded(
                             child: _isLoading
-                                ? _buildWishlistSkeletonList()
+                                ? WishlistSkeletonWidget(
+                                    animationController: _animationController,
+                                    onRefresh: _refreshWishlists,
+                                  )
                                 : _errorMessage != null
                                 ? Center(
                                     child: Padding(
@@ -1125,381 +1143,4 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     }
   }
 
-  /// Build category filter tabs
-  Widget _buildCategoryFilterTabs() {
-    return Consumer<LocalizationService>(
-      builder: (context, localization, _) {
-        final isRTL = localization.isRTL;
-
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Directionality(
-            textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                // Filter Icon
-                Icon(
-                  Icons.filter_list_rounded,
-                  size: 20,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(width: 12),
-                // "All" tab
-                _buildCategoryChip(
-                  label: localization.translate('ui.all'),
-                  category: null,
-                  isSelected: _selectedCategory == null,
-                  icon: Icons.list_rounded,
-                  count: _categoryCounts['all'] ?? 0,
-                ),
-                const SizedBox(width: 8),
-                // Category tabs
-                ..._availableCategories.map((category) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: _buildCategoryChip(
-                      label: WishlistFormHelpers.getCategoryDisplayName(category, localization),
-                      category: category,
-                      isSelected: _selectedCategory == category,
-                      icon: _getCategoryIcon(category),
-                      count: _categoryCounts[category] ?? 0,
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  /// Build a category filter chip
-  Widget _buildCategoryChip({
-    required String label,
-    required String? category,
-    required bool isSelected,
-    IconData? icon,
-    int count = 0,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        if (mounted) {
-        setState(() {
-          _selectedCategory = category;
-          _applyCategoryFilter();
-        });
-        }
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.surfaceVariant,
-            width: isSelected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected ? AppColors.primary : AppColors.textTertiary,
-              ),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: AppStyles.bodySmall.copyWith(
-                color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-            if (count > 0) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.textTertiary.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  count.toString(),
-                  style: AppStyles.caption.copyWith(
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Get icon for category
-  IconData? _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'general':
-        return Icons.category_outlined;
-      case 'birthday':
-        return Icons.cake_outlined;
-      case 'wedding':
-        return Icons.favorite_outline;
-      case 'graduation':
-        return Icons.school_outlined;
-      case 'anniversary':
-        return Icons.celebration_outlined;
-      case 'holiday':
-        return Icons.card_giftcard_outlined;
-      case 'babyshower':
-        return Icons.child_care_outlined;
-      case 'housewarming':
-        return Icons.home_outlined;
-      case 'custom':
-        return Icons.edit_outlined;
-      default:
-        return Icons.label_outline;
-    }
-  }
-
-  /// Build skeleton loading list for wishlist cards
-  Widget _buildWishlistSkeletonList() {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        // Create pulsing effect using sine wave - lighter and smoother
-        final pulseValue =
-            (0.15 +
-            (0.2 *
-                (0.5 +
-                    0.5 * (1 + (2 * _animationController.value - 1).abs()))));
-
-        return RefreshIndicator(
-          onRefresh: _refreshWishlists,
-          color: AppColors.primary,
-          child: ListView.separated(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: 16 + MediaQuery.of(context).padding.bottom + 100, // Extra space for bottom nav bar
-            ),
-            itemCount: 3, // Show 3 skeleton cards
-            separatorBuilder: (context, index) => const SizedBox(height: 16),
-            itemBuilder: (context, index) {
-              return _buildWishlistCardSkeleton(pulseValue);
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  /// Build a single wishlist card skeleton
-  Widget _buildWishlistCardSkeleton(double pulseValue) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: AppColors.primary.withOpacity(0.08),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.textTertiary.withOpacity(0.05),
-              offset: const Offset(0, 5),
-              blurRadius: 15,
-              spreadRadius: 0,
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // Header Section (Pastel Purple Background)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.04),
-              ),
-              child: Row(
-                children: [
-                  // Icon Skeleton - Light purple gradient
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppColors.primary.withOpacity(
-                            0.08 + pulseValue * 0.05,
-                          ),
-                          AppColors.primary.withOpacity(
-                            0.12 + pulseValue * 0.05,
-                          ),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  // Title and Subtitle Skeleton
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 180,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(
-                              0.1 + pulseValue * 0.05,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Container(
-                          width: 120,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(
-                              0.08 + pulseValue * 0.03,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Badge Skeleton
-                  Container(
-                    width: 50,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(
-                        0.1 + pulseValue * 0.05,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Body Section (White Background)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(color: Colors.white),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Stats Row Skeleton
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildStatSkeleton(pulseValue),
-                      _buildStatSkeleton(pulseValue),
-                      _buildStatSkeleton(pulseValue),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // Progress Bar Skeleton
-                  Container(
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(
-                        0.06 + pulseValue * 0.03,
-                      ),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Action Buttons Skeleton
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(
-                              0.06 + pulseValue * 0.03,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(
-                              0.06 + pulseValue * 0.03,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Build a stat column skeleton
-  Widget _buildStatSkeleton(double pulseValue) {
-    return Column(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.06 + pulseValue * 0.03),
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          width: 30,
-          height: 16,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1 + pulseValue * 0.05),
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          width: 50,
-          height: 12,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.08 + pulseValue * 0.03),
-            borderRadius: BorderRadius.circular(6),
-          ),
-        ),
-      ],
-    );
-  }
 }

@@ -278,7 +278,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   child: CircularProgressIndicator(color: AppColors.primary),
                 )
               : _errorMessage != null
-                  ? _buildErrorState()
+                  ? ItemDetailsErrorStateWidget(
+                      message: _errorMessage!,
+                      onRetry: _fetchItemDetails,
+                    )
                   : _currentItem == null
                       ? Center(
                           child: Text(
@@ -702,7 +705,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       runSpacing: 12,
       spacing: 12,
       children: [
-        _InfoTile(
+        ItemDetailsInfoTileWidget(
           width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
           title: Provider.of<LocalizationService>(context, listen: false).translate('details.priority'),
           value: _getPriorityText(item.priority),
@@ -710,7 +713,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           iconColor: priorityColor,
           chipColor: priorityColor.withOpacity(0.12),
         ),
-        _InfoTile(
+        ItemDetailsInfoTileWidget(
           width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
           title: Provider.of<LocalizationService>(context, listen: false).translate('details.status'),
           value: _getItemStatusText(item),
@@ -718,7 +721,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           iconColor: _getItemStatusColor(item),
           chipColor: _getItemStatusColor(item).withOpacity(0.12),
         ),
-        _InfoTile(
+        ItemDetailsInfoTileWidget(
           width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
           title: Provider.of<LocalizationService>(context, listen: false).translate('details.store'),
           value: (store.trim().isEmpty || store.trim() == 'null') ? '—' : store,
@@ -726,7 +729,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           iconColor: AppColors.primary,
           chipColor: AppColors.primary.withOpacity(0.12),
         ),
-        _InfoTile(
+        ItemDetailsInfoTileWidget(
           width: (MediaQuery.of(context).size.width - 16 * 2 - 12) / 2,
           title: Provider.of<LocalizationService>(context, listen: false).translate('details.added'),
           value: _formatDate(createdAt),
@@ -889,38 +892,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       ),
     );
   }
-
-  Widget _buildErrorState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: AppColors.error),
-            const SizedBox(height: 16),
-            Text(
-              'Error',
-              style: AppStyles.headingMedium.copyWith(color: AppColors.error),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _errorMessage!,
-              style: AppStyles.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            CustomButton(
-              text: 'Retry',
-              onPressed: _fetchItemDetails,
-              variant: ButtonVariant.primary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
 
   // Helper Methods
   Color _getPriorityColor(ItemPriority priority) {
@@ -1467,86 +1438,5 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         );
       }
     }
-  }
-}
-
-class _InfoTile extends StatelessWidget {
-  final double width;
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color iconColor;
-  final Color chipColor;
-
-  const _InfoTile({
-    required this.width,
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.iconColor,
-    required this.chipColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-          ),
-        ],
-        border: Border.all(
-          color: Colors.black.withOpacity(0.04),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: chipColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppStyles.caption.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppStyles.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 
@@ -26,26 +28,26 @@ class ReservedItemCardWidget extends StatelessWidget {
   }
 
   void _showCancelConfirmation(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     ConfirmationDialog.show(
       context: context,
-      isSuccess: false, // Error/destructive action
-      title: 'Un-reserve this gift?',
-      message: 'Others might buy it.',
-      primaryActionLabel: 'Un-reserve',
+      isSuccess: false,
+      title: localization.translate('details.unreserveGiftTitle'),
+      message: localization.translate('details.unreserveGiftMessage'),
+      primaryActionLabel: localization.translate('details.unreserve'),
       onPrimaryAction: onCancelReservation,
-      secondaryActionLabel: 'Cancel',
-      onSecondaryAction: () {
-        // Just close the dialog
-      },
+      secondaryActionLabel: localization.translate('common.cancel'),
+      onSecondaryAction: () {},
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final owner = item.wishlist?.owner;
-    final ownerName = owner?.fullName ?? 'Unknown';
+    final ownerName = owner?.fullName ?? localization.translate('common.unknown');
     final ownerImage = owner?.profileImage;
-    final isPurchased = item.isPurchasedValue; // isPurchased ?? isReceived
+    final isPurchased = item.isPurchasedValue;
 
     return Material(
       color: Colors.transparent,
@@ -135,7 +137,10 @@ class ReservedItemCardWidget extends StatelessWidget {
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              'Thank you! Your friend $ownerName received your gift 🎉',
+                              localization.translate(
+                                'details.friendReceivedGift',
+                                args: {'name': ownerName},
+                              ),
                               style: AppStyles.bodySmall.copyWith(
                                 color: AppColors.success,
                                 fontSize: 12,
@@ -174,7 +179,10 @@ class ReservedItemCardWidget extends StatelessWidget {
                           // Owner Name Text
                           Expanded(
                             child: Text(
-                              'For $ownerName',
+                              localization.translate(
+                                'details.forOwner',
+                                args: {'name': ownerName},
+                              ),
                               style: AppStyles.bodySmall.copyWith(
                                 color: AppColors.textSecondary,
                                 fontSize: 12,

@@ -14,6 +14,7 @@ import 'package:wish_listy/features/wishlists/data/repository/wishlist_repositor
 import 'package:wish_listy/features/wishlists/data/repository/guest_data_repository.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
+import '../widgets/index.dart';
 
 class AddItemScreen extends StatefulWidget {
   final String? wishlistId;
@@ -519,7 +520,16 @@ class _AddItemScreenState extends State<AddItemScreen>
                   child: Column(
                     children: [
                       // Header
-                      _buildHeader(localization),
+                      AddItemHeaderWidget(
+                        isEditing: _isEditing,
+                        onBack: () => Navigator.pop(context),
+                        getTitle: () => _isEditing
+                            ? localization.translate('wishlists.editWishlistItem')
+                            : localization.translate('wishlists.addNewWish'),
+                        getSubtitle: () => _isEditing
+                            ? localization.translate('wishlists.addSomethingSpecial')
+                            : localization.translate('wishlists.addWishSubtitle'),
+                      ),
 
                       // Form
                       Expanded(
@@ -595,7 +605,15 @@ class _AddItemScreenState extends State<AddItemScreen>
                                         const SizedBox(height: 32),
 
                                         // Action Buttons
-                                        _buildActionButtons(localization),
+                                        AddItemActionButtonsWidget(
+                                          isEditing: _isEditing,
+                                          isNameEmpty: _isNameEmpty,
+                                          isLoading: _isLoading,
+                                          onSave: () => _saveItem(localization),
+                                          getButtonText: () => _isEditing
+                                              ? localization.translate('wishlists.saveItem')
+                                              : localization.translate('wishlists.addToWishlist'),
+                                        ),
 
                                         const SizedBox(
                                           height: 100,
@@ -617,61 +635,6 @@ class _AddItemScreenState extends State<AddItemScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget _buildHeader(LocalizationService localization) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface.withOpacity(0.9),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textTertiary.withOpacity(0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 18),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white,
-              padding: const EdgeInsets.all(8),
-              shape: const CircleBorder(),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _isEditing
-                      ? localization.translate('wishlists.editWishlistItem')
-                      : localization.translate('wishlists.addNewWish'),
-                  style: AppStyles.headingSmall.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  _isEditing
-                      ? localization.translate('wishlists.addSomethingSpecial')
-                      : localization.translate('wishlists.addWishSubtitle'),
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.visible,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1160,20 +1123,6 @@ class _AddItemScreenState extends State<AddItemScreen>
         ),
         const SizedBox(height: 16),
       ],
-    );
-  }
-
-  Widget _buildActionButtons(LocalizationService localization) {
-    return CustomButton(
-      text: _isEditing
-          ? localization.translate('wishlists.saveItem')
-          : localization.translate('wishlists.addToWishlist'),
-      onPressed: _isNameEmpty || _isLoading
-          ? null
-          : () => _saveItem(localization),
-      isLoading: _isLoading,
-      variant: ButtonVariant.gradient,
-      gradientColors: [AppColors.primary, AppColors.secondary],
     );
   }
 

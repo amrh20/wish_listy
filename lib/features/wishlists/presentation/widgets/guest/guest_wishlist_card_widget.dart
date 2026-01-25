@@ -4,7 +4,7 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
-import 'package:wish_listy/features/wishlists/presentation/widgets/wishlist_card_widget.dart';
+import 'package:wish_listy/features/wishlists/presentation/widgets/shared/wishlist_summary.dart';
 
 class _CategoryVisual {
   final IconData icon;
@@ -584,6 +584,3 @@ class _DashedCirclePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
-
-

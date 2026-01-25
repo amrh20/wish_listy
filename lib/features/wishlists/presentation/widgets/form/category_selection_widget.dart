@@ -167,10 +167,9 @@ class CategorySelectionWidget extends StatelessWidget {
     return Provider.of<LocalizationService>(
       context,
       listen: false,
-    ).translate('common.optional') ?? 
-        (Provider.of<LocalizationService>(context, listen: false).currentLanguage == 'ar' 
-            ? '(اختياري)' 
+    ).translate('common.optional') ??
+        (Provider.of<LocalizationService>(context, listen: false).currentLanguage == 'ar'
+            ? '(اختياري)'
             : '(Optional)');
   }
 }
-

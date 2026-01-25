@@ -50,7 +50,7 @@ class AppConstants {
   static const String facebookUrl = 'https://facebook.com/wishlink';
   static const String twitterUrl = 'https://twitter.com/wishlink';
   static const String instagramUrl = 'https://instagram.com/wishlink';
-  static const String supportEmail = 'support@wishlink.com';
+  static const String supportEmail = 'wishlistyapp@gmail.com';
   static const String privacyPolicyUrl = 'https://wishlink.com/privacy';
   static const String termsOfServiceUrl = 'https://wishlink.com/terms';
 

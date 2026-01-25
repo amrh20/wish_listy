@@ -14,7 +14,7 @@ import 'package:wish_listy/features/profile/presentation/widgets/compact_empty_w
 import 'package:wish_listy/features/profile/presentation/screens/guest_home_screen.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 import 'package:wish_listy/features/profile/presentation/models/home_models.dart';
-import 'package:wish_listy/features/wishlists/presentation/widgets/wishlist_card_widget.dart';
+import 'package:wish_listy/features/wishlists/presentation/widgets/index.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'package:wish_listy/features/notifications/presentation/widgets/notification_dropdown.dart';

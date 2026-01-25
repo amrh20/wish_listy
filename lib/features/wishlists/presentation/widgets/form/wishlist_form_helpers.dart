@@ -18,7 +18,8 @@ class WishlistFormHelpers {
   }
 
   /// Get privacy title based on privacy type
-  static String getPrivacyTitle(String privacy, LocalizationService localization) {
+  static String getPrivacyTitle(
+      String privacy, LocalizationService localization) {
     switch (privacy) {
       case 'public':
         return localization.translate('wishlists.public');
@@ -76,5 +77,30 @@ class WishlistFormHelpers {
         return category;
     }
   }
-}
 
+  /// Get icon for category filter chips
+  static IconData getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'general':
+        return Icons.category_outlined;
+      case 'birthday':
+        return Icons.cake_outlined;
+      case 'wedding':
+        return Icons.favorite_outline;
+      case 'graduation':
+        return Icons.school_outlined;
+      case 'anniversary':
+        return Icons.celebration_outlined;
+      case 'holiday':
+        return Icons.card_giftcard_outlined;
+      case 'babyshower':
+        return Icons.child_care_outlined;
+      case 'housewarming':
+        return Icons.home_outlined;
+      case 'custom':
+        return Icons.edit_outlined;
+      default:
+        return Icons.label_outline;
+    }
+  }
+}

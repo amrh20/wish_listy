@@ -50,4 +50,3 @@ class CreateWishlistActionButtonsWidget extends StatelessWidget {
     );
   }
 }
-

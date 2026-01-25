@@ -329,8 +329,11 @@ class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> with 
             itemBuilder: (context, index) {
               final friend = _suggestions[index];
               final isRequested = _requestedFriends.contains(friend.id);
+              final gap = 16.0;
               return Padding(
-                padding: EdgeInsets.only(right: index < _suggestions.length - 1 ? 12 : 0),
+                padding: EdgeInsetsDirectional.only(
+                  end: index < _suggestions.length - 1 ? gap : 0,
+                ),
                 child: _SuggestionUserCard(
                   suggestion: friend,
                   localization: widget.localization,
@@ -363,10 +366,13 @@ class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> with 
         return ListView.builder(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          itemCount: 3, // Show 3 skeleton cards
+          itemCount: 3,
           itemBuilder: (context, index) {
+            const gap = 16.0;
             return Padding(
-              padding: EdgeInsets.only(right: index < 2 ? 12 : 0),
+              padding: EdgeInsetsDirectional.only(
+                end: index < 2 ? gap : 0,
+              ),
               child: _SuggestionSkeletonCard(pulseValue: pulseValue),
             );
           },
@@ -537,7 +543,7 @@ class _SuggestionUserCardState extends State<_SuggestionUserCard> {
                               child: Text(
                                 widget.isRequested
                                     ? widget.localization.translate('common.undo')
-                                    : widget.localization.translate('add'),
+                                    : widget.localization.translate('app.add'),
                                 style: AppStyles.bodyMedium.copyWith(
                                   color: widget.isRequested
                                       ? AppColors.textSecondary

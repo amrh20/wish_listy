@@ -7,4 +7,6 @@ export 'item_description_widget.dart';
 export 'item_top_bar_widget.dart';
 export 'item_header_section_widget.dart';
 export 'item_action_bar_widget.dart';
+export 'item_details_error_state_widget.dart';
+export 'item_details_info_tile_widget.dart';
 

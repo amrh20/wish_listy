@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
-import 'package:wish_listy/features/wishlists/presentation/widgets/wishlist_card_widget.dart';
+import 'package:wish_listy/features/wishlists/presentation/widgets/index.dart';
 
 /// Minimalist wishlist card for Home Screen
 /// Extremely clean design with zero actions - purely informational

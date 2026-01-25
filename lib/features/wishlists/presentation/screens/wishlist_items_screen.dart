@@ -14,10 +14,7 @@ import 'package:wish_listy/features/wishlists/data/repository/guest_data_reposit
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/friends/data/models/user_model.dart' as friends;
-import '../widgets/wishlist_item_card_widget.dart';
-import '../widgets/empty_wishlist_state_widget.dart';
-import '../widgets/empty_search_state_widget.dart';
-import '../widgets/wishlist_filter_chip_widget.dart';
+import '../widgets/index.dart';
 import 'package:wish_listy/features/profile/presentation/screens/guest_login_prompt_dialog.dart';
 
 class WishlistItemsScreen extends StatefulWidget {
@@ -685,58 +682,19 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
   Widget build(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context, listen: false);
     if (_isLoading) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                localization.translate('app.loading'),
-                style: AppStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      return WishlistItemsLoadingWidget(localization: localization);
     }
 
     if (_errorMessage != null) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline, size: 64, color: AppColors.error),
-                const SizedBox(height: 16),
-                Text(
-                  _errorMessage!,
-                  style: AppStyles.bodyLarge.copyWith(
-                    color: AppColors.textPrimary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                PrimaryGradientButton(
-                  text: localization.translate('common.retry'),
-                  icon: Icons.refresh,
-                  onPressed: _loadWishlistDetails,
-                ),
-              ],
-            ),
-          ),
-        ),
+      return WishlistItemsErrorWidget(
+        message: _errorMessage!,
+        onRetry: _loadWishlistDetails,
+        localization: localization,
       );
     }
+
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    final isGuest = authService.isGuest;
 
     return Scaffold(
       body: DecorativeBackground(
@@ -762,204 +720,39 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Top Row: Back Button & Actions
-                        Row(
-                          children: [
-                            IconButton(
-                              onPressed: () => Navigator.pop(context),
-                              icon: const Icon(
-                                Icons.arrow_back_ios,
-                                color: AppColors.textPrimary,
-                                size: 20,
-                              ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
-                            const Spacer(),
-                            Builder(
-                              builder: (context) {
-                                final authService = Provider.of<AuthRepository>(context, listen: false);
-                                final isGuest = authService.isGuest;
-                                
-                                return Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // Share icon for guest users
-                                    if (isGuest && !widget.isFriendWishlist)
-                                      IconButton(
-                                        tooltip: 'Share',
-                                        onPressed: () {
-                                          showDialog(
-                                            context: context,
-                                            builder: (_) => const GuestLoginPromptDialog(),
-                                          );
-                                        },
-                                        icon: Icon(
-                                          Icons.share,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    // Add item button (for non-friend wishlists)
-                                    if (!widget.isFriendWishlist)
-                                      IconButton(
-                                        onPressed: () {
-                                          Navigator.pushNamed(
-                                            context,
-                                            AppRoutes.addItem,
-                                            arguments: {
-                                              'wishlistId': widget.wishlistId,
-                                              'wishlistName': _wishlistName.isNotEmpty
-                                                  ? _wishlistName
-                                                  : widget.wishlistName,
-                                            },
-                                          ).then((_) {
-                                            _loadWishlistDetails();
-                                          });
-                                        },
-                                        icon: Container(
-                                          width: 40,
-                                          height: 40,
-                                          decoration: BoxDecoration(
-                                            color: AppColors.primary,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.add,
-                                            color: Colors.white,
-                                            size: 24,
-                                          ),
-                                        ),
-                                      ),
-                                    // More (3 dots) menu: Share / Edit / Delete
-                                    if (!widget.isFriendWishlist)
-                                      PopupMenuButton<String>(
-                                        tooltip: 'More',
-                                        icon: const Icon(
-                                          Icons.more_vert,
-                                          color: AppColors.textPrimary,
-                                          size: 22,
-                                        ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        onSelected: (value) {
-                                          switch (value) {
-                                            case 'share':
-                                              _shareWishlist();
-                                              break;
-                                            case 'edit':
-                                              _editWishlist();
-                                              break;
-                                            case 'delete':
-                                              _confirmAndDeleteWishlist();
-                                              break;
-                                          }
-                                        },
-                                        itemBuilder: (context) {
-                                          final localization = Provider.of<LocalizationService>(
-                                            context,
-                                            listen: false,
-                                          );
-                                          final items = <PopupMenuEntry<String>>[
-                                            PopupMenuItem<String>(
-                                              value: 'share',
-                                              child: Row(
-                                                children: [
-                                                  Icon(Icons.share_outlined, size: 18, color: AppColors.textPrimary),
-                                                  const SizedBox(width: 10),
-                                                  Text(
-                                                    localization.translate('wishlists.shareWishlist'),
-                                                    style: TextStyle(color: AppColors.textPrimary),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ];
-
-                                          // Edit/Delete only for owner (not guest)
-                                          if (!isGuest && _isOwner()) {
-                                            items.addAll([
-                                              const PopupMenuDivider(),
-                                              PopupMenuItem<String>(
-                                                value: 'edit',
-                                                child: Row(
-                                                  children: [
-                                                    Icon(Icons.edit_outlined, size: 18, color: AppColors.textPrimary),
-                                                    const SizedBox(width: 10),
-                                                    Text(
-                                                      localization.translate('wishlists.editWishlist'),
-                                                      style: TextStyle(color: AppColors.textPrimary),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              PopupMenuItem<String>(
-                                                value: 'delete',
-                                                child: Row(
-                                                  children: [
-                                                    Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                                                    const SizedBox(width: 10),
-                                                    Text(
-                                                      localization.translate('wishlists.deleteWishlist'),
-                                                      style: const TextStyle(color: AppColors.error),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ]);
-                                          }
-
-                                          return items;
-                                        },
-                                      ),
-                                  ],
-                                );
+                        WishlistItemsHeaderWidget(
+                          isOwner: _isOwner(),
+                          isGuest: isGuest,
+                          isFriendWishlist: widget.isFriendWishlist,
+                          onBack: () => Navigator.pop(context),
+                          onShare: _shareWishlist,
+                          onAddItem: () async {
+                            await Navigator.pushNamed(
+                              context,
+                              AppRoutes.addItem,
+                              arguments: {
+                                'wishlistId': widget.wishlistId,
+                                'wishlistName': _wishlistName.isNotEmpty
+                                    ? _wishlistName
+                                    : widget.wishlistName,
                               },
-                            ),
-                          ],
+                            );
+                            if (!mounted) return;
+                            _loadWishlistDetails();
+                          },
+                          onEdit: _editWishlist,
+                          onDelete: _confirmAndDeleteWishlist,
+                          localization: localization,
                         ),
-
                         const SizedBox(height: 20),
-
-                        // Title
-                        Text(
-                          _wishlistName.isNotEmpty
+                        WishlistItemsTitleBlockWidget(
+                          title: _wishlistName.isNotEmpty
                               ? _wishlistName
                               : widget.wishlistName,
-                          style: AppStyles.headingLarge.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                            fontSize: 28,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        // Stats Subtitle
-                        Builder(
-                          builder: (context) {
-                            final authService = Provider.of<AuthRepository>(context, listen: false);
-                            final loc = Provider.of<LocalizationService>(context, listen: false);
-                            // Hide "Gifted" for guest users
-                            if (authService.isGuest) {
-                              return Text(
-                                '$_totalItems ${loc.translate('cards.wishes')}',
-                                style: AppStyles.bodyMedium.copyWith(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 14,
-                                ),
-                              );
-                            }
-                            return Text(
-                              '$_totalItems ${loc.translate('cards.wishes')} • $_purchasedItems ${loc.translate('ui.gifted')}',
-                              style: AppStyles.bodyMedium.copyWith(
-                                color: AppColors.textSecondary,
-                                fontSize: 14,
-                              ),
-                            );
-                          },
+                          totalItems: _totalItems,
+                          purchasedItems: _purchasedItems,
+                          isGuest: isGuest,
+                          localization: localization,
                         ),
                       ],
                     ),
@@ -967,136 +760,19 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Search and Filter Section (No Background Container)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      children: [
-                        // Search Bar
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppColors.surfaceVariant,
-                              width: 1,
-                            ),
-                          ),
-                          child: TextField(
-                            controller: _searchController,
-                            onChanged: (value) {
-                              setState(() {
-                                _searchQuery = value;
-                              });
-                            },
-                            decoration: InputDecoration(
-                              hintText: localization.translate('dialogs.searchWishes'),
-                              hintStyle: AppStyles.bodyMedium.copyWith(
-                                color: AppColors.textTertiary,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.search_outlined,
-                                color: AppColors.textTertiary,
-                                size: 20,
-                              ),
-                              filled: true,
-                              fillColor: Colors.transparent,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: AppColors.secondary,
-                                  width: 2,
-                                ),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                            ),
-                            style: AppStyles.bodyMedium,
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Filter Chips - Same filters for all users
-                        Builder(
-                          builder: (context) {
-                            final authService = Provider.of<AuthRepository>(context, listen: false);
-                            final isGuest = authService.isGuest;
-                            
-                            // Hide filters for guest users (unauthenticated)
-                            if (isGuest) {
-                              return const SizedBox.shrink();
-                            }
-                            
-                            final loc = Provider.of<LocalizationService>(context, listen: false);
-                            // Show all filters: All, Available, Reserved, Gifted
-                            return SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: [
-                                  WishlistFilterChipWidget(
-                                    value: 'all',
-                                    label: loc.translate('ui.all'),
-                                    icon: Icons.all_inclusive,
-                                    isSelected: _selectedFilter == 'all',
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedFilter = 'all';
-                                      });
-                                    },
-                                  ),
-                                  const SizedBox(width: 8),
-                                  WishlistFilterChipWidget(
-                                    value: 'available',
-                                    label: loc.translate('ui.available'),
-                                    icon: Icons.shopping_bag_outlined,
-                                    isSelected: _selectedFilter == 'available',
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedFilter = 'available';
-                                      });
-                                    },
-                                  ),
-                                  const SizedBox(width: 8),
-                                  WishlistFilterChipWidget(
-                                    value: 'reserved',
-                                    label: loc.translate('ui.reserved'),
-                                    icon: Icons.lock_outline,
-                                    isSelected: _selectedFilter == 'reserved',
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedFilter = 'reserved';
-                                      });
-                                    },
-                                  ),
-                                  const SizedBox(width: 8),
-                                  WishlistFilterChipWidget(
-                                    value: 'purchased',
-                                    label: loc.translate('ui.gifted'),
-                                    icon: Icons.check_circle_outline,
-                                    isSelected: _selectedFilter == 'purchased',
-                                    onTap: () {
-                                      setState(() {
-                                        _selectedFilter = 'purchased';
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                    child: WishlistItemsSearchFilterWidget(
+                      searchController: _searchController,
+                      onSearchChanged: (value) {
+                        setState(() => _searchQuery = value);
+                      },
+                      selectedFilter: _selectedFilter,
+                      onFilterChanged: (value) {
+                        setState(() => _selectedFilter = value);
+                      },
+                      isGuest: isGuest,
+                      localization: localization,
                     ),
                   ),
 

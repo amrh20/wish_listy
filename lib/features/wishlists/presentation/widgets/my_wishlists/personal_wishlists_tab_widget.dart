@@ -5,7 +5,7 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/theme/app_theme.dart' as theme;
-import 'guest_wishlist_card_widget.dart';
+import '../guest/guest_wishlist_card_widget.dart';
 import 'wishlist_card_widget.dart';
 
 /// Personal wishlists tab widget with trendy stacked cards scroll effect

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
-import 'package:wish_listy/features/wishlists/presentation/widgets/wishlist_card_widget.dart';
+import 'package:wish_listy/features/wishlists/presentation/widgets/index.dart';
 
 /// Helper class for category visual styling
 class _CategoryVisual {

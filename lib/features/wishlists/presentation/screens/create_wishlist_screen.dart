@@ -13,12 +13,7 @@ import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/events/data/repository/event_repository.dart';
-import '../widgets/create_wishlist_header_widget.dart';
-import '../widgets/privacy_selection_widget.dart';
-import '../widgets/category_selection_widget.dart';
-import '../widgets/create_wishlist_action_buttons_widget.dart';
-import '../widgets/wishlist_form_helpers.dart';
-import '../widgets/wishlist_success_dialog_helper.dart';
+import '../widgets/index.dart';
 
 class CreateWishlistScreen extends StatefulWidget {
   final String? wishlistId;
@@ -255,7 +250,10 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
 
                                 // Event Context Banner
                                 if (widget.isForEvent && widget.eventId != null)
-                                  _buildEventContextBanner(),
+                                  CreateWishlistEventBannerWidget(
+                                    eventName: _eventName,
+                                    eventId: widget.eventId,
+                                  ),
 
                                 if (widget.isForEvent && widget.eventId != null)
                                   const SizedBox(height: 20),
@@ -848,44 +846,4 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     }
   }
 
-  /// Builds event context banner widget
-  Widget _buildEventContextBanner() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.event, color: AppColors.primary, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _eventName != null
-                      ? 'Creating wishlist for: $_eventName'
-                      : 'Creating wishlist for this event',
-                  style: AppStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'This wishlist will be automatically linked to the event',
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

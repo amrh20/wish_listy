@@ -1,22 +1,10 @@
-// Export all wishlist widgets
-export 'wishlist_card_widget.dart';
-export 'personal_wishlists_tab_widget.dart';
-export 'friends_wishlists_tab_widget.dart';
-export 'guest_wishlists_view_widget.dart';
-export 'wishlist_fab_widget.dart';
-export 'wishlist_item_card_widget.dart';
-export 'empty_wishlist_state_widget.dart';
-export 'empty_search_state_widget.dart';
-export 'wishlist_filter_chip_widget.dart';
-export 'add_item_header_widget.dart';
-export 'wishlist_selection_widget.dart';
-export 'priority_selection_widget.dart';
-export 'add_item_action_buttons_widget.dart';
-export 'create_wishlist_header_widget.dart';
-export 'privacy_selection_widget.dart';
-export 'category_selection_widget.dart';
-export 'create_wishlist_action_buttons_widget.dart';
-export 'wishlist_form_helpers.dart';
-export 'wishlist_success_dialog_helper.dart';
-export 'reservations_tab_widget.dart';
-export 'reserved_item_card_widget.dart';
+// Export all wishlist widgets from feature folders
+export 'add_item/index.dart';
+export 'create_wishlist/index.dart';
+export 'form/index.dart';
+export 'wishlist_items/index.dart';
+export 'my_wishlists/index.dart';
+export 'guest/index.dart';
+export 'friends/index.dart';
+export 'shared/index.dart';
+export 'item_details/index.dart';

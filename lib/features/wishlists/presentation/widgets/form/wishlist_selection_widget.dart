@@ -58,7 +58,8 @@ class WishlistSelectionWidget extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Text(
-                  Provider.of<LocalizationService>(context, listen: false).translate('cards.noWishlistsFound'),
+                  Provider.of<LocalizationService>(context, listen: false)
+                      .translate('cards.noWishlistsFound'),
                   style: AppStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -71,8 +72,7 @@ class WishlistSelectionWidget extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: wishlists.map((wishlistData) {
-                final wishlistId =
-                    wishlistData['id']?.toString() ??
+                final wishlistId = wishlistData['id']?.toString() ??
                     wishlistData['_id']?.toString() ??
                     '';
                 final wishlistName =
@@ -105,9 +105,8 @@ class WishlistSelectionWidget extends StatelessWidget {
                         color: isSelected
                             ? Colors.white
                             : AppColors.textSecondary,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -119,4 +118,3 @@ class WishlistSelectionWidget extends StatelessWidget {
     );
   }
 }
-

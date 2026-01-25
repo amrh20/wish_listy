@@ -101,4 +101,3 @@ class PrioritySelectionWidget extends StatelessWidget {
     );
   }
 }
-
