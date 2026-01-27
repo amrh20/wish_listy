@@ -252,6 +252,16 @@ class AuthRepository extends ChangeNotifier {
             '🔌 [Auth] ⏰ [$timestamp]    Token length: ${token.length}',
           );
           await SocketService().authenticateSocket(token);
+
+          // Ensure FCM token is synced to backend even if it was not passed
+          // with the login request (or if it changed afterwards).
+          if (fcmToken != null && fcmToken.isNotEmpty) {
+            try {
+              await updateFcmToken(fcmToken);
+            } catch (e) {
+              debugPrint('⚠️ [Auth] Failed to update FCM token after login: $e');
+            }
+          }
         }
 
         notifyListeners();
@@ -366,6 +376,14 @@ class AuthRepository extends ChangeNotifier {
       // Even if API logout fails, clear local data
     }
 
+    // Best-effort: tell backend to stop sending push notifications
+    // for this device token. Errors here should not block logout.
+    try {
+      await deleteFcmToken();
+    } catch (e) {
+      debugPrint('⚠️ [Auth] Failed to delete FCM token on logout: $e');
+    }
+
     // IMPORTANT: Do NOT clear biometric token on logout!
     // The biometric token should remain in secure storage so the user can
     // log back in using biometrics without needing to re-enable it.
@@ -399,6 +417,53 @@ class AuthRepository extends ChangeNotifier {
     _apiService.clearAuthToken();
 
     notifyListeners();
+  }
+
+  /// Update the current device's FCM token on the backend.
+  ///
+  /// Endpoint: PUT /api/auth/fcm-token
+  /// Body: { "token": "..." }
+  Future<void> updateFcmToken(String token) async {
+    if (!isAuthenticated) {
+      debugPrint('⚠️ [Auth] updateFcmToken called while user is not authenticated');
+      return;
+    }
+
+    try {
+      await _apiService.put(
+        '/auth/fcm-token',
+        data: {'token': token},
+      );
+      debugPrint('✅ [Auth] FCM token updated on backend');
+    } on ApiException catch (e) {
+      debugPrint('⚠️ [Auth] Failed to update FCM token: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('⚠️ [Auth] Unexpected error updating FCM token: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete the current device's FCM token on the backend so that
+  /// push notifications are no longer delivered to this device.
+  ///
+  /// Endpoint: DELETE /api/auth/fcm-token
+  Future<void> deleteFcmToken() async {
+    if (!isAuthenticated) {
+      // If user is already considered logged out, nothing to do.
+      return;
+    }
+
+    try {
+      await _apiService.delete('/auth/fcm-token');
+      debugPrint('✅ [Auth] FCM token deleted on backend');
+    } on ApiException catch (e) {
+      debugPrint('⚠️ [Auth] Failed to delete FCM token: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('⚠️ [Auth] Unexpected error deleting FCM token: $e');
+      rethrow;
+    }
   }
 
   // Delete account using real API

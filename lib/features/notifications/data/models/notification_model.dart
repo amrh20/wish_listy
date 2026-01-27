@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class AppNotification {
   final String id;
   final String userId;
@@ -25,11 +27,44 @@ class AppNotification {
     this.relatedWishlistId,
   });
 
+  /// Safely convert any value to String, handling null, int, and other types.
+  static String? _safeToString(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value.isEmpty ? null : value;
+    return value.toString();
+  }
+
+  /// Safely parse relatedUser field which can be:
+  /// - A Map<String, dynamic> (from Socket.io/API) - use directly
+  /// - A String (from FCM data payload) - needs JSON parsing
+  static Map<String, dynamic>? _parseRelatedUser(dynamic relatedUser) {
+    if (relatedUser == null) return null;
+    
+    // Already a Map - use directly (Socket.io/API format)
+    if (relatedUser is Map<String, dynamic>) {
+      return relatedUser;
+    }
+    
+    // String that needs parsing (FCM format)
+    if (relatedUser is String) {
+      try {
+        final decoded = jsonDecode(relatedUser) as Map<String, dynamic>?;
+        return decoded;
+      } catch (e) {
+        // If JSON parsing fails, return null
+        return null;
+      }
+    }
+    
+    return null;
+  }
+
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     // Handle both API response format and Socket.IO event format
-    final notificationId = json['_id'] ?? json['id'] ?? '';
-    final userId = json['userId'] ?? json['user_id'] ?? '';
-    final typeStr = json['type'] ?? '';
+    // Type-safe ID extraction - can be String, int, or other types
+    final notificationId = _safeToString(json['_id'] ?? json['id']) ?? '';
+    final userId = _safeToString(json['userId'] ?? json['user_id']) ?? '';
+    final typeStr = json['type']?.toString() ?? '';
     
     // Map backend notification types to our enum
     NotificationType type;
@@ -129,35 +164,96 @@ class AppNotification {
       readAt = null;
     }
 
-    // Parse relatedId and relatedWishlistId with fallback to data map
-    String? relatedId;
-    try {
-      relatedId = json['relatedId'] as String? ??
-          json['related_id'] as String? ??
-          json['data']?['relatedId'] as String? ??
-          json['data']?['related_id'] as String?;
-    } catch (e) {
-      relatedId = null;
-    }
+    // Parse relatedId and relatedWishlistId with type-safe conversion
+    // These fields can come as String, int, or other types from different sources
+    String? relatedId = _safeToString(
+      json['relatedId'] ??
+          json['related_id'] ??
+          json['data']?['relatedId'] ??
+          json['data']?['related_id'] ??
+          json['eventId'] ??
+          json['itemId'],
+    );
 
-    String? relatedWishlistId;
-    try {
-      relatedWishlistId = json['relatedWishlistId'] as String? ??
-          json['related_wishlist_id'] as String? ??
-          json['data']?['relatedWishlistId'] as String? ??
-          json['data']?['related_wishlist_id'] as String?;
-    } catch (e) {
-      relatedWishlistId = null;
+    String? relatedWishlistId = _safeToString(
+      json['relatedWishlistId'] ??
+          json['related_wishlist_id'] ??
+          json['data']?['relatedWishlistId'] ??
+          json['data']?['related_wishlist_id'] ??
+          json['wishlistId'],
+    );
+
+    // Prepare data map, handling relatedUser parsing and cleaning bonus fields
+    Map<String, dynamic>? dataMap;
+    if (json['data'] != null && json['data'] is Map<String, dynamic>) {
+      // Clone the data map to avoid mutating the original
+      dataMap = Map<String, dynamic>.from(json['data'] as Map<String, dynamic>);
+      
+      // Parse relatedUser if it exists (can be String from FCM or Map from Socket.io/API)
+      if (dataMap.containsKey('relatedUser')) {
+        final parsedRelatedUser = _parseRelatedUser(dataMap['relatedUser']);
+        if (parsedRelatedUser != null) {
+          dataMap['relatedUser'] = parsedRelatedUser;
+        } else {
+          // Remove invalid relatedUser to avoid confusion
+          dataMap.remove('relatedUser');
+        }
+      }
+      
+      // Remove bonus fields that shouldn't be part of the notification data
+      // These fields are used for UI state but not part of the notification model
+      dataMap.remove('unreadCount');
+      dataMap.remove('unread_count');
+      dataMap.remove('fcmMessageId');
+      dataMap.remove('notificationTitle');
+      dataMap.remove('notificationBody');
+    } else {
+      // If no data map exists, use the entire json as data (backward compatibility)
+      // but exclude model fields and bonus fields
+      dataMap = Map<String, dynamic>.from(json);
+      dataMap.remove('_id');
+      dataMap.remove('id');
+      dataMap.remove('userId');
+      dataMap.remove('user_id');
+      dataMap.remove('type');
+      dataMap.remove('title');
+      dataMap.remove('message');
+      dataMap.remove('body');
+      dataMap.remove('isRead');
+      dataMap.remove('is_read');
+      dataMap.remove('createdAt');
+      dataMap.remove('created_at');
+      dataMap.remove('readAt');
+      dataMap.remove('read_at');
+      dataMap.remove('relatedId');
+      dataMap.remove('related_id');
+      dataMap.remove('relatedWishlistId');
+      dataMap.remove('related_wishlist_id');
+      dataMap.remove('unreadCount');
+      dataMap.remove('unread_count');
+      dataMap.remove('fcmMessageId');
+      dataMap.remove('notificationTitle');
+      dataMap.remove('notificationBody');
+      
+      // Parse relatedUser if it exists in the root json
+      if (dataMap.containsKey('relatedUser')) {
+        final parsedRelatedUser = _parseRelatedUser(dataMap['relatedUser']);
+        if (parsedRelatedUser != null) {
+          dataMap['relatedUser'] = parsedRelatedUser;
+        } else {
+          dataMap.remove('relatedUser');
+        }
+      }
     }
 
     return AppNotification(
       id: notificationId,
       userId: userId,
       type: type,
-      title: json['title'] ?? json['message'] ?? '',
-      message: json['message'] ?? json['body'] ?? '',
-      data: json['data'] as Map<String, dynamic>? ?? json,
-      isRead: json['isRead'] ?? json['is_read'] ?? false,
+      title: json['title']?.toString() ?? json['message']?.toString() ?? '',
+      message: json['message']?.toString() ?? json['body']?.toString() ?? '',
+      data: dataMap.isEmpty ? null : dataMap,
+      isRead: json['isRead'] == true || json['is_read'] == true,
       createdAt: createdAt,
       readAt: readAt,
       relatedId: relatedId,

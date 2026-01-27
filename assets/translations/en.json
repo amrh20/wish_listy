@@ -1100,7 +1100,7 @@
     "signOutOfAccount": "Sign out of your account"
   },
   "cards": {
-    "saveChanges":"Save Changes",
+    "saveChanges": "Save Changes",
     "wish": "Wish",
     "wishes": "Wishes",
     "hostedBy": "Hosted by",
@@ -1189,6 +1189,10 @@
     "wishlist": "Wishlist"
   },
   "notifications": {
+    "permissionTitle": "Don't miss a wish! 🎁",
+    "permissionDescription": "Stay updated when friends reserve gifts, invite you to events, or accept your requests. We'll make sure you're always in the loop.",
+    "permissionLater": "Maybe later",
+    "permissionAllow": "Allow notifications",
     "title": "Notifications",
     "all": "All",
     "unread": "Unread",

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "612667986143",
+    "project_id": "wish-listy-7427e",
+    "storage_bucket": "wish-listy-7427e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:612667986143:android:fb30c863c3d40b69f1196a",
+        "android_client_info": {
+          "package_name": "com.example.wish_listy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBt8xH6o3nEoMpj34zvqvI1iITI4-O4m9c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

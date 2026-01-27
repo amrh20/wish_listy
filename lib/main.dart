@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/services/localization_service.dart';
 import 'core/services/api_service.dart';
 import 'features/auth/data/repository/auth_repository.dart';
@@ -22,6 +23,7 @@ import 'features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'features/profile/presentation/providers/activity_provider.dart';
 import 'core/services/deep_link_service.dart';
 import 'core/navigation/app_route_observer.dart';
+import 'core/services/fcm_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,6 +35,15 @@ void main() async {
   } catch (e) {
     debugPrint('⚠️ Firebase initialization failed: $e');
     // Continue app execution even if Firebase fails (e.g., on emulators without Firebase config)
+  }
+
+  // Register global background handler for FCM messages.
+  // This must be done after Firebase.initializeApp and before runApp.
+  try {
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    debugPrint('✅ FirebaseMessaging background handler registered');
+  } catch (e) {
+    debugPrint('⚠️ Failed to register FirebaseMessaging background handler: $e');
   }
 
   // Initialize Hive for guest local storage
@@ -81,6 +92,20 @@ void main() async {
   // This must be done before runApp to ensure it's available when Socket connects
   final notificationsCubit = NotificationsCubit();
   debugPrint('✅ main.dart: NotificationsCubit created immediately');
+
+  // Initialize FCM service so it can:
+  // - keep the FCM token in sync with the backend
+  // - handle notification taps from background/terminated states
+  // - configure foreground presentation options
+  try {
+    await FcmService().initialize(
+      authRepository: authRepository,
+      notificationsCubit: notificationsCubit,
+    );
+    debugPrint('✅ FcmService initialized successfully');
+  } catch (e) {
+    debugPrint('⚠️ Error initializing FcmService: $e');
+  }
 
   runApp(
     MyApp(

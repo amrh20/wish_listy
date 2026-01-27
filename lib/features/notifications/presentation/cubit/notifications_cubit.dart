@@ -926,6 +926,80 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     }
   }
 
+  /// Handle a notification tap coming from an external source (e.g., FCM).
+  ///
+  /// This method normalizes the raw payload into an [AppNotification] and then
+  /// delegates to [handleNotificationTap] so that navigation logic remains
+  /// centralized in a single place.
+  Future<void> handleRemoteNotificationTap(
+    Map<String, dynamic> data,
+    BuildContext context,
+  ) async {
+    final timestamp = DateTime.now().toIso8601String();
+    debugPrint('🔔 [Notifications] ⏰ [$timestamp] ========== REMOTE NOTIFICATION TAP ==========');
+    debugPrint('🔔 [Notifications] ⏰ [$timestamp] Raw FCM data: $data');
+
+    try {
+      AppNotification notification;
+      try {
+        // Try direct parsing first if backend already sends a full notification object.
+        notification = AppNotification.fromJson(data);
+        debugPrint('🔔 [Notifications] ⏰ [$timestamp] Parsed AppNotification directly from data.');
+      } catch (e) {
+        debugPrint('⚠️ [Notifications] ⏰ [$timestamp] Failed direct parse, building fallback AppNotification: $e');
+
+        final id = data['_id'] ??
+            data['id'] ??
+            data['notificationId'] ??
+            data['notification_id'] ??
+            DateTime.now().millisecondsSinceEpoch.toString();
+
+        final typeString = data['type']?.toString() ?? 'general';
+        NotificationType type;
+        try {
+          type = NotificationType.values.firstWhere(
+            (t) => t.name == typeString,
+            orElse: () => NotificationType.general,
+          );
+        } catch (_) {
+          type = NotificationType.general;
+        }
+
+        final title =
+            data['title']?.toString() ?? data['notificationTitle']?.toString() ?? 'Wish Listy';
+        final message =
+            data['message']?.toString() ?? data['notificationBody']?.toString() ?? '';
+
+        notification = AppNotification(
+          id: id.toString(),
+          userId: data['userId']?.toString() ?? data['user_id']?.toString() ?? '',
+          type: type,
+          title: title,
+          message: message,
+          data: data,
+          isRead: false,
+          createdAt: DateTime.tryParse(
+                data['createdAt']?.toString() ?? data['created_at']?.toString() ?? '',
+              ) ??
+              DateTime.now(),
+          relatedId: data['relatedId']?.toString() ??
+              data['related_id']?.toString() ??
+              data['eventId']?.toString() ??
+              data['itemId']?.toString(),
+          relatedWishlistId: data['relatedWishlistId']?.toString() ??
+              data['related_wishlist_id']?.toString() ??
+              data['wishlistId']?.toString(),
+        );
+      }
+
+      await handleNotificationTap(notification, context);
+    } catch (e, stackTrace) {
+      final errorTimestamp = DateTime.now().toIso8601String();
+      debugPrint('❌ [Notifications] ⏰ [$errorTimestamp] Error in handleRemoteNotificationTap: $e');
+      debugPrint('❌ [Notifications] ⏰ [$errorTimestamp] Stack trace: $stackTrace');
+    }
+  }
+
   /// Delete notification
   Future<void> deleteNotification(String notificationId) async {
     try {

@@ -24,6 +24,7 @@ import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/royal_avatar_wrapper.dart';
 import 'package:wish_listy/core/widgets/generic_error_screen.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/services/fcm_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -53,6 +54,20 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final cubit = context.read<NotificationsCubit>();
       cubit.getUnreadCount();
+    });
+    
+    // Request notification permission after first successful login or when app opens authenticated
+    // This ensures the dialog appears at a high-value moment (Home Screen) rather than at launch
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authRepository = Provider.of<AuthRepository>(context, listen: false);
+      
+      // Only show permission dialog if user is fully authenticated (not guest)
+      if (authRepository.isAuthenticated && context.mounted) {
+        FcmService().ensurePermissionRequested(context).catchError((error) {
+          // Silently handle errors - permission dialog is best-effort
+          debugPrint('⚠️ HomeScreen: Failed to request notification permission: $error');
+        });
+      }
     });
   }
 
