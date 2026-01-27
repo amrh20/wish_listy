@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:wish_listy/features/notifications/presentation/widgets/notification_permission_dialog.dart';
+import 'package:wish_listy/core/services/notification_preference_service.dart';
 import 'package:wish_listy/main.dart';
 
 /// Global background handler for FCM messages.
@@ -155,27 +156,48 @@ class FcmService {
   /// This method is intentionally UI-aware and should be called from
   /// a screen where a [BuildContext] is available (e.g., home screen
   /// after onboarding or login).
+  ///
+  /// Implements a 7-day cooldown period after "Maybe later" is clicked.
   Future<void> ensurePermissionRequested(BuildContext context) async {
     // Avoid spamming the user with the dialog in a single app session.
     if (_permissionDialogShownInSession) {
+      debugPrint('🔔 FcmService: Dialog already shown in this session');
       return;
     }
 
+    // Check if permission is already granted
     final settings = await _messaging.getNotificationSettings();
     if (settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus ==
             AuthorizationStatus.provisional) {
       // Already authorized; nothing to do.
+      debugPrint('🔔 FcmService: Permission already granted');
       return;
     }
 
+    // Check cooldown period (7 days since last "Maybe later")
+    final preferenceService = NotificationPreferenceService();
+    final shouldShow = await preferenceService.shouldShowPermissionDialog();
+    if (!shouldShow) {
+      debugPrint('🔔 FcmService: Cooldown period active - skipping dialog');
+      return;
+    }
+
+    // Mark as shown in this session
     _permissionDialogShownInSession = true;
 
+    // Show the custom permission dialog
     final shouldRequest = await NotificationPermissionDialog.show(context);
+    
     if (shouldRequest != true) {
+      // User clicked "Maybe later" or dismissed the dialog
+      // Save the timestamp to enforce cooldown
+      await preferenceService.saveLastPermissionRequestTime();
+      debugPrint('🔔 FcmService: User chose "Maybe later" - cooldown started');
       return;
     }
 
+    // User clicked "Allow notifications" - request system permission
     try {
       final result = await _messaging.requestPermission(
         alert: true,
@@ -186,6 +208,13 @@ class FcmService {
       debugPrint(
         '🔔 FcmService: Permission result: ${result.authorizationStatus}',
       );
+      
+      // If permission was granted, clear the cooldown timestamp
+      // so we don't show the dialog again
+      if (result.authorizationStatus == AuthorizationStatus.authorized ||
+          result.authorizationStatus == AuthorizationStatus.provisional) {
+        await preferenceService.clearLastPermissionRequestTime();
+      }
     } catch (e) {
       debugPrint('⚠️ FcmService: Failed to request notification permission: $e');
     }

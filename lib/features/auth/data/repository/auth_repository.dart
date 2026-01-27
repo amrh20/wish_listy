@@ -237,8 +237,11 @@ class AuthRepository extends ChangeNotifier {
           // Note: Token will be saved to secure storage after user enables biometric
           // This happens in the post-login prompt (see login_screen.dart)
 
-          // Set token in API service for future requests
+          // CRITICAL: Set token in API service BEFORE any subsequent API calls
+          // This ensures all API requests (including updateFcmToken) use the new token
           _apiService.setAuthToken(token);
+          debugPrint('✅ [Auth] JWT token set in API service headers');
+          
           // Authenticate Socket.IO for real-time notifications (Option B: emit auth event)
           // Use forceReconnect=true to ensure clean connection after logout/login
           final timestamp = DateTime.now().toIso8601String();
@@ -253,13 +256,16 @@ class AuthRepository extends ChangeNotifier {
           );
           await SocketService().authenticateSocket(token);
 
-          // Ensure FCM token is synced to backend even if it was not passed
-          // with the login request (or if it changed afterwards).
+          // Ensure FCM token is synced to backend AFTER JWT token is set
+          // This prevents 401 errors from stale/null tokens
           if (fcmToken != null && fcmToken.isNotEmpty) {
             try {
+              debugPrint('🔔 [Auth] Updating FCM token after login (JWT token already set)');
               await updateFcmToken(fcmToken);
+              debugPrint('✅ [Auth] FCM token updated successfully');
             } catch (e) {
               debugPrint('⚠️ [Auth] Failed to update FCM token after login: $e');
+              // Don't throw - FCM token update failure shouldn't block login
             }
           }
         }
@@ -366,22 +372,33 @@ class AuthRepository extends ChangeNotifier {
 
   // Logout using real API
   Future<void> logout() async {
+    debugPrint('🔒 [Auth] Starting logout process');
+    
     try {
-      // Disconnect from Socket.IO
+      // Disconnect from Socket.IO first
       SocketService().disconnect();
-
-      // Call API to logout
-      await _apiService.post('/auth/logout');
+      debugPrint('✅ [Auth] Socket.IO disconnected');
     } catch (e) {
-      // Even if API logout fails, clear local data
+      debugPrint('⚠️ [Auth] Error disconnecting Socket.IO: $e');
     }
 
     // Best-effort: tell backend to stop sending push notifications
-    // for this device token. Errors here should not block logout.
+    // for this device token. Do this BEFORE logout API call.
     try {
       await deleteFcmToken();
+      debugPrint('✅ [Auth] FCM token deleted');
     } catch (e) {
       debugPrint('⚠️ [Auth] Failed to delete FCM token on logout: $e');
+      // Continue with logout even if FCM deletion fails
+    }
+
+    // Call API to logout (best-effort, don't block on failure)
+    try {
+      await _apiService.post('/auth/logout');
+      debugPrint('✅ [Auth] Logout API call successful');
+    } catch (e) {
+      debugPrint('⚠️ [Auth] Logout API call failed (continuing with local cleanup): $e');
+      // Even if API logout fails, clear local data
     }
 
     // IMPORTANT: Do NOT clear biometric token on logout!
@@ -398,6 +415,7 @@ class AuthRepository extends ChangeNotifier {
     _userId = null;
     _userEmail = null;
     _userName = null;
+    debugPrint('✅ [Auth] Local state cleared');
 
     // Log that we're keeping biometric data
     if (currentEmail != null && currentEmail.isNotEmpty) {
@@ -406,17 +424,76 @@ class AuthRepository extends ChangeNotifier {
     }
 
     // Clear local storage
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('is_logged_in', false);
-    await prefs.remove('user_id');
-    await prefs.remove('user_email');
-    await prefs.remove('user_name');
-    await prefs.remove('auth_token');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', false);
+      await prefs.remove('user_id');
+      await prefs.remove('user_email');
+      await prefs.remove('user_name');
+      await prefs.remove('auth_token');
+      debugPrint('✅ [Auth] SharedPreferences cleared');
+    } catch (e) {
+      debugPrint('⚠️ [Auth] Error clearing SharedPreferences: $e');
+    }
 
-    // Clear API service token
-    _apiService.clearAuthToken();
+    // CRITICAL: Clear API service token and ensure headers are completely removed
+    // This prevents stale tokens from being sent in subsequent requests
+    try {
+      _apiService.clearAuthToken();
+      // Double-check: explicitly remove Authorization header to ensure complete cleanup
+      _apiService.dio.options.headers.remove('Authorization');
+      debugPrint('✅ [Auth] API service token cleared (headers verified)');
+    } catch (e) {
+      debugPrint('⚠️ [Auth] Error clearing API token: $e');
+    }
 
     notifyListeners();
+  }
+
+  /// Silent logout without API calls - used for 401 error handling
+  /// This method clears all local state without making any backend requests
+  /// to avoid infinite loops when handling unauthorized errors.
+  Future<void> logoutSilently() async {
+    debugPrint('🔒 [Auth] Performing silent logout (no API calls)');
+    
+    // Disconnect from Socket.IO
+    try {
+      SocketService().disconnect();
+    } catch (e) {
+      debugPrint('⚠️ [Auth] Error disconnecting socket during silent logout: $e');
+    }
+
+    // Clear local state
+    _userState = UserState.guest;
+    _userId = null;
+    _userEmail = null;
+    _userName = null;
+
+    // Clear local storage
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', false);
+      await prefs.remove('user_id');
+      await prefs.remove('user_email');
+      await prefs.remove('user_name');
+      await prefs.remove('auth_token');
+      debugPrint('✅ [Auth] Cleared SharedPreferences during silent logout');
+    } catch (e) {
+      debugPrint('⚠️ [Auth] Error clearing SharedPreferences: $e');
+    }
+
+    // Clear API service token
+    try {
+      _apiService.clearAuthToken();
+      // Double-check: explicitly remove Authorization header
+      _apiService.dio.options.headers.remove('Authorization');
+      debugPrint('✅ [Auth] Cleared API service token');
+    } catch (e) {
+      debugPrint('⚠️ [Auth] Error clearing API token: $e');
+    }
+
+    notifyListeners();
+    debugPrint('✅ [Auth] Silent logout completed');
   }
 
   /// Update the current device's FCM token on the backend.

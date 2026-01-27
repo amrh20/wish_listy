@@ -1167,6 +1167,13 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     }
   }
 
+  /// Reset notifications state to initial (used during logout)
+  /// This clears all notifications and resets the cubit to a clean state
+  void resetState() {
+    debugPrint('🔔 [NotificationsCubit] Resetting state to initial');
+    emit(NotificationsInitial());
+  }
+
   @override
   Future<void> close() {
     _socketService.removeNotificationListener(_handleSocketNotification);

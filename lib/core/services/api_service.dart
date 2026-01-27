@@ -1,6 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
+import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/main.dart';
 
 /// High-level classification of API errors (used by UI to show the right state)
 enum ApiErrorKind {
@@ -90,6 +94,57 @@ class ApiService {
           // Use cached language code (initialized on app start)
           options.headers['Accept-Language'] = _storedLanguageCode;
           handler.next(options);
+        },
+      ),
+
+      // 401 Unauthorized interceptor - handles token expiration and invalid tokens
+      InterceptorsWrapper(
+        onError: (error, handler) {
+          if (error.response?.statusCode == 401) {
+            debugPrint('🔒 [ApiService] 401 Unauthorized detected - clearing auth and redirecting to login');
+            
+            // Skip 401 handling for auth endpoints to avoid infinite loops
+            final path = error.requestOptions.path.toLowerCase();
+            if (path.contains('/auth/login') || 
+                path.contains('/auth/register') || 
+                path.contains('/auth/logout')) {
+              debugPrint('🔒 [ApiService] Skipping 401 handler for auth endpoint: $path');
+              handler.next(error);
+              return;
+            }
+            
+            // Clear auth token immediately
+            clearAuthToken();
+            
+            // Clear auth data from AuthRepository (silent logout without API calls)
+            try {
+              final authRepository = AuthRepository();
+              authRepository.logoutSilently();
+            } catch (e) {
+              debugPrint('⚠️ [ApiService] Error during silent logout: $e');
+            }
+            
+            // Redirect to login screen if navigator is available
+            try {
+              final navigatorKey = MyApp.navigatorKey;
+              if (navigatorKey.currentContext != null) {
+                final context = navigatorKey.currentContext!;
+                // Use post-frame callback to ensure navigation happens after error handling
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (navigatorKey.currentContext != null) {
+                    Navigator.of(navigatorKey.currentContext!).pushNamedAndRemoveUntil(
+                      AppRoutes.login,
+                      (route) => false,
+                    );
+                    debugPrint('✅ [ApiService] Redirected to login screen');
+                  }
+                });
+              }
+            } catch (e) {
+              debugPrint('⚠️ [ApiService] Error redirecting to login: $e');
+            }
+          }
+          handler.next(error);
         },
       ),
 

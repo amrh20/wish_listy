@@ -80,9 +80,23 @@ class NotificationPermissionDialog extends StatelessWidget {
                     onPressed: () {
                       Navigator.of(context).pop(true);
                     },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTheme.spacing12,
+                        vertical: 10.0, // Slightly reduced vertical padding for compact button
+                      ),
+                      minimumSize: const Size(0, 40), // Ensure minimum touch target
+                    ),
                     child: Text(
                       localization.translate('notifications.permissionAllow') ??
                           'Allow notifications',
+                      style: textTheme.labelMedium?.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),

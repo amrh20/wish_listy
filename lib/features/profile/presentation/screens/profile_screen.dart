@@ -449,6 +449,8 @@ class ProfileScreenState extends State<ProfileScreen>
             _editPersonalInfo();
           } else if (value == 'share') {
             _shareProfile(localization);
+          } else if (value == 'logout') {
+            _confirmLogout(localization);
           }
         },
         itemBuilder: (BuildContext context) => [
@@ -462,6 +464,24 @@ class ProfileScreenState extends State<ProfileScreen>
                   localization.translate('profile.editProfile') ?? 'Edit Profile',
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.textPrimary,
+                    fontFamily: localization.currentLanguage == 'ar' ? 'Alexandria' : 'Ubuntu',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Divider before logout
+          const PopupMenuDivider(),
+          PopupMenuItem<String>(
+            value: 'logout',
+            child: Row(
+              children: [
+                Icon(Icons.logout, color: AppColors.error, size: 20),
+                const SizedBox(width: 12),
+                Text(
+                  localization.translate('auth.logout') ?? 'Logout',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.error,
                     fontFamily: localization.currentLanguage == 'ar' ? 'Alexandria' : 'Ubuntu',
                   ),
                 ),
