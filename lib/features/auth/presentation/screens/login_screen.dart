@@ -620,33 +620,81 @@ class _LoginScreenState extends State<LoginScreen>
     // Handle verification flow based on phone/email
     if (isPhone) {
       // Phone: Trigger Firebase Phone Auth to send SMS
-      setState(() => _isLoading = true);
+      if (!mounted) return;
+      
+      // Sanitize phone number to strict E.164 format (no spaces) before calling Firebase
+      String sanitizedPhone = username;
+      try {
+        sanitizedPhone = authRepository.sanitizePhoneForFirebase(username);
+        debugPrint('📱 [Login] Sanitized phone (E.164): $sanitizedPhone');
+      } catch (e) {
+        debugPrint('⚠️ [Login] Error sanitizing phone: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Invalid phone number format. Please check and try again.'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
+      
+      if (mounted) {
+        setState(() => _isLoading = true);
+      }
+      
+      bool hasNavigated = false; // Prevent multiple navigations
+      
       try {
         String? verificationId;
         
         await authRepository.verifyPhoneNumber(
-          phoneNumber: username,
+          phoneNumber: sanitizedPhone, // Already sanitized to E.164 format
           onCodeSent: (id) {
+            if (!mounted || hasNavigated) return;
+            
             verificationId = id;
-            setState(() => _isLoading = false);
+            hasNavigated = true;
+            
+            debugPrint('✅ [Login] SMS code sent. VerificationId: $id, UserId: $userId');
+            
             if (mounted) {
+              setState(() => _isLoading = false);
+            }
+            
+            if (mounted) {
+              // Pass sanitized phone number and userId to VerificationScreen
               Navigator.pushNamed(
                 context,
                 AppRoutes.verification,
                 arguments: {
-                  'username': username,
+                  'username': sanitizedPhone, // E.164 format: +201064448681
                   'isPhone': true,
-                  'verificationId': verificationId,
-                  'userId': userId,
+                  'verificationId': verificationId, // Persist verificationId
+                  'userId': userId, // Ensure userId is passed
                 },
               );
             }
           },
           onVerificationCompleted: () {
-            setState(() => _isLoading = false);
+            if (!mounted || hasNavigated) return;
+            
+            if (mounted) {
+              setState(() => _isLoading = false);
+            }
           },
           onVerificationFailed: (error) {
-            setState(() => _isLoading = false);
+            if (!mounted) return;
+            
+            if (mounted) {
+              setState(() => _isLoading = false);
+            }
+            
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -658,23 +706,43 @@ class _LoginScreenState extends State<LoginScreen>
             }
           },
           onCodeAutoRetrievalTimeout: (error) {
-            setState(() => _isLoading = false);
-            if (mounted && verificationId != null) {
-              Navigator.pushNamed(
-                context,
-                AppRoutes.verification,
-                arguments: {
-                  'username': username,
-                  'isPhone': true,
-                  'verificationId': verificationId,
-                  'userId': userId,
-                },
-              );
+            if (!mounted || hasNavigated) return;
+            
+            if (verificationId != null) {
+              hasNavigated = true;
+              
+              debugPrint('⏱️ [Login] Code auto-retrieval timeout. VerificationId: $verificationId, UserId: $userId');
+              
+              if (mounted) {
+                setState(() => _isLoading = false);
+              }
+              
+              if (mounted) {
+                // Pass sanitized phone number and userId to VerificationScreen
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.verification,
+                  arguments: {
+                    'username': sanitizedPhone, // E.164 format: +201064448681
+                    'isPhone': true,
+                    'verificationId': verificationId, // Persist verificationId
+                    'userId': userId, // Ensure userId is passed
+                  },
+                );
+              }
+            } else if (mounted) {
+              // If verificationId is null, just stop loading
+              setState(() => _isLoading = false);
             }
           },
         );
       } catch (e) {
-        setState(() => _isLoading = false);
+        if (!mounted) return;
+        
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

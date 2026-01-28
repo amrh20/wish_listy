@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -50,6 +51,17 @@ class _VerificationScreenState extends State<VerificationScreen>
   void initState() {
     super.initState();
     _currentVerificationId = widget.verificationId;
+    
+    // Debug: Log verificationId received from route arguments
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('📱 [VerificationScreen] initState called');
+    debugPrint('📱 [VerificationScreen] Phone/Email: ${widget.username}');
+    debugPrint('📱 [VerificationScreen] Is Phone: ${widget.isPhone}');
+    debugPrint('📱 [VerificationScreen] VerificationId received: ${widget.verificationId}');
+    debugPrint('📱 [VerificationScreen] VerificationId length: ${widget.verificationId?.length ?? 0}');
+    debugPrint('📱 [VerificationScreen] UserId received: ${widget.userId}');
+    debugPrint('📱 [VerificationScreen] _currentVerificationId set to: $_currentVerificationId');
+    debugPrint('═══════════════════════════════════════════════════════');
     _shakeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -75,6 +87,8 @@ class _VerificationScreenState extends State<VerificationScreen>
 
   /// Load timer state from SharedPreferences to persist across app lifecycle
   Future<void> _loadTimerState() async {
+    if (!mounted) return;
+    
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedTimestamp = prefs.getInt(_timerKey);
@@ -83,23 +97,27 @@ class _VerificationScreenState extends State<VerificationScreen>
         final elapsed = DateTime.now().millisecondsSinceEpoch - savedTimestamp;
         final remainingSeconds = _timerDuration - (elapsed ~/ 1000);
         
-        if (remainingSeconds > 0) {
+        if (remainingSeconds > 0 && mounted) {
           setState(() {
             _resendTimer = remainingSeconds;
           });
-          _startResendTimer();
-        } else {
+          if (mounted) {
+            _startResendTimer();
+          }
+        } else if (mounted) {
           // Timer expired, start fresh
           _startResendTimer();
         }
-      } else {
+      } else if (mounted) {
         // No saved timer, start fresh
         _startResendTimer();
       }
     } catch (e) {
       debugPrint('⚠️ [Verification] Failed to load timer state: $e');
       // Start fresh if loading fails
-      _startResendTimer();
+      if (mounted) {
+        _startResendTimer();
+      }
     }
   }
 
@@ -133,14 +151,23 @@ class _VerificationScreenState extends State<VerificationScreen>
   }
 
   void _startResendTimer() {
+    if (!mounted) return;
+    
     _resendTimer = _timerDuration;
     _saveTimerState(); // Save timestamp when timer starts
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      
       if (_resendTimer > 0) {
-        setState(() {
-          _resendTimer--;
-        });
+        if (mounted) {
+          setState(() {
+            _resendTimer--;
+          });
+        }
         // Save state every 5 seconds to reduce I/O
         if (_resendTimer % 5 == 0) {
           _saveTimerState();
@@ -153,19 +180,25 @@ class _VerificationScreenState extends State<VerificationScreen>
   }
 
   Future<void> _handleVerify() async {
+    if (!mounted) return;
+    
     final otp = _otpController.text.trim();
     
     if (otp.length != 6) {
-      setState(() {
-        _errorMessage = 'Please enter a 6-digit code';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Please enter a 6-digit code';
+        });
+      }
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
       final authRepository = Provider.of<AuthRepository>(context, listen: false);
@@ -190,23 +223,45 @@ class _VerificationScreenState extends State<VerificationScreen>
         Map<String, dynamic>? userData = response['user'] ?? response['data'];
         
         // Notify backend that verification flow completed successfully
-        // Pass userId from registration/login response
+        // Pass userId from registration/login response - MUST include userId in request body
         Map<String, dynamic>? verifySuccessResponse;
         if (widget.userId != null && widget.userId!.isNotEmpty) {
-          verifySuccessResponse = await authRepository.verifySuccess(widget.userId!);
-          // If verifySuccess returns a token, use it (takes precedence)
-          if (verifySuccessResponse != null && verifySuccessResponse['token'] != null) {
-            token = verifySuccessResponse['token'];
-          }
-          // If verifySuccess returns user data, use it
-          if (verifySuccessResponse != null && verifySuccessResponse['user'] != null) {
-            userData = verifySuccessResponse['user'] ?? verifySuccessResponse['data'];
+          debugPrint('📤 [Verification] Calling verifySuccess with userId: ${widget.userId}');
+          try {
+            verifySuccessResponse = await authRepository.verifySuccess(widget.userId!);
+            debugPrint('✅ [Verification] verifySuccess completed successfully');
+            // If verifySuccess returns a token, use it (takes precedence)
+            if (verifySuccessResponse != null && verifySuccessResponse['token'] != null) {
+              token = verifySuccessResponse['token'];
+            }
+            // If verifySuccess returns user data, use it
+            if (verifySuccessResponse != null && verifySuccessResponse['user'] != null) {
+              userData = verifySuccessResponse['user'] ?? verifySuccessResponse['data'];
+            }
+          } on ApiException catch (e) {
+            // If verifySuccess fails, show error but don't block navigation
+            // The OTP verification already succeeded, so we proceed
+            debugPrint('⚠️ [Verification] verifySuccess failed: ${e.message}');
+            if (mounted) {
+              _showErrorSnackBar(
+                e.message.isNotEmpty 
+                    ? e.message 
+                    : 'Verification completed but failed to update status. Please try logging in.',
+                localization,
+              );
+            }
+            // Continue with navigation since OTP verification succeeded
+          } catch (e) {
+            debugPrint('⚠️ [Verification] verifySuccess error: $e');
+            // Continue with navigation since OTP verification succeeded
           }
         } else {
           debugPrint('⚠️ [Verification] userId is missing, skipping verifySuccess call');
         }
 
         // Save token and update auth state BEFORE navigating
+        // If Firebase verification succeeded but backend call failed, we still proceed
+        // Token might come from verifySuccess call instead
         if (token != null && token.isNotEmpty) {
           debugPrint('💾 [Verification] Saving token and updating auth state...');
           
@@ -239,10 +294,57 @@ class _VerificationScreenState extends State<VerificationScreen>
           await authRepository.initialize();
           
           debugPrint('✅ [Verification] Token saved and auth state updated');
+        } else if (response['firebaseVerified'] == true) {
+          // Firebase verification succeeded but no token yet
+          // This can happen if backend call failed but Firebase verification succeeded
+          // Try to get token from verifySuccess, or save userId at least
+          debugPrint('⚠️ [Verification] Firebase verified but no token yet');
+          debugPrint('⚠️ [Verification] This might be due to backend call failure');
+          debugPrint('⚠️ [Verification] Will try to proceed with userId: ${widget.userId}');
+          
+          // Save userId at least so user can login later
+          if (widget.userId != null && widget.userId!.isNotEmpty) {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('user_id', widget.userId!);
+            await prefs.setString('user_email', widget.username);
+            debugPrint('✅ [Verification] Saved userId for later login');
+          }
+          
+          // Show info message that verification succeeded but login may be needed
+          if (mounted) {
+            _showSuccessMessage(localization);
+            await Future.delayed(const Duration(milliseconds: 1500));
+            // Navigate to login so user can login with their credentials
+            if (mounted) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.login,
+                (route) => false,
+              );
+            }
+          }
+          return;
         } else {
-          debugPrint('⚠️ [Verification] No token in response, auth state may be incomplete');
+          debugPrint('❌ [Verification] No token and Firebase verification may have failed');
+          // If no token and Firebase verification didn't succeed, show error
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+              _errorMessage = localization.translate('auth.verificationFailed') ??
+                  'Verification failed. No token received. Please try again.';
+            });
+            _showErrorSnackBar(
+              localization.translate('auth.verificationFailed') ??
+                  'Verification failed. Please try again.',
+              localization,
+            );
+            _triggerShakeAnimation();
+            return;
+          }
         }
 
+        if (!mounted) return;
+        
         _clearTimerState(); // Clear timer on success
         _showSuccessMessage(localization);
         await Future.delayed(const Duration(milliseconds: 1500));
@@ -257,12 +359,20 @@ class _VerificationScreenState extends State<VerificationScreen>
       } else {
         // Verification failed but response didn't throw exception
         // This shouldn't happen, but handle it gracefully
+        if (!mounted) return;
+        
         final localization = Provider.of<LocalizationService>(context, listen: false);
-        setState(() {
-          _isLoading = false;
-          _errorMessage = localization.translate('auth.invalidCode') ??
-              'Invalid code. Please try again.';
-        });
+        final errorMsg = localization.translate('auth.invalidCode') ??
+            'Invalid code. Please try again.';
+        
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = errorMsg;
+          });
+        }
+        
+        _showErrorSnackBar(errorMsg, localization);
         _triggerShakeAnimation();
         _otpController.clear();
         // Re-focus on input field so user can try again immediately
@@ -274,12 +384,20 @@ class _VerificationScreenState extends State<VerificationScreen>
         // DO NOT navigate - keep user on verification screen
       }
     } on TimeoutException catch (e) {
+      if (!mounted) return;
+      
       final localization = Provider.of<LocalizationService>(context, listen: false);
-      setState(() {
-        _isLoading = false;
-        _errorMessage = localization.translate('auth.verificationFailed') ??
-            'Connection timeout. Please try again.';
-      });
+      final errorMsg = localization.translate('auth.verificationFailed') ??
+          'Connection timeout. Please try again.';
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = errorMsg;
+        });
+      }
+      
+      _showErrorSnackBar(errorMsg, localization);
       _triggerShakeAnimation();
       _otpController.clear();
       // Re-focus on input field so user can try again immediately
@@ -290,6 +408,8 @@ class _VerificationScreenState extends State<VerificationScreen>
       });
       // DO NOT navigate - keep user on verification screen
     } on ApiException catch (e) {
+      if (!mounted) return;
+      
       final localization = Provider.of<LocalizationService>(context, listen: false);
       
       // Check if this is an "already verified" error
@@ -301,9 +421,11 @@ class _VerificationScreenState extends State<VerificationScreen>
       
       if (isAlreadyVerified && mounted) {
         // User is already verified - show success and navigate to Home
-        setState(() {
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
         _clearTimerState();
         _showSuccessMessage(localization);
         await Future.delayed(const Duration(milliseconds: 1500));
@@ -317,19 +439,37 @@ class _VerificationScreenState extends State<VerificationScreen>
         return;
       }
       
-      setState(() {
-        _isLoading = false;
-        // Use localized error message, fallback to API message if available
-        if (e.message.isNotEmpty && 
-            (e.message.contains('Invalid') || e.message.contains('invalid') || 
-             e.message.contains('incorrect') || e.message.contains('wrong'))) {
-          _errorMessage = localization.translate('auth.invalidCode') ??
-              'Invalid code. Please try again.';
-        } else {
-          _errorMessage = localization.translate('auth.verificationFailed') ??
-              (e.message.isNotEmpty ? e.message : 'Verification failed. Please try again.');
-        }
-      });
+      // Check if this is a Firebase verification error (invalid code, expired, etc.)
+      // vs a backend API error (401, network, etc.)
+      final isFirebaseError = e.message.contains('Invalid code') || 
+          e.message.contains('invalid-verification-code') ||
+          e.message.contains('Code expired') ||
+          e.message.contains('session-expired') ||
+          e.statusCode == 400; // Firebase errors typically return 400
+      
+      // Regular error - show error message
+      String errorMsg;
+      if (isFirebaseError && 
+          (e.message.contains('Invalid') || e.message.contains('invalid') || 
+           e.message.contains('incorrect') || e.message.contains('wrong') ||
+           e.message.contains('expired'))) {
+        // This is a Firebase OTP error - show invalid code message
+        errorMsg = localization.translate('auth.invalidCode') ??
+            'Invalid code. Please try again.';
+      } else {
+        // This might be a backend error - show generic verification failed message
+        errorMsg = localization.translate('auth.verificationFailed') ??
+            (e.message.isNotEmpty ? e.message : 'Verification failed. Please try again.');
+      }
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = errorMsg;
+        });
+      }
+      
+      _showErrorSnackBar(errorMsg, localization);
       _triggerShakeAnimation();
       _otpController.clear();
       // Re-focus on input field so user can try again immediately
@@ -340,12 +480,20 @@ class _VerificationScreenState extends State<VerificationScreen>
       });
       // DO NOT navigate - keep user on verification screen
     } catch (e) {
+      if (!mounted) return;
+      
       final localization = Provider.of<LocalizationService>(context, listen: false);
-      setState(() {
-        _isLoading = false;
-        _errorMessage = localization.translate('auth.verificationFailed') ??
-            'Verification failed. Please check your connection and try again.';
-      });
+      final errorMsg = localization.translate('auth.verificationFailed') ??
+          'Verification failed. Please check your connection and try again.';
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = errorMsg;
+        });
+      }
+      
+      _showErrorSnackBar(errorMsg, localization);
       _triggerShakeAnimation();
       _otpController.clear();
       // Re-focus on input field so user can try again immediately
@@ -359,17 +507,25 @@ class _VerificationScreenState extends State<VerificationScreen>
   }
 
   /// Perform verification with retry logic
+  /// For phone: Uses the persisted verificationId to create PhoneAuthCredential
+  /// For email: Uses username and OTP code
   Future<Map<String, dynamic>> _performVerification(
     AuthRepository authRepository,
   ) async {
     if (widget.isPhone) {
-      // Phone verification
+      // Phone verification - ensure verificationId is available
       if (_currentVerificationId == null) {
-        throw Exception('Verification ID is missing');
+        debugPrint('❌ [Verification] Verification ID is missing');
+        throw Exception('Verification ID is missing. Please request a new code.');
       }
 
+      debugPrint('📱 [Verification] Verifying OTP with verificationId: $_currentVerificationId');
+      debugPrint('📱 [Verification] OTP Code: ${_otpController.text.trim()}');
+      debugPrint('📱 [Verification] Phone: ${widget.username}');
+      debugPrint('📱 [Verification] UserId: ${widget.userId}');
+
       return await authRepository.verifyPhoneOTP(
-        verificationId: _currentVerificationId!,
+        verificationId: _currentVerificationId!, // Use latest verificationId
         smsCode: _otpController.text.trim(),
       );
     } else {
@@ -389,61 +545,164 @@ class _VerificationScreenState extends State<VerificationScreen>
   }
 
   Future<void> _handleResend() async {
-    if (_resendTimer > 0) return;
+    if (!mounted || _resendTimer > 0) return;
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
       final authRepository = Provider.of<AuthRepository>(context, listen: false);
 
       if (widget.isPhone) {
-        // Resend phone verification
+        // Resend phone verification - ensure phone is sanitized to E.164 format
+        // widget.username should already be in E.164 format from signup/login
+        // but we sanitize again to be safe
+        String sanitizedPhone = widget.username;
+        try {
+          sanitizedPhone = authRepository.sanitizePhoneForFirebase(widget.username);
+          debugPrint('📱 [Verification] Resending code to sanitized phone (E.164): $sanitizedPhone');
+        } catch (e) {
+          debugPrint('⚠️ [Verification] Error sanitizing phone for resend: $e');
+          // Use original phone if sanitization fails (shouldn't happen if it was sanitized before)
+          sanitizedPhone = widget.username;
+        }
+        
         await authRepository.resendPhoneVerification(
-          phoneNumber: widget.username,
+          phoneNumber: sanitizedPhone, // Use sanitized phone
           onCodeSent: (verificationId) {
+            if (!mounted) return;
+            
+            debugPrint('═══════════════════════════════════════════════════════');
+            debugPrint('📱 [VerificationScreen] Resend: Code sent callback');
+            debugPrint('📱 [VerificationScreen] New VerificationId: $verificationId');
+            debugPrint('📱 [VerificationScreen] VerificationId length: ${verificationId.length}');
+            debugPrint('📱 [VerificationScreen] Phone: ${widget.username}');
+            debugPrint('═══════════════════════════════════════════════════════');
+            
             setState(() {
-              _currentVerificationId = verificationId;
+              _currentVerificationId = verificationId; // Update with latest verificationId
               _isLoading = false;
             });
-            _startResendTimer();
             if (mounted) {
+              _startResendTimer();
+            }
+            if (mounted) {
+              final localization = Provider.of<LocalizationService>(context, listen: false);
+              final message = localization.translate('auth.codeResent') ?? 'Verification code resent';
+              final isArabic = localization.currentLanguage == 'ar';
+              
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: const Text('Verification code resent'),
+                  content: Row(
+                    children: [
+                      const Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          message,
+                          style: isArabic
+                              ? GoogleFonts.alexandria(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                )
+                              : AppStyles.bodyMedium.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
                   backgroundColor: AppColors.success,
+                  duration: const Duration(seconds: 3),
                   behavior: SnackBarBehavior.floating,
+                  margin: const EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               );
             }
           },
           onVerificationFailed: (error) {
+            if (!mounted) return;
+            
+            final localization = Provider.of<LocalizationService>(context, listen: false);
+            
             setState(() {
               _isLoading = false;
               _errorMessage = error;
             });
+            
+            _showErrorSnackBar(error, localization);
           },
         );
       } else {
         // Resend email OTP
         await authRepository.resendEmailOTP(widget.username);
-        setState(() {
-          _isLoading = false;
-        });
-        _startResendTimer();
         if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+        if (mounted) {
+          _startResendTimer();
+        }
+        if (mounted) {
+          final localization = Provider.of<LocalizationService>(context, listen: false);
+          final message = localization.translate('auth.codeResent') ?? 'Verification code resent';
+          final isArabic = localization.currentLanguage == 'ar';
+          
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Verification code resent'),
+              content: Row(
+                children: [
+                  const Icon(
+                    Icons.check_circle_outline,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: isArabic
+                          ? GoogleFonts.alexandria(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                            )
+                          : AppStyles.bodyMedium.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                    ),
+                  ),
+                ],
+              ),
               backgroundColor: AppColors.success,
+              duration: const Duration(seconds: 3),
               behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.all(16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           );
         }
       }
     } catch (e) {
+      if (!mounted) return;
+      
       setState(() {
         _isLoading = false;
         _errorMessage = 'Failed to resend code. Please try again.';
@@ -453,14 +712,89 @@ class _VerificationScreenState extends State<VerificationScreen>
 
   void _showSuccessMessage(LocalizationService localization) {
     if (!mounted) return;
+    
+    final isArabic = localization.currentLanguage == 'ar';
+    final message = localization.translate('auth.verificationSuccess') ??
+        'Verification successful!';
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          localization.translate('auth.verificationSuccess') ??
-              'Verification successful!',
+        content: Row(
+          children: [
+            const Icon(
+              Icons.check_circle_outline,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: isArabic
+                    ? GoogleFonts.alexandria(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      )
+                    : AppStyles.bodyMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+              ),
+            ),
+          ],
         ),
         backgroundColor: AppColors.success,
+        duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
+  }
+
+  /// Show error snackbar with Alexandria font for Arabic
+  void _showErrorSnackBar(String message, LocalizationService localization) {
+    if (!mounted) return;
+    
+    final isArabic = localization.currentLanguage == 'ar';
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.error_outline,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: isArabic
+                    ? GoogleFonts.alexandria(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      )
+                    : AppStyles.bodyMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.error,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }

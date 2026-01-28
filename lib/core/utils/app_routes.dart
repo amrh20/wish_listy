@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wish_listy/core/widgets/splash_screen.dart';
@@ -310,17 +311,29 @@ class AppRoutes {
           child: const ForgotPasswordScreen(),
         ),
       );
-    } else if (settings.name == verification) {
-      final args = settings.arguments as Map<String, dynamic>?;
-      return MaterialPageRoute(
-        builder: (_) => VerificationScreen(
-          username: args?['username'] ?? '',
-          isPhone: args?['isPhone'] ?? false,
-          verificationId: args?['verificationId'] as String?,
-          userId: args?['userId'] as String?,
-        ),
-      );
-    }
+      } else if (settings.name == verification) {
+        final args = settings.arguments as Map<String, dynamic>?;
+        
+        // Debug: Log route arguments for verification screen
+        debugPrint('═══════════════════════════════════════════════════════');
+        debugPrint('🛣️ [AppRoutes] Verification route called');
+        debugPrint('🛣️ [AppRoutes] Username: ${args?['username']}');
+        debugPrint('🛣️ [AppRoutes] Is Phone: ${args?['isPhone']}');
+        debugPrint('🛣️ [AppRoutes] VerificationId: ${args?['verificationId']}');
+        debugPrint('🛣️ [AppRoutes] VerificationId type: ${args?['verificationId'].runtimeType}');
+        debugPrint('🛣️ [AppRoutes] VerificationId length: ${(args?['verificationId'] as String?)?.length ?? 0}');
+        debugPrint('🛣️ [AppRoutes] UserId: ${args?['userId']}');
+        debugPrint('═══════════════════════════════════════════════════════');
+        
+        return MaterialPageRoute(
+          builder: (_) => VerificationScreen(
+            username: args?['username'] ?? '',
+            isPhone: args?['isPhone'] ?? false,
+            verificationId: args?['verificationId'] as String?,
+            userId: args?['userId'] as String?,
+          ),
+        );
+      }
 
     return null;
   }

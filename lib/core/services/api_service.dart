@@ -75,10 +75,10 @@ class ApiService {
       BaseOptions(
         baseUrl: baseUrl,
         connectTimeout: const Duration(
-          seconds: 60,
-        ), // 60 seconds timeout for physical devices
-        receiveTimeout: const Duration(seconds: 60),
-        sendTimeout: const Duration(seconds: 60),
+          seconds: 90,
+        ), // 90 seconds timeout for physical devices
+        receiveTimeout: const Duration(seconds: 120), // Increased for slow registration responses
+        sendTimeout: const Duration(seconds: 90),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -107,7 +107,11 @@ class ApiService {
             final path = error.requestOptions.path.toLowerCase();
             if (path.contains('/auth/login') || 
                 path.contains('/auth/register') || 
-                path.contains('/auth/logout')) {
+                path.contains('/auth/logout') ||
+                path.contains('/auth/verify-success') ||
+                path.contains('/auth/verify-otp') ||
+                path.contains('/auth/verify-phone') ||
+                path.contains('/auth/resend-otp')) {
               debugPrint('🔒 [ApiService] Skipping 401 handler for auth endpoint: $path');
               handler.next(error);
               return;
