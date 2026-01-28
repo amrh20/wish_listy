@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
@@ -524,6 +525,23 @@ class _LoginScreenState extends State<LoginScreen>
       }
       // Note: Login failures now throw ApiException, so no else block needed
     } on ApiException catch (e) {
+      // Check if this is an unverified account case
+      // New backend contract: 401 + message 'You already have an unverified account'
+      final message = e.message.toLowerCase();
+      final isUnverifiedByMessage = e.statusCode == 401 &&
+          message.contains('unverified account');
+      final isUnverifiedByFlag =
+          e.data != null && e.data['requiresVerification'] == true;
+
+      if (isUnverifiedByMessage || isUnverifiedByFlag) {
+        // Extract userId from error response if available
+        final userId = e.data?['userId'] as String? ?? 
+                      e.data?['user']?['id'] as String? ??
+                      e.data?['user']?['_id'] as String?;
+        await _handleUnverifiedAccount(userId: userId);
+        return;
+      }
+
       // Handle API-specific errors - show backend error message directly
       if (mounted) {
         final localization = Provider.of<LocalizationService>(
@@ -578,6 +596,157 @@ class _LoginScreenState extends State<LoginScreen>
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  /// Handle unverified account during login
+  Future<void> _handleUnverifiedAccount({String? userId}) async {
+    if (!mounted) return;
+
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+    final authRepository = Provider.of<AuthRepository>(
+      context,
+      listen: false,
+    );
+
+    final username = _usernameController.text.trim();
+    final isPhone = authRepository.isValidPhone(username);
+
+    // Show clean snackbar with Alexandria font for Arabic
+    _showUnverifiedAccountSnackbar(localization);
+
+    // Handle verification flow based on phone/email
+    if (isPhone) {
+      // Phone: Trigger Firebase Phone Auth to send SMS
+      setState(() => _isLoading = true);
+      try {
+        String? verificationId;
+        
+        await authRepository.verifyPhoneNumber(
+          phoneNumber: username,
+          onCodeSent: (id) {
+            verificationId = id;
+            setState(() => _isLoading = false);
+            if (mounted) {
+              Navigator.pushNamed(
+                context,
+                AppRoutes.verification,
+                arguments: {
+                  'username': username,
+                  'isPhone': true,
+                  'verificationId': verificationId,
+                  'userId': userId,
+                },
+              );
+            }
+          },
+          onVerificationCompleted: () {
+            setState(() => _isLoading = false);
+          },
+          onVerificationFailed: (error) {
+            setState(() => _isLoading = false);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to send verification code: $error'),
+                  backgroundColor: AppColors.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
+          onCodeAutoRetrievalTimeout: (error) {
+            setState(() => _isLoading = false);
+            if (mounted && verificationId != null) {
+              Navigator.pushNamed(
+                context,
+                AppRoutes.verification,
+                arguments: {
+                  'username': username,
+                  'isPhone': true,
+                  'verificationId': verificationId,
+                  'userId': userId,
+                },
+              );
+            }
+          },
+        );
+      } catch (e) {
+        setState(() => _isLoading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to send verification code'),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } else {
+      // Email: Navigate directly to verification screen
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        Navigator.pushNamed(
+          context,
+          AppRoutes.verification,
+          arguments: {
+            'username': username,
+            'isPhone': false,
+            'userId': userId,
+          },
+        );
+      }
+    }
+  }
+
+  /// Show clean snackbar for unverified account with Alexandria font
+  void _showUnverifiedAccountSnackbar(LocalizationService localization) {
+    if (!mounted) return;
+
+    final message = localization.translate('auth.unverifiedAccountLoginMessage') ??
+        'Your account is not verified. Please complete verification first.';
+    
+    final isArabic = localization.currentLanguage == 'ar';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              Icons.info_outline,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: isArabic
+                    ? GoogleFonts.alexandria(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      )
+                    : AppStyles.bodyMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.info,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(top: 60, left: 16, right: 16, bottom: 0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+    );
   }
 
   void _handleBackNavigation() {

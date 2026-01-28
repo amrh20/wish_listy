@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/socket_service.dart';
 import 'package:wish_listy/core/services/biometric_service.dart';
@@ -205,6 +207,20 @@ class AuthRepository extends ChangeNotifier {
         password: password,
         fcmToken: fcmToken,
       );
+
+      // Check if user exists but is unverified
+      if (response['requiresVerification'] == true) {
+        debugPrint('⚠️ [Auth] User exists but is not verified');
+        // Throw special exception with requiresVerification flag
+        throw ApiException(
+          'Account not verified',
+          statusCode: 403,
+          data: {
+            'requiresVerification': true,
+            'username': username,
+          },
+        );
+      }
 
       // Check if login was successful
       if (response['success'] == true) {
@@ -550,13 +566,19 @@ class AuthRepository extends ChangeNotifier {
       SocketService().disconnect();
 
       // Call API to delete account
-      await _apiService.delete('/auth/account');
+      // Backend endpoint: DELETE /api/auth/delete-account
+      await _apiService.delete('/auth/delete-account');
+      debugPrint('✅ [Auth] Account deleted successfully via API');
+    } on ApiException {
+      // Re-throw ApiException so UI can show error message
+      rethrow;
     } catch (e) {
-      // Even if API delete fails, clear local data for security
+      // Convert unexpected errors to ApiException
       debugPrint('⚠️ [Auth] Error deleting account: $e');
+      throw ApiException('Failed to delete account: $e');
     }
 
-    // Clear local state
+    // Clear local state (only if API call succeeded)
     _userState = UserState.guest;
     _userId = null;
     _userEmail = null;
@@ -912,6 +934,351 @@ class AuthRepository extends ChangeNotifier {
       rethrow;
     } catch (e) {
       throw Exception('Failed to update profile. Please try again.');
+    }
+  }
+
+  /// Normalize phone number to international format
+  /// Ensures phone starts with + for Firebase Phone Auth
+  /// Handles Arabic/Eastern digits (٠-٩) and removes spaces/special characters
+  /// 
+  /// Supports:
+  /// - Egyptian numbers: 01XXXXXXXXX (11 digits) → +20XXXXXXXXXXX
+  /// - International numbers: +XXXXXXXXX or 00XXXXXXXXX → +XXXXXXXXX
+  /// - Throws error if no country code detected for non-Egyptian numbers
+  String normalizePhoneNumber(String phone) {
+    // Convert Arabic/Eastern digits to Western digits
+    // Arabic-Indic: ٠١٢٣٤٥٦٧٨٩
+    // Extended Arabic-Indic: ۰۱۲۳۴۵۶۷۸۹
+    String normalized = phone
+        .replaceAll('٠', '0')
+        .replaceAll('١', '1')
+        .replaceAll('٢', '2')
+        .replaceAll('٣', '3')
+        .replaceAll('٤', '4')
+        .replaceAll('٥', '5')
+        .replaceAll('٦', '6')
+        .replaceAll('٧', '7')
+        .replaceAll('٨', '8')
+        .replaceAll('٩', '9')
+        .replaceAll('۰', '0')
+        .replaceAll('۱', '1')
+        .replaceAll('۲', '2')
+        .replaceAll('۳', '3')
+        .replaceAll('۴', '4')
+        .replaceAll('۵', '5')
+        .replaceAll('۶', '6')
+        .replaceAll('۷', '7')
+        .replaceAll('۸', '8')
+        .replaceAll('۹', '9');
+
+    // Remove all non-digit characters except +
+    // This removes spaces, dashes, parentheses, and any other special characters
+    String cleanPhone = normalized.replaceAll(RegExp(r'[^\d+]'), '');
+    
+    // Ensure we have at least some digits
+    if (cleanPhone.isEmpty || cleanPhone == '+') {
+      throw Exception('Invalid phone number format');
+    }
+    
+    // Handle international format starting with +
+    if (cleanPhone.startsWith('+')) {
+      // Already in international format, validate and return
+      final digitsOnly = cleanPhone.substring(1).replaceAll(RegExp(r'[^\d]'), '');
+      if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+        throw Exception('Phone number must be between 7 and 15 digits');
+      }
+      return cleanPhone;
+    }
+    
+    // Handle international format starting with 00 (common in some regions)
+    if (cleanPhone.startsWith('00')) {
+      // Convert 00 to +
+      cleanPhone = '+${cleanPhone.substring(2)}';
+      final digitsOnly = cleanPhone.substring(1).replaceAll(RegExp(r'[^\d]'), '');
+      if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+        throw Exception('Phone number must be between 7 and 15 digits');
+      }
+      return cleanPhone;
+    }
+    
+    // Handle Egyptian numbers: 01XXXXXXXXX (11 digits total)
+    if (cleanPhone.startsWith('01') && cleanPhone.length == 11) {
+      // Egyptian number: replace 0 with +20
+      cleanPhone = '+20${cleanPhone.substring(1)}';
+      return cleanPhone;
+    }
+    
+    // Handle Egyptian numbers starting with 0 (other formats)
+    if (cleanPhone.startsWith('0')) {
+      // Remove leading 0 and add +20
+      cleanPhone = '+20${cleanPhone.substring(1)}';
+      final digitsOnly = cleanPhone.substring(1).replaceAll(RegExp(r'[^\d]'), '');
+      if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+        throw Exception('Phone number must be between 7 and 15 digits');
+      }
+      return cleanPhone;
+    }
+    
+    // If we reach here, the number doesn't match Egyptian pattern and has no country code
+    // Show error asking user to include country code
+    throw Exception(
+      'Please include your country code (e.g., +966 for Saudi Arabia, +971 for UAE). '
+      'Egyptian numbers should start with 01.',
+    );
+  }
+
+  /// Verify phone number using Firebase Phone Auth
+  /// Returns verificationId on success
+  /// Throws exception on failure
+  Future<String> verifyPhoneNumber({
+    required String phoneNumber,
+    required Function(String verificationId) onCodeSent,
+    required Function() onVerificationCompleted,
+    required Function(String error) onVerificationFailed,
+    required Function(String error) onCodeAutoRetrievalTimeout,
+  }) async {
+    try {
+      final normalizedPhone = normalizePhoneNumber(phoneNumber);
+      debugPrint('📱 [Auth] Verifying phone number: $normalizedPhone');
+
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: normalizedPhone,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          debugPrint('✅ [Auth] Phone verification auto-completed');
+          onVerificationCompleted();
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          debugPrint('❌ [Auth] Phone verification failed: ${e.code} - ${e.message}');
+          onVerificationFailed(e.message ?? 'Verification failed');
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          debugPrint('✅ [Auth] SMS code sent. VerificationId: $verificationId');
+          onCodeSent(verificationId);
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          debugPrint('⏱️ [Auth] Code auto-retrieval timeout: $verificationId');
+          onCodeAutoRetrievalTimeout('Code auto-retrieval timeout');
+        },
+        timeout: const Duration(seconds: 60),
+      );
+
+      // Return a placeholder - actual verificationId comes from callback
+      return '';
+    } catch (e) {
+      debugPrint('❌ [Auth] Error in verifyPhoneNumber: $e');
+      throw Exception('Failed to send verification code: $e');
+    }
+  }
+
+  /// Verify phone OTP with Firebase and update backend
+  /// Returns success status
+  /// Includes timeout and network resilience
+  Future<Map<String, dynamic>> verifyPhoneOTP({
+    required String verificationId,
+    required String smsCode,
+  }) async {
+    try {
+      debugPrint('📱 [Auth] Verifying phone OTP...');
+
+      // Create credential from verification ID and SMS code
+      final credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: smsCode,
+      );
+
+      // Sign in with credential to verify (with timeout)
+      final userCredential = await FirebaseAuth.instance
+          .signInWithCredential(credential)
+          .timeout(
+            const Duration(seconds: 20),
+            onTimeout: () {
+              throw TimeoutException('Firebase verification timed out');
+            },
+          );
+      
+      debugPrint('✅ [Auth] Firebase phone verification successful');
+      debugPrint('   User ID: ${userCredential.user?.uid}');
+
+      // Get Firebase ID token (with timeout)
+      final idToken = await userCredential.user
+          ?.getIdToken()
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              throw TimeoutException('Failed to get Firebase ID token');
+            },
+          );
+      if (idToken == null) {
+        throw Exception('Failed to get Firebase ID token');
+      }
+
+      // Call backend API to set isVerified: true (with timeout)
+      final response = await _apiService
+          .patch(
+            '/auth/verify-phone',
+            data: {
+              'firebaseIdToken': idToken,
+            },
+          )
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              throw TimeoutException('Backend verification timed out');
+            },
+          );
+
+      debugPrint('✅ [Auth] Backend verification update successful');
+
+      // Sign out from Firebase (we only use it for verification)
+      await FirebaseAuth.instance.signOut().catchError((e) {
+        debugPrint('⚠️ [Auth] Error signing out from Firebase: $e');
+        // Don't throw - signing out is not critical
+      });
+
+      return {
+        'success': true,
+        'message': 'Phone verified successfully',
+        ...response,
+      };
+    } on TimeoutException catch (e) {
+      debugPrint('⏱️ [Auth] Verification timeout: ${e.message}');
+      throw ApiException(
+        'Connection timeout. Please check your internet and try again.',
+        statusCode: 408,
+      );
+    } on FirebaseAuthException catch (e) {
+      debugPrint('❌ [Auth] Firebase verification error: ${e.code} - ${e.message}');
+      
+      String errorMessage = 'Verification failed. Please try again.';
+      if (e.code == 'invalid-verification-code') {
+        errorMessage = 'Invalid code. Please try again.';
+      } else if (e.code == 'session-expired') {
+        errorMessage = 'Code expired. Please request a new one.';
+      } else if (e.code == 'network-request-failed') {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      }
+
+      throw ApiException(errorMessage, statusCode: 400);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      debugPrint('❌ [Auth] Error verifying phone OTP: $e');
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('network')) {
+        throw ApiException(
+          'Network error. Please check your connection and try again.',
+          statusCode: 0,
+        );
+      }
+      throw Exception('Failed to verify phone: $e');
+    }
+  }
+
+  /// Verify email OTP with backend
+  /// Returns success status
+  /// Includes timeout and network resilience
+  Future<Map<String, dynamic>> verifyEmailOTP({
+    required String username,
+    required String otp,
+  }) async {
+    try {
+      debugPrint('📧 [Auth] Verifying email OTP for: $username');
+
+      final response = await _apiService
+          .post(
+            '/auth/verify-otp',
+            data: {
+              'username': username,
+              'otp': otp,
+            },
+          )
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () {
+              throw TimeoutException('Email verification timed out');
+            },
+          );
+
+      debugPrint('✅ [Auth] Email OTP verification successful');
+      return response;
+    } on TimeoutException catch (e) {
+      debugPrint('⏱️ [Auth] Email verification timeout: ${e.message}');
+      throw ApiException(
+        'Connection timeout. Please check your internet and try again.',
+        statusCode: 408,
+      );
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      debugPrint('❌ [Auth] Error verifying email OTP: $e');
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('network')) {
+        throw ApiException(
+          'Network error. Please check your connection and try again.',
+          statusCode: 0,
+        );
+      }
+      throw Exception('Failed to verify email OTP: $e');
+    }
+  }
+
+  /// Notify backend that verification flow completed successfully
+  /// Endpoint: POST /api/auth/verify-success
+  /// Request body: {'userId': userId}
+  /// Uses current JWT token in Authorization header.
+  Future<Map<String, dynamic>> verifySuccess(String userId) async {
+    try {
+      debugPrint('✅ [Auth] Notifying backend of verification success for userId: $userId');
+      final response = await _apiService.post(
+        '/auth/verify-success',
+        data: {'userId': userId},
+      );
+      return response;
+    } on ApiException {
+      // Let UI handle ApiException with proper messaging
+      rethrow;
+    } catch (e) {
+      debugPrint('❌ [Auth] Error in verifySuccess: $e');
+      throw Exception('Failed to complete verification: $e');
+    }
+  }
+
+  /// Resend phone verification code
+  Future<void> resendPhoneVerification({
+    required String phoneNumber,
+    required Function(String verificationId) onCodeSent,
+    required Function(String error) onVerificationFailed,
+  }) async {
+    try {
+      await verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        onCodeSent: onCodeSent,
+        onVerificationCompleted: () {},
+        onVerificationFailed: onVerificationFailed,
+        onCodeAutoRetrievalTimeout: (error) {},
+      );
+    } catch (e) {
+      debugPrint('❌ [Auth] Error resending phone verification: $e');
+      rethrow;
+    }
+  }
+
+  /// Resend email OTP
+  Future<void> resendEmailOTP(String email) async {
+    try {
+      debugPrint('📧 [Auth] Resending email OTP to: $email');
+
+      await _apiService.post(
+        '/auth/resend-otp',
+        data: {'email': email},
+      );
+
+      debugPrint('✅ [Auth] Email OTP resent successfully');
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      debugPrint('❌ [Auth] Error resending email OTP: $e');
+      throw Exception('Failed to resend email OTP: $e');
     }
   }
 }

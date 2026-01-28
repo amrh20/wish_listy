@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
@@ -92,6 +93,19 @@ class _SignupScreenState extends State<SignupScreen>
     return true;
   }
 
+  /// Check if passwords match (for real-time visual feedback)
+  bool get _doPasswordsMatch {
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+    
+    // Only check if both fields have content
+    if (password.isEmpty || confirmPassword.isEmpty) {
+      return true; // Don't show error if fields are empty
+    }
+    
+    return password == confirmPassword;
+  }
+
   void _initializeAnimations() {
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1200),
@@ -178,30 +192,82 @@ class _SignupScreenState extends State<SignupScreen>
         context,
         listen: false,
       );
+      final localization = Provider.of<LocalizationService>(
+        context,
+        listen: false,
+      );
 
+      final username = _usernameController.text.trim();
+      final isPhone = authRepository.isValidPhone(username);
+
+      // Register user
       final response = await authRepository.register(
         fullName: _fullNameController.text.trim(),
-        username: _usernameController.text.trim(),
+        username: username,
         password: _passwordController.text,
       );
 
-      setState(() => _isLoading = false);
+      // Check if user already exists but is unverified
+      if (response['requiresVerification'] == true && mounted) {
+        setState(() => _isLoading = false);
+        
+        // Extract userId from response (may be in user or data field)
+        final userData = response['user'] ?? response['data'];
+        final userId = userData?['id'] ?? userData?['_id'] ?? userData?['userId'];
+        
+        // Show clean snackbar message
+        _showUnverifiedAccountMessage(localization);
+        
+        // Handle verification flow based on phone/email
+        if (isPhone) {
+          // Phone: Trigger Firebase Phone Auth to send new SMS
+          await _handlePhoneVerification(authRepository, username, userId: userId);
+        } else {
+          // Email: Navigate directly to verification screen
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (mounted) {
+            Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.verification,
+              arguments: {
+                'username': username,
+                'isPhone': false,
+                'userId': userId,
+              },
+            );
+          }
+        }
+        return;
+      }
 
       if (response['success'] == true && mounted) {
-        _showSuccessSnackBar('Registration successful!');
-        await Future.delayed(const Duration(milliseconds: 1500));
+        // Stop loading indicator
+        setState(() => _isLoading = false);
 
-        if (mounted) {
-          Navigator.pushReplacementNamed(
-            context,
-            AppRoutes.login,
-            arguments: {
-              'username': _usernameController.text.trim(),
-              'password': _passwordController.text,
-            },
-          );
+        // Extract userId from registration response
+        final userData = response['user'] ?? response['data'];
+        final userId = userData?['id'] ?? userData?['_id'] ?? userData?['userId'];
+
+        // On successful registration, immediately start verification flow
+        if (isPhone) {
+          // Phone registration: trigger Firebase Phone Auth to send SMS
+          await _handlePhoneVerification(authRepository, username, userId: userId);
+        } else {
+          // Email registration: navigate directly to verification screen
+          if (mounted) {
+            Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.verification,
+              arguments: {
+                'username': username,
+                'isPhone': false,
+                'userId': userId,
+              },
+            );
+          }
         }
       } else {
+        setState(() => _isLoading = false);
         final errorMessage =
             response['message']?.toString() ??
             'Registration failed. Please try again.';
@@ -224,6 +290,80 @@ class _SignupScreenState extends State<SignupScreen>
             ? e.toString()
             : 'An unexpected error occurred. Please try again.';
         _showErrorSnackBar(errorMessage);
+      }
+    }
+  }
+
+  Future<void> _handlePhoneVerification(
+    AuthRepository authRepository,
+    String phoneNumber, {
+    String? userId,
+  }) async {
+    if (!mounted) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      String? verificationId;
+
+      await authRepository.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        onCodeSent: (id) {
+          verificationId = id;
+          setState(() => _isLoading = false);
+          if (mounted) {
+            Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.verification,
+              arguments: {
+                'username': phoneNumber,
+                'isPhone': true,
+                'verificationId': verificationId,
+                'userId': userId,
+              },
+            );
+          }
+        },
+        onVerificationCompleted: () {
+          // Auto-verification completed (rare case)
+          setState(() => _isLoading = false);
+          if (mounted) {
+            Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.login,
+              arguments: {
+                'username': phoneNumber,
+              },
+            );
+          }
+        },
+        onVerificationFailed: (error) {
+          setState(() => _isLoading = false);
+          if (mounted) {
+            _showErrorSnackBar('Failed to send verification code: $error');
+          }
+        },
+        onCodeAutoRetrievalTimeout: (error) {
+          // Still navigate to verification screen even if auto-retrieval times out
+          setState(() => _isLoading = false);
+          if (mounted && verificationId != null) {
+            Navigator.pushReplacementNamed(
+              context,
+              AppRoutes.verification,
+              arguments: {
+                'username': phoneNumber,
+                'isPhone': true,
+                'verificationId': verificationId,
+                'userId': userId,
+              },
+            );
+          }
+        },
+      );
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        _showErrorSnackBar('Failed to send verification code. Please try again.');
       }
     }
   }
@@ -284,6 +424,54 @@ class _SignupScreenState extends State<SignupScreen>
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.only(top: 60, left: 16, right: 16, bottom: 0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  /// Show clean snackbar message for unverified account
+  /// Uses Alexandria font for Arabic text
+  void _showUnverifiedAccountMessage(LocalizationService localization) {
+    if (!mounted) return;
+    
+    final message = localization.translate('auth.unverifiedAccountMessage') ??
+        'You already have an unverified account. A new code has been sent.';
+    
+    final isArabic = localization.currentLanguage == 'ar';
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              Icons.info_outline,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: isArabic
+                    ? GoogleFonts.alexandria(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      )
+                    : AppStyles.bodyMedium.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.info,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(top: 60, left: 16, right: 16, bottom: 0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }
@@ -735,6 +923,43 @@ class _SignupScreenState extends State<SignupScreen>
                                                     return null;
                                                   },
                                                 ),
+
+                                                // Real-time password mismatch error message
+                                                if (!_doPasswordsMatch &&
+                                                    _confirmPasswordController
+                                                        .text.isNotEmpty &&
+                                                    _passwordController
+                                                        .text.isNotEmpty)
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(
+                                                      top: 8.0,
+                                                      left: 16.0,
+                                                    ),
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.error_outline,
+                                                          size: 16,
+                                                          color: AppColors.error,
+                                                        ),
+                                                        const SizedBox(width: 6),
+                                                        Expanded(
+                                                          child: Text(
+                                                            localization.translate(
+                                                                    'validation.passwordsDoNotMatch') ??
+                                                                'Passwords do not match',
+                                                            style: AppStyles
+                                                                .bodySmall
+                                                                .copyWith(
+                                                              color:
+                                                                  AppColors.error,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
 
                                                 const SizedBox(height: 24),
 

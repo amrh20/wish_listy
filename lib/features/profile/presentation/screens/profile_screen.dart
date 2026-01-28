@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
@@ -669,6 +670,16 @@ class ProfileScreenState extends State<ProfileScreen>
   }
 
   void _logout() async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    
+    // Show loading snackbar
+    final loadingSnackBar = _buildLoadingSnackBar(
+      localization.translate('common.pleaseWait') ?? 'Processing...',
+      localization,
+    );
+    scaffoldMessenger.showSnackBar(loadingSnackBar);
+    
     try {
       final authRepository = Provider.of<AuthRepository>(
         context,
@@ -676,19 +687,42 @@ class ProfileScreenState extends State<ProfileScreen>
       );
       await authRepository.logout();
 
+      // Dismiss loading snackbar
+      scaffoldMessenger.hideCurrentSnackBar();
+
       if (mounted) {
+        // Navigate to login screen
         Navigator.pushNamedAndRemoveUntil(
           context,
           AppRoutes.login,
           (route) => false,
         );
       }
-    } catch (e) {
+    } on ApiException catch (e) {
+      // Dismiss loading snackbar
+      scaffoldMessenger.hideCurrentSnackBar();
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${Provider.of<LocalizationService>(context, listen: false).translate('dialogs.errorLoggingOut')}: $e'),
-            backgroundColor: AppColors.error,
+        // Show error snackbar with backend message
+        scaffoldMessenger.showSnackBar(
+          _buildErrorSnackBar(
+            e.message.isNotEmpty 
+                ? e.message 
+                : (localization.translate('dialogs.errorLoggingOut') ?? 'Error logging out'),
+            localization,
+          ),
+        );
+      }
+    } catch (e) {
+      // Dismiss loading snackbar
+      scaffoldMessenger.hideCurrentSnackBar();
+      
+      if (mounted) {
+        // Show error snackbar
+        scaffoldMessenger.showSnackBar(
+          _buildErrorSnackBar(
+            '${localization.translate('dialogs.errorLoggingOut') ?? 'Error logging out'}: $e',
+            localization,
           ),
         );
       }
@@ -696,6 +730,15 @@ class ProfileScreenState extends State<ProfileScreen>
   }
 
   void _deleteAccount(LocalizationService localization) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    
+    // Show loading snackbar
+    final loadingSnackBar = _buildLoadingSnackBar(
+      localization.translate('common.pleaseWait') ?? 'Processing...',
+      localization,
+    );
+    scaffoldMessenger.showSnackBar(loadingSnackBar);
+    
     try {
       final authRepository = Provider.of<AuthRepository>(
         context,
@@ -703,51 +746,55 @@ class ProfileScreenState extends State<ProfileScreen>
       );
       await authRepository.deleteAccount();
 
+      // Dismiss loading snackbar
+      scaffoldMessenger.hideCurrentSnackBar();
+
       if (mounted) {
         // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(
-                  Icons.check_circle_outline,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    localization.translate('profile.accountDeleted'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.success,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+        scaffoldMessenger.showSnackBar(
+          _buildSuccessSnackBar(
+            localization.translate('profile.accountDeleted') ?? 'Your account has been deleted.',
+            localization,
           ),
         );
 
-        // Navigate to Welcome screen and clear navigation stack
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          AppRoutes.welcome,
-          (route) => false,
+        // Wait a moment for user to see success message, then navigate
+        await Future.delayed(const Duration(milliseconds: 1500));
+
+        if (mounted) {
+          // Navigate to Welcome screen and clear navigation stack
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.welcome,
+            (route) => false,
+          );
+        }
+      }
+    } on ApiException catch (e) {
+      // Dismiss loading snackbar
+      scaffoldMessenger.hideCurrentSnackBar();
+      
+      if (mounted) {
+        // Show error snackbar with backend message
+        scaffoldMessenger.showSnackBar(
+          _buildErrorSnackBar(
+            e.message.isNotEmpty 
+                ? e.message 
+                : (localization.translate('dialogs.errorDeletingAccount') ?? 'Error deleting account'),
+            localization,
+          ),
         );
       }
     } catch (e) {
+      // Dismiss loading snackbar
+      scaffoldMessenger.hideCurrentSnackBar();
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${localization.translate('dialogs.errorDeletingAccount')}: $e'),
-            backgroundColor: AppColors.error,
+        // Show error snackbar
+        scaffoldMessenger.showSnackBar(
+          _buildErrorSnackBar(
+            '${localization.translate('dialogs.errorDeletingAccount') ?? 'Error deleting account'}: $e',
+            localization,
           ),
         );
       }
@@ -1253,6 +1300,129 @@ class ProfileScreenState extends State<ProfileScreen>
           updateInterests(selectedInterests);
         },
       ),
+    );
+  }
+
+  /// Build loading snackbar with CircularProgressIndicator
+  SnackBar _buildLoadingSnackBar(String message, LocalizationService localization) {
+    final isArabic = localization.currentLanguage == 'ar';
+    
+    return SnackBar(
+      content: Row(
+        children: [
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              message,
+              style: isArabic
+                  ? GoogleFonts.alexandria(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    )
+                  : AppStyles.bodyMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: AppColors.primary,
+      duration: const Duration(minutes: 5), // Long duration for persistent loading
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: const EdgeInsets.all(16),
+    );
+  }
+
+  /// Build error snackbar with Alexandria font
+  SnackBar _buildErrorSnackBar(String message, LocalizationService localization) {
+    final isArabic = localization.currentLanguage == 'ar';
+    
+    return SnackBar(
+      content: Row(
+        children: [
+          const Icon(
+            Icons.error_outline,
+            color: Colors.white,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: isArabic
+                  ? GoogleFonts.alexandria(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    )
+                  : AppStyles.bodyMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: AppColors.error,
+      duration: const Duration(seconds: 4),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: const EdgeInsets.all(16),
+    );
+  }
+
+  /// Build success snackbar with Alexandria font
+  SnackBar _buildSuccessSnackBar(String message, LocalizationService localization) {
+    final isArabic = localization.currentLanguage == 'ar';
+    
+    return SnackBar(
+      content: Row(
+        children: [
+          const Icon(
+            Icons.check_circle_outline,
+            color: Colors.white,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: isArabic
+                  ? GoogleFonts.alexandria(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                    )
+                  : AppStyles.bodyMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: AppColors.success,
+      duration: const Duration(seconds: 2),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      margin: const EdgeInsets.all(16),
     );
   }
 }

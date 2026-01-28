@@ -7,6 +7,7 @@ import '../../features/auth/presentation/screens/signup_screen.dart';
 import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/new_password_screen.dart';
 import '../../features/auth/presentation/screens/legal_info_screen.dart';
+import '../../features/auth/presentation/screens/verification_screen.dart';
 import '../../features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:wish_listy/features/profile/presentation/screens/home_screen.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
@@ -49,6 +50,7 @@ class AppRoutes {
   static const String signup = '/signup';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
+  static const String verification = '/verification';
   static const String home = '/home';
   static const String mainNavigation = '/main';
   static const String myWishlists = '/my-wishlists';
@@ -306,6 +308,16 @@ class AppRoutes {
         builder: (context) => BlocProvider<AuthCubit>(
           create: (context) => AuthCubit(),
           child: const ForgotPasswordScreen(),
+        ),
+      );
+    } else if (settings.name == verification) {
+      final args = settings.arguments as Map<String, dynamic>?;
+      return MaterialPageRoute(
+        builder: (_) => VerificationScreen(
+          username: args?['username'] ?? '',
+          isPhone: args?['isPhone'] ?? false,
+          verificationId: args?['verificationId'] as String?,
+          userId: args?['userId'] as String?,
         ),
       );
     }

@@ -6,6 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'firebase_options.dart';
 import 'core/services/localization_service.dart';
 import 'core/services/api_service.dart';
 import 'features/auth/data/repository/auth_repository.dart';
@@ -25,16 +27,87 @@ import 'core/services/deep_link_service.dart';
 import 'core/navigation/app_route_observer.dart';
 import 'core/services/fcm_service.dart';
 
+/// Print debug token for App Check (waits 5 seconds before trying)
+Future<void> _printDebugToken() async {
+  // Wait 5 seconds for App Check to initialize
+  await Future.delayed(const Duration(seconds: 5));
+  
+  try {
+    final token = await FirebaseAppCheck.instance.getToken();
+    if (token != null && token.isNotEmpty) {
+      // Print in a very visible format
+      debugPrint('');
+      debugPrint('═══════════════════════════════════════════════════════════════════');
+      debugPrint('🔐 [App Check] DEBUG TOKEN (Copy this):');
+      debugPrint('');
+      debugPrint('   $token');
+      debugPrint('');
+      debugPrint('═══════════════════════════════════════════════════════════════════');
+      debugPrint('📋 Next Steps:');
+      debugPrint('   1. Copy the token above');
+      debugPrint('   2. Go to Firebase Console → App Check → Apps → Your App');
+      debugPrint('   3. Click the three dots (⋮) next to your Android app');
+      debugPrint('   4. Select "Manage debug tokens"');
+      debugPrint('   5. Click "Add debug token"');
+      debugPrint('   6. Name it "My Phone" and paste the token');
+      debugPrint('═══════════════════════════════════════════════════════════════════');
+      debugPrint('');
+    }
+  } catch (e) {
+    debugPrint('⚠️ [App Check] Failed to get debug token: $e');
+    debugPrint('   This is normal. Check Android logs for debug token:');
+    debugPrint('   adb logcat | grep -i "debug.*token"');
+  }
+}
+
+/// Initialize Firebase App Check with Play Integrity provider
+/// Handles debug token for development builds
+Future<void> _initializeAppCheck() async {
+  if (kDebugMode) {
+    // For development: Use debug provider to bypass verification
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.debug,
+      appleProvider: AppleProvider.debug,
+    );
+    
+    debugPrint('🔐 [App Check] Debug mode activated');
+    
+    // Wait 5 seconds then try to get and print debug token
+    _printDebugToken();
+  } else {
+    // For production: Use Play Integrity (Android) and DeviceCheck/AppAttest (iOS)
+    await FirebaseAppCheck.instance.activate(
+      androidProvider: AndroidProvider.playIntegrity,
+      appleProvider: AppleProvider.deviceCheck,
+    );
+    debugPrint('🔐 [App Check] Production mode: Play Integrity / DeviceCheck enabled');
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase (required for Firebase Messaging)
+  // MUST use firebase_options.dart to ensure correct apiKey
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     debugPrint('✅ Firebase initialized successfully');
+    debugPrint('   apiKey: ${DefaultFirebaseOptions.currentPlatform.apiKey}');
   } catch (e) {
     debugPrint('⚠️ Firebase initialization failed: $e');
     // Continue app execution even if Firebase fails (e.g., on emulators without Firebase config)
+  }
+
+  // Initialize Firebase App Check with Play Integrity provider
+  // MUST happen AFTER Firebase.initializeApp() and BEFORE runApp()
+  try {
+    await _initializeAppCheck();
+    debugPrint('✅ Firebase App Check initialized successfully');
+  } catch (e) {
+    debugPrint('⚠️ Firebase App Check initialization failed: $e');
+    // Continue app execution even if App Check fails
   }
 
   // Register global background handler for FCM messages.
