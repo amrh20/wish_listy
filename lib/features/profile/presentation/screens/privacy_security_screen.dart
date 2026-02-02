@@ -69,6 +69,10 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                     _buildSecuritySection(localization),
                     const SizedBox(height: 32),
 
+                    // Device Permissions Section
+                    _buildDevicePermissionsSection(localization),
+                    const SizedBox(height: 32),
+
                     // Save Button
                     _buildSaveButton(localization),
                   ],
@@ -168,6 +172,87 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
                 onTap: _changePassword,
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDevicePermissionsSection(LocalizationService localization) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '6. Device Permissions',
+          style: AppStyles.headingSmall.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                offset: const Offset(0, 2),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'To provide a full experience, Wish Listy may request access to certain features on your device:',
+                style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              _buildBulletItem(
+                'Camera:',
+                'We use your camera solely to allow you to take and upload a profile picture or capture images of gift items you wish to add to your list.',
+              ),
+              const SizedBox(height: 8),
+              _buildBulletItem(
+                'Storage/Gallery:',
+                'We access your photos to let you choose and upload existing images for your profile or gift items.',
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBulletItem(String label, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '• ',
+          style: AppStyles.bodyMedium.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              children: [
+                TextSpan(
+                  text: '$label ',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                TextSpan(text: text),
+              ],
+            ),
           ),
         ),
       ],

@@ -519,17 +519,21 @@ class AuthRepository extends ChangeNotifier {
   Future<void> updateFcmToken(String token) async {
     if (!isAuthenticated) {
       debugPrint('⚠️ [Auth] updateFcmToken called while user is not authenticated');
+      debugPrint('⚠️ [Auth] Token will be sent automatically after login');
       return;
     }
 
     try {
+      debugPrint('📤 [Auth] Sending FCM token to backend: ${token.substring(0, 20)}...');
       await _apiService.put(
         '/auth/fcm-token',
         data: {'token': token},
       );
-      debugPrint('✅ [Auth] FCM token updated on backend');
+      debugPrint('✅ [Auth] FCM token updated successfully on backend');
+      debugPrint('✅ [Auth] Backend now has the latest FCM token for push notifications');
     } on ApiException catch (e) {
-      debugPrint('⚠️ [Auth] Failed to update FCM token: ${e.message}');
+      debugPrint('⚠️ [Auth] Failed to update FCM token on backend: ${e.message}');
+      debugPrint('⚠️ [Auth] Token: ${token.substring(0, 20)}...');
       rethrow;
     } catch (e) {
       debugPrint('⚠️ [Auth] Unexpected error updating FCM token: $e');

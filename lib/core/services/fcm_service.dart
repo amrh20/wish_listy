@@ -75,28 +75,66 @@ class FcmService {
     // Ensure initial token is sent to backend when user is already authenticated.
     try {
       final token = await _messaging.getToken();
-      debugPrint('🔔 FcmService: Initial FCM token: $token');
-      if (token != null && authRepository.isAuthenticated) {
-        await authRepository.updateFcmToken(token);
+      if (token != null) {
+        // Print FCM token in a very visible format for Firebase Console testing
+        debugPrint('');
+        debugPrint('═══════════════════════════════════════════════════════════════════');
+        debugPrint('🔔 [FCM] CURRENT FCM TOKEN (Copy this for Firebase Console):');
+        debugPrint('');
+        debugPrint('   $token');
+        debugPrint('');
+        debugPrint('═══════════════════════════════════════════════════════════════════');
+        debugPrint('📋 To test notifications in Firebase Console:');
+        debugPrint('   1. Copy the token above');
+        debugPrint('   2. Go to Firebase Console → Cloud Messaging → Send test message');
+        debugPrint('   3. Paste the token in "Add an FCM registration token"');
+        debugPrint('   4. Click "Test"');
+        debugPrint('═══════════════════════════════════════════════════════════════════');
+        debugPrint('');
+        
+        if (authRepository.isAuthenticated) {
+          await authRepository.updateFcmToken(token);
+          debugPrint('✅ [FCM] Token sent to backend');
+        } else {
+          debugPrint('⚠️ [FCM] User not authenticated, token will be sent after login');
+        }
+      } else {
+        debugPrint('⚠️ [FCM] FCM token is null - may need to request notification permissions');
       }
     } catch (e) {
       debugPrint('⚠️ FcmService: Failed to fetch initial FCM token: $e');
     }
 
     // Keep backend updated when the FCM token changes.
+    // This happens when app is reinstalled, data is cleared, or token expires
     _messaging.onTokenRefresh.listen((token) async {
-      debugPrint('🔔 FcmService: onTokenRefresh: $token');
+      debugPrint('');
+      debugPrint('═══════════════════════════════════════════════════════════════════');
+      debugPrint('🔄 [FCM] TOKEN REFRESHED (New token generated):');
+      debugPrint('');
+      debugPrint('   $token');
+      debugPrint('');
+      debugPrint('═══════════════════════════════════════════════════════════════════');
+      debugPrint('📋 IMPORTANT: Update Firebase Console with new token:');
+      debugPrint('   1. Copy the NEW token above');
+      debugPrint('   2. Go to Firebase Console → Cloud Messaging → Send test message');
+      debugPrint('   3. Remove old token and add this new one');
+      debugPrint('   4. Old token is no longer valid after reinstall/clear data');
+      debugPrint('═══════════════════════════════════════════════════════════════════');
+      debugPrint('');
+      
       if (!authRepository.isAuthenticated) {
         debugPrint(
-          '🔔 FcmService: User not authenticated, skipping token update.',
+          '⚠️ [FCM] User not authenticated, token will be sent after login',
         );
         return;
       }
 
       try {
         await authRepository.updateFcmToken(token);
+        debugPrint('✅ [FCM] New token sent to backend');
       } catch (e) {
-        debugPrint('⚠️ FcmService: Failed to update FCM token on refresh: $e');
+        debugPrint('⚠️ [FCM] Failed to update FCM token on refresh: $e');
       }
     });
 
@@ -146,8 +184,27 @@ class FcmService {
   }
 
   /// Get the current FCM token (may be null if not yet available).
-  Future<String?> getToken() {
-    return _messaging.getToken();
+  /// 
+  /// This method can be used to manually retrieve the token for testing purposes.
+  /// The token is automatically printed in logs when FCM initializes or refreshes.
+  Future<String?> getToken() async {
+    try {
+      final token = await _messaging.getToken();
+      if (token != null) {
+        debugPrint('');
+        debugPrint('═══════════════════════════════════════════════════════════════════');
+        debugPrint('🔔 [FCM] CURRENT FCM TOKEN (via getToken()):');
+        debugPrint('');
+        debugPrint('   $token');
+        debugPrint('');
+        debugPrint('═══════════════════════════════════════════════════════════════════');
+        debugPrint('');
+      }
+      return token;
+    } catch (e) {
+      debugPrint('⚠️ [FCM] Failed to get token: $e');
+      return null;
+    }
   }
 
   /// Show a professional permission dialog and, if the user accepts,

@@ -1,4 +1,4 @@
-package com.example.wish_listy
+package com.amr.wishlisty
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

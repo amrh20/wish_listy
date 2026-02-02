@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -148,28 +150,34 @@ class ProfileCubit extends Cubit<ProfileImageState> {
       final compressedPath = await ImageUtils.compressImage(imagePath);
 
       // Use edit API if user has existing image, otherwise use upload API
+      // Repository returns normalized { imageUrl, user } and uses field name 'profileImage'
       final response = hasExistingImage
           ? await _repository.editProfileImage(compressedPath)
           : await _repository.uploadProfileImage(compressedPath);
 
-      // Extract imageUrl and user data from response
-      final data = response['data'] ?? response;
-      final imageUrl = data['imageUrl'] as String?;
-      final userData = data['user'] as Map<String, dynamic>? ?? data;
+      final imageUrl = response['imageUrl'] as String?;
+      final userData = response['user'] as Map<String, dynamic>? ?? response;
 
       if (imageUrl == null || imageUrl.isEmpty) {
-        throw Exception('No image URL returned from server');
+        emit(ProfileImageUploadError('No image URL returned from server'));
+        return;
       }
 
-      // Update current profile image URL
       _currentProfileImageUrl = imageUrl;
-      
       emit(ProfileImageUploadSuccess(
         imageUrl: imageUrl,
         userData: userData,
       ));
     } on ApiException catch (e) {
       emit(ProfileImageUploadError(e.message));
+    } on SocketException catch (_) {
+      emit(ProfileImageUploadError(
+        'No internet connection. Please check your network and try again.',
+      ));
+    } on FormatException catch (_) {
+      emit(ProfileImageUploadError(
+        'Invalid response from server. Please try again.',
+      ));
     } catch (e) {
       emit(ProfileImageUploadError(
         'Failed to upload image: ${e.toString()}',

@@ -452,9 +452,20 @@ class _LoginScreenState extends State<LoginScreen>
       String? fcmToken;
       try {
         fcmToken = await FirebaseMessaging.instance.getToken();
-        debugPrint(
-          '📱 [Login] FCM Token retrieved: ${fcmToken != null ? "✅ (${fcmToken.length} chars)" : "❌ null"}',
-        );
+        if (fcmToken != null) {
+          debugPrint('');
+          debugPrint('═══════════════════════════════════════════════════════════════════');
+          debugPrint('🔔 [Login] FCM TOKEN (for Firebase Console testing):');
+          debugPrint('');
+          debugPrint('   $fcmToken');
+          debugPrint('');
+          debugPrint('═══════════════════════════════════════════════════════════════════');
+          debugPrint('📋 Copy this token to Firebase Console → Cloud Messaging → Test');
+          debugPrint('═══════════════════════════════════════════════════════════════════');
+          debugPrint('');
+        } else {
+          debugPrint('⚠️ [Login] FCM Token is null - may need notification permissions');
+        }
       } catch (e) {
         debugPrint('⚠️ [Login] Failed to get FCM token: $e');
         // Continue with login even if FCM token fails (e.g., on emulator)

@@ -30,7 +30,7 @@ deep_link_web/
 ## Configuration
 
 ### Android (assetlinks.json)
-- Package name: `com.example.wish_listy`
+- Package name: `com.amr.wishlisty`
 - SHA-256: Already configured (debug keystore)
 - For production, update with release keystore SHA-256
 

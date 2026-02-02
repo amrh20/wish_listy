@@ -551,8 +551,16 @@ class ApiService {
       );
 
       isOffline.value = false;
+      if (kDebugMode) {
+        debugPrint('📤 [ApiService] PUT $path → status: ${response.statusCode}');
+        debugPrint('📤 [ApiService] response: ${response.data}');
+      }
       return response.data;
     } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint('📤 [ApiService] PUT $path failed → status: ${e.response?.statusCode}');
+        debugPrint('📤 [ApiService] response: ${e.response?.data}');
+      }
       final kind = _classifyDioException(e);
       isOffline.value = kind == ApiErrorKind.noInternet;
       final resData = e.response?.data;
