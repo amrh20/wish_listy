@@ -1134,7 +1134,8 @@ class _VerificationScreenState extends State<VerificationScreen>
               ),
             ),
           ),
-        );
+        ),
+      );
       },
     );
   }
