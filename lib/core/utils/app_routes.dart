@@ -139,15 +139,22 @@ class AppRoutes {
         ),
       );
     } else if (settings.name == wishlistItems) {
-      final args = settings.arguments as Map<String, dynamic>;
+      final args = settings.arguments as Map<String, dynamic>?;
+      final wishlistId = args?['wishlistId']?.toString().trim();
+      if (args == null || wishlistId == null || wishlistId.isEmpty) {
+        debugPrint('⚠️ [AppRoutes] wishlistItems: Invalid or missing wishlistId, redirecting to main');
+        return MaterialPageRoute(
+          builder: (context) => MainNavigation(),
+        );
+      }
       return MaterialPageRoute(
         builder: (context) => WishlistItemsScreen(
-          wishlistName: args['wishlistName'] ?? 'My Wishlist',
-          wishlistId: args['wishlistId'] ?? '1',
-          totalItems: args['totalItems'] ?? 0,
-          purchasedItems: args['purchasedItems'] ?? 0,
-          isFriendWishlist: args['isFriendWishlist'] ?? false,
-          friendName: args['friendName'],
+          wishlistName: args['wishlistName']?.toString() ?? 'My Wishlist',
+          wishlistId: wishlistId,
+          totalItems: (args['totalItems'] is int) ? args['totalItems'] as int : 0,
+          purchasedItems: (args['purchasedItems'] is int) ? args['purchasedItems'] as int : 0,
+          isFriendWishlist: args['isFriendWishlist'] == true,
+          friendName: args['friendName']?.toString(),
         ),
       );
     } else if (settings.name == itemDetails) {
@@ -160,7 +167,13 @@ class AppRoutes {
         );
       } else {
         // Legacy support for Map arguments
-        final args = settings.arguments as Map<String, dynamic>;
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args == null) {
+          debugPrint('⚠️ [AppRoutes] itemDetails: Null arguments, redirecting to main');
+          return MaterialPageRoute(
+            builder: (context) => MainNavigation(),
+          );
+        }
         
         // Deep link support: if only itemId is provided, create minimal WishlistItem
         // The screen will fetch full data in _fetchItemDetails
@@ -254,10 +267,16 @@ class AppRoutes {
         builder: (context) => FriendProfileScreen(friendId: friendId),
       );
     } else if (settings.name == eventDetails) {
-      final args = settings.arguments as Map<String, dynamic>;
+      final args = settings.arguments as Map<String, dynamic>?;
+      final eventId = args?['eventId']?.toString().trim();
+      if (args == null || eventId == null || eventId.isEmpty) {
+        debugPrint('⚠️ [AppRoutes] eventDetails: Invalid or missing eventId, redirecting to main');
+        return MaterialPageRoute(
+          builder: (context) => MainNavigation(),
+        );
+      }
       return MaterialPageRoute(
-        builder: (context) =>
-            EventDetailsScreen(eventId: args['eventId'] ?? ''),
+        builder: (context) => EventDetailsScreen(eventId: eventId),
       );
     } else if (settings.name == friendActivityFeed) {
       return MaterialPageRoute(

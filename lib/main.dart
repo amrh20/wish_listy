@@ -197,6 +197,42 @@ void main() async {
     debugPrint('⚠️ Error initializing FcmService: $e');
   }
 
+  // Prevent black screen on build errors - show helpful error widget instead
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Material(
+      color: Colors.white,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
+              const SizedBox(height: 16),
+              Text(
+                'Something went wrong',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade800,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                details.exception.toString(),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  };
+
   runApp(
     MyApp(
       localizationService: localizationService,

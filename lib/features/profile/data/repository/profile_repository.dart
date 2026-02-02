@@ -11,26 +11,14 @@ class ProfileRepository {
   ProfileRepository({ApiService? apiService})
       : _apiService = apiService ?? ApiService();
 
-  /// Upload profile image (for new uploads) using PUT /api/auth/profile/edit
+  /// Upload profile image (first time) using POST /api/upload/profile
   /// Uses field name [profileImage] and multipart/form-data.
   /// [imagePath] - Path to the compressed image file
   /// Returns normalized map with [imageUrl] and [user] for consistent parsing.
   Future<Map<String, dynamic>> uploadProfileImage(String imagePath) async {
-    return _uploadOrEditProfileImage(imagePath);
-  }
-
-  /// Edit/Update existing profile image using PUT /api/auth/profile/edit
-  /// Same as upload; backend typically uses one endpoint for both.
-  Future<Map<String, dynamic>> editProfileImage(String imagePath) async {
-    return _uploadOrEditProfileImage(imagePath);
-  }
-
-  /// Shared implementation: PUT multipart with field [profileImage],
-  /// Content-Type multipart/form-data, flexible JSON parsing, and error handling.
-  Future<Map<String, dynamic>> _uploadOrEditProfileImage(String imagePath) async {
     try {
-      final response = await _apiService.putMultipart(
-        '/auth/profile/edit',
+      final response = await _apiService.postMultipart(
+        '/upload/profile',
         fields: {},
         fileKey: 'profileImage',
         filePath: imagePath,
@@ -41,7 +29,7 @@ class ProfileRepository {
       rethrow;
     } on SocketException catch (e) {
       if (kDebugMode) {
-        debugPrint('📤 [ProfileRepository] SocketException: $e');
+        debugPrint('📤 [ProfileRepository] POST SocketException: $e');
       }
       throw ApiException(
         'No internet connection. Please check your network and try again.',
@@ -49,7 +37,7 @@ class ProfileRepository {
       );
     } on FormatException catch (e) {
       if (kDebugMode) {
-        debugPrint('📤 [ProfileRepository] FormatException: $e');
+        debugPrint('📤 [ProfileRepository] POST FormatException: $e');
       }
       throw ApiException(
         'Invalid response from server. Please try again.',
@@ -57,6 +45,43 @@ class ProfileRepository {
       );
     } catch (e) {
       throw Exception('Failed to upload profile image: $e');
+    }
+  }
+
+  /// Edit/Update existing profile image using PUT /api/auth/profile/edit
+  /// Uses field name [image] and multipart/form-data.
+  /// [imagePath] - Path to the compressed image file
+  /// Returns normalized map with [imageUrl] and [user] for consistent parsing.
+  Future<Map<String, dynamic>> editProfileImage(String imagePath) async {
+    try {
+      final response = await _apiService.putMultipart(
+        '/auth/profile/edit',
+        fields: {},
+        fileKey: 'image',
+        filePath: imagePath,
+      );
+
+      return _normalizeProfileImageResponse(response);
+    } on ApiException {
+      rethrow;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('📤 [ProfileRepository] PUT SocketException: $e');
+      }
+      throw ApiException(
+        'No internet connection. Please check your network and try again.',
+        kind: ApiErrorKind.noInternet,
+      );
+    } on FormatException catch (e) {
+      if (kDebugMode) {
+        debugPrint('📤 [ProfileRepository] PUT FormatException: $e');
+      }
+      throw ApiException(
+        'Invalid response from server. Please try again.',
+        kind: ApiErrorKind.unknown,
+      );
+    } catch (e) {
+      throw Exception('Failed to edit profile image: $e');
     }
   }
 

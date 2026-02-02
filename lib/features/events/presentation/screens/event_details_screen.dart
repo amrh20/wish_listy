@@ -51,6 +51,17 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.eventId.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = 'Invalid event. Please check the link and try again.';
+          });
+        }
+      });
+      return;
+    }
     _loadEventDetails();
     _setupEventUpdateListener();
   }

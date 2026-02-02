@@ -5,7 +5,7 @@ description: "WishListy - Connect through thoughtful gifting. A modern Flutter a
 publish_to: 'none'
 
 # Version and build number
-version: 1.0.0+2
+version: 1.0.0+5
 
 environment:
   sdk: ^3.8.1

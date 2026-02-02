@@ -799,6 +799,19 @@ class _VerificationScreenState extends State<VerificationScreen>
     );
   }
 
+  /// Handle back button: pop if there's a route to go back to, else navigate to Login
+  void _handleBackNavigation() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.login,
+        (route) => false,
+      );
+    }
+  }
+
   /// Format timer seconds as MM:SS
   String _formatTimer(int seconds, LocalizationService localization) {
     final minutes = seconds ~/ 60;
@@ -828,20 +841,25 @@ class _VerificationScreenState extends State<VerificationScreen>
       builder: (context, localization, child) {
         final isRTL = localization.isRTL;
 
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: Icon(
-                isRTL ? Icons.arrow_forward_ios : Icons.arrow_back_ios,
-                color: AppColors.textPrimary,
-                size: 20,
+        return PopScope(
+          canPop: false,
+          onPopInvoked: (didPop) {
+            if (!didPop) _handleBackNavigation();
+          },
+          child: Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(
+                  isRTL ? Icons.arrow_forward_ios : Icons.arrow_back_ios,
+                  color: AppColors.textPrimary,
+                  size: 20,
+                ),
+                onPressed: _handleBackNavigation,
               ),
-              onPressed: () => Navigator.of(context).pop(),
             ),
-          ),
           body: SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
