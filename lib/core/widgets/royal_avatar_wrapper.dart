@@ -3,6 +3,9 @@ import 'package:wish_listy/core/utils/royal_name_helper.dart';
 
 /// A wrapper widget that adds a golden crown icon above the avatar
 /// if the user's name matches any "Royal Names" (Easter Egg feature)
+/// 
+/// NOTE: This feature is currently disabled (see RoyalNameHelper.isRoyalName)
+/// The crown tag display has been temporarily disabled but the code remains intact
 class RoyalAvatarWrapper extends StatelessWidget {
   /// The original avatar widget (e.g., CircleAvatar)
   final Widget child;
@@ -26,6 +29,8 @@ class RoyalAvatarWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // NOTE: Feature temporarily disabled - isRoyalName always returns false
+    // See RoyalNameHelper.isRoyalName() for details
     final isRoyal = RoyalNameHelper.isRoyalName(userName);
 
     if (!isRoyal) {
@@ -34,6 +39,7 @@ class RoyalAvatarWrapper extends StatelessWidget {
     }
 
     // If royal, wrap in Stack with crown icon
+    // NOTE: This code path is currently unreachable due to feature being disabled
     return Stack(
       clipBehavior: Clip.none,
       alignment: Alignment.center,

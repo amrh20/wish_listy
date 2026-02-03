@@ -10,6 +10,7 @@ import 'package:wish_listy/features/notifications/data/models/notification_model
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/widgets/unified_snackbar.dart';
 
 /// Notification Dropdown Widget
 /// Shows last 5 notifications with actions based on type
@@ -345,36 +346,42 @@ class NotificationDropdown extends StatelessWidget {
     AppNotification notification, {
     required bool accept,
   }) async {
-    // Get ScaffoldMessenger and localization before any async operations
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
     final localization = Provider.of<LocalizationService>(context, listen: false);
     final cubit = context.read<NotificationsCubit>();
     
+    // Get requestId from notification - prefer relatedId field, fallback to data map
+    final requestId = notification.relatedId ??
+                     notification.data?['relatedId'] ??
+                     notification.data?['related_id'] ??
+                     notification.data?['requestId'] ?? 
+                     notification.data?['request_id'] ??
+                     notification.data?['id'] ??
+                     notification.data?['_id'];
+    
+    if (requestId == null || requestId.toString().isEmpty) {
+      UnifiedSnackbar.showError(
+        context: context,
+        message: localization.translate('dialogs.unableToProcessFriendRequest') ?? 
+                 'Unable to process friend request. Missing request ID.',
+      );
+      return;
+    }
+
+    // Show loading snackbar
+    final loadingMessage = accept
+        ? (localization.translate('notifications.acceptingFriendRequest') ?? 
+           'Accepting friend request...')
+        : (localization.translate('notifications.decliningFriendRequest') ?? 
+           'Declining friend request...');
+    
+    final loadingSnackbar = UnifiedSnackbar.showLoading(
+      context: context,
+      message: loadingMessage,
+      duration: const Duration(minutes: 1), // Long duration, will be dismissed manually
+    );
+
     try {
-      // Get requestId from notification - prefer relatedId field, fallback to data map
-      final requestId = notification.relatedId ??
-                       notification.data?['relatedId'] ??
-                       notification.data?['related_id'] ??
-                       notification.data?['requestId'] ?? 
-                       notification.data?['request_id'] ??
-                       notification.data?['id'] ??
-                       notification.data?['_id'];
-      
-      if (requestId == null || requestId.toString().isEmpty) {
-        scaffoldMessenger.showSnackBar(
-          SnackBar(
-            content: const Text('Unable to process friend request. Missing request ID.'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        return;
-      }
-
-      // Delete notification first (optimistic update)
-      cubit.deleteNotification(notification.id);
-
-      // Call API to accept/decline friend request
+      // Call API to accept/decline friend request (keep notification visible until success)
       final friendsRepository = FriendsRepository();
       
       if (accept) {
@@ -383,50 +390,31 @@ class NotificationDropdown extends StatelessWidget {
         await friendsRepository.rejectFriendRequest(requestId: requestId.toString());
       }
 
-      // Show success message
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                accept ? Icons.check_circle : Icons.cancel,
-                color: Colors.white,
-              ),
-              const SizedBox(width: 8),
-              Text(accept
-                  ? localization.translate('notifications.friendRequestAccepted')
-                  : localization.translate('notifications.friendRequestDeclined')),
-            ],
-          ),
-          backgroundColor: accept ? AppColors.success : AppColors.accent,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          duration: const Duration(seconds: 2),
-        ),
+      // After successful API call, delete the notification (which calls delete API)
+      await cubit.deleteNotification(notification.id);
+
+      // Hide loading snackbar and show success message
+      UnifiedSnackbar.hideCurrent(context);
+      UnifiedSnackbar.showSuccess(
+        context: context,
+        message: accept
+            ? (localization.translate('notifications.friendRequestAccepted') ?? 
+               'Friend request accepted')
+            : (localization.translate('notifications.friendRequestDeclined') ?? 
+               'Friend request declined'),
       );
     } catch (e) {
-      // Restore notification on error
-      await cubit.loadNotifications();
+      // Hide loading snackbar on error
+      UnifiedSnackbar.hideCurrent(context);
       
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.error, color: Colors.white),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  e.toString().contains('ApiException')
-                      ? 'Failed to process request. Please try again.'
-                      : 'An error occurred. Please try again.',
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
+      // Show error message (notification remains visible)
+      UnifiedSnackbar.showError(
+        context: context,
+        message: e.toString().contains('ApiException')
+            ? (localization.translate('dialogs.failedToProcessFriendRequest') ?? 
+               'Failed to process friend request. Please try again.')
+            : (localization.translate('dialogs.failedToProcessFriendRequest') ?? 
+               'An error occurred. Please try again.'),
       );
     }
   }

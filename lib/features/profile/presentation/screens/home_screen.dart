@@ -798,6 +798,14 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
       return;
     }
 
+    // Ensure we have fresh notifications data when opening for the first time.
+    // If the cubit hasn't loaded notifications yet, trigger a load so the
+    // dropdown BlocBuilder can update from real API data instead of staying empty.
+    final notificationsCubit = context.read<NotificationsCubit>();
+    if (notificationsCubit.state is! NotificationsLoaded) {
+      notificationsCubit.loadNotifications();
+    }
+
     // Mark as open immediately to prevent multiple opens
     _isNotificationDropdownOpen = true;
 

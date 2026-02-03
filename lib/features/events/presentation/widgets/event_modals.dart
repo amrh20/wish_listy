@@ -249,7 +249,7 @@ class EventModals {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => LinkWishlistBottomSheet(
+      builder: (bottomSheetContext) => LinkWishlistBottomSheet(
         eventId: event.id,
         onLink: (wishlistId) async {
           try {
@@ -259,22 +259,31 @@ class EventModals {
               wishlistId: wishlistId,
             );
 
-            if (!context.mounted) return;
+            // Use the bottom sheet context to close it
+            if (!bottomSheetContext.mounted) return;
+            Navigator.pop(bottomSheetContext);
 
-            Navigator.pop(context);
+            // Use the original context for showing snackbar (events screen context)
+            if (!context.mounted) return;
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Wishlist linked successfully'),
+                content: Text(localization.translate('dialogs.wishlistLinkedSuccessfully') ?? 'Wishlist linked successfully'),
                 backgroundColor: AppColors.success,
+                behavior: SnackBarBehavior.floating,
               ),
             );
           } catch (e) {
+            // Use the bottom sheet context to close it
+            if (!bottomSheetContext.mounted) return;
+            Navigator.pop(bottomSheetContext);
+
+            // Use the original context for showing snackbar (events screen context)
             if (!context.mounted) return;
-            Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Failed to link wishlist: ${e.toString()}'),
+                content: Text('${localization.translate('dialogs.failedToLinkWishlist') ?? 'Failed to link wishlist'}: ${e.toString()}'),
                 backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
               ),
             );
           }

@@ -598,132 +598,191 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     _showFriendsSelectionModal();
   }
 
-  void _showLinkWishlistBottomSheet() async {
+  void _showLinkWishlistBottomSheet() {
     final localization = Provider.of<LocalizationService>(
       context,
       listen: false,
     );
 
-    try {
-      // Fetch user's wishlists
-      final wishlists = await _wishlistRepository.getWishlists();
+    // Show bottom sheet immediately with loading state
+    DecoratedBottomSheet.show(
+      context: context,
+      vectorType: BottomSheetVectorType.creation,
+      title: localization.translate('events.selectWishlistToLink'),
+      height: MediaQuery.of(context).size.height * 0.7,
+      children: [
+        // Use FutureBuilder to load wishlists asynchronously inside the bottom sheet
+        FutureBuilder<List<Map<String, dynamic>>>(
+          future: _wishlistRepository.getWishlists(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return SizedBox(
+                height: MediaQuery.of(context).size.height * 0.5,
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
 
-      if (!mounted) return;
-
-      if (wishlists.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              localization.translate('events.noWishlistsAvailable'),
-            ),
-            backgroundColor: AppColors.warning,
-          ),
-        );
-        return;
-      }
-
-      DecoratedBottomSheet.show(
-        context: context,
-        vectorType: BottomSheetVectorType.creation,
-        title: localization.translate('events.selectWishlistToLink'),
-        height: MediaQuery.of(context).size.height * 0.7,
-        children: [
-          // Wishlists List
-          SizedBox(
-            height: MediaQuery.of(context).size.height * 0.5,
-            child: ListView.builder(
-              itemCount: wishlists.length,
-              itemBuilder: (context, index) {
-                final wishlist = wishlists[index];
-                final wishlistId = wishlist['id']?.toString() ?? '';
-                final wishlistName =
-                    wishlist['name']?.toString() ?? 'Unnamed Wishlist';
-                final isSelected = _linkedWishlistId == wishlistId;
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
-                  child: ListTile(
-                    onTap: () {
-                      setState(() {
-                        _wishlistOption = 'link';
-                        _linkedWishlistId = wishlistId;
-                        _linkedWishlistName = wishlistName;
-                      });
-                      Navigator.pop(context);
-                    },
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    tileColor: isSelected
-                        ? AppColors.primary.withOpacity(0.1)
-                        : AppColors.surface,
-                    leading: CircleAvatar(
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
-                      child: Icon(
-                        Icons.favorite_rounded,
-                        color: AppColors.primary,
-                        size: 20,
+            if (snapshot.hasError) {
+              return SizedBox(
+                height: MediaQuery.of(context).size.height * 0.5,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: AppColors.error,
                       ),
-                    ),
-                    title: Text(
-                      wishlistName,
-                      style: AppStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    subtitle: Text(
-                      wishlist['description']?.toString() ?? '',
-                      style: AppStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: isSelected
-                        ? Icon(
-                            Icons.check_circle,
-                            color: AppColors.primary,
-                            size: 24,
-                          )
-                        : Icon(
-                            Icons.radio_button_unchecked,
-                            color: AppColors.textTertiary,
-                            size: 24,
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          'Failed to load wishlists: ${snapshot.error}',
+                          style: AppStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
                           ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showLinkWishlistBottomSheet(); // Retry
+                        },
+                        child: const Text('Retry'),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
-          ),
+                ),
+              );
+            }
 
-          const SizedBox(height: 20),
+            final wishlists = snapshot.data ?? [];
 
-          // Cancel Button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: CustomButton(
-                text: localization.translate('common.cancel'),
-                onPressed: () => Navigator.pop(context),
-                variant: ButtonVariant.outline,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load wishlists: ${e.toString()}'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-      }
-    }
+            if (wishlists.isEmpty) {
+              return SizedBox(
+                height: MediaQuery.of(context).size.height * 0.5,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.inbox_outlined,
+                        size: 64,
+                        color: AppColors.textTertiary,
+                      ),
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Text(
+                          localization.translate('events.noWishlistsAvailable') ??
+                              'No wishlists available',
+                          style: AppStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            // Wishlists List
+            return Column(
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.5,
+                  child: ListView.builder(
+                    itemCount: wishlists.length,
+                    itemBuilder: (context, index) {
+                      final wishlist = wishlists[index];
+                      final wishlistId = wishlist['id']?.toString() ?? '';
+                      final wishlistName =
+                          wishlist['name']?.toString() ?? 'Unnamed Wishlist';
+                      final isSelected = _linkedWishlistId == wishlistId;
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
+                        child: ListTile(
+                          onTap: () {
+                            setState(() {
+                              _wishlistOption = 'link';
+                              _linkedWishlistId = wishlistId;
+                              _linkedWishlistName = wishlistName;
+                            });
+                            Navigator.pop(context);
+                          },
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          tileColor: isSelected
+                              ? AppColors.primary.withOpacity(0.1)
+                              : AppColors.surface,
+                          leading: CircleAvatar(
+                            backgroundColor: AppColors.primary.withOpacity(0.1),
+                            child: Icon(
+                              Icons.favorite_rounded,
+                              color: AppColors.primary,
+                              size: 20,
+                            ),
+                          ),
+                          title: Text(
+                            wishlistName,
+                            style: AppStyles.bodyMedium.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          subtitle: Text(
+                            wishlist['description']?.toString() ?? '',
+                            style: AppStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: isSelected
+                              ? Icon(
+                                  Icons.check_circle,
+                                  color: AppColors.primary,
+                                  size: 24,
+                                )
+                              : Icon(
+                                  Icons.radio_button_unchecked,
+                                  color: AppColors.textTertiary,
+                                  size: 24,
+                                ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // Cancel Button
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: CustomButton(
+                      text: localization.translate('common.cancel'),
+                      onPressed: () => Navigator.pop(context),
+                      variant: ButtonVariant.outline,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            );
+          },
+        ),
+      ],
+    );
   }
 
   void _showFriendsSelectionModal() {
@@ -1084,15 +1143,21 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     try {
       String? wishlistId;
 
-      // Handle wishlist linking based on selected option (only for create mode)
+      // Handle wishlist linking based on selected option
       // Note: 'create' option has been removed - users can only link existing wishlists
       if (_wishlistOption == 'link' && _linkedWishlistId != null) {
-        // Use linked wishlist ID
+        // Use linked wishlist ID (new selection or existing in edit mode)
         wishlistId = _linkedWishlistId;
-
+      } else if (_wishlistOption == 'none') {
+        // Explicitly set to null to unlink wishlist (or no wishlist for new event)
+        wishlistId = null;
       } else if (_isEditMode && _existingEvent?.wishlistId != null) {
-        // In edit mode, preserve existing wishlist ID if no change
+        // In edit mode, preserve existing wishlist ID only if option hasn't changed
+        // This handles the case where user hasn't explicitly changed the wishlist option
         wishlistId = _existingEvent!.wishlistId;
+      } else {
+        // Default: no wishlist
+        wishlistId = null;
       }
 
       // Prepare event data

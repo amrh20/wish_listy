@@ -186,8 +186,10 @@ class _VerificationScreenState extends State<VerificationScreen>
     
     if (otp.length != 6) {
       if (mounted) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
         setState(() {
-          _errorMessage = 'Please enter a 6-digit code';
+          _errorMessage = localization.translate('auth.otpInvalid') ??
+              'Please enter a 6-digit code';
         });
       }
       return;
@@ -703,9 +705,11 @@ class _VerificationScreenState extends State<VerificationScreen>
     } catch (e) {
       if (!mounted) return;
       
+      final localization = Provider.of<LocalizationService>(context, listen: false);
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Failed to resend code. Please try again.';
+        _errorMessage = localization.translate('auth.verificationFailed') ??
+            'Failed to resend code. Please try again.';
       });
     }
   }
@@ -876,7 +880,7 @@ class _VerificationScreenState extends State<VerificationScreen>
                       fontSize: 28,
                       fontWeight: FontWeight.w700,
                     ),
-                    textAlign: TextAlign.center,
+                    textAlign: isRTL ? TextAlign.right : TextAlign.left,
                   ),
 
                   const SizedBox(height: 12),
@@ -887,7 +891,7 @@ class _VerificationScreenState extends State<VerificationScreen>
                     style: AppStyles.bodyLarge.copyWith(
                       color: AppColors.textSecondary,
                     ),
-                    textAlign: TextAlign.center,
+                    textAlign: isRTL ? TextAlign.right : TextAlign.left,
                   ),
 
                   const SizedBox(height: 48),
@@ -1031,6 +1035,7 @@ class _VerificationScreenState extends State<VerificationScreen>
                         ),
                       ),
                       child: Row(
+                        textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
                         children: [
                           Icon(
                             Icons.error_outline,
@@ -1041,6 +1046,7 @@ class _VerificationScreenState extends State<VerificationScreen>
                           Expanded(
                             child: Text(
                               _errorMessage!,
+                              textAlign: isRTL ? TextAlign.right : TextAlign.left,
                               style: localization.currentLanguage == 'ar'
                                   ? GoogleFonts.alexandria(
                                       color: AppColors.error,
@@ -1095,10 +1101,12 @@ class _VerificationScreenState extends State<VerificationScreen>
                   // Resend Code
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
                     children: [
                       Text(
                         localization.translate('auth.resendCode') ??
                             'Didn\'t receive the code? ',
+                        textAlign: isRTL ? TextAlign.right : TextAlign.left,
                         style: AppStyles.bodyMedium.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -1106,6 +1114,7 @@ class _VerificationScreenState extends State<VerificationScreen>
                       if (_resendTimer > 0)
                         Text(
                           _formatTimer(_resendTimer, localization),
+                          textAlign: isRTL ? TextAlign.right : TextAlign.left,
                           style: AppStyles.bodyMedium.copyWith(
                             color: AppColors.textSecondary,
                             fontWeight: FontWeight.w600,
@@ -1122,6 +1131,7 @@ class _VerificationScreenState extends State<VerificationScreen>
                           ),
                           child: Text(
                             localization.translate('auth.resendCode') ?? 'Resend Code',
+                            textAlign: isRTL ? TextAlign.right : TextAlign.left,
                             style: AppStyles.bodyMedium.copyWith(
                               color: AppColors.primary,
                               fontWeight: FontWeight.w600,

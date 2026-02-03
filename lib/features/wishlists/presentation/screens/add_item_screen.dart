@@ -96,10 +96,24 @@ class _AddItemScreenState extends State<AddItemScreen>
           _selectedWishlist = args;
         } else if (args is Map<String, dynamic>) {
           // If argument is a map with wishlistId
-          final wishlistId = args['wishlistId'] as String?;
+          final wishlistIdArg = args['wishlistId'];
           final itemId = args['itemId'] as String?;
           final isEditingArg = args['isEditing'] as bool?;
-          if (wishlistId != null) {
+          
+          // Handle wishlistId - could be String or Map (wishlist object)
+          String? wishlistId;
+          if (wishlistIdArg is String) {
+            wishlistId = wishlistIdArg;
+          } else if (wishlistIdArg is Map<String, dynamic>) {
+            // Extract ID from wishlist object
+            wishlistId = wishlistIdArg['_id']?.toString() ?? 
+                       wishlistIdArg['id']?.toString();
+          } else if (wishlistIdArg != null) {
+            // Fallback: try to convert to string
+            wishlistId = wishlistIdArg.toString();
+          }
+          
+          if (wishlistId != null && wishlistId.isNotEmpty) {
             _selectedWishlist = wishlistId;
           }
           if (itemId != null) {

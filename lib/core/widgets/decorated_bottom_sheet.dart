@@ -89,29 +89,43 @@ class _DecoratedBottomSheetState extends State<DecoratedBottomSheet>
       ),
     );
 
-    // Bounce animation for the vector
-    _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: 1.1)
-            .chain(CurveTween(curve: Curves.easeOut)),
-        weight: 60,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 1.1, end: 0.95)
-            .chain(CurveTween(curve: Curves.easeIn)),
-        weight: 20,
-      ),
-      TweenSequenceItem(
-        tween: Tween<double>(begin: 0.95, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
-        weight: 20,
-      ),
-    ]).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.2, 1.0, curve: Curves.elasticOut),
-      ),
-    );
+    // Scale animation for the decorative vector.
+    // For menu-style sheets (e.g., wishlist options), use a softer scale to avoid
+    // noticeable "shake" on open. For other types keep the richer bounce animation.
+    if (widget.vectorType == BottomSheetVectorType.menu) {
+      _scaleAnimation = Tween<double>(
+        begin: 0.9,
+        end: 1.0,
+      ).animate(
+        CurvedAnimation(
+          parent: _animationController,
+          curve: Curves.easeOutCubic,
+        ),
+      );
+    } else {
+      _scaleAnimation = TweenSequence<double>([
+        TweenSequenceItem(
+          tween: Tween<double>(begin: 0.0, end: 1.1)
+              .chain(CurveTween(curve: Curves.easeOut)),
+          weight: 60,
+        ),
+        TweenSequenceItem(
+          tween: Tween<double>(begin: 1.1, end: 0.95)
+              .chain(CurveTween(curve: Curves.easeIn)),
+          weight: 20,
+        ),
+        TweenSequenceItem(
+          tween: Tween<double>(begin: 0.95, end: 1.0)
+              .chain(CurveTween(curve: Curves.easeOut)),
+          weight: 20,
+        ),
+      ]).animate(
+        CurvedAnimation(
+          parent: _animationController,
+          curve: const Interval(0.2, 1.0, curve: Curves.elasticOut),
+        ),
+      );
+    }
 
     _animationController.forward();
   }

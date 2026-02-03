@@ -232,10 +232,23 @@ class WishlistItem {
                json['_id']?.toString() ?? 
                '';
     
-    final wishlistId = json['wishlistId']?.toString() ?? 
-                       json['wishlist_id']?.toString() ?? 
-                       json['wishlist']?.toString() ?? 
-                       '';
+    // Parse wishlistId - handle both string ID and object with _id/id field
+    String wishlistId = '';
+    if (json['wishlistId'] != null) {
+      wishlistId = json['wishlistId'].toString();
+    } else if (json['wishlist_id'] != null) {
+      wishlistId = json['wishlist_id'].toString();
+    } else if (json['wishlist'] != null) {
+      // Handle case where wishlist is an object (Map) instead of string ID
+      if (json['wishlist'] is Map<String, dynamic>) {
+        final wishlistObj = json['wishlist'] as Map<String, dynamic>;
+        wishlistId = wishlistObj['_id']?.toString() ?? 
+                     wishlistObj['id']?.toString() ?? 
+                     '';
+      } else {
+        wishlistId = json['wishlist'].toString();
+      }
+    }
     
     // Parse status - support both 'status' and 'itemStatus' fields
     ItemStatus status = ItemStatus.desired;
