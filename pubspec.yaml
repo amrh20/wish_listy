@@ -5,7 +5,7 @@ description: "WishListy - Connect through thoughtful gifting. A modern Flutter a
 publish_to: 'none'
 
 # Version and build number
-version: 1.0.0+8
+version: 1.0.0+12
 
 environment:
   sdk: ^3.8.1
@@ -99,6 +99,7 @@ dependencies:
 
   # OTP Input widget
   pinput: ^3.0.0
+  package_info_plus: ^9.0.0
 
 dev_dependencies:
   flutter_test:

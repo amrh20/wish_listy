@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/services/fcm_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/auth/presentation/cubit/auth_state.dart';
 
@@ -177,6 +178,25 @@ class AuthCubit extends Cubit<AuthState> {
 
         // Initialize AuthRepository to sync state
         await _repository.initialize();
+
+        // Sync FCM token to backend so push notifications work (non-blocking on failure)
+        try {
+          final fcmToken = await FcmService().getToken().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => null,
+          );
+          if (fcmToken != null && fcmToken.isNotEmpty) {
+            await _repository.updateFcmToken(fcmToken).timeout(
+              const Duration(seconds: 5),
+              onTimeout: () {
+                debugPrint('⚠️ [Auth] FCM token sync timed out - continuing anyway');
+              },
+            );
+            debugPrint('✅ [Auth] FCM token synced after biometric login');
+          }
+        } catch (e) {
+          debugPrint('⚠️ [Auth] FCM token sync skipped (non-blocking): $e');
+        }
 
         emit(const AuthAuthenticated());
       } else {

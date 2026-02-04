@@ -10,6 +10,7 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/services/fcm_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 
@@ -294,6 +295,27 @@ class _VerificationScreenState extends State<VerificationScreen>
           
           // Update AuthRepository state
           await authRepository.initialize();
+          
+          // Sync FCM token to backend so push notifications work (non-blocking on failure)
+          if (authRepository.isAuthenticated) {
+            try {
+              final fcmToken = await FcmService().getToken().timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => null,
+              );
+              if (fcmToken != null && fcmToken.isNotEmpty) {
+                await authRepository.updateFcmToken(fcmToken).timeout(
+                  const Duration(seconds: 5),
+                  onTimeout: () {
+                    debugPrint('⚠️ [Verification] FCM token sync timed out - continuing anyway');
+                  },
+                );
+                debugPrint('✅ [Verification] FCM token synced to backend');
+              }
+            } catch (e) {
+              debugPrint('⚠️ [Verification] FCM token sync skipped (non-blocking): $e');
+            }
+          }
           
           debugPrint('✅ [Verification] Token saved and auth state updated');
         } else if (response['firebaseVerified'] == true) {

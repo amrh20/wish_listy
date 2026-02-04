@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -356,7 +359,13 @@ class ProfileScreenState extends State<ProfileScreen>
                       onLogout: () => _confirmLogout(localization),
                       onDeleteAccount: () => _confirmDeleteAccount(localization),
                     ),
-                    const SizedBox(height: 80),
+                    const SizedBox(height: 24),
+                    // App Version - long press to copy FCM token
+                    _buildVersionWidget(),
+                    // Extra bottom padding so version text stays above bottom nav bar
+                    SizedBox(
+                      height: MediaQuery.of(context).padding.bottom + 88,
+                    ),
                   ],
                 ),
               ),
@@ -1301,6 +1310,69 @@ class ProfileScreenState extends State<ProfileScreen>
         },
       ),
     );
+  }
+
+  /// App version text at bottom - long press to copy FCM token to clipboard
+  Widget _buildVersionWidget() {
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, snapshot) {
+        final version = snapshot.hasData ? snapshot.data!.version : '?.?.?';
+        return Center(
+          child: GestureDetector(
+            onLongPress: () => _copyFcmTokenToClipboard(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Version $version',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade400,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _copyFcmTokenToClipboard() async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null && token.isNotEmpty && mounted) {
+        await Clipboard.setData(ClipboardData(text: token));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Token copied to clipboard!'),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to get FCM token'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   /// Build loading snackbar with CircularProgressIndicator
