@@ -298,6 +298,9 @@ class _LoginScreenState extends State<LoginScreen>
         // This will set the user state correctly
         await authService.initialize();
 
+        // Sync FCM token to backend so push notifications work (same as email/password login)
+        await authService.syncFcmToken();
+
         // Authenticate Socket.IO (Option B: emit auth event)
         try {
           await SocketService().authenticateSocket(token);

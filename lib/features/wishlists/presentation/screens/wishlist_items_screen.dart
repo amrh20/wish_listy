@@ -5,6 +5,7 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/primary_gradient_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/widgets/animated_background.dart';
+import 'package:wish_listy/core/widgets/unified_snackbar.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/deep_link_service.dart';
@@ -901,22 +902,28 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
   /// Toggle reservation for an item
   /// [action] - 'reserve' or 'cancel' (required)
   Future<void> _toggleReservation(WishlistItem item, {required String action}) async {
-    try {
-      // Optimistic update
-      final currentReservedBy = item.reservedBy;
-      final authService = Provider.of<AuthRepository>(context, listen: false);
-      final currentUserId = authService.userId;
+    final loc = Provider.of<LocalizationService>(context, listen: false);
+    // Show loading snackbar
+    if (mounted) {
+      UnifiedSnackbar.showLoading(
+        context: context,
+        message: action == 'reserve'
+            ? (loc.translate('details.reservingItem') ?? 'Reserving...')
+            : (loc.translate('details.cancellingReservation') ?? 'Cancelling reservation...'),
+        duration: const Duration(minutes: 1),
+      );
+    }
 
-      // If canceling, remove reservation
-      // If reserving, keep item as is (will be updated from API response)
+    try {
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+
+      // Optimistic update
       setState(() {
         final index = _items.indexWhere((i) => i.id == item.id);
         if (index != -1) {
           if (action == 'cancel') {
-            // Cancel reservation
             _items[index] = item.copyWith(reservedBy: null);
           } else {
-            // Reserve item (will be updated from API response)
             _items[index] = item;
           }
         }
@@ -925,15 +932,12 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       // Call API with explicit action
       final updatedItemData = await _wishlistRepository.toggleReservation(
         item.id,
-        action: action, // Explicitly pass 'reserve' or 'cancel'
+        action: action,
       );
       final updatedItem = WishlistItem.fromJson(updatedItemData);
 
       if (!mounted) return;
 
-      // Determine if item is now reserved based on the action we took
-      // If action was 'reserve', now it's reserved
-      // If action was 'cancel', now it's not reserved
       final isNowReserved = action == 'reserve';
 
       // Update with server response
@@ -947,48 +951,19 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       // Refresh wishlist items to ensure UI is up to date
       await _loadWishlistDetails();
 
-      // Show success snackbar based on the action we took
       if (mounted) {
-        final loc = Provider.of<LocalizationService>(context, listen: false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  isNowReserved
-                      ? Icons.check_circle
-                      : Icons.cancel_outlined,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  isNowReserved
-                      ? loc.translate('dialogs.itemReservedSuccessfully')
-                      : loc.translate('dialogs.reservationCancelledSuccessfully'),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: isNowReserved
-                ? AppColors.success
-                : AppColors.info,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            duration: const Duration(seconds: 2),
-            margin: const EdgeInsets.all(16),
-            elevation: 2,
-          ),
+        UnifiedSnackbar.hideCurrent(context);
+        UnifiedSnackbar.showSuccess(
+          context: context,
+          message: isNowReserved
+              ? (loc.translate('dialogs.itemReservedSuccessfully') ?? 'Item reserved! 🎁')
+              : (loc.translate('dialogs.reservationCancelledSuccessfully') ?? 'Reservation cancelled'),
         );
       }
     } catch (e) {
       if (!mounted) return;
 
+      UnifiedSnackbar.hideCurrent(context);
       // Revert optimistic update on error
       setState(() {
         final index = _items.indexWhere((i) => i.id == item.id);
@@ -997,40 +972,10 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         }
       });
 
-      // Show error snackbar
       if (mounted) {
-        final loc = Provider.of<LocalizationService>(context, listen: false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    loc.translate('dialogs.failedToUpdateReservation'),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.error,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(
-              top: 60,
-              left: 16,
-              right: 16,
-              bottom: 0,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            elevation: 2,
-          ),
+        UnifiedSnackbar.showError(
+          context: context,
+          message: loc.translate('dialogs.failedToUpdateReservation') ?? 'Failed to update reservation',
         );
       }
     }

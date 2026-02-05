@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/widgets/splash_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
@@ -10,6 +11,7 @@ import '../../features/auth/presentation/screens/new_password_screen.dart';
 import '../../features/auth/presentation/screens/legal_info_screen.dart';
 import '../../features/auth/presentation/screens/verification_screen.dart';
 import '../../features/auth/presentation/cubit/auth_cubit.dart';
+import '../../features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/profile/presentation/screens/home_screen.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 import '../../features/wishlists/presentation/screens/my_wishlists_screen.dart';
@@ -345,11 +347,14 @@ class AppRoutes {
         debugPrint('═══════════════════════════════════════════════════════');
         
         return MaterialPageRoute(
-          builder: (_) => VerificationScreen(
-            username: args?['username'] ?? '',
-            isPhone: args?['isPhone'] ?? false,
-            verificationId: args?['verificationId'] as String?,
-            userId: args?['userId'] as String?,
+          builder: (context) => BlocProvider<AuthCubit>(
+            create: (context) => AuthCubit(repository: context.read<AuthRepository>()),
+            child: VerificationScreen(
+              username: args?['username'] ?? '',
+              isPhone: args?['isPhone'] ?? false,
+              verificationId: args?['verificationId'] as String?,
+              userId: args?['userId'] as String?,
+            ),
           ),
         );
       }

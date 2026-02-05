@@ -394,8 +394,23 @@ class FriendsScreenState extends State<FriendsScreen>
                 padding: const EdgeInsets.all(16),
                 itemCount: _friendRequests.length + 1,
                 itemBuilder: (context, index) {
+                  // Last item: show "Add Friend" button under the list
                   if (index == _friendRequests.length) {
-                    return const SizedBox(height: 100);
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 16, bottom: 100),
+                      child: Center(
+                        child: CustomButton(
+                          text: localization.translate('friends.addFriend'),
+                          onPressed: () {
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutes.addFriend,
+                            );
+                          },
+                          variant: ButtonVariant.primary,
+                        ),
+                      ),
+                    );
                   }
                   return AnimationConfiguration.staggeredList(
                     position: index,
@@ -819,6 +834,17 @@ class FriendsScreenState extends State<FriendsScreen>
                       height: 1.5,
                     ),
                     textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  CustomButton(
+                    text: localization.translate('friends.addFriend'),
+                    onPressed: () {
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.addFriend,
+                      );
+                    },
+                    variant: ButtonVariant.primary,
                   ),
                 ],
               );

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:pinput/pinput.dart';
@@ -12,6 +13,7 @@ import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/fcm_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
+import 'package:wish_listy/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 
 class VerificationScreen extends StatefulWidget {
@@ -40,13 +42,18 @@ class _VerificationScreenState extends State<VerificationScreen>
   String? _errorMessage;
   int _resendTimer = 60; // Will be set based on isPhone in initState
   Timer? _timer;
+  /// Email only: OTP validity countdown (10 minutes = 600 seconds).
+  int _otpValidityRemaining = 0;
+  Timer? _otpValidityTimer;
   String? _currentVerificationId;
   late AnimationController _shakeController;
   static const String _timerKeyPrefix = 'verification_timer_';
   String get _timerKey => '$_timerKeyPrefix${widget.username}';
   
-  // Timer duration: 10 minutes (600 seconds) for Email, 60 seconds for Phone
-  int get _timerDuration => widget.isPhone ? 60 : 600;
+  // Resend timer: 60 seconds for both email and phone
+  static const int _timerDuration = 60;
+  // Email only: OTP valid for 10 minutes
+  static const int _otpValidityDuration = 600;
 
   @override
   void initState() {
@@ -68,6 +75,11 @@ class _VerificationScreenState extends State<VerificationScreen>
       duration: const Duration(milliseconds: 500),
     );
     _loadTimerState();
+    // Email: start 10-minute OTP validity countdown
+    if (!widget.isPhone && mounted) {
+      setState(() => _otpValidityRemaining = _otpValidityDuration);
+      _startOtpValidityTimer();
+    }
     // Listen to OTP input changes
     _otpController.addListener(() {
       if (mounted) {
@@ -147,8 +159,26 @@ class _VerificationScreenState extends State<VerificationScreen>
     _otpController.dispose();
     _focusNode.dispose();
     _timer?.cancel();
+    _otpValidityTimer?.cancel();
     _shakeController.dispose();
     super.dispose();
+  }
+
+  /// Email only: countdown for OTP validity (10 minutes).
+  void _startOtpValidityTimer() {
+    if (!mounted || widget.isPhone) return;
+    _otpValidityTimer?.cancel();
+    _otpValidityTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_otpValidityRemaining > 0) {
+        setState(() => _otpValidityRemaining--);
+      } else {
+        timer.cancel();
+      }
+    });
   }
 
   void _startResendTimer() {
@@ -182,9 +212,10 @@ class _VerificationScreenState extends State<VerificationScreen>
 
   Future<void> _handleVerify() async {
     if (!mounted) return;
-    
+
+    // OTP is always a String (trimmed); do not use int.parse before sending to API.
     final otp = _otpController.text.trim();
-    
+
     if (otp.length != 6) {
       if (mounted) {
         final localization = Provider.of<LocalizationService>(context, listen: false);
@@ -296,25 +327,10 @@ class _VerificationScreenState extends State<VerificationScreen>
           // Update AuthRepository state
           await authRepository.initialize();
           
-          // Sync FCM token to backend so push notifications work (non-blocking on failure)
+          // After JWT/session are fully initialized, sync FCM token with retry logic.
+          // This call is awaited BEFORE navigation to ensure the sync has a chance to complete.
           if (authRepository.isAuthenticated) {
-            try {
-              final fcmToken = await FcmService().getToken().timeout(
-                const Duration(seconds: 5),
-                onTimeout: () => null,
-              );
-              if (fcmToken != null && fcmToken.isNotEmpty) {
-                await authRepository.updateFcmToken(fcmToken).timeout(
-                  const Duration(seconds: 5),
-                  onTimeout: () {
-                    debugPrint('⚠️ [Verification] FCM token sync timed out - continuing anyway');
-                  },
-                );
-                debugPrint('✅ [Verification] FCM token synced to backend');
-              }
-            } catch (e) {
-              debugPrint('⚠️ [Verification] FCM token sync skipped (non-blocking): $e');
-            }
+            await _syncFcmTokenWithRetries(authRepository);
           }
           
           debugPrint('✅ [Verification] Token saved and auth state updated');
@@ -463,27 +479,45 @@ class _VerificationScreenState extends State<VerificationScreen>
         return;
       }
       
-      // Check if this is a Firebase verification error (invalid code, expired, etc.)
-      // vs a backend API error (401, network, etc.)
-      final isFirebaseError = e.message.contains('Invalid code') || 
-          e.message.contains('invalid-verification-code') ||
-          e.message.contains('Code expired') ||
-          e.message.contains('session-expired') ||
-          e.statusCode == 400; // Firebase errors typically return 400
-      
-      // Regular error - show error message
+      // Backend 400/401: map errorCode to specific Arabic messages
       String errorMsg;
-      if (isFirebaseError && 
-          (e.message.contains('Invalid') || e.message.contains('invalid') || 
-           e.message.contains('incorrect') || e.message.contains('wrong') ||
-           e.message.contains('expired'))) {
-        // This is a Firebase OTP error - show invalid code message
-        errorMsg = localization.translate('auth.invalidCode') ??
-            'Invalid code. Please try again.';
+      final status = e.statusCode;
+      final responseData = e.data;
+      final backendCode = (responseData is Map)
+          ? ((responseData['errorCode'] ?? responseData['code'])?.toString().trim())
+          : null;
+      if ((status == 400 || status == 401) && backendCode != null && backendCode.isNotEmpty) {
+        switch (backendCode) {
+          case 'OTP_INVALID':
+            errorMsg = 'رقم الكود غير صحيح، تأكد من الأرقام وأعد المحاولة';
+            break;
+          case 'OTP_EXPIRED':
+            errorMsg = 'انتهت صلاحية الكود (10 دقائق). اضغط على إعادة الإرسال للحصول على كود جديد';
+            break;
+          case 'OTP_NOT_FOUND':
+            errorMsg = 'لا يوجد كود نشط حالياً، برجاء طلب كود جديد';
+            break;
+          default:
+            errorMsg = localization.translate('auth.verificationFailed') ??
+                (e.message.isNotEmpty ? e.message : 'Verification failed. Please try again.');
+        }
       } else {
-        // This might be a backend error - show generic verification failed message
-        errorMsg = localization.translate('auth.verificationFailed') ??
-            (e.message.isNotEmpty ? e.message : 'Verification failed. Please try again.');
+        // Firebase or other errors
+        final isFirebaseError = e.message.contains('Invalid code') ||
+            e.message.contains('invalid-verification-code') ||
+            e.message.contains('Code expired') ||
+            e.message.contains('session-expired') ||
+            e.statusCode == 400;
+        if (isFirebaseError &&
+            (e.message.contains('Invalid') || e.message.contains('invalid') ||
+                e.message.contains('incorrect') || e.message.contains('wrong') ||
+                e.message.contains('expired'))) {
+          errorMsg = localization.translate('auth.invalidCode') ??
+              'Invalid code. Please try again.';
+        } else {
+          errorMsg = localization.translate('auth.verificationFailed') ??
+              (e.message.isNotEmpty ? e.message : 'Verification failed. Please try again.');
+        }
       }
       
       if (mounted) {
@@ -530,9 +564,9 @@ class _VerificationScreenState extends State<VerificationScreen>
     }
   }
 
-  /// Perform verification with retry logic
-  /// For phone: Uses the persisted verificationId to create PhoneAuthCredential
-  /// For email: Uses username and OTP code
+  /// Perform verification with retry logic.
+  /// For phone: Uses the persisted verificationId to create PhoneAuthCredential.
+  /// For email: Uses username and OTP code (String, trimmed; no int.parse).
   Future<Map<String, dynamic>> _performVerification(
     AuthRepository authRepository,
   ) async {
@@ -561,6 +595,67 @@ class _VerificationScreenState extends State<VerificationScreen>
     }
   }
 
+  /// Sync the current device's FCM token to backend with retry + detailed logging.
+  ///
+  /// - Called only AFTER JWT/session are fully initialized (authRepository.initialize + token saved).
+  /// - Logs before starting, logs the actual token value, and retries getToken up to 3 times.
+  /// - Waits 2 seconds between retries if token is null.
+  /// - Awaits updateFcmToken before navigation so the sync has a chance to complete.
+  Future<void> _syncFcmTokenWithRetries(AuthRepository authRepository) async {
+    debugPrint('🔔 FCM: Starting token sync from VerificationScreen...');
+
+    const int maxAttempts = 3;
+    String? fcmToken;
+
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      debugPrint('🔔 FCM: Starting token sync... (attempt $attempt/$maxAttempts)');
+      try {
+        fcmToken = await FcmService().getToken();
+      } catch (e) {
+        debugPrint('⚠️ FCM: getToken() threw exception on attempt $attempt: $e');
+        final errorStr = e.toString();
+        if (errorStr.contains('FIS_AUTH_ERROR') || errorStr.contains('Firebase Installations Service')) {
+          debugPrint('❌ FCM: Firebase Installations Service error detected.');
+          debugPrint('   This usually means:');
+          debugPrint('   1. Google Play Services needs update');
+          debugPrint('   2. Firebase configuration issue (check google-services.json)');
+          debugPrint('   3. Network/Firebase server issue');
+        }
+        fcmToken = null;
+      }
+
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        debugPrint('🔔 FCM: Token acquired (length=${fcmToken.length}): $fcmToken');
+        break;
+      }
+
+      debugPrint('⚠️ FCM: getToken() returned null/empty on attempt $attempt');
+      if (attempt < maxAttempts) {
+        debugPrint('⏱️ FCM: Waiting 2 seconds before retrying getToken()...');
+        await Future.delayed(const Duration(seconds: 2));
+      }
+    }
+
+    if (fcmToken == null || fcmToken.isEmpty) {
+      debugPrint('❌ FCM: Unable to obtain FCM token after $maxAttempts attempts. Skipping sync.');
+      debugPrint('❌ FCM: No API call will be made to /auth/fcm-token because token is null.');
+      return;
+    }
+
+    try {
+      debugPrint('📤 FCM: Calling updateFcmToken on backend from VerificationScreen...');
+      await authRepository.updateFcmToken(fcmToken);
+      debugPrint('✅ FCM: Token synced successfully from VerificationScreen');
+    } on ApiException catch (e) {
+      debugPrint(
+        '❌ FCM: updateFcmToken failed from VerificationScreen. '
+        'status=${e.statusCode}, kind=${e.kind}, message=${e.message}, data=${e.data}',
+      );
+    } catch (e) {
+      debugPrint('❌ FCM: Unexpected error during token sync from VerificationScreen: $e');
+    }
+  }
+
   /// Trigger shake animation on error
   void _triggerShakeAnimation() {
     _shakeController.forward(from: 0.0).then((_) {
@@ -579,160 +674,69 @@ class _VerificationScreenState extends State<VerificationScreen>
     }
 
     try {
-      final authRepository = Provider.of<AuthRepository>(context, listen: false);
+      final authCubit = context.read<AuthCubit>();
+      await authCubit.resendOtp(widget.username);
 
-      if (widget.isPhone) {
-        // Resend phone verification - ensure phone is sanitized to E.164 format
-        // widget.username should already be in E.164 format from signup/login
-        // but we sanitize again to be safe
-        String sanitizedPhone = widget.username;
-        try {
-          sanitizedPhone = authRepository.sanitizePhoneForFirebase(widget.username);
-          debugPrint('📱 [Verification] Resending code to sanitized phone (E.164): $sanitizedPhone');
-        } catch (e) {
-          debugPrint('⚠️ [Verification] Error sanitizing phone for resend: $e');
-          // Use original phone if sanitization fails (shouldn't happen if it was sanitized before)
-          sanitizedPhone = widget.username;
-        }
-        
-        await authRepository.resendPhoneVerification(
-          phoneNumber: sanitizedPhone, // Use sanitized phone
-          onCodeSent: (verificationId) {
-            if (!mounted) return;
-            
-            debugPrint('═══════════════════════════════════════════════════════');
-            debugPrint('📱 [VerificationScreen] Resend: Code sent callback');
-            debugPrint('📱 [VerificationScreen] New VerificationId: $verificationId');
-            debugPrint('📱 [VerificationScreen] VerificationId length: ${verificationId.length}');
-            debugPrint('📱 [VerificationScreen] Phone: ${widget.username}');
-            debugPrint('═══════════════════════════════════════════════════════');
-            
-            setState(() {
-              _currentVerificationId = verificationId; // Update with latest verificationId
-              _isLoading = false;
-            });
-            if (mounted) {
-              _startResendTimer();
-            }
-            if (mounted) {
-              final localization = Provider.of<LocalizationService>(context, listen: false);
-              final message = localization.translate('auth.codeResent') ?? 'Verification code resent';
-              final isArabic = localization.currentLanguage == 'ar';
-              
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      const Icon(
-                        Icons.check_circle_outline,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          message,
-                          style: isArabic
-                              ? GoogleFonts.alexandria(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14,
-                                )
-                              : AppStyles.bodyMedium.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  backgroundColor: AppColors.success,
-                  duration: const Duration(seconds: 3),
-                  behavior: SnackBarBehavior.floating,
-                  margin: const EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              );
-            }
-          },
-          onVerificationFailed: (error) {
-            if (!mounted) return;
-            
-            final localization = Provider.of<LocalizationService>(context, listen: false);
-            
-            setState(() {
-              _isLoading = false;
-              _errorMessage = error;
-            });
-            
-            _showErrorSnackBar(error, localization);
-          },
-        );
-      } else {
-        // Resend email OTP
-        await authRepository.resendEmailOTP(widget.username);
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
-        if (mounted) {
-          _startResendTimer();
-        }
-        if (mounted) {
-          final localization = Provider.of<LocalizationService>(context, listen: false);
-          final message = localization.translate('auth.codeResent') ?? 'Verification code resent';
-          final isArabic = localization.currentLanguage == 'ar';
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(
-                    Icons.check_circle_outline,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      message,
-                      style: isArabic
-                          ? GoogleFonts.alexandria(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                            )
-                          : AppStyles.bodyMedium.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.success,
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.all(16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        }
-      }
-    } catch (e) {
       if (!mounted) return;
-      
+      setState(() => _isLoading = false);
+      _startResendTimer();
+
+      final localization = Provider.of<LocalizationService>(context, listen: false);
+      final message = localization.translate('auth.codeResent') ?? 'Verification code resent';
+      final isArabic = localization.currentLanguage == 'ar';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(
+                Icons.check_circle_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: isArabic
+                      ? GoogleFonts.alexandria(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        )
+                      : AppStyles.bodyMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
       final localization = Provider.of<LocalizationService>(context, listen: false);
       setState(() {
         _isLoading = false;
-        _errorMessage = localization.translate('auth.verificationFailed') ??
-            'Failed to resend code. Please try again.';
+        _errorMessage = e.message.isNotEmpty ? e.message : (localization.translate('auth.verificationFailed') ?? 'Failed to resend code. Please try again.');
       });
+      _showErrorSnackBar(e.message.isNotEmpty ? e.message : (localization.translate('auth.verificationFailed') ?? 'Failed to resend code. Please try again.'), localization);
+    } catch (e) {
+      if (!mounted) return;
+      final localization = Provider.of<LocalizationService>(context, listen: false);
+      setState(() {
+        _isLoading = false;
+        _errorMessage = localization.translate('auth.verificationFailed') ?? 'Failed to resend code. Please try again.';
+      });
+      _showErrorSnackBar(localization.translate('auth.verificationFailed') ?? 'Failed to resend code. Please try again.', localization);
     }
   }
 
@@ -838,15 +842,20 @@ class _VerificationScreenState extends State<VerificationScreen>
     }
   }
 
-  /// Format timer seconds as MM:SS
+  /// Format timer seconds as MM:SS and substitute into template (e.g. "يمكنك إعادة إرسال الكود خلال 00:59").
   String _formatTimer(int seconds, LocalizationService localization) {
     final minutes = seconds ~/ 60;
     final remainingSeconds = seconds % 60;
     final formattedTime = '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
-    
-    // Use localized string if available, otherwise use default format
-    final template = localization.translate('auth.resendCodeIn') ?? 'Resend code in {seconds}s';
+    final template = localization.translate('auth.resendCodeIn') ?? 'يمكنك إعادة إرسال الكود خلال {seconds}';
     return template.replaceAll('{seconds}', formattedTime);
+  }
+
+  /// Format validity countdown as MM:SS (e.g. 10:00, 09:59).
+  String _formatValidityCountdown(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainingSeconds = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
   String _getSubtitle(LocalizationService localization) {
@@ -1120,19 +1129,38 @@ class _VerificationScreenState extends State<VerificationScreen>
 
                   const SizedBox(height: 24),
 
-                  // Resend Code
+                  // Email only: 10-minute OTP validity countdown; resend in 60s shown in row below
+                  if (!widget.isPhone) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+                      children: [
+                        Text(
+                          localization.translate('auth.codeValidFor') ?? 'صلاحية الكود ١٠ دقايق',
+                          textAlign: isRTL ? TextAlign.right : TextAlign.left,
+                          style: AppStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatValidityCountdown(_otpValidityRemaining),
+                          style: AppStyles.bodyMedium.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Resend Code: countdown "يمكنك إعادة إرسال الكود خلال 00:59" or clickable "إعادة إرسال الكود"
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
                     children: [
-                      Text(
-                        localization.translate('auth.resendCode') ??
-                            'Didn\'t receive the code? ',
-                        textAlign: isRTL ? TextAlign.right : TextAlign.left,
-                        style: AppStyles.bodyMedium.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
                       if (_resendTimer > 0)
                         Text(
                           _formatTimer(_resendTimer, localization),
@@ -1152,7 +1180,7 @@ class _VerificationScreenState extends State<VerificationScreen>
                             ),
                           ),
                           child: Text(
-                            localization.translate('auth.resendCode') ?? 'Resend Code',
+                            localization.translate('auth.resendCode') ?? 'إعادة إرسال الكود',
                             textAlign: isRTL ? TextAlign.right : TextAlign.left,
                             style: AppStyles.bodyMedium.copyWith(
                               color: AppColors.primary,

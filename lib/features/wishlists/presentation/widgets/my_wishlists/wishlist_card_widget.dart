@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/bottom_sheet_vectors.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/widgets/decorated_bottom_sheet.dart';
 import 'package:wish_listy/core/widgets/modern_wishlist_card.dart';
 import 'package:wish_listy/features/wishlists/presentation/widgets/shared/wishlist_summary.dart';
@@ -74,6 +75,27 @@ class WishlistCardWidget extends StatelessWidget {
       context: context,
       vectorType: BottomSheetVectorType.menu,
       children: [
+        // Add New Wish action
+        ListTile(
+          leading: Icon(Icons.add_circle_outline, color: AppColors.primary),
+          title: Text(
+            localization.translate('wishlists.addNewWish') ?? 'Add New Wish',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          onTap: () {
+            Navigator.pop(context); // Close bottom sheet
+            // Navigate to Add Item screen with wishlist ID pre-selected
+            Navigator.pushNamed(
+              context,
+              AppRoutes.addItem,
+              arguments: wishlist.id,
+            );
+          },
+        ),
+        const Divider(height: 1),
         // Menu options
         ListTile(
           leading: Icon(Icons.edit_outlined, color: AppColors.textPrimary),

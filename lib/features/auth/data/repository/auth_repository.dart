@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/socket_service.dart';
 import 'package:wish_listy/core/services/biometric_service.dart';
+import 'package:wish_listy/core/services/fcm_service.dart';
 
 /// Authentication Repository
 /// Handles all authentication-related operations including:
@@ -272,18 +273,9 @@ class AuthRepository extends ChangeNotifier {
           );
           await SocketService().authenticateSocket(token);
 
-          // Ensure FCM token is synced to backend AFTER JWT token is set
-          // This prevents 401 errors from stale/null tokens
-          if (fcmToken != null && fcmToken.isNotEmpty) {
-            try {
-              debugPrint('🔔 [Auth] Updating FCM token after login (JWT token already set)');
-              await updateFcmToken(fcmToken);
-              debugPrint('✅ [Auth] FCM token updated successfully');
-            } catch (e) {
-              debugPrint('⚠️ [Auth] Failed to update FCM token after login: $e');
-              // Don't throw - FCM token update failure shouldn't block login
-            }
-          }
+          // Sync FCM token with retry logic AFTER JWT token is set and session is initialized
+          // This ensures the token sync happens with proper authentication
+          await _syncFcmTokenWithRetries();
         }
 
         notifyListeners();
@@ -510,6 +502,77 @@ class AuthRepository extends ChangeNotifier {
 
     notifyListeners();
     debugPrint('✅ [Auth] Silent logout completed');
+  }
+
+  /// Call after login (email/password or biometric) to sync FCM token to backend.
+  /// Safe to call when not authenticated (updateFcmToken will no-op).
+  Future<void> syncFcmToken() async {
+    await _syncFcmTokenWithRetries();
+  }
+
+  /// Sync the current FCM token to backend with retry + detailed logging.
+  ///
+  /// - Logs start/end of each attempt.
+  /// - Retries getToken() up to 3 times with 2s delay if it returns null.
+  /// - Ensures updateFcmToken is only called when a non-null token is available.
+  /// - Logs status code and error message if the backend call fails.
+  Future<void> _syncFcmTokenWithRetries() async {
+    debugPrint('🔔 FCM: Starting token sync from AuthRepository...');
+
+    const int maxAttempts = 3;
+    String? fcmToken;
+
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      debugPrint('🔔 FCM: Starting token sync... (attempt $attempt/$maxAttempts)');
+      try {
+        fcmToken = await FcmService().getToken();
+      } catch (e) {
+        debugPrint('⚠️ FCM: getToken() threw exception on attempt $attempt: $e');
+        // Log specific error types for debugging
+        final errorStr = e.toString();
+        if (errorStr.contains('FIS_AUTH_ERROR') || errorStr.contains('Firebase Installations Service')) {
+          debugPrint('❌ FCM: Firebase Installations Service error detected.');
+          debugPrint('   This usually means:');
+          debugPrint('   1. Google Play Services needs update');
+          debugPrint('   2. Firebase configuration issue (check google-services.json)');
+          debugPrint('   3. Network/Firebase server issue');
+        }
+        fcmToken = null;
+      }
+
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        debugPrint('🔔 FCM: Token acquired (length=${fcmToken.length}): $fcmToken');
+        break;
+      }
+
+      debugPrint('⚠️ FCM: getToken() returned null/empty on attempt $attempt');
+      if (attempt < maxAttempts) {
+        debugPrint('⏱️ FCM: Waiting 2 seconds before retrying getToken()...');
+        await Future.delayed(const Duration(seconds: 2));
+      }
+    }
+
+    if (fcmToken == null || fcmToken.isEmpty) {
+      debugPrint('❌ FCM: Unable to obtain FCM token after $maxAttempts attempts. Skipping sync.');
+      debugPrint('❌ FCM: No API call will be made to /auth/fcm-token because token is null.');
+      debugPrint('❌ FCM: User will not receive push notifications until token is obtained.');
+      debugPrint('❌ FCM: Common causes: FIS_AUTH_ERROR, Firebase config issue, or Google Play Services.');
+      return;
+    }
+
+    // Repository should already be authenticated and JWT stored before this is called.
+    try {
+      debugPrint('📤 FCM: Calling updateFcmToken on backend from AuthRepository...');
+      await updateFcmToken(fcmToken);
+      debugPrint('✅ FCM: Token synced successfully via AuthRepository');
+    } on ApiException catch (e) {
+      debugPrint(
+        '❌ FCM: updateFcmToken failed from AuthRepository. '
+        'status=${e.statusCode}, kind=${e.kind}, message=${e.message}, data=${e.data}',
+      );
+    } catch (e) {
+      debugPrint('❌ FCM: Unexpected error during token sync from AuthRepository: $e');
+    }
   }
 
   /// Update the current device's FCM token on the backend.
@@ -1348,9 +1411,9 @@ class AuthRepository extends ChangeNotifier {
     }
   }
 
-  /// Verify email OTP with backend
-  /// Returns success status
-  /// Includes timeout and network resilience
+  /// Verify email OTP with backend.
+  /// [otp] must be sent as a String (trimmed); do not use int.parse or num.parse.
+  /// Returns success status; includes timeout and network resilience.
   Future<Map<String, dynamic>> verifyEmailOTP({
     required String username,
     required String otp,
@@ -1434,6 +1497,34 @@ class AuthRepository extends ChangeNotifier {
     } catch (e) {
       debugPrint('❌ [Auth] Error resending phone verification: $e');
       rethrow;
+    }
+  }
+
+  /// Resend OTP (email or phone).
+  /// Calls POST /api/auth/resend-otp with username (email or phone) in the body.
+  /// Returns the success message from the response, or throws on failure.
+  Future<String> resendOtp(String username) async {
+    try {
+      if (username.trim().isEmpty) {
+        throw ApiException('Username (email or phone) is required');
+      }
+      debugPrint('📤 [Auth] Resending OTP to: $username');
+
+      final response = await _apiService.post(
+        '/auth/resend-otp',
+        data: {'username': username.trim()},
+      );
+
+      debugPrint('✅ [Auth] Resend OTP succeeded');
+      final message = response['message']?.toString() ??
+          response['data']?['message']?.toString() ??
+          'OTP sent successfully';
+      return message;
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      debugPrint('❌ [Auth] Error resending OTP: $e');
+      throw Exception('Failed to resend OTP. Please try again.');
     }
   }
 

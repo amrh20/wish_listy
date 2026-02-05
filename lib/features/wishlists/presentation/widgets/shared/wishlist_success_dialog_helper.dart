@@ -21,7 +21,7 @@ class WishlistSuccessDialogHelper {
     );
   }
 
-  /// Show success dialog for creation mode with multiple actions
+  /// Show success dialog for creation mode with single action to view details
   static void showCreateSuccessDialog({
     required BuildContext context,
     required LocalizationService localization,
@@ -34,59 +34,38 @@ class WishlistSuccessDialogHelper {
       isSuccess: true,
       title: localization.translate('wishlists.wishlistCreatedTitle'),
       message: localization.translate('wishlists.wishlistCreatedMessage'),
-      primaryActionLabel: localization.translate('wishlists.addItemsToWishlist'),
+      primaryActionLabel: localization.translate('wishlists.viewDetails') ?? 
+                          localization.translate('wishlists.viewwishlist') ?? 
+                          'View Details',
       onPrimaryAction: () {
-        Navigator.pushReplacementNamed(
-          context,
-          AppRoutes.addItem,
-          arguments: {
-            'wishlistId': wishlistId,
-            'wishlistName': wishlistName,
-            'isNewWishlist': true,
-          },
-        );
-      },
-      additionalActions: [
-        DialogAction(
-          label: localization.translate('wishlists.viewwishlist'),
-          onPressed: () {
-            // Dialog is closed automatically by ConfirmationDialog
-            // Close create wishlist screen first
+        // Close dialog and create wishlist screen
+        Navigator.of(context).pop(); // Close dialog
+        
+        // Navigate to the created wishlist details
+        if (context.mounted) {
+          // Pop create wishlist screen if still in stack
+          if (Navigator.of(context).canPop()) {
             Navigator.of(context).pop();
-            
-            // Navigate to the created wishlist details
+          }
+          
+          // Navigate to wishlist details after navigation completes
+          WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {
-              // Pop until we reach MainNavigation (first route)
-              Navigator.popUntil(context, (route) => route.isFirst);
-              
-              // Navigate to wishlist details after navigation completes
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (context.mounted) {
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.wishlistItems,
-                    arguments: {
-                      'wishlistId': wishlistId,
-                      'wishlistName': wishlistName,
-                      'totalItems': 0,
-                      'purchasedItems': 0,
-                      'isFriendWishlist': false,
-                    },
-                  );
-                }
-              });
+              Navigator.pushNamed(
+                context,
+                AppRoutes.wishlistItems,
+                arguments: {
+                  'wishlistId': wishlistId,
+                  'wishlistName': wishlistName,
+                  'totalItems': 0,
+                  'purchasedItems': 0,
+                  'isFriendWishlist': false,
+                },
+              );
             }
-          },
-          variant: ButtonVariant.outline,
-          icon: Icons.list_rounded,
-        ),
-        DialogAction(
-          label: localization.translate('wishlists.createAnotherWishlist'),
-          onPressed: onResetForm,
-          variant: ButtonVariant.text,
-          icon: Icons.add_circle_outline,
-        ),
-      ],
+          });
+        }
+      },
     );
   }
 }

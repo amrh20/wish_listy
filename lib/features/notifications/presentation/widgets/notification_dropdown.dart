@@ -49,8 +49,15 @@ class NotificationDropdown extends StatelessWidget {
         // Get last 5 notifications
         final recentNotifications = effectiveNotifications.take(5).toList();
 
+        final screenWidth = MediaQuery.of(context).size.width;
+        const double maxWidth = 360;
+        const double horizontalMargin = 16;
+        final double effectiveWidth = screenWidth - (horizontalMargin * 2);
+        final double dropdownWidth =
+            effectiveWidth < maxWidth ? effectiveWidth : maxWidth;
+
         return Container(
-          width: 360,
+          width: dropdownWidth,
           constraints: const BoxConstraints(maxHeight: 400),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -197,9 +204,16 @@ class NotificationDropdown extends StatelessWidget {
   /// Build shimmer loading state (skeleton screen)
   Widget _buildShimmerState(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context, listen: false);
-    
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    const double maxWidth = 360;
+    const double horizontalMargin = 16;
+    final double effectiveWidth = screenWidth - (horizontalMargin * 2);
+    final double dropdownWidth =
+        effectiveWidth < maxWidth ? effectiveWidth : maxWidth;
+
     return Container(
-      width: 360,
+      width: dropdownWidth,
       constraints: const BoxConstraints(maxHeight: 400),
       decoration: BoxDecoration(
         color: Colors.white,

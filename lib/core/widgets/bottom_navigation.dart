@@ -22,6 +22,44 @@ class CustomBottomNavigation extends StatelessWidget {
       builder: (context, localization, authService, child) {
         if (!context.mounted) return const SizedBox.shrink();
 
+        // Responsive layout tuning for small screens (e.g., 320dp / 360dp)
+        final width = MediaQuery.of(context).size.width;
+        final bool isVerySmallWidth = width <= 320;
+        final bool isSmallWidth = width > 320 && width <= 360;
+
+        // Outer container margin (keeps nav away from screen edges)
+        final EdgeInsets containerMargin = EdgeInsets.symmetric(
+          horizontal: isVerySmallWidth
+              ? 8
+              : (isSmallWidth
+                  ? 12
+                  : 16), // default margin for larger screens
+          vertical: isVerySmallWidth
+              ? 10
+              : (isSmallWidth ? 14 : 20),
+        );
+
+        // Inner padding around GNav
+        final EdgeInsets gnavPadding = EdgeInsets.symmetric(
+          horizontal: isVerySmallWidth
+              ? 6
+              : (isSmallWidth ? 8 : 8),
+          vertical: isVerySmallWidth
+              ? 8
+              : (isSmallWidth ? 9 : 10),
+        );
+
+        // Icon size & gap between icon and label
+        final double iconSize = isVerySmallWidth
+            ? 22
+            : (isSmallWidth ? 24 : 26);
+        final double gap = isVerySmallWidth ? 3 : 4;
+
+        // Label text size (Arabic labels stay inside pill on narrow screens)
+        final double labelFontSize = isVerySmallWidth
+            ? 10
+            : (isSmallWidth ? 11 : 12);
+
         // Tab configurations with color themes
         // Screens: 0=Home, 1=Wishlist, 2=Events, 3=Friends, 4=Profile
         // GNav: 0=Home, 1=Wishlist, 2=Events, 3=Friends, 4=Profile
@@ -63,7 +101,7 @@ class CustomBottomNavigation extends StatelessWidget {
 
         return SafeArea(
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            margin: containerMargin,
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.95), // Subtle background
               borderRadius: BorderRadius.circular(30),
@@ -83,20 +121,24 @@ class CustomBottomNavigation extends StatelessWidget {
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              padding: gnavPadding,
               child: GNav(
-                gap: 4,
+                gap: gap,
                 color: AppColors.textTertiary, // Inactive icon/text color
                 activeColor:
                     tabs[gNavIndex]['color'] as Color, // Active icon/text color
-                iconSize: 26, // Increased icon size (26-28 pixels)
+                iconSize: iconSize,
                 textStyle: AppStyles.bodySmall.copyWith(
                   fontWeight: FontWeight.w600,
-                  fontSize: 12,
+                  fontSize: labelFontSize,
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isVerySmallWidth
+                      ? 8
+                      : (isSmallWidth ? 10 : 12),
+                  vertical: isVerySmallWidth
+                      ? 8
+                      : (isSmallWidth ? 9 : 10),
                 ),
                 duration: const Duration(milliseconds: 300),
                 tabBackgroundColor: (tabs[gNavIndex]['color'] as Color)

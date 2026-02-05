@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
@@ -87,11 +86,6 @@ class ContactUsScreen extends StatelessWidget {
 
                         // Email Card
                         _buildEmailCard(localization),
-                        
-                        const Spacer(),
-
-                        // Social Section
-                        _buildSocialSection(localization),
                         const SizedBox(height: 60),
                       ],
                     ),
@@ -167,96 +161,14 @@ class ContactUsScreen extends StatelessWidget {
     );
   }
 
-  /// Build Social Section
-  Widget _buildSocialSection(LocalizationService localization) {
-    return Column(
-      children: [
-        Text(
-          localization.translate('profile.followUs'),
-          style: AppStyles.bodyMedium.copyWith(
-            color: AppColors.textSecondary,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Facebook Button
-            _buildSocialButton(
-              icon: FontAwesomeIcons.facebook,
-              color: const Color(0xFF1877F2),
-              onTap: () => _launchSocial('https://facebook.com/wishlisty'),
-            ),
-            const SizedBox(width: 16),
-            // Instagram Button
-            _buildSocialButton(
-              icon: FontAwesomeIcons.instagram,
-              color: const Color(0xFFE4405F),
-              onTap: () => _launchSocial('https://instagram.com/wishlisty'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  /// Build Social Button
-  Widget _buildSocialButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(),
-      elevation: 2,
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: color.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Launch Social URL
-  Future<void> _launchSocial(String url) async {
-    final uri = Uri.parse(url);
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (uri.path.isNotEmpty) {
-          // Fallback: Try opening in browser
-          await launchUrl(uri, mode: LaunchMode.platformDefault);
-        }
-      }
-    } catch (e) {
-      debugPrint('Error launching social URL: $e');
-    }
-  }
-
-  /// Send Email
+  /// Open email client to send email (works on mobile and desktop).
   Future<void> _sendEmail() async {
     final uri = Uri.parse('mailto:wishlistyapp@gmail.com');
     try {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
     } catch (e) {
       debugPrint('Error launching email: $e');

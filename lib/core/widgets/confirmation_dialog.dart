@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
@@ -97,11 +96,8 @@ class _ConfirmationDialogWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine colors and animation based on success/error state
+    // Determine colors based on success/error state
     final accentColor = isSuccess ? AppColors.success : AppColors.error;
-    final animationPath = isSuccess
-        ? 'assets/lottie/success_check.json'
-        : 'assets/lottie/error_shake.json';
 
     return Stack(
       clipBehavior: Clip.none,
@@ -132,7 +128,7 @@ class _ConfirmationDialogWidget extends StatelessWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Only show custom image or Lottie if NO background vector
+              // Only show custom image or icon if NO background vector
               if (backgroundVectorPath == null) ...[
                 SizedBox(
                   height: 80,
@@ -144,39 +140,7 @@ class _ConfirmationDialogWidget extends StatelessWidget {
                           width: 80,
                           fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) {
-                            // Fallback to Lottie if custom image fails
-                            return Lottie.asset(
-                              animationPath,
-                              repeat: false,
-                              height: 80,
-                              width: 80,
-                              errorBuilder: (_, __, ___) {
-                                return Container(
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    color: accentColor.withOpacity(0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    isSuccess
-                                        ? Icons.check_circle_outline
-                                        : Icons.error_outline,
-                                    color: accentColor,
-                                    size: 40,
-                                  ),
-                                );
-                              },
-                            );
-                          },
-                        )
-                      : Lottie.asset(
-                          animationPath,
-                          repeat: false,
-                          height: 80,
-                          width: 80,
-                          errorBuilder: (context, error, stackTrace) {
-                            // Fallback to icon if Lottie file is not found
+                            // Fallback to icon if custom image fails
                             return Container(
                               width: 80,
                               height: 80,
@@ -193,6 +157,21 @@ class _ConfirmationDialogWidget extends StatelessWidget {
                               ),
                             );
                           },
+                        )
+                      : Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: accentColor.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isSuccess
+                                ? Icons.check_circle_outline
+                                : Icons.error_outline,
+                            color: accentColor,
+                            size: 40,
+                          ),
                         ),
                 ),
                 const SizedBox(height: 24),

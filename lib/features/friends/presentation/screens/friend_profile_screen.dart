@@ -711,20 +711,106 @@ class _Avatar extends StatelessWidget {
           ),
         ],
       ),
-      child: CircleAvatar(
-        radius: 50,
-        backgroundColor: Colors.white,
-        backgroundImage: hasImage ? NetworkImage(imageUrl!) : null,
-        child: hasImage
-            ? null
-            : Text(
-                initial,
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+      child: GestureDetector(
+        onTap: hasImage
+            ? () {
+                Navigator.of(context).push(
+                  PageRouteBuilder(
+                    opaque: false,
+                    barrierColor: Colors.black.withOpacity(0.9),
+                    pageBuilder: (context, animation, secondaryAnimation) {
+                      return _FriendFullScreenImageView(imageUrl: imageUrl!);
+                    },
+                    transitionsBuilder:
+                        (context, animation, secondaryAnimation, child) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
+                  ),
+                );
+              }
+            : null,
+        child: Hero(
+          tag: 'friend_profile_image_${imageUrl ?? 'placeholder'}',
+          child: CircleAvatar(
+            radius: 50,
+            backgroundColor: Colors.white,
+            backgroundImage: hasImage ? NetworkImage(imageUrl!) : null,
+            child: hasImage
+                ? null
+                : Text(
+                    initial,
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-screen image viewer for friend profile picture
+class _FriendFullScreenImageView extends StatelessWidget {
+  final String imageUrl;
+
+  const _FriendFullScreenImageView({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).pop(),
+      child: Scaffold(
+        backgroundColor: Colors.black.withOpacity(0.9),
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Center(
+                child: Hero(
+                  tag: 'friend_profile_image_$imageUrl',
+                  child: InteractiveViewer(
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Center(
+                        child: Icon(
+                          Icons.error_outline,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
+              Positioned(
+                top: 16,
+                left: 16,
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
@@ -29,24 +30,13 @@ class ItemWhereToBuyCardWidget extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    String displayText;
-    VoidCallback? cardOnTap;
-    
-    if (url != null && url!.isNotEmpty) {
-      displayText = _extractDomain(url!) ?? url!;
-      cardOnTap = onTap;
-    } else if (storeName != null && storeName!.isNotEmpty) {
-      displayText = storeName!;
-      if (storeLocation != null && storeLocation!.isNotEmpty) {
-        displayText += ' • $storeLocation';
-      }
-      cardOnTap = null;
-    } else {
-      displayText = storeLocation ?? '';
-      cardOnTap = null;
-    }
+    // Determine what to display
+    final hasStoreName = storeName != null && storeName!.isNotEmpty;
+    final hasUrl = url != null && url!.isNotEmpty;
+    final hasLocation = storeLocation != null && storeLocation!.isNotEmpty;
 
     Widget cardContent = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.all(12),
@@ -73,28 +63,82 @@ class ItemWhereToBuyCardWidget extends StatelessWidget {
                   fontSize: 12,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                displayText,
-                style: AppStyles.bodyMedium.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
+              const SizedBox(height: 8),
+              // Store Name (if available) - separate line
+              if (hasStoreName) ...[
+                Text(
+                  storeName!,
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+                const SizedBox(height: 8),
+              ],
+              // URL or Location - clickable, separate line
+              if (hasUrl) ...[
+                GestureDetector(
+                  onTap: onTap,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.link_rounded,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          _extractDomain(url!) ?? url!,
+                          style: AppStyles.bodyMedium.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.primary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else if (hasLocation) ...[
+                GestureDetector(
+                  onTap: () => _openLocation(storeLocation!),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.location_on_rounded,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          storeLocation!,
+                          style: AppStyles.bodyMedium.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.primary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),
-        if (cardOnTap != null) ...[
-          const SizedBox(width: 12),
-          const Icon(
-            Icons.arrow_forward_ios_rounded,
-            color: AppColors.primary,
-            size: 16,
-          ),
-        ],
       ],
     );
 
@@ -115,17 +159,30 @@ class ItemWhereToBuyCardWidget extends StatelessWidget {
           ),
         ],
       ),
-      child: cardOnTap != null
-          ? Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: cardOnTap,
-                borderRadius: BorderRadius.circular(20),
-                child: cardContent,
-              ),
-            )
-          : cardContent,
+      child: cardContent,
     );
+  }
+
+  Future<void> _openLocation(String location) async {
+    // Check if location is a URL (starts with http:// or https://)
+    if (location.startsWith('http://') || location.startsWith('https://')) {
+      try {
+        final uri = Uri.parse(location);
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (e) {
+        // If URL parsing fails, try to open as map search
+        final mapUri = Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(location)}',
+        );
+        await launchUrl(mapUri, mode: LaunchMode.externalApplication);
+      }
+    } else {
+      // If it's not a URL, open as map search
+      final mapUri = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(location)}',
+      );
+      await launchUrl(mapUri, mode: LaunchMode.externalApplication);
+    }
   }
 
   String? _extractDomain(String url) {

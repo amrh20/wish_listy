@@ -193,12 +193,16 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                         : (index) {
                             _mainTabController.animateTo(index);
                             if (mounted) {
-                            setState(() {
-                              // Reset category filter when switching tabs
-                              if (index != 0) {
-                                _selectedCategory = null;
+                              setState(() {
+                                // Reset category filter when switching tabs
+                                if (index != 0) {
+                                  _selectedCategory = null;
+                                }
+                              });
+                              // Refresh reservations when Reservations tab is selected
+                              if (index == 1) {
+                                _fetchMyReservations();
                               }
-                            });
                             }
                           },
                   ),
@@ -939,6 +943,16 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
   /// Cancel a reservation (un-reserve an item)
   Future<void> _cancelReservation(WishlistItem item) async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    // Show loading snackbar
+    if (mounted) {
+      UnifiedSnackbar.showLoading(
+        context: context,
+        message: localization.translate('details.cancellingReservation') ?? 'Cancelling reservation...',
+        duration: const Duration(minutes: 1),
+      );
+    }
+
     // Optimistic update
     setState(() {
       _myReservations.removeWhere((i) => i.id == item.id);
@@ -950,45 +964,27 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         item.id,
         action: 'cancel', // Explicitly pass 'cancel' action
       );
-      
+
       // Refresh reservations to ensure consistency
       await _fetchMyReservations();
-      
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Reservation cancelled',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-          ),
+        UnifiedSnackbar.hideCurrent(context);
+        UnifiedSnackbar.showSuccess(
+          context: context,
+          message: localization.translate('dialogs.reservationCancelledSuccessfully') ?? 'Reservation cancelled',
         );
       }
     } catch (e) {
       // Revert optimistic update on error
       if (mounted) {
-        final localization = Provider.of<LocalizationService>(context, listen: false);
+        UnifiedSnackbar.hideCurrent(context);
         setState(() {
           _myReservations.add(item);
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${localization.translate('dialogs.failedToCancelReservation')}: ${e.toString()}'),
-            backgroundColor: AppColors.error,
-          ),
+        UnifiedSnackbar.showError(
+          context: context,
+          message: localization.translate('dialogs.failedToCancelReservation') ?? 'Failed to cancel reservation',
         );
       }
     }

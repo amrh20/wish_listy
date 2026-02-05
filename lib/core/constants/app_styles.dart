@@ -45,14 +45,33 @@ class AppStyles {
     BuildContext? context,
     double? minSize,
   }) {
-    // Calculate scaled font size if context is provided
+    double effectiveFontSize = fontSize;
+
+    // Apply small-screen scaling when context is available
+    if (context != null) {
+      try {
+        final width = MediaQuery.of(context).size.width;
+        double scale = 1.0;
+        if (width <= 320) {
+          scale = 0.9; // أكثر تصغير على الشاشات الأضيق
+        } else if (width <= 360) {
+          scale = 0.95; // تصغير خفيف حتى 360
+        }
+        effectiveFontSize = fontSize * scale;
+      } catch (_) {
+        // If MediaQuery is not available, fall back to original fontSize
+        effectiveFontSize = fontSize;
+      }
+    }
+
+    // Calculate scaled font size if context is provided (accessibility)
     final finalFontSize = context != null
         ? AccessibilityUtils.getScaledFontSize(
             context,
-            fontSize,
+            effectiveFontSize,
             minSize: minSize ?? AccessibilityUtils.minFontSize,
           )
-        : fontSize;
+        : effectiveFontSize;
 
     // Check if Arabic language is being used
     bool isArabic = false;

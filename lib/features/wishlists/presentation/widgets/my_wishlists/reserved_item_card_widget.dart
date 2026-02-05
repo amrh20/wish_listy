@@ -196,17 +196,24 @@ class ReservedItemCardWidget extends StatelessWidget {
                   ],
                 ),
               ),
-              // Cancel Button (Trailing) - Hide if purchased
+              // Cancel Reservation button (Trailing) - Hide if purchased
               if (!isPurchased)
-                IconButton(
-                  icon: const Icon(
-                    Icons.cancel_outlined,
-                    color: AppColors.error,
-                    size: 24,
-                  ),
+                TextButton(
                   onPressed: () => _showCancelConfirmation(context),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    localization.translate('details.cancelReservation') ?? 'Cancel Reservation',
+                    style: AppStyles.bodySmall.copyWith(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
             ],
           ),

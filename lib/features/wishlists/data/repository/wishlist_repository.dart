@@ -9,25 +9,24 @@ class WishlistRepository {
   /// Create a new wishlist
   ///
   /// [name] - Wishlist name (required)
-  /// [description] - Wishlist description (optional)
   /// [privacy] - Privacy setting: 'public', 'private', or 'friends' (required)
   /// [category] - Category: 'general', 'birthday', 'wedding', etc. (optional)
+  /// [items] - Optional list of items to create with the wishlist (optional)
   ///
   /// Returns the created wishlist data
   Future<Map<String, dynamic>> createWishlist({
     required String name,
-    String? description,
     required String privacy,
     String? category,
+    List<Map<String, dynamic>>? items,
   }) async {
     try {
       // Prepare request body according to API specification
       final requestData = <String, dynamic>{
         'name': name,
-        if (description != null && description.isNotEmpty)
-          'description': description,
         'privacy': privacy,
         if (category != null) 'category': category,
+        if (items != null && items.isNotEmpty) 'items': items,
       };
 
       // Make API call to create wishlist
@@ -469,25 +468,33 @@ class WishlistRepository {
     }
   }
 
-  /// Get all items reserved by the current user
+  /// Get all reservations (items reserved by the current user)
   ///
-  /// Uses API: GET /api/items/reserved
-  Future<List<Map<String, dynamic>>> fetchMyReservations() async {
+  /// Uses API: GET /api/reservations
+  /// Optional [status]: 'reserved' (default) or 'cancelled'
+  Future<List<Map<String, dynamic>>> fetchMyReservations({
+    String status = 'reserved',
+  }) async {
     try {
-      final response = await _apiService.get('/items/reserved');
+      final response = await _apiService.get(
+        '/reservations',
+        queryParameters: {'status': status},
+      );
 
-      // API returns: {success: true, data: [...]}
-      final itemsList =
-          response['data'] as List<dynamic>? ??
-          response['items'] as List<dynamic>? ??
-          (response is List ? response as List<dynamic> : []);
+      // API returns: { success: true, data: { reservations: [...], count: N } }
+      final data = response['data'];
+      final reservationsList = data is List
+          ? data
+          : (data != null && data['reservations'] != null)
+              ? data['reservations'] as List<dynamic>
+              : <dynamic>[];
 
-      if (itemsList == null) {
-        return [];
-      }
-
-      return itemsList
-          .map((item) => item as Map<String, dynamic>)
+      return reservationsList
+          .map((r) =>
+              r is Map && r['item'] != null
+                  ? r['item'] as Map<String, dynamic>
+                  : null)
+          .whereType<Map<String, dynamic>>()
           .toList();
     } on ApiException {
       rethrow;

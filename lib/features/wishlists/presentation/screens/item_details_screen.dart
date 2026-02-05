@@ -6,6 +6,7 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
+import 'package:wish_listy/core/widgets/unified_snackbar.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/deep_link_service.dart';
@@ -551,8 +552,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     required String action, // 'reserve' or 'cancel'
   }) async {
     final authService = Provider.of<AuthRepository>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     if (authService.isGuest) {
-      final localization = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(localization.translate('dialogs.pleaseLoginToReserve')),
@@ -562,6 +563,17 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       return;
     }
 
+    // Show loading snackbar
+    if (mounted) {
+      UnifiedSnackbar.showLoading(
+        context: context,
+        message: action == 'reserve'
+            ? (localization.translate('details.reservingItem') ?? 'Reserving...')
+            : (localization.translate('details.cancellingReservation') ?? 'Cancelling reservation...'),
+        duration: const Duration(minutes: 1),
+      );
+    }
+
     try {
       // Debug: Log the reservation state
       debugPrint('🔍 _toggleReservationWithAction Debug:');
@@ -569,7 +581,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       debugPrint('  - item.reservedBy?.id: ${item.reservedBy?.id}');
       debugPrint('  - authService.userId: ${authService.userId}');
       debugPrint('  - action (explicit): $action');
-      
+
       // Optimistic update
       setState(() {
         if (action == 'cancel') {
@@ -594,34 +606,28 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         // Refresh item details to ensure UI is up to date
         await _fetchItemDetails();
 
-          // Determine message based on the action we took
-          // If action was 'reserve', now it's reserved
-          // If action was 'cancel', now it's not reserved
-          final isNowReserved = action == 'reserve';
+        // Determine message based on the action we took
+        final isNowReserved = action == 'reserve';
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isNowReserved
-                  ? 'Item reserved! 🎁'
-                  : 'Reservation cancelled',
-            ),
-            backgroundColor: AppColors.success,
-          ),
+        UnifiedSnackbar.hideCurrent(context);
+        UnifiedSnackbar.showSuccess(
+          context: context,
+          message: isNowReserved
+              ? (localization.translate('dialogs.itemReservedSuccessfully') ?? 'Item reserved! 🎁')
+              : (localization.translate('dialogs.reservationCancelledSuccessfully') ?? 'Reservation cancelled'),
         );
       }
     } catch (e) {
       // Revert optimistic update
       if (mounted) {
+        UnifiedSnackbar.hideCurrent(context);
         setState(() {
           _currentItem = item;
         });
         final localization = Provider.of<LocalizationService>(context, listen: false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${localization.translate('dialogs.failedToUpdateReservation')}: ${e.toString()}'),
-            backgroundColor: AppColors.error,
-          ),
+        UnifiedSnackbar.showError(
+          context: context,
+          message: localization.translate('dialogs.failedToUpdateReservation') ?? 'Failed to update reservation',
         );
       }
     }

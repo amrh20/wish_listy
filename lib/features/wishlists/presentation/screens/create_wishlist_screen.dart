@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
@@ -37,8 +38,15 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _descriptionController = TextEditingController();
   final _customCategoryController = TextEditingController();
+
+  // Item section controllers
+  final _itemNameController = TextEditingController();
+  final _itemDescriptionController = TextEditingController();
+  final _itemUrlController = TextEditingController();
+  final _itemStoreNameController = TextEditingController();
+  final _itemStoreLocationController = TextEditingController();
+  final _itemNotesController = TextEditingController();
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -53,6 +61,10 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   final EventRepository _eventRepository = EventRepository();
   String? _eventName; // Store event name for banner display
 
+  // Item section state
+  String _itemSelectedWhereToFind = 'online'; // 'online', 'physical', 'anywhere'
+  String _itemSelectedPriority = 'medium'; // 'low', 'medium', 'high'
+
   final List<String> _privacyOptions = ['public', 'private', 'friends'];
   final List<String> _categoryOptions = [
     'birthday',
@@ -63,6 +75,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     'christmas',
     'custom',
   ];
+  final List<String> _priorities = ['low', 'medium', 'high'];
 
   @override
   void initState() {
@@ -72,6 +85,17 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     // Add listeners to form fields
     _nameController.addListener(_validateForm);
     _customCategoryController.addListener(_validateForm);
+    // Add listeners to item fields for validation
+    _itemNameController.addListener(_validateForm);
+    _itemDescriptionController.addListener(_validateForm);
+    _itemUrlController.addListener(_validateForm);
+    _itemStoreNameController.addListener(_validateForm);
+    _itemStoreLocationController.addListener(_validateForm);
+    _itemNotesController.addListener(_validateForm);
+    // Initial validation
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _validateForm();
+    });
     // Load wishlist data if editing
     if (widget.wishlistId != null) {
       _loadWishlistData();
@@ -158,6 +182,16 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     });
   }
 
+  /// Check if any item field is filled
+  bool _hasAnyItemFieldFilled() {
+    return _itemNameController.text.trim().isNotEmpty ||
+         _itemDescriptionController.text.trim().isNotEmpty ||
+         _itemUrlController.text.trim().isNotEmpty ||
+         _itemStoreNameController.text.trim().isNotEmpty ||
+         _itemStoreLocationController.text.trim().isNotEmpty ||
+         _itemNotesController.text.trim().isNotEmpty;
+  }
+
   /// Validate form and update _isFormValid state
   void _validateForm() {
     final name = _nameController.text.trim();
@@ -171,7 +205,12 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
             _customCategoryController.text.trim().length >= 2 &&
             _customCategoryController.text.trim().length <= 50);
 
-    final isValid = isNameValid && isCustomCategoryValid;
+    // Item validation: if any field filled, name is required
+    final hasAnyItemField = _hasAnyItemFieldFilled();
+    final itemNameValid = !hasAnyItemField ||
+         (_itemNameController.text.trim().isNotEmpty);
+
+    final isValid = isNameValid && isCustomCategoryValid && itemNameValid;
 
     if (_isFormValid != isValid) {
       setState(() {
@@ -207,9 +246,20 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     _animationController.dispose();
     _nameController.removeListener(_validateForm);
     _customCategoryController.removeListener(_validateForm);
+    _itemNameController.removeListener(_validateForm);
+    _itemDescriptionController.removeListener(_validateForm);
+    _itemUrlController.removeListener(_validateForm);
+    _itemStoreNameController.removeListener(_validateForm);
+    _itemStoreLocationController.removeListener(_validateForm);
+    _itemNotesController.removeListener(_validateForm);
     _nameController.dispose();
-    _descriptionController.dispose();
     _customCategoryController.dispose();
+    _itemNameController.dispose();
+    _itemDescriptionController.dispose();
+    _itemUrlController.dispose();
+    _itemStoreNameController.dispose();
+    _itemStoreLocationController.dispose();
+    _itemNotesController.dispose();
     super.dispose();
   }
 
@@ -283,31 +333,6 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                                     }
                                     if (value.trim().length > 100) {
                                       return 'Wishlist name must be less than 100 characters';
-                                    }
-                                    return null;
-                                  },
-                                ),
-
-                                const SizedBox(height: 20),
-
-                                // Description
-                                CustomTextField(
-                                  controller: _descriptionController,
-                                  label: localization.translate(
-                                    'wishlists.wishlistDescriptionLabel',
-                                  ),
-                                  hint: localization.translate(
-                                    'wishlists.wishlistDescriptionHint',
-                                  ),
-                                  prefixIcon: Icons.description_outlined,
-                                  minLines: 2,
-                                  maxLines: 3,
-                                  validator: (value) {
-                                    // Description is optional, but if provided, validate length
-                                    if (value != null && value.isNotEmpty) {
-                                      if (value.trim().length > 500) {
-                                        return 'Description must be less than 500 characters';
-                                      }
                                     }
                                     return null;
                                   },
@@ -394,6 +419,11 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                                   },
                                 ),
 
+                                const SizedBox(height: 24),
+
+                                // Add Item Section (Optional)
+                                _buildAddItemSection(localization),
+
                                 const SizedBox(height: 40),
 
                                 // Action Buttons
@@ -453,7 +483,6 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         wishlistData = {
           'id': wishlist.id,
           'name': wishlist.name,
-          'description': wishlist.description,
           'privacy': wishlist.visibility.toString().split('.').last,
           'category': wishlist.category, // Load category from model (can be null)
         };
@@ -468,8 +497,6 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         final category = wishlistData['category']?.toString();
         setState(() {
           _nameController.text = wishlistData['name']?.toString() ?? '';
-          _descriptionController.text =
-              wishlistData['description']?.toString() ?? '';
           _selectedPrivacy = wishlistData['privacy']?.toString() ?? 'public';
           
           if (category == null || category.isEmpty) {
@@ -564,7 +591,6 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
     final response = await _wishlistRepository.updateWishlist(
       wishlistId: widget.wishlistId!,
       name: _nameController.text.trim(),
-      description: _descriptionController.text.trim(),
       privacy: _selectedPrivacy,
       category: finalCategory,
     );
@@ -607,9 +633,6 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       // Note: Guest wishlists keep 'private' visibility (local-only)
       final updatedWishlist = existingWishlist.copyWith(
         name: _nameController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
         category: finalCategory, // Save category
         updatedAt: DateTime.now(),
       );
@@ -642,14 +665,15 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       return;
     }
 
+    // Build items array if any item fields are filled
+    final items = _buildItemsArray();
+
     // Create wishlist via API for authenticated users
     final response = await _wishlistRepository.createWishlist(
       name: _nameController.text.trim(),
-      description: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
       privacy: _selectedPrivacy,
       category: finalCategory,
+      items: items,
     );
 
     setState(() => _isLoading = false);
@@ -751,13 +775,21 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
 
   void _resetForm() {
     _nameController.clear();
-    _descriptionController.clear();
     _customCategoryController.clear();
+    _itemNameController.clear();
+    _itemDescriptionController.clear();
+    _itemUrlController.clear();
+    _itemStoreNameController.clear();
+    _itemStoreLocationController.clear();
+    _itemNotesController.clear();
     setState(() {
       _selectedPrivacy = 'public';
       _selectedCategory = null; // No category selected by default
       _isCustomCategory = false;
+      _itemSelectedWhereToFind = 'online';
+      _itemSelectedPriority = 'medium';
     });
+    _validateForm();
   }
 
   /// Show error message as a dialog with Lottie animation
@@ -776,9 +808,6 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
         userId: 'guest',
         type: WishlistType.public,
         name: _nameController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
         // Guest wishlists are always private (local-only)
         // This serves as an identifier for guest-created wishlists
         visibility: WishlistVisibility.private,
@@ -844,6 +873,599 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
 
       // Continue without event name - banner will show generic message
     }
+  }
+
+  /// Build Add Item Section
+  Widget _buildAddItemSection(LocalizationService localization) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: AppColors.primary.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      color: AppColors.surface,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section Title
+            Row(
+              children: [
+                Icon(
+                  Icons.add_circle_outline,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  localization.translate('wishlists.addYourFirstItem') ?? 'Add your first item',
+                  style: AppStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '(Optional)',
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Item Name
+            CustomTextField(
+              controller: _itemNameController,
+              label: localization.translate('wishlists.wishTitle') ?? 'Item Name',
+              hint: localization.translate('wishlists.whatDoYouWishFor') ?? 'What do you wish for?',
+              prefixIcon: Icons.card_giftcard_outlined,
+              validator: (value) {
+                if (_hasAnyItemFieldFilled()) {
+                  if (value?.isEmpty ?? true) {
+                    return localization.translate('wishlists.pleaseEnterWishName') ?? 
+                           'Please enter item name';
+                  }
+                }
+                return null;
+              },
+            ),
+
+            const SizedBox(height: 20),
+
+            // Item Description
+            CustomTextField(
+              controller: _itemDescriptionController,
+              label: localization.translate('wishlists.wishDescriptionLabel') ?? 'Description',
+              hint: localization.translate('wishlists.wishDescriptionHint') ?? 'Add details about this item',
+              prefixIcon: Icons.description_outlined,
+              minLines: 2,
+              maxLines: 3,
+            ),
+
+            const SizedBox(height: 20),
+
+            // Where to Find Section
+            _buildItemWhereToFindSection(localization),
+
+            const SizedBox(height: 20),
+
+            // Priority Selection
+            _buildItemPrioritySelection(localization),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build Where to Find Section for Item
+  Widget _buildItemWhereToFindSection(LocalizationService localization) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.location_on_outlined,
+                color: AppColors.primary,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                localization.translate('wishlists.whereToFind') ?? 'Where to Find',
+                style: AppStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Where to Find Options
+          Row(
+            children: [
+              Expanded(
+                child: _buildItemWhereToFindOption(
+                  icon: Icons.shopping_cart_outlined,
+                  title: localization.translate('wishlists.onlineStore') ?? 'Online',
+                  isSelected: _itemSelectedWhereToFind == 'online',
+                  onTap: () {
+                    setState(() {
+                      _itemSelectedWhereToFind = 'online';
+                    });
+                    _validateForm();
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildItemWhereToFindOption(
+                  icon: Icons.store_outlined,
+                  title: localization.translate('wishlists.physicalStore') ?? 'Store',
+                  isSelected: _itemSelectedWhereToFind == 'physical',
+                  onTap: () {
+                    setState(() {
+                      _itemSelectedWhereToFind = 'physical';
+                    });
+                    _validateForm();
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildItemWhereToFindOption(
+                  icon: Icons.help_outline,
+                  title: localization.translate('wishlists.anywhere') ?? 'Anywhere',
+                  isSelected: _itemSelectedWhereToFind == 'anywhere',
+                  onTap: () {
+                    setState(() {
+                      _itemSelectedWhereToFind = 'anywhere';
+                    });
+                    _validateForm();
+                  },
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Conditional Content based on selection
+          _buildItemConditionalContent(localization),
+        ],
+      ),
+    );
+  }
+
+  /// Build Where to Find Option
+  Widget _buildItemWhereToFindOption({
+    required IconData icon,
+    required String title,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primary.withOpacity(0.1)
+              : AppColors.surfaceVariant,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected
+                ? AppColors.primary
+                : AppColors.textTertiary.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : AppColors.textTertiary,
+              size: 18,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: AppStyles.caption.copyWith(
+                color: isSelected ? AppColors.primary : AppColors.textTertiary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 11,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build Conditional Content based on Where to Find selection
+  Widget _buildItemConditionalContent(LocalizationService localization) {
+    switch (_itemSelectedWhereToFind) {
+      case 'online':
+        return _buildItemOnlineContent(localization);
+      case 'physical':
+        return _buildItemPhysicalContent(localization);
+      case 'anywhere':
+        return _buildItemAnywhereContent(localization);
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  /// Build Online Store Content
+  Widget _buildItemOnlineContent(LocalizationService localization) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: CustomTextField(
+                controller: _itemUrlController,
+                label: localization.translate('wishlists.addProductLink') ?? 'Product URL',
+                hint: localization.translate('wishlists.enterProductUrl') ?? 'Enter product URL',
+                prefixIcon: Icons.link_outlined,
+                keyboardType: TextInputType.url,
+                validator: (value) {
+                  if (value != null && value.isNotEmpty) {
+                    if (!_isValidUrl(value)) {
+                      return localization.translate('wishlists.pleaseEnterValidUrl') ?? 
+                             'Please enter a valid URL';
+                    }
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Paste/Clear button
+            IconButton(
+              onPressed: () {
+                if (_itemUrlController.text.isEmpty) {
+                  _pasteItemUrlFromClipboard();
+                } else {
+                  setState(() {
+                    _itemUrlController.clear();
+                  });
+                }
+              },
+              icon: Icon(
+                _itemUrlController.text.isEmpty
+                    ? Icons.content_paste_rounded
+                    : Icons.close_rounded,
+                color: _itemUrlController.text.isEmpty
+                    ? AppColors.primary
+                    : AppColors.textTertiary,
+              ),
+              style: IconButton.styleFrom(
+                backgroundColor: _itemUrlController.text.isEmpty
+                    ? AppColors.primary.withOpacity(0.1)
+                    : AppColors.surfaceVariant,
+                padding: const EdgeInsets.all(12),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Build Physical Store Content
+  Widget _buildItemPhysicalContent(LocalizationService localization) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CustomTextField(
+          controller: _itemStoreNameController,
+          label: localization.translate('wishlists.storeName') ?? 'Store Name',
+          hint: localization.translate('wishlists.enterStoreName') ?? 'Enter store name',
+          prefixIcon: Icons.store_outlined,
+        ),
+        const SizedBox(height: 16),
+        CustomTextField(
+          controller: _itemStoreLocationController,
+          label: localization.translate('wishlists.storeLocation') ?? 'Store Location',
+          hint: localization.translate('wishlists.enterStoreLocation') ?? 'Enter store location',
+          prefixIcon: Icons.location_on_outlined,
+        ),
+      ],
+    );
+  }
+
+  /// Build Anywhere Content
+  Widget _buildItemAnywhereContent(LocalizationService localization) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CustomTextField(
+          controller: _itemNotesController,
+          label: localization.translate('wishlists.brandOrKeywords') ?? 'Brand or Keywords',
+          hint: localization.translate('wishlists.enterBrandOrKeywords') ?? 'Enter brand or keywords',
+          prefixIcon: Icons.tag_outlined,
+        ),
+      ],
+    );
+  }
+
+  /// Build Priority Selection for Item
+  Widget _buildItemPrioritySelection(LocalizationService localization) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.flag_outlined, color: AppColors.secondary, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                localization.translate('wishlists.selectPriority') ?? 'Priority',
+                style: AppStyles.bodyMedium.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: _priorities.map((priority) {
+              final isSelected = _itemSelectedPriority == priority;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _itemSelectedPriority = priority;
+                    });
+                    _validateForm();
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? _getPriorityColor(priority).withOpacity(0.1)
+                          : AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isSelected
+                            ? _getPriorityColor(priority)
+                            : AppColors.textTertiary.withOpacity(0.3),
+                        width: isSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          _getPriorityIcon(priority),
+                          color: isSelected
+                              ? _getPriorityColor(priority)
+                              : AppColors.textTertiary,
+                          size: 18,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _getPriorityDisplayName(priority, localization),
+                          style: AppStyles.caption.copyWith(
+                            color: isSelected
+                                ? _getPriorityColor(priority)
+                                : AppColors.textTertiary,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Get Priority Color
+  Color _getPriorityColor(String priority) {
+    switch (priority) {
+      case 'low':
+        return AppColors.success;
+      case 'medium':
+        return AppColors.warning;
+      case 'high':
+        return AppColors.secondary;
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  /// Get Priority Icon
+  IconData _getPriorityIcon(String priority) {
+    switch (priority) {
+      case 'low':
+        return Icons.trending_down;
+      case 'medium':
+        return Icons.trending_flat;
+      case 'high':
+        return Icons.trending_up;
+      default:
+        return Icons.flag_outlined;
+    }
+  }
+
+  /// Get Priority Display Name
+  String _getPriorityDisplayName(String priority, LocalizationService localization) {
+    switch (priority) {
+      case 'low':
+        return localization.translate('wishlists.priorityLow') ?? 'Low';
+      case 'medium':
+        return localization.translate('wishlists.priorityMedium') ?? 'Medium';
+      case 'high':
+        return localization.translate('wishlists.priorityHigh') ?? 'High';
+      default:
+        return priority;
+    }
+  }
+
+  /// Validate URL
+  bool _isValidUrl(String url) {
+    try {
+      Uri.parse(url);
+      return url.startsWith('http://') || url.startsWith('https://');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Paste URL from clipboard
+  Future<void> _pasteItemUrlFromClipboard() async {
+    try {
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      if (clipboardData?.text != null && clipboardData!.text!.isNotEmpty) {
+        final url = clipboardData.text!.trim();
+        if (_isValidUrl(url)) {
+          setState(() {
+            _itemUrlController.text = url;
+          });
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Clipboard does not contain a valid URL',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            );
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Clipboard is empty',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to paste from clipboard: $e'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Build Items Array for API
+  List<Map<String, dynamic>>? _buildItemsArray() {
+    if (!_hasAnyItemFieldFilled()) {
+      return null; // Don't include items key
+    }
+
+    // Validate item name is provided
+    final itemName = _itemNameController.text.trim();
+    if (itemName.isEmpty) {
+      return null; // Validation should prevent this, but safety check
+    }
+
+    final item = <String, dynamic>{
+      'name': itemName,
+      'priority': _itemSelectedPriority,
+    };
+
+    // Add optional fields
+    final description = _itemDescriptionController.text.trim();
+    if (description.isNotEmpty) {
+      item['description'] = description;
+    }
+
+    // Add fields based on "Where to Find" selection
+    if (_itemSelectedWhereToFind == 'online') {
+      final url = _itemUrlController.text.trim();
+      if (url.isNotEmpty) {
+        item['url'] = url;
+      }
+    } else if (_itemSelectedWhereToFind == 'physical') {
+      final storeName = _itemStoreNameController.text.trim();
+      if (storeName.isNotEmpty) {
+        item['storeName'] = storeName;
+      }
+      final storeLocation = _itemStoreLocationController.text.trim();
+      if (storeLocation.isNotEmpty) {
+        item['storeLocation'] = storeLocation;
+      }
+    } else if (_itemSelectedWhereToFind == 'anywhere') {
+      final notes = _itemNotesController.text.trim();
+      if (notes.isNotEmpty) {
+        item['notes'] = notes;
+      }
+    }
+
+    return [item]; // Return array with single item
   }
 
 }

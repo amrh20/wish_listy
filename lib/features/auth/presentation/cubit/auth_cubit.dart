@@ -13,6 +13,68 @@ class AuthCubit extends Cubit<AuthState> {
       : _repository = repository ?? AuthRepository(),
         super(AuthInitial());
 
+  /// Sync the current FCM token to backend with retry + detailed logging.
+  ///
+  /// - Logs start/end of each attempt.
+  /// - Retries getToken() up to 3 times with 2s delay if it returns null.
+  /// - Ensures updateFcmToken is only called when a non-null token is available.
+  /// - Logs status code and error message if the backend call fails.
+  Future<void> _syncFcmTokenWithRetries() async {
+    debugPrint('🔔 FCM: Starting token sync from AuthCubit...');
+
+    const int maxAttempts = 3;
+    String? fcmToken;
+
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      debugPrint('🔔 FCM: Starting token sync... (attempt $attempt/$maxAttempts)');
+      try {
+        fcmToken = await FcmService().getToken();
+      } catch (e) {
+        debugPrint('⚠️ FCM: getToken() threw exception on attempt $attempt: $e');
+        final errorStr = e.toString();
+        if (errorStr.contains('FIS_AUTH_ERROR') || errorStr.contains('Firebase Installations Service')) {
+          debugPrint('❌ FCM: Firebase Installations Service error detected.');
+          debugPrint('   This usually means:');
+          debugPrint('   1. Google Play Services needs update');
+          debugPrint('   2. Firebase configuration issue (check google-services.json)');
+          debugPrint('   3. Network/Firebase server issue');
+        }
+        fcmToken = null;
+      }
+
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        debugPrint('🔔 FCM: Token acquired (length=${fcmToken.length}): $fcmToken');
+        break;
+      }
+
+      debugPrint('⚠️ FCM: getToken() returned null/empty on attempt $attempt');
+      if (attempt < maxAttempts) {
+        debugPrint('⏱️ FCM: Waiting 2 seconds before retrying getToken()...');
+        await Future.delayed(const Duration(seconds: 2));
+      }
+    }
+
+    if (fcmToken == null || fcmToken.isEmpty) {
+      debugPrint('❌ FCM: Unable to obtain FCM token after $maxAttempts attempts. Skipping sync.');
+      debugPrint('❌ FCM: No API call will be made to /auth/fcm-token because token is null.');
+      return;
+    }
+
+    // Repository should already be authenticated and JWT stored before this is called.
+    try {
+      debugPrint('📤 FCM: Calling updateFcmToken on backend...');
+      await _repository.updateFcmToken(fcmToken);
+      debugPrint('✅ FCM: Token synced successfully via AuthCubit');
+    } on ApiException catch (e) {
+      debugPrint(
+        '❌ FCM: updateFcmToken failed. '
+        'status=${e.statusCode}, kind=${e.kind}, message=${e.message}, data=${e.data}',
+      );
+    } catch (e) {
+      debugPrint('❌ FCM: Unexpected error during token sync: $e');
+    }
+  }
+
   Future<void> checkAccount(String identifier) async {
     debugPrint('═══════════════════════════════════════════════════════');
     debugPrint('🔍 AuthCubit: checkAccount called');
@@ -178,25 +240,9 @@ class AuthCubit extends Cubit<AuthState> {
 
         // Initialize AuthRepository to sync state
         await _repository.initialize();
-
-        // Sync FCM token to backend so push notifications work (non-blocking on failure)
-        try {
-          final fcmToken = await FcmService().getToken().timeout(
-            const Duration(seconds: 5),
-            onTimeout: () => null,
-          );
-          if (fcmToken != null && fcmToken.isNotEmpty) {
-            await _repository.updateFcmToken(fcmToken).timeout(
-              const Duration(seconds: 5),
-              onTimeout: () {
-                debugPrint('⚠️ [Auth] FCM token sync timed out - continuing anyway');
-              },
-            );
-            debugPrint('✅ [Auth] FCM token synced after biometric login');
-          }
-        } catch (e) {
-          debugPrint('⚠️ [Auth] FCM token sync skipped (non-blocking): $e');
-        }
+        // At this point JWT is verified, stored, and API service is configured.
+        // Now we can safely sync the FCM token with full retry + logging.
+        await _syncFcmTokenWithRetries();
 
         emit(const AuthAuthenticated());
       } else {
@@ -209,6 +255,11 @@ class AuthCubit extends Cubit<AuthState> {
     } catch (e) {
       emit(AuthError('Token verification failed: ${e.toString()}'));
     }
+  }
+
+  /// Resend OTP (email or phone). Calls repository; exceptions propagate to caller.
+  Future<void> resendOtp(String username) async {
+    await _repository.resendOtp(username);
   }
 }
 
