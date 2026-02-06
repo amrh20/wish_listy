@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/socket_service.dart';
 import 'package:wish_listy/core/services/biometric_service.dart';
@@ -61,35 +63,37 @@ class AuthRepository extends ChangeNotifier {
         final token = prefs.getString('auth_token');
         if (token != null) {
           _apiService.setAuthToken(token);
-          // Connect to Socket.IO for real-time notifications
+          // Connect to Socket.IO in background so startup is not blocked by slow network
           final timestamp = DateTime.now().toIso8601String();
-          print('═══════════════════════════════════════════════════════');
-          print('🔥 AUTH REPOSITORY: ABOUT TO CALL SOCKET.CONNECT()');
-          print('🔥 User ID: $_userId');
-          print('🔥 Token exists: ${token.isNotEmpty}');
-          print('═══════════════════════════════════════════════════════');
-
           debugPrint(
-            '🔌 [Auth] ⏰ [$timestamp] Calling SocketService.connect() from initialize()',
+            '🔌 [Auth] ⏰ [$timestamp] Starting SocketService.connect() in background (non-blocking)',
           );
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User ID: $_userId');
           debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Email: $_userEmail');
+          SocketService()
+              .connect()
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () {
+                  debugPrint('⚠️ Socket connection timeout - continuing anyway');
+                },
+              )
+              .then((_) => debugPrint('✅ SocketService().connect() completed'))
+              .catchError((e) =>
+                  debugPrint('❌ ERROR calling SocketService().connect(): $e'));
 
-          try {
-            // Use timeout to prevent hanging
-            await SocketService().connect().timeout(
-              const Duration(seconds: 5),
-              onTimeout: () {
-                print('⚠️ Socket connection timeout - continuing anyway');
-              },
-            );
-            print('✅ SocketService().connect() completed');
-          } catch (e) {
-            print('❌ ERROR calling SocketService().connect(): $e');
-            // Continue anyway - don't block app initialization
-          }
+          // Sync FCM token in background so startup is not blocked
+          // This ensures token is sent to backend when user restarts app while logged in
+          _syncFcmTokenWithRetries().then((bool ok) {
+            if (ok) {
+              debugPrint('✅ FCM token synced from initialize()');
+            } else {
+              debugPrint('⚠️ FCM token not synced from initialize() (no token or API failed)');
+            }
+          }).catchError((e) =>
+              debugPrint('⚠️ FCM token sync failed in initialize(): $e'));
         } else {
-          print('⚠️ No auth token found in initialize()');
+          debugPrint('⚠️ No auth token found in initialize()');
         }
       } else {
         _userState = UserState.guest;
@@ -506,8 +510,9 @@ class AuthRepository extends ChangeNotifier {
 
   /// Call after login (email/password or biometric) to sync FCM token to backend.
   /// Safe to call when not authenticated (updateFcmToken will no-op).
-  Future<void> syncFcmToken() async {
-    await _syncFcmTokenWithRetries();
+  /// Returns true if token was obtained and sent to backend, false otherwise.
+  Future<bool> syncFcmToken() async {
+    return _syncFcmTokenWithRetries();
   }
 
   /// Sync the current FCM token to backend with retry + detailed logging.
@@ -516,8 +521,37 @@ class AuthRepository extends ChangeNotifier {
   /// - Retries getToken() up to 3 times with 2s delay if it returns null.
   /// - Ensures updateFcmToken is only called when a non-null token is available.
   /// - Logs status code and error message if the backend call fails.
-  Future<void> _syncFcmTokenWithRetries() async {
+  /// - Returns true only when token was obtained AND sent to backend successfully.
+  Future<bool> _syncFcmTokenWithRetries() async {
+    // Hard log: ALWAYS printed, no matter what (for debugging PUT /auth/fcm-token).
+    print('🚨 [FCM_CRITICAL] syncFcmToken started...');
+
+    try {
+      // Hard log: single direct getToken() to log token state NO MATTER WHAT.
+      String? token;
+      try {
+        token = await FirebaseMessaging.instance.getToken();
+        print('🚨 [FCM_CRITICAL] Token retrieved: ${token ?? "null_token"}');
+      } catch (e) {
+        print('🚨 [FCM_CRITICAL] Exception caught (getToken): $e');
+        token = null;
+      }
+
+      if (token != null && token.isNotEmpty) {
+        final url = '${ApiService.baseUrl}/auth/fcm-token';
+        print('🚨 [FCM_CRITICAL] Sending token to: $url');
+      }
+    } catch (e) {
+      print('🚨 [FCM_CRITICAL] Exception caught: $e');
+    }
+
+    debugPrint('═══════════════════════════════════════════════════════');
     debugPrint('🔔 FCM: Starting token sync from AuthRepository...');
+    debugPrint('🔔 FCM: Current auth state: $_userState');
+    debugPrint('🔔 FCM: isAuthenticated: $isAuthenticated');
+    debugPrint('🔔 FCM: User ID: $_userId');
+    debugPrint('🔔 FCM: User Email: $_userEmail');
+    debugPrint('═══════════════════════════════════════════════════════');
 
     const int maxAttempts = 3;
     String? fcmToken;
@@ -557,21 +591,26 @@ class AuthRepository extends ChangeNotifier {
       debugPrint('❌ FCM: No API call will be made to /auth/fcm-token because token is null.');
       debugPrint('❌ FCM: User will not receive push notifications until token is obtained.');
       debugPrint('❌ FCM: Common causes: FIS_AUTH_ERROR, Firebase config issue, or Google Play Services.');
-      return;
+      return false;
     }
 
     // Repository should already be authenticated and JWT stored before this is called.
     try {
       debugPrint('📤 FCM: Calling updateFcmToken on backend from AuthRepository...');
+      print('🚨 [FCM_CRITICAL] Sending token to: ${ApiService.baseUrl}/auth/fcm-token');
       await updateFcmToken(fcmToken);
       debugPrint('✅ FCM: Token synced successfully via AuthRepository');
+      return true;
     } on ApiException catch (e) {
       debugPrint(
         '❌ FCM: updateFcmToken failed from AuthRepository. '
         'status=${e.statusCode}, kind=${e.kind}, message=${e.message}, data=${e.data}',
       );
+      return false;
     } catch (e) {
       debugPrint('❌ FCM: Unexpected error during token sync from AuthRepository: $e');
+      print('🚨 [FCM_CRITICAL] Exception caught (updateFcmToken): $e');
+      return false;
     }
   }
 
@@ -580,14 +619,23 @@ class AuthRepository extends ChangeNotifier {
   /// Endpoint: PUT /api/auth/fcm-token
   /// Body: { "token": "..." }
   Future<void> updateFcmToken(String token) async {
+    debugPrint('═══════════════════════════════════════════════════════');
+    debugPrint('📤 [Auth] updateFcmToken() called');
+    debugPrint('📤 [Auth] Current auth state: $_userState');
+    debugPrint('📤 [Auth] isAuthenticated: $isAuthenticated');
+    debugPrint('📤 [Auth] User ID: $_userId');
+    debugPrint('📤 [Auth] Token to send: ${token.substring(0, min(20, token.length))}...');
+    debugPrint('═══════════════════════════════════════════════════════');
+    
     if (!isAuthenticated) {
-      debugPrint('⚠️ [Auth] updateFcmToken called while user is not authenticated');
+      debugPrint('❌ [Auth] updateFcmToken BLOCKED - user is NOT authenticated!');
+      debugPrint('❌ [Auth] Current state: $_userState');
       debugPrint('⚠️ [Auth] Token will be sent automatically after login');
       return;
     }
 
     try {
-      debugPrint('📤 [Auth] Sending FCM token to backend: ${token.substring(0, 20)}...');
+      debugPrint('📤 [Auth] Sending FCM token to backend via PUT /auth/fcm-token');
       await _apiService.put(
         '/auth/fcm-token',
         data: {'token': token},
@@ -595,11 +643,13 @@ class AuthRepository extends ChangeNotifier {
       debugPrint('✅ [Auth] FCM token updated successfully on backend');
       debugPrint('✅ [Auth] Backend now has the latest FCM token for push notifications');
     } on ApiException catch (e) {
-      debugPrint('⚠️ [Auth] Failed to update FCM token on backend: ${e.message}');
-      debugPrint('⚠️ [Auth] Token: ${token.substring(0, 20)}...');
+      debugPrint('❌ [Auth] Failed to update FCM token on backend');
+      debugPrint('❌ [Auth] Status code: ${e.statusCode}');
+      debugPrint('❌ [Auth] Error message: ${e.message}');
+      debugPrint('❌ [Auth] Token: ${token.substring(0, min(20, token.length))}...');
       rethrow;
     } catch (e) {
-      debugPrint('⚠️ [Auth] Unexpected error updating FCM token: $e');
+      debugPrint('❌ [Auth] Unexpected error updating FCM token: $e');
       rethrow;
     }
   }

@@ -34,6 +34,16 @@ class NotificationDropdown extends StatelessWidget {
     // To reflect actions (accept/decline/delete) immediately without closing,
     // we must listen to `NotificationsCubit` changes here.
     return BlocBuilder<NotificationsCubit, NotificationsState>(
+      // Only rebuild when notifications list or unreadCount actually changes
+      buildWhen: (previous, current) {
+        if (previous is NotificationsLoaded && current is NotificationsLoaded) {
+          // Rebuild only if notifications list or unreadCount changed
+          return previous.notifications != current.notifications ||
+                 previous.unreadCount != current.unreadCount;
+        }
+        // Always rebuild on state type change (Loading -> Loaded, etc.)
+        return previous.runtimeType != current.runtimeType;
+      },
       builder: (context, state) {
         // Show loading state ONLY if we're loading AND have no cached data
         if (state is NotificationsLoading && notifications.isEmpty) {
@@ -56,9 +66,15 @@ class NotificationDropdown extends StatelessWidget {
         final double dropdownWidth =
             effectiveWidth < maxWidth ? effectiveWidth : maxWidth;
 
+        // Check if we're loading while having cached data (smart loading)
+        final isLoadingWithData = state is NotificationsLoading && notifications.isNotEmpty;
+
         return Container(
           width: dropdownWidth,
-          constraints: const BoxConstraints(maxHeight: 400),
+          constraints: const BoxConstraints(
+            minHeight: 200, // Stable minimum height to prevent jumps
+            maxHeight: 400,
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -84,35 +100,48 @@ class NotificationDropdown extends StatelessWidget {
                 ),
               ),
             ),
-            child: Row(
+            child: Column(
               children: [
-                Text(
-                  localization.translate('app.notifications'),
-                  style: AppStyles.headingMedium.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const Spacer(),
-                if (effectiveUnreadCount > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.accent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      localization
-                          .translate('notifications.newNotifications')
-                          .replaceAll('{count}', effectiveUnreadCount.toString()),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
+                Row(
+                  children: [
+                    Text(
+                      localization.translate('app.notifications'),
+                      style: AppStyles.headingMedium.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
                       ),
+                    ),
+                    const Spacer(),
+                    if (effectiveUnreadCount > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          localization
+                              .translate('notifications.newNotifications')
+                              .replaceAll('{count}', effectiveUnreadCount.toString()),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                // Linear progress indicator when loading with existing data
+                if (isLoadingWithData)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: LinearProgressIndicator(
+                      minHeight: 2,
+                      backgroundColor: Colors.transparent,
                     ),
                   ),
               ],
@@ -120,10 +149,11 @@ class NotificationDropdown extends StatelessWidget {
           ),
           // Notifications List
           Flexible(
-            child: recentNotifications.isEmpty
+            child: recentNotifications.isEmpty && !isLoadingWithData
                 ? _buildEmptyState(context)
                 : ListView.builder(
                     shrinkWrap: true,
+                    physics: const ClampingScrollPhysics(), // Prevent over-scroll glitches
                     itemCount: recentNotifications.length,
                     itemBuilder: (context, index) {
                       final notification = recentNotifications[index];
@@ -214,7 +244,10 @@ class NotificationDropdown extends StatelessWidget {
 
     return Container(
       width: dropdownWidth,
-      constraints: const BoxConstraints(maxHeight: 400),
+      constraints: const BoxConstraints(
+        minHeight: 200, // Stable minimum height to prevent jumps
+        maxHeight: 400,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -253,10 +286,43 @@ class NotificationDropdown extends StatelessWidget {
             ),
           ),
           // Shimmer loading items
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              physics: const ClampingScrollPhysics(), // Prevent over-scroll glitches
+              padding: const EdgeInsets.all(16),
               children: List.generate(3, (index) => _buildShimmerItem()),
+            ),
+          ),
+          // View All Button (same as main state for stable layout)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: Colors.grey.shade200,
+                  width: 1,
+                ),
+              ),
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: null, // Disabled during loading
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  localization.translate('notifications.viewAllNotifications'),
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: Colors.grey.shade400,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -264,68 +330,9 @@ class NotificationDropdown extends StatelessWidget {
     );
   }
 
-  /// Build individual shimmer item (skeleton for notification)
+  /// Build individual shimmer item (skeleton for notification) with animation
   Widget _buildShimmerItem() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant.withOpacity(0.3),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Avatar shimmer
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade200,
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Text shimmer
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title shimmer
-                Container(
-                  height: 14,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Message shimmer
-                Container(
-                  height: 12,
-                  width: 200,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                // Time shimmer
-                Container(
-                  height: 10,
-                  width: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return _ShimmerItem();
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -355,6 +362,8 @@ class NotificationDropdown extends StatelessWidget {
   // Removed _handleFriendRequest - navigation handled by cubit.handleNotificationTap
 
   /// Handle friend request action (Accept/Decline)
+  /// Uses a captured ScaffoldMessenger so the loading snackbar is always dismissed
+  /// and replaced by success/error even if the dropdown is closed before the API returns.
   Future<void> _handleFriendRequestAction(
     BuildContext context,
     AppNotification notification, {
@@ -362,79 +371,139 @@ class NotificationDropdown extends StatelessWidget {
   }) async {
     final localization = Provider.of<LocalizationService>(context, listen: false);
     final cubit = context.read<NotificationsCubit>();
-    
+
+    // Capture messenger before any async work so we can hide/show snackbars
+    // even after the dropdown closes (context may be disposed).
+    final messenger = ScaffoldMessenger.of(context);
+
     // Get requestId from notification - prefer relatedId field, fallback to data map
     final requestId = notification.relatedId ??
                      notification.data?['relatedId'] ??
                      notification.data?['related_id'] ??
-                     notification.data?['requestId'] ?? 
+                     notification.data?['requestId'] ??
                      notification.data?['request_id'] ??
                      notification.data?['id'] ??
                      notification.data?['_id'];
-    
+
     if (requestId == null || requestId.toString().isEmpty) {
+      messenger.hideCurrentSnackBar();
       UnifiedSnackbar.showError(
         context: context,
-        message: localization.translate('dialogs.unableToProcessFriendRequest') ?? 
+        message: localization.translate('dialogs.unableToProcessFriendRequest') ??
                  'Unable to process friend request. Missing request ID.',
       );
       return;
     }
 
-    // Show loading snackbar
+    // Clear any stuck loading snackbar before showing a new one.
+    messenger.hideCurrentSnackBar();
+
     final loadingMessage = accept
-        ? (localization.translate('notifications.acceptingFriendRequest') ?? 
+        ? (localization.translate('notifications.acceptingFriendRequest') ??
            'Accepting friend request...')
-        : (localization.translate('notifications.decliningFriendRequest') ?? 
+        : (localization.translate('notifications.decliningFriendRequest') ??
            'Declining friend request...');
-    
-    final loadingSnackbar = UnifiedSnackbar.showLoading(
+
+    UnifiedSnackbar.showLoading(
       context: context,
       message: loadingMessage,
-      duration: const Duration(minutes: 1), // Long duration, will be dismissed manually
+      duration: const Duration(minutes: 1), // Dismissed in finally
     );
 
+    bool success = false;
+    String? errorMessage;
+
     try {
-      // Call API to accept/decline friend request (keep notification visible until success)
       final friendsRepository = FriendsRepository();
-      
+
       if (accept) {
         await friendsRepository.acceptFriendRequest(requestId: requestId.toString());
       } else {
         await friendsRepository.rejectFriendRequest(requestId: requestId.toString());
       }
 
-      // After successful API call, delete the notification (which calls delete API)
       await cubit.deleteNotification(notification.id);
-
-      // Hide loading snackbar and show success message
-      UnifiedSnackbar.hideCurrent(context);
-      UnifiedSnackbar.showSuccess(
-        context: context,
-        message: accept
-            ? (localization.translate('notifications.friendRequestAccepted') ?? 
-               'Friend request accepted')
-            : (localization.translate('notifications.friendRequestDeclined') ?? 
-               'Friend request declined'),
-      );
+      success = true;
+      // Refresh notification list and badge so bell count updates immediately
+      cubit.loadNotifications();
+      cubit.getUnreadCount();
     } catch (e) {
-      // Hide loading snackbar on error
-      UnifiedSnackbar.hideCurrent(context);
-      
-      // Show error message (notification remains visible)
-      UnifiedSnackbar.showError(
-        context: context,
-        message: e.toString().contains('ApiException')
-            ? (localization.translate('dialogs.failedToProcessFriendRequest') ?? 
-               'Failed to process friend request. Please try again.')
-            : (localization.translate('dialogs.failedToProcessFriendRequest') ?? 
-               'An error occurred. Please try again.'),
+      errorMessage = e.toString().contains('ApiException')
+          ? (localization.translate('dialogs.failedToProcessFriendRequest') ??
+             'Failed to process friend request. Please try again.')
+          : (localization.translate('dialogs.failedToProcessFriendRequest') ??
+             'An error occurred. Please try again.');
+    } finally {
+      // Always dismiss the loading snackbar when the operation completes (no Cubit loading state for this flow).
+      messenger.hideCurrentSnackBar();
+    }
+
+    // Show final success or error using captured messenger (works even if dropdown closed).
+    if (success) {
+      final message = accept
+          ? (localization.translate('notifications.friendRequestAccepted') ??
+             'Friend request accepted')
+          : (localization.translate('notifications.friendRequestDeclined') ??
+             'Friend request declined');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  errorMessage ?? 'An error occurred. Please try again.',
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       );
     }
   }
 }
 
 /// Individual Notification Item - Compact dropdown design matching full screen
+/// Optimized with stable layout and image caching
 class _NotificationItem extends StatelessWidget {
   final AppNotification notification;
   final NotificationsCubit cubit;
@@ -549,12 +618,13 @@ class _NotificationItem extends StatelessWidget {
   }
 
   /// Build circular avatar with status badge
+  /// Uses CachedNetworkImageProvider for efficient image loading and caching
   Widget _buildAvatarWithBadge(String? senderName, String? senderImage) {
     final statusBadge = _getStatusBadge();
     
     return Stack(
       children: [
-        // Circular Avatar
+        // Circular Avatar with cached image
         CircleAvatar(
           radius: 20,
           backgroundColor: AppColors.primary.withOpacity(0.1),
@@ -654,8 +724,8 @@ class _NotificationItem extends StatelessWidget {
                                 notification.data?['fromUser']?['_id'];
                   if (userId != null) {
                     Navigator.pop(context);
-                    AppRoutes.pushNamed(context, AppRoutes.friendProfile, 
-                      arguments: {'friendId': userId});
+                    AppRoutes.pushNamed(context, AppRoutes.friendProfile,
+                      arguments: {'friendId': userId, 'popToHomeOnBack': true});
                   }
                 },
             ),
@@ -1145,5 +1215,106 @@ class _NotificationItem extends StatelessWidget {
     return AppColors.textPrimary;
   }
 
+}
+
+/// Animated shimmer item for loading state
+class _ShimmerItem extends StatefulWidget {
+  const _ShimmerItem();
+
+  @override
+  State<_ShimmerItem> createState() => _ShimmerItemState();
+}
+
+class _ShimmerItemState extends State<_ShimmerItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat();
+    _animation = Tween<double>(begin: 0.3, end: 0.7).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceVariant.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Avatar shimmer with animation
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200.withOpacity(_animation.value),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Text shimmer with animation
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title shimmer
+                    Container(
+                      height: 14,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200.withOpacity(_animation.value),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Message shimmer
+                    Container(
+                      height: 12,
+                      width: 200,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200.withOpacity(_animation.value),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Time shimmer
+                    Container(
+                      height: 10,
+                      width: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200.withOpacity(_animation.value),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 

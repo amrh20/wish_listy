@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
@@ -10,6 +11,7 @@ import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/data/models/user_model.dart';
+import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 
 class AddFriendScreen extends StatefulWidget {
   const AddFriendScreen({super.key});
@@ -803,6 +805,10 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
             );
           }
         });
+
+        // Refresh notification list and badge so bell count updates immediately
+        context.read<NotificationsCubit>().loadNotifications();
+        context.read<NotificationsCubit>().getUnreadCount();
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

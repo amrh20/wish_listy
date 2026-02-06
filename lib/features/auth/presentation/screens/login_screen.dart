@@ -298,8 +298,21 @@ class _LoginScreenState extends State<LoginScreen>
         // This will set the user state correctly
         await authService.initialize();
 
-        // Sync FCM token to backend so push notifications work (same as email/password login)
-        await authService.syncFcmToken();
+        // CRITICAL: Sync FCM token to backend BEFORE navigating to Home
+        // This ensures push notifications work after biometric login
+        print('🚨 [FCM_CRITICAL] BiometricLogin: calling syncFcmToken before navigating to Home...');
+        try {
+          final fcmSynced = await authService.syncFcmToken();
+          if (fcmSynced) {
+            debugPrint('✅ [BiometricLogin] FCM token synced to backend');
+          } else {
+            debugPrint('⚠️ [BiometricLogin] FCM token could not be synced (no token or API failed)');
+          }
+        } catch (e) {
+          debugPrint('⚠️ [BiometricLogin] FCM token sync failed: $e');
+          print('🚨 [FCM_CRITICAL] BiometricLogin: syncFcmToken exception: $e');
+          // Continue anyway - user can still use the app
+        }
 
         // Authenticate Socket.IO (Option B: emit auth event)
         try {

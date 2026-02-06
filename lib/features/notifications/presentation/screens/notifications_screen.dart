@@ -474,7 +474,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       timeAgo: notification.timeAgo,
       onAccept: () => _handleFriendRequestAction(notification, true),
       onDecline: () => _handleFriendRequestAction(notification, false),
-      onProfileTap: () => _navigateToProfile(senderId),
+      onProfileTap: () => _navigateToProfile(senderId, popToHomeOnBack: true),
     );
   }
 
@@ -534,7 +534,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       friendName: friendName ?? 'Unknown',
       friendImage: friendImage,
       timeAgo: notification.timeAgo,
-      onProfileTap: () => _navigateToProfile(friendId),
+      onProfileTap: () => _navigateToProfile(friendId, popToHomeOnBack: true),
     );
   }
 
@@ -718,14 +718,15 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
-  /// Navigate to friend profile
-  void _navigateToProfile(String? friendId) {
+  /// Navigate to friend profile.
+  /// [popToHomeOnBack] when true, back button on profile returns to Home (used when opened from friend-request notification).
+  void _navigateToProfile(String? friendId, {bool popToHomeOnBack = false}) {
     if (friendId == null || friendId.isEmpty) return;
     
     Navigator.pushNamed(
       context,
       AppRoutes.friendProfile,
-      arguments: {'friendId': friendId},
+      arguments: {'friendId': friendId, 'popToHomeOnBack': popToHomeOnBack},
     );
   }
 
@@ -1360,8 +1361,11 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       if (!mounted) return;
 
       // Delete notification after action (Accept/Decline)
-      context.read<NotificationsCubit>().deleteNotification(notification.id);
-      
+      final notificationsCubit = context.read<NotificationsCubit>();
+      notificationsCubit.deleteNotification(notification.id);
+      notificationsCubit.loadNotifications();
+      notificationsCubit.getUnreadCount();
+
       final localization = Provider.of<LocalizationService>(context, listen: false);
       final message = accept
           ? localization.translate('notifications.friendRequestAccepted')

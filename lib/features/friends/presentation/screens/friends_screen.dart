@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -16,6 +17,7 @@ import 'package:wish_listy/core/theme/app_theme.dart' as theme;
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
+import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 
 class FriendsScreen extends StatefulWidget {
   final int? initialTabIndex;
@@ -1046,6 +1048,10 @@ class FriendsScreenState extends State<FriendsScreen>
       setState(() {
         _friendRequests.remove(request);
       });
+
+      // Refresh notification list and badge so bell count updates immediately
+      context.read<NotificationsCubit>().loadNotifications();
+      context.read<NotificationsCubit>().getUnreadCount();
 
       // If accepted, reload friends list
       if (accept) {

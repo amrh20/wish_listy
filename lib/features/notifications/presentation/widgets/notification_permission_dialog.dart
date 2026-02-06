@@ -86,13 +86,19 @@ class NotificationPermissionDialog extends StatelessWidget {
                         vertical: 10.0, // Slightly reduced vertical padding for compact button
                       ),
                       minimumSize: const Size(0, 40), // Ensure minimum touch target
+                      foregroundColor: Colors.white, // Ensure Allow button text is always white
                     ),
                     child: Text(
                       localization.translate('notifications.permissionAllow') ??
                           'Allow notifications',
-                      style: textTheme.labelMedium?.copyWith(
+                      style: (textTheme.labelMedium?.copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
+                        color: Colors.white, // Explicit white text on Allow button
+                      )) ?? const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                       textAlign: TextAlign.center,
                       maxLines: 1,

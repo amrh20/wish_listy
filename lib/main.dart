@@ -136,9 +136,9 @@ void main() async {
     debugPrint('⚠️ Failed to register FirebaseMessaging background handler: $e');
   }
 
-  // Initialize Hive for guest local storage
+  // Initialize Hive for guest local storage (must run first)
   await Hive.initFlutter();
-  
+
   // Register Hive adapters
   Hive.registerAdapter(WishlistTypeAdapter());
   Hive.registerAdapter(WishlistVisibilityAdapter());
@@ -147,29 +147,27 @@ void main() async {
   Hive.registerAdapter(PriceRangeAdapter());
   Hive.registerAdapter(WishlistItemAdapter());
   Hive.registerAdapter(WishlistAdapter());
-  
-  // Open Hive boxes for guest data
-  await Hive.openBox<Wishlist>('guest_wishlists');
-  await Hive.openBox<WishlistItem>('guest_wishlist_items');
 
   // Create instances of services
   final localizationService = LocalizationService();
   final authRepository = AuthRepository();
   final guestDataRepository = GuestDataRepository();
 
-  // Initialize services
-  await localizationService.initialize();
-  
-  // Initialize AppStyles language cache (must be after LocalizationService.initialize)
-  await AppStyles.initializeLanguageCache();
-  
-  // Initialize API service language code (must be after LocalizationService)
+  // Phase 1: Run Hive openBox and LocalizationService in parallel
+  await Future.wait([
+    Hive.openBox<Wishlist>('guest_wishlists'),
+    Hive.openBox<WishlistItem>('guest_wishlist_items'),
+    localizationService.initialize(),
+  ]);
+
+  // Phase 2: Use language from LocalizationService (no extra SharedPreferences read)
+  AppStyles.updateLanguageCache(localizationService.currentLanguage);
   final apiService = ApiService();
-  await apiService.initializeLanguageCode();
-  
+  apiService.setLanguageCode(localizationService.currentLanguage);
+
   try {
     await authRepository.initialize().timeout(
-      const Duration(seconds: 10),
+      const Duration(seconds: 5),
       onTimeout: () {
         debugPrint('⚠️ Auth initialization timeout - continuing anyway');
       },
@@ -179,23 +177,8 @@ void main() async {
   }
 
   // Create NotificationsCubit instance immediately to ensure listener is registered
-  // This must be done before runApp to ensure it's available when Socket connects
   final notificationsCubit = NotificationsCubit();
   debugPrint('✅ main.dart: NotificationsCubit created immediately');
-
-  // Initialize FCM service so it can:
-  // - keep the FCM token in sync with the backend
-  // - handle notification taps from background/terminated states
-  // - configure foreground presentation options
-  try {
-    await FcmService().initialize(
-      authRepository: authRepository,
-      notificationsCubit: notificationsCubit,
-    );
-    debugPrint('✅ FcmService initialized successfully');
-  } catch (e) {
-    debugPrint('⚠️ Error initializing FcmService: $e');
-  }
 
   // Prevent black screen on build errors - show helpful error widget instead
   ErrorWidget.builder = (FlutterErrorDetails details) {
@@ -241,6 +224,17 @@ void main() async {
       notificationsCubit: notificationsCubit,
     ),
   );
+
+  // Phase 1: Defer FCM init so it doesn't block the first frame
+  // Initialize FCM after runApp() but ensure auth state is ready
+  // Note: authRepository.initialize() already completed above, so isAuthenticated is accurate
+  FcmService()
+      .initialize(
+        authRepository: authRepository,
+        notificationsCubit: notificationsCubit,
+      )
+      .then((_) => debugPrint('✅ FcmService initialized successfully'))
+      .catchError((e) => debugPrint('⚠️ Error initializing FcmService: $e'));
 }
 
 class MyApp extends StatefulWidget {

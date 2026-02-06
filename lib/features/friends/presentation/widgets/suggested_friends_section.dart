@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/data/models/suggestion_user_model.dart';
+import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 
 class SuggestedFriendsSection extends StatefulWidget {
@@ -199,7 +201,10 @@ class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> with 
           _requestedFriends.remove(friendId);
           _requestIds.remove(friendId);
         });
-        
+
+        context.read<NotificationsCubit>().loadNotifications();
+        context.read<NotificationsCubit>().getUnreadCount();
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(

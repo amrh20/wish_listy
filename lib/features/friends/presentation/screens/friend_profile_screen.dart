@@ -18,8 +18,15 @@ import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
 
 class FriendProfileScreen extends StatefulWidget {
   final String friendId;
+  /// When true, back button returns to Home (MainNavigation) instead of just pop.
+  /// Set to true when opened from friend-request notification to avoid loading/empty screen.
+  final bool popToHomeOnBack;
 
-  const FriendProfileScreen({super.key, required this.friendId});
+  const FriendProfileScreen({
+    super.key,
+    required this.friendId,
+    this.popToHomeOnBack = false,
+  });
 
   @override
   State<FriendProfileScreen> createState() => _FriendProfileScreenState();
@@ -75,7 +82,16 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
               elevation: 0,
               surfaceTintColor: Colors.transparent,
               leading: IconButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  if (widget.popToHomeOnBack) {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      AppRoutes.mainNavigation,
+                      (route) => false,
+                    );
+                  } else {
+                    Navigator.pop(context);
+                  }
+                },
                 icon: const Icon(
                   Icons.arrow_back_ios,
                   color: AppColors.textPrimary,
@@ -190,6 +206,8 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       await _controller.acceptIncomingRequest();
       if (!mounted) return;
       _removeFriendRequestNotification(friendUserId: widget.friendId, requestId: requestId);
+      context.read<NotificationsCubit>().loadNotifications();
+      context.read<NotificationsCubit>().getUnreadCount();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -244,6 +262,8 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     try {
       await _controller.cancelFriendRequest();
       if (!mounted) return;
+      context.read<NotificationsCubit>().loadNotifications();
+      context.read<NotificationsCubit>().getUnreadCount();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -304,6 +324,8 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       await _controller.declineIncomingRequest();
       if (!mounted) return;
       _removeFriendRequestNotification(friendUserId: widget.friendId, requestId: requestId);
+      context.read<NotificationsCubit>().loadNotifications();
+      context.read<NotificationsCubit>().getUnreadCount();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(

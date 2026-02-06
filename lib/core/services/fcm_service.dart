@@ -93,8 +93,11 @@ class FcmService {
         debugPrint('');
         
         if (authRepository.isAuthenticated) {
-          await authRepository.updateFcmToken(token);
-          debugPrint('✅ [FCM] Token sent to backend');
+          // Use syncFcmToken() which has retry logic and proper error handling
+          // Note: This may duplicate with authRepository.initialize() sync, but that's safe
+          // as updateFcmToken() handles duplicate calls gracefully
+          await authRepository.syncFcmToken();
+          debugPrint('✅ [FCM] Token synced to backend via FcmService.initialize()');
         } else {
           debugPrint('⚠️ [FCM] User not authenticated, token will be sent after login');
         }

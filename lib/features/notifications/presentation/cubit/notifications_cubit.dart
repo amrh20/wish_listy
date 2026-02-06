@@ -149,37 +149,10 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Data type: ${data.runtimeType}');
     debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Current state: ${state.runtimeType}');
     
-    // Handle unread_count_update event separately
+    // Handle unread_count_update event from socket (e.g. when request accepted/declined/canceled)
     if (data['type'] == 'unreadCountUpdate') {
-      final updateTimestamp = DateTime.now().toIso8601String();
       final unreadCount = data['unreadCount'] as int? ?? 0;
-      debugPrint('🔔 [Notifications] ⏰ [$updateTimestamp] Handling unread_count_update');
-      debugPrint('🔔 [Notifications] ⏰ [$updateTimestamp]    New unreadCount: $unreadCount');
-      
-      if (state is NotificationsLoaded) {
-        final currentState = state as NotificationsLoaded;
-        debugPrint('🔔 [Notifications] ⏰ [$updateTimestamp]    Current unreadCount: ${currentState.unreadCount}');
-        debugPrint('🔔 [Notifications] ⏰ [$updateTimestamp]    Syncing unreadCount to: $unreadCount');
-        
-        emit(NotificationsLoaded(
-          notifications: currentState.notifications,
-          unreadCount: unreadCount,
-          isNewNotification: false, // This is a sync, not a new notification
-        ));
-        
-        debugPrint('🔔 [Notifications] ⏰ [$updateTimestamp]    ✅ Unread count synced successfully');
-        debugPrint('🔔 [Notifications] ⏰ [$updateTimestamp]    ✅ State emitted - BlocBuilder should rebuild now');
-      } else {
-        debugPrint('🔔 [Notifications] ⏰ [$updateTimestamp]    ⚠️ State not loaded, loading notifications...');
-        // Load notifications first, then update count
-        await loadNotifications();
-        // After loading, update with the unread count from socket
-        if (state is NotificationsLoaded) {
-          final loadedState = state as NotificationsLoaded;
-          emit(loadedState.copyWith(unreadCount: unreadCount));
-          debugPrint('🔔 [Notifications] ⏰ [$updateTimestamp]    ✅ Unread count updated after loading');
-        }
-      }
+      updateUnreadCount(unreadCount);
       return;
     }
     
@@ -504,6 +477,26 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     }
   }
 
+  /// Update unread count from socket or other source (e.g. unread_count_update event).
+  /// Use this when the backend pushes a new count; for API-based refresh use getUnreadCount().
+  void updateUnreadCount(int unreadCount) {
+    final timestamp = DateTime.now().toIso8601String();
+    debugPrint('🔔 [Notifications] ⏰ [$timestamp] updateUnreadCount: $unreadCount');
+    if (state is NotificationsLoaded) {
+      final currentState = state as NotificationsLoaded;
+      emit(currentState.copyWith(
+        unreadCount: unreadCount,
+        isNewNotification: false,
+      ));
+    } else if (state is! NotificationsLoading) {
+      emit(NotificationsLoaded(
+        notifications: [],
+        unreadCount: unreadCount,
+        isNewNotification: false,
+      ));
+    }
+  }
+
   /// Get unread count from backend (uses lastBadgeSeenAt logic)
   /// This endpoint returns the count of notifications where:
   /// - createdAt > lastBadgeSeenAt
@@ -782,7 +775,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
             Navigator.pushNamed(
               context,
               AppRoutes.friendProfile,
-              arguments: {'friendId': userId},
+              arguments: {'friendId': userId, 'popToHomeOnBack': true},
             );
           } else {
             debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing userId for ${notification.type}');

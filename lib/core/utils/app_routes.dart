@@ -265,8 +265,12 @@ class AppRoutes {
       final args = settings.arguments as Map<String, dynamic>;
       // Support both 'friendId' and 'userId' for backward compatibility
       final friendId = args['friendId'] ?? args['userId'] ?? '';
+      final popToHomeOnBack = args['popToHomeOnBack'] == true;
       return MaterialPageRoute(
-        builder: (context) => FriendProfileScreen(friendId: friendId),
+        builder: (context) => FriendProfileScreen(
+          friendId: friendId,
+          popToHomeOnBack: popToHomeOnBack,
+        ),
       );
     } else if (settings.name == eventDetails) {
       final args = settings.arguments as Map<String, dynamic>?;
