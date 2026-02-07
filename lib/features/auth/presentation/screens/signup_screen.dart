@@ -227,9 +227,7 @@ class _SignupScreenState extends State<SignupScreen>
           String sanitizedPhone = username;
           try {
             sanitizedPhone = authRepository.sanitizePhoneForFirebase(username);
-            debugPrint('📱 [Signup] Sanitized phone (E.164): $sanitizedPhone');
           } catch (e) {
-            debugPrint('⚠️ [Signup] Error sanitizing phone: $e');
             if (mounted) {
               _showErrorSnackBar('Invalid phone number format. Please check and try again.');
             }
@@ -270,9 +268,7 @@ class _SignupScreenState extends State<SignupScreen>
           String sanitizedPhone = username;
           try {
             sanitizedPhone = authRepository.sanitizePhoneForFirebase(username);
-            debugPrint('📱 [Signup] Sanitized phone (E.164): $sanitizedPhone');
           } catch (e) {
-            debugPrint('⚠️ [Signup] Error sanitizing phone: $e');
             if (mounted) {
               _showErrorSnackBar('Invalid phone number format. Please check and try again.');
             }
@@ -325,9 +321,7 @@ class _SignupScreenState extends State<SignupScreen>
           String sanitizedPhone = username;
           try {
             sanitizedPhone = authRepository.sanitizePhoneForFirebase(username);
-            debugPrint('📱 [Signup] Sanitized phone (E.164): $sanitizedPhone');
           } catch (e) {
-            debugPrint('⚠️ [Signup] Error sanitizing phone: $e');
             if (mounted) {
               _showErrorSnackBar('Invalid phone number format. Please check and try again.');
             }
@@ -398,7 +392,6 @@ class _SignupScreenState extends State<SignupScreen>
           verificationId = id;
           hasNavigated = true;
           
-          debugPrint('✅ [Signup] SMS code sent. VerificationId: $id, UserId: $userId');
           
           if (mounted) {
             setState(() => _isLoading = false);

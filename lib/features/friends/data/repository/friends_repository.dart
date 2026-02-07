@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/friends/data/models/user_model.dart';
 import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
@@ -190,7 +189,6 @@ class FriendsRepository {
     } on ApiException {
       rethrow;
     } catch (e) {
-      debugPrint('❌ FriendsRepository: Error accepting friend request: $e');
       throw Exception('Failed to accept friend request. Please try again.');
     }
   }
@@ -230,7 +228,6 @@ class FriendsRepository {
     } on ApiException {
       rethrow;
     } catch (e) {
-      debugPrint('❌ FriendsRepository: Error rejecting friend request: $e');
       throw Exception('Failed to reject friend request. Please try again.');
     }
   }
@@ -265,7 +262,6 @@ class FriendsRepository {
     } on ApiException {
       rethrow;
     } catch (e) {
-      debugPrint('❌ FriendsRepository: Error canceling friend request: $e');
       throw Exception('Failed to cancel friend request. Please try again.');
     }
   }
@@ -376,7 +372,6 @@ class FriendsRepository {
     } on ApiException {
       rethrow;
     } catch (e) {
-      debugPrint('❌ FriendsRepository: Error removing friend: $e');
       throw Exception('Failed to remove friend. Please try again.');
     }
   }
@@ -404,7 +399,6 @@ class FriendsRepository {
     } on ApiException {
       rethrow;
     } catch (e) {
-      debugPrint('❌ FriendsRepository: Error getting suggestions: $e');
       throw Exception('Failed to load suggestions. Please try again.');
     }
   }
@@ -444,7 +438,6 @@ class FriendsRepository {
     } on ApiException {
       rethrow;
     } catch (e) {
-      debugPrint('❌ FriendsRepository: Error dismissing suggestion: $e');
       throw Exception('Failed to dismiss suggestion. Please try again.');
     }
   }

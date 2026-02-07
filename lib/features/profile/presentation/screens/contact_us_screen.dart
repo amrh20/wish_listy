@@ -171,7 +171,6 @@ class ContactUsScreen extends StatelessWidget {
         await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
     } catch (e) {
-      debugPrint('Error launching email: $e');
     }
   }
 }

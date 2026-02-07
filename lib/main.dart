@@ -36,27 +36,8 @@ Future<void> _printDebugToken() async {
     final token = await FirebaseAppCheck.instance.getToken();
     if (token != null && token.isNotEmpty) {
       // Print in a very visible format
-      debugPrint('');
-      debugPrint('═══════════════════════════════════════════════════════════════════');
-      debugPrint('🔐 [App Check] DEBUG TOKEN (Copy this):');
-      debugPrint('');
-      debugPrint('   $token');
-      debugPrint('');
-      debugPrint('═══════════════════════════════════════════════════════════════════');
-      debugPrint('📋 Next Steps:');
-      debugPrint('   1. Copy the token above');
-      debugPrint('   2. Go to Firebase Console → App Check → Apps → Your App');
-      debugPrint('   3. Click the three dots (⋮) next to your Android app');
-      debugPrint('   4. Select "Manage debug tokens"');
-      debugPrint('   5. Click "Add debug token"');
-      debugPrint('   6. Name it "My Phone" and paste the token');
-      debugPrint('═══════════════════════════════════════════════════════════════════');
-      debugPrint('');
     }
   } catch (e) {
-    debugPrint('⚠️ [App Check] Failed to get debug token: $e');
-    debugPrint('   This is normal. Check Android logs for debug token:');
-    debugPrint('   adb logcat | grep -i "debug.*token"');
   }
 }
 
@@ -71,19 +52,10 @@ Future<void> _initializeAppCheck() async {
         appleProvider: AppleProvider.debug,
       );
       
-      debugPrint('🔐 [App Check] Debug mode activated');
       
       // Wait 5 seconds then try to get and print debug token
       _printDebugToken();
     } catch (e) {
-      debugPrint('⚠️ [App Check] Activation failed: $e');
-      debugPrint('⚠️ [App Check] Phone Auth might fail until debug token is registered');
-      debugPrint('⚠️ [App Check] Check logs above for debug token');
-      debugPrint('⚠️ [App Check] To fix:');
-      debugPrint('   1. Look for debug token in logs (printed 5 seconds after app start)');
-      debugPrint('   2. Go to Firebase Console → App Check → Apps → Your Android App');
-      debugPrint('   3. Click three dots (⋮) → "Manage debug tokens"');
-      debugPrint('   4. Add the debug token');
       // Continue execution - Phone Auth might still work if App Check isn't strictly enforced
     }
   } else {
@@ -93,9 +65,7 @@ Future<void> _initializeAppCheck() async {
         androidProvider: AndroidProvider.playIntegrity,
         appleProvider: AppleProvider.deviceCheck,
       );
-      debugPrint('🔐 [App Check] Production mode: Play Integrity / DeviceCheck enabled');
     } catch (e) {
-      debugPrint('⚠️ [App Check] Production activation failed: $e');
       // In production, this is more critical, but we'll continue anyway
     }
   }
@@ -110,10 +80,7 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    debugPrint('✅ Firebase initialized successfully');
-    debugPrint('   apiKey: ${DefaultFirebaseOptions.currentPlatform.apiKey}');
   } catch (e) {
-    debugPrint('⚠️ Firebase initialization failed: $e');
     // Continue app execution even if Firebase fails (e.g., on emulators without Firebase config)
   }
 
@@ -121,9 +88,7 @@ void main() async {
   // MUST happen AFTER Firebase.initializeApp() and BEFORE runApp()
   try {
     await _initializeAppCheck();
-    debugPrint('✅ Firebase App Check initialized successfully');
   } catch (e) {
-    debugPrint('⚠️ Firebase App Check initialization failed: $e');
     // Continue app execution even if App Check fails
   }
 
@@ -131,9 +96,7 @@ void main() async {
   // This must be done after Firebase.initializeApp and before runApp.
   try {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    debugPrint('✅ FirebaseMessaging background handler registered');
   } catch (e) {
-    debugPrint('⚠️ Failed to register FirebaseMessaging background handler: $e');
   }
 
   // Initialize Hive for guest local storage (must run first)
@@ -169,16 +132,13 @@ void main() async {
     await authRepository.initialize().timeout(
       const Duration(seconds: 5),
       onTimeout: () {
-        debugPrint('⚠️ Auth initialization timeout - continuing anyway');
       },
     );
   } catch (e) {
-    debugPrint('❌ Error during auth initialization: $e - continuing anyway');
   }
 
   // Create NotificationsCubit instance immediately to ensure listener is registered
   final notificationsCubit = NotificationsCubit();
-  debugPrint('✅ main.dart: NotificationsCubit created immediately');
 
   // Prevent black screen on build errors - show helpful error widget instead
   ErrorWidget.builder = (FlutterErrorDetails details) {

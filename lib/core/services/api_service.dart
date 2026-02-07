@@ -66,11 +66,6 @@ class ApiService {
   void _initializeDio() {
     final baseUrl = _baseUrl;
 
-    // Log the base URL in debug mode for troubleshooting
-    if (kDebugMode) {
-      debugPrint('🌐 ApiService baseUrl: $baseUrl');
-    }
-
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
@@ -101,7 +96,6 @@ class ApiService {
       InterceptorsWrapper(
         onError: (error, handler) {
           if (error.response?.statusCode == 401) {
-            debugPrint('🔒 [ApiService] 401 Unauthorized detected - clearing auth and redirecting to login');
             
             // Skip 401 handling for auth endpoints to avoid infinite loops
             final path = error.requestOptions.path.toLowerCase();
@@ -112,7 +106,6 @@ class ApiService {
                 path.contains('/auth/verify-otp') ||
                 path.contains('/auth/verify-phone') ||
                 path.contains('/auth/resend-otp')) {
-              debugPrint('🔒 [ApiService] Skipping 401 handler for auth endpoint: $path');
               handler.next(error);
               return;
             }
@@ -125,7 +118,6 @@ class ApiService {
               final authRepository = AuthRepository();
               authRepository.logoutSilently();
             } catch (e) {
-              debugPrint('⚠️ [ApiService] Error during silent logout: $e');
             }
             
             // Redirect to login screen if navigator is available
@@ -140,69 +132,15 @@ class ApiService {
                       AppRoutes.login,
                       (route) => false,
                     );
-                    debugPrint('✅ [ApiService] Redirected to login screen');
                   }
                 });
               }
             } catch (e) {
-              debugPrint('⚠️ [ApiService] Error redirecting to login: $e');
             }
           }
           handler.next(error);
         },
       ),
-
-      // Custom logging interceptor - only in debug mode
-      // Filters out wishlists requests to reduce console noise
-      if (kDebugMode)
-        InterceptorsWrapper(
-          onRequest: (options, handler) {
-            // Skip logging for wishlists endpoints
-            if (!options.path.contains('/wishlists') && 
-                !options.path.contains('/items')) {
-              debugPrint('┌─────────────────────────────────────────────────────────');
-              debugPrint('│ REQUEST: ${options.method} ${options.path}');
-              debugPrint('│ Headers: ${options.headers}');
-              if (options.data != null) {
-                debugPrint('│ Body: ${options.data}');
-              }
-              if (options.queryParameters.isNotEmpty) {
-                debugPrint('│ Query: ${options.queryParameters}');
-              }
-              debugPrint('└─────────────────────────────────────────────────────────');
-            }
-            handler.next(options);
-          },
-          onResponse: (response, handler) {
-            // Skip logging for wishlists endpoints
-            if (!response.requestOptions.path.contains('/wishlists') && 
-                !response.requestOptions.path.contains('/items')) {
-              debugPrint('┌─────────────────────────────────────────────────────────');
-              debugPrint('│ RESPONSE: ${response.requestOptions.method} ${response.requestOptions.path}');
-              debugPrint('│ Status: ${response.statusCode}');
-              debugPrint('│ Headers: ${response.headers}');
-              debugPrint('│ Data: ${response.data}');
-              debugPrint('└─────────────────────────────────────────────────────────');
-            }
-            handler.next(response);
-          },
-          onError: (error, handler) {
-            // Skip logging for wishlists endpoints
-            if (!error.requestOptions.path.contains('/wishlists') && 
-                !error.requestOptions.path.contains('/items')) {
-              debugPrint('┌─────────────────────────────────────────────────────────');
-              debugPrint('│ ERROR: ${error.requestOptions.method} ${error.requestOptions.path}');
-              debugPrint('│ Type: ${error.type}');
-              debugPrint('│ Message: ${error.message}');
-              if (error.response != null) {
-                debugPrint('│ Status: ${error.response?.statusCode}');
-                debugPrint('│ Data: ${error.response?.data}');
-              }
-              debugPrint('└─────────────────────────────────────────────────────────');
-            }
-            handler.next(error);
-          },
-        ),
 
     ]);
   }
@@ -551,16 +489,8 @@ class ApiService {
       );
 
       isOffline.value = false;
-      if (kDebugMode) {
-        debugPrint('📤 [ApiService] PUT $path → status: ${response.statusCode}');
-        debugPrint('📤 [ApiService] response: ${response.data}');
-      }
       return response.data;
     } on DioException catch (e) {
-      if (kDebugMode) {
-        debugPrint('📤 [ApiService] PUT $path failed → status: ${e.response?.statusCode}');
-        debugPrint('📤 [ApiService] response: ${e.response?.data}');
-      }
       final kind = _classifyDioException(e);
       isOffline.value = kind == ApiErrorKind.noInternet;
       final resData = e.response?.data;

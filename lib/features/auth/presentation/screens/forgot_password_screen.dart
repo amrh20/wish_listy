@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -91,14 +90,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   }
 
   Future<void> _handleCheckAccount(BuildContext context, AuthCubit cubit) async {
-    debugPrint('═══════════════════════════════════════════════════════');
-    debugPrint('🔍 ForgotPasswordScreen: _handleCheckAccount called');
-    debugPrint('═══════════════════════════════════════════════════════');
     
     // Step 1: Validate form
-    debugPrint('🔍 Step 1: Validating form...');
     if (_formKey.currentState == null) {
-      debugPrint('❌ ERROR: Form key state is null!');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -113,25 +107,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     }
     
     final isValid = _formKey.currentState!.validate();
-    debugPrint('🔍 Form validation result: $isValid');
     
     if (!isValid) {
-      debugPrint('❌ Form validation failed - showing error messages');
       // Form validation errors will be shown automatically by the TextFields
       // Trigger validation to show errors
       _formKey.currentState!.validate();
       return;
     }
-    debugPrint('✅ Form validation passed');
 
     // Step 2: Get and validate identifier
-    debugPrint('🔍 Step 2: Getting identifier from controller...');
     final identifier = _identifierController.text.trim();
-    debugPrint('🔍 Identifier value: "$identifier"');
-    debugPrint('🔍 Identifier length: ${identifier.length}');
     
     if (identifier.isEmpty) {
-      debugPrint('❌ ERROR: Identifier is empty after trim!');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -144,15 +131,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       }
       return;
     }
-    debugPrint('✅ Identifier is valid: "$identifier"');
 
     _identifier = identifier;
-    debugPrint('🔍 Stored identifier: $_identifier');
 
     // Step 3: Verify cubit is not null (already passed as parameter)
-    debugPrint('🔍 Step 3: Verifying AuthCubit...');
     if (cubit == null) {
-      debugPrint('❌ ERROR: AuthCubit is null!');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -165,18 +148,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       }
       return;
     }
-    debugPrint('✅ AuthCubit is valid');
 
     // Step 4: Call checkAccount
-    debugPrint('🔍 Step 4: Calling cubit.checkAccount("$identifier")...');
     try {
       cubit.checkAccount(identifier);
-      debugPrint('✅ checkAccount() called successfully - async operation started');
-      debugPrint('🔍 Waiting for AuthCubit to emit state changes...');
     } catch (e, stackTrace) {
-      debugPrint('❌ ERROR: Exception thrown while calling checkAccount!');
-      debugPrint('❌ Error: $e');
-      debugPrint('❌ Stack trace: $stackTrace');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -188,28 +164,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         );
       }
     }
-    debugPrint('═══════════════════════════════════════════════════════');
   }
 
   Future<void> _handleRequestReset(BuildContext context, AuthCubit cubit) async {
-    debugPrint('🔍 ForgotPasswordScreen: _handleRequestReset called');
     
     if (!_formKey.currentState!.validate()) {
-      debugPrint('❌ ForgotPasswordScreen: Form validation failed for request reset');
       return;
     }
 
     if (_identifier == null || _identifier!.isEmpty) {
-      debugPrint('❌ ForgotPasswordScreen: Identifier is null or empty for request reset');
       return;
     }
 
     final email = _emailController.text.trim();
-    debugPrint('🔍 ForgotPasswordScreen: Email for reset: $email (linked: $_emailLinked)');
 
     // AuthCubit handles all errors internally and emits error states
     // BlocListener will handle those error states and show appropriate messages
-    debugPrint('✅ ForgotPasswordScreen: AuthCubit found, calling requestReset...');
     if (_emailLinked && _linkedEmail != null) {
       // Account has email, just request reset
       cubit.requestReset(_identifier!);
@@ -217,20 +187,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
       // Need to bind email first
       cubit.requestReset(_identifier!, newEmail: email);
     }
-    debugPrint('✅ ForgotPasswordScreen: requestReset called (async operation started)');
   }
 
   void _handleResendEmail(BuildContext context) async {
-    debugPrint('🔍 ForgotPasswordScreen: _handleResendEmail called');
     if (_identifier == null || _identifier!.isEmpty) {
-      debugPrint('❌ ForgotPasswordScreen: Identifier is null or empty for resend email');
       return;
     }
     try {
       final cubit = context.read<AuthCubit>();
-      debugPrint('✅ ForgotPasswordScreen: AuthCubit found, calling requestReset for resend...');
       await cubit.requestReset(_identifier!);
-      debugPrint('✅ ForgotPasswordScreen: requestReset for resend called successfully');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -248,8 +213,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         );
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ ForgotPasswordScreen: Error calling requestReset for resend: $e');
-      debugPrint('Stack trace: $stackTrace');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -287,7 +250,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               _linkedEmail = state.email;
             });
           } else if (state is CheckAccountError) {
-            debugPrint('🔍 BlocListener: CheckAccountError received - resetting loading state');
             setState(() {
               _isLoading = false;
               _isLoadingCheck = false; // Ensure loading state is reset
@@ -304,7 +266,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             );
           } else if (state is AuthForgotPasswordEmailRequired) {
             // Handle requiresEmail case - show email field dynamically
-            debugPrint('🔍 BlocListener: AuthForgotPasswordEmailRequired received');
             setState(() {
               _isLoading = false;
               _isLoadingCheck = false;
@@ -328,7 +289,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               _successController.forward();
             }
           } else if (state is RequestResetError) {
-            debugPrint('🔍 BlocListener: RequestResetError received - resetting loading state');
             setState(() {
               _isLoading = false;
               _isLoadingReset = false; // Ensure loading state is reset
@@ -356,15 +316,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             _isLoading = _isLoadingCheck || _isLoadingReset;
             
             // Debug logging for state changes
-            if (wasLoadingCheck != _isLoadingCheck) {
-              debugPrint('🔍 Button State Changed: _isLoadingCheck: $wasLoadingCheck -> $_isLoadingCheck');
-            }
-            if (wasLoadingReset != _isLoadingReset) {
-              debugPrint('🔍 Button State Changed: _isLoadingReset: $wasLoadingReset -> $_isLoadingReset');
-            }
-            
             // Debug button state
-            debugPrint('🔍 Button State Debug: state=$state, _accountChecked=$_accountChecked, _isLoadingCheck=$_isLoadingCheck, _isLoadingReset=$_isLoadingReset, buttonEnabled=${!(_isLoadingCheck || _isLoadingReset)}');
 
             return PopScope(
               canPop: false,
@@ -576,7 +528,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               onPressed: (_isLoadingCheck || _isLoadingReset)
                   ? null
                   : () {
-                      debugPrint('🔍 ForgotPasswordScreen: Button pressed (_accountChecked: $_accountChecked, _isLoadingCheck: $_isLoadingCheck, _isLoadingReset: $_isLoadingReset)');
                       // Get cubit from context here, before calling async function
                       try {
                         final cubit = context.read<AuthCubit>();
@@ -586,9 +537,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                           _handleCheckAccount(context, cubit);
                         }
                       } catch (e, stackTrace) {
-                        debugPrint('❌ ERROR: Failed to get AuthCubit in button callback!');
-                        debugPrint('❌ Error: $e');
-                        debugPrint('❌ Stack trace: $stackTrace');
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Failed to access authentication service. Please try again.'),

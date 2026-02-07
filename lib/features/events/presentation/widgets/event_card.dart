@@ -591,7 +591,6 @@ class EventCard extends StatelessWidget {
     return months[month - 1];
   }
 
-
   /// Shows the context menu bottom sheet with event actions
   void _showContextMenu(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context, listen: false);

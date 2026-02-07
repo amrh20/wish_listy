@@ -278,4 +278,3 @@ extension _FirstWhereOrNullExt<E> on Iterable<E> {
   }
 }
 
-

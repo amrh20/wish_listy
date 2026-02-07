@@ -58,10 +58,8 @@ class _MainNavigationState extends State<MainNavigation>
         // User is authenticated - fetch unread count
         try {
           final notificationsCubit = context.read<NotificationsCubit>();
-          debugPrint('✅ MainNavigation: Fetching unread count on init...');
           notificationsCubit.getUnreadCount();
         } catch (e) {
-          debugPrint('⚠️ MainNavigation: Could not access NotificationsCubit: $e');
         }
       }
       
@@ -299,7 +297,6 @@ class _MainNavigationState extends State<MainNavigation>
       },
     );
   }
-
 
   void _showLockedFeatureBottomSheet(
     BuildContext context,

@@ -220,7 +220,6 @@ class FriendsScreenState extends State<FriendsScreen>
     );
   }
 
-
   Widget _buildMyFriendsTab(LocalizationService localization) {
     // Show loading state
     if (_isLoadingFriends && _friends.isEmpty) {
@@ -887,7 +886,6 @@ class FriendsScreenState extends State<FriendsScreen>
     // Don't make API calls for guest users
     final authService = Provider.of<AuthRepository>(context, listen: false);
     if (authService.isGuest) {
-      debugPrint('⚠️ FriendsScreen: Skipping API call for guest user');
       return;
     }
 
@@ -913,7 +911,6 @@ class FriendsScreenState extends State<FriendsScreen>
         _friendsError = null;
       });
     } else {
-      debugPrint('🔄 FriendsScreen: Background refresh (no loading indicator)');
       // Still clear error message
       if (_friendsError != null) {
         setState(() {
@@ -979,7 +976,6 @@ class FriendsScreenState extends State<FriendsScreen>
   /// Refresh friends and friend requests data
   /// This method is called when the Friends tab is tapped
   void refreshFriends() {
-    debugPrint('🔄 FriendsScreen: Refreshing friends data...');
     _loadFriends(resetPage: true);
     _loadFriendRequests();
   }
@@ -988,7 +984,6 @@ class FriendsScreenState extends State<FriendsScreen>
     // Don't make API calls for guest users
     final authService = Provider.of<AuthRepository>(context, listen: false);
     if (authService.isGuest) {
-      debugPrint('⚠️ FriendsScreen: Skipping friend requests API call for guest user');
       return;
     }
 
@@ -1000,7 +995,6 @@ class FriendsScreenState extends State<FriendsScreen>
         _requestsError = null;
       });
     } else {
-      debugPrint('🔄 FriendsScreen: Background refresh requests (no loading indicator)');
       if (_requestsError != null) {
         setState(() {
           _requestsError = null;
@@ -1206,8 +1200,6 @@ class FriendsScreenState extends State<FriendsScreen>
       ),
     );
   }
-
-
 
   Future<void> _refreshFriends() async {
     // Reset pagination and reload friends

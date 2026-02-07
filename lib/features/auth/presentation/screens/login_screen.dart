@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -86,7 +85,6 @@ class _LoginScreenState extends State<LoginScreen>
 
     // Reset attempt flag if identifier changed to allow auto-trigger for new identifier
     if (_lastCheckedIdentifier != null && _lastCheckedIdentifier != identifier) {
-      debugPrint('🔄 [LoginScreen] Identifier changed, resetting attempt flag');
       _hasAttemptedBiometric = false;
     }
 
@@ -107,15 +105,11 @@ class _LoginScreenState extends State<LoginScreen>
       setState(() => _showBiometricIcon = isEnabledForIdentifier);
 
       if (isEnabledForIdentifier) {
-        debugPrint('✅ [LoginScreen] Biometric icon shown for: $identifier');
 
         // Auto-trigger biometric authentication if this is a new identifier match
         // and we haven't already attempted it
         if (_lastCheckedIdentifier != identifier && !_isCheckingBiometric) {
           _lastCheckedIdentifier = identifier;
-          debugPrint(
-            '🔐 [LoginScreen] Auto-triggering biometric for: $identifier',
-          );
 
           // Small delay to allow UI to update
           Future.delayed(const Duration(milliseconds: 300), () {
@@ -134,9 +128,6 @@ class _LoginScreenState extends State<LoginScreen>
     final isAvailable = await biometricService.isBiometricAvailable();
 
     // Debug logs
-    debugPrint('═══════════════════════════════════════════════════════');
-    debugPrint('🔍 [BiometricCheck] isAvailable: $isAvailable');
-    debugPrint('═══════════════════════════════════════════════════════');
 
     if (mounted) {
       setState(() {
@@ -155,7 +146,6 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _attemptBiometricLogin({bool isManual = false}) async {
     // Prevent multiple auto-triggers
     if (!isManual && _hasAttemptedBiometric) {
-      debugPrint('⚠️ [BiometricLogin] Already attempted, skipping');
       return;
     }
 
@@ -172,7 +162,6 @@ class _LoginScreenState extends State<LoginScreen>
 
     // Validate identifier
     if (identifier.isEmpty) {
-      debugPrint('⚠️ [BiometricLogin] No identifier provided');
 
       // For auto-trigger, try to get identifier from SharedPreferences
       if (!isManual) {
@@ -185,7 +174,6 @@ class _LoginScreenState extends State<LoginScreen>
             return _attemptBiometricLogin(isManual: isManual);
           }
         } catch (e) {
-          debugPrint('⚠️ [BiometricLogin] Could not retrieve saved email: $e');
         }
       }
       return;
@@ -196,20 +184,11 @@ class _LoginScreenState extends State<LoginScreen>
     final isEnabledForIdentifier = await biometricService
         .isEnabledForIdentifier(identifier);
 
-    debugPrint(
-      '🔍 [BiometricLogin] Check - isAvailable: $isAvailable, isEnabled: $isEnabledForIdentifier',
-    );
-    debugPrint('   📧 Identifier: $identifier');
-
     if (!isAvailable) {
-      debugPrint('⚠️ [BiometricLogin] Biometric not available on device');
       return;
     }
 
     if (!isEnabledForIdentifier) {
-      debugPrint(
-        '⚠️ [BiometricLogin] Biometric not enabled for this identifier',
-      );
       return;
     }
 
@@ -224,7 +203,6 @@ class _LoginScreenState extends State<LoginScreen>
         listen: false,
       );
 
-      debugPrint('🔐 [BiometricLogin] Requesting biometric authentication...');
       final didAuthenticate = await biometricService.authenticate(
         context: context,
         reason:
@@ -233,7 +211,6 @@ class _LoginScreenState extends State<LoginScreen>
       );
 
       if (!didAuthenticate) {
-        debugPrint('⚠️ [BiometricLogin] Authentication cancelled or failed');
 
         // Show error message only if it's a manual attempt
         if (isManual && mounted) {
@@ -247,8 +224,6 @@ class _LoginScreenState extends State<LoginScreen>
         return;
       }
 
-      debugPrint('✅ [BiometricLogin] Biometric authentication successful');
-
       // SECOND: Retrieve all credentials (token, userId, userName) from storage
       final credentials = await biometricService.getStoredCredentialsForIdentifier(
         identifier,
@@ -259,10 +234,6 @@ class _LoginScreenState extends State<LoginScreen>
         final userId = credentials['userId'];
         final userName = credentials['userName'];
         
-        debugPrint('✅ [BiometricLogin] Credentials retrieved successfully');
-        debugPrint('   📏 Token length: ${token.length}');
-        debugPrint('   👤 User ID: ${userId ?? "not stored"}');
-        debugPrint('   👤 User Name: ${userName ?? "not stored"}');
 
         // Token retrieved successfully, proceed with login
         final authService = Provider.of<AuthRepository>(context, listen: false);
@@ -289,28 +260,18 @@ class _LoginScreenState extends State<LoginScreen>
         }
         await prefs.setString('user_email', finalUserEmail);
 
-        debugPrint('💾 [BiometricLogin] Saved to SharedPreferences:');
-        debugPrint('   👤 User ID: $finalUserId');
-        debugPrint('   👤 User Name: $finalUserName');
-        debugPrint('   📧 User Email: $finalUserEmail');
-
         // Re-initialize auth repository with saved data
         // This will set the user state correctly
         await authService.initialize();
 
         // CRITICAL: Sync FCM token to backend BEFORE navigating to Home
         // This ensures push notifications work after biometric login
-        print('🚨 [FCM_CRITICAL] BiometricLogin: calling syncFcmToken before navigating to Home...');
         try {
           final fcmSynced = await authService.syncFcmToken();
           if (fcmSynced) {
-            debugPrint('✅ [BiometricLogin] FCM token synced to backend');
           } else {
-            debugPrint('⚠️ [BiometricLogin] FCM token could not be synced (no token or API failed)');
           }
         } catch (e) {
-          debugPrint('⚠️ [BiometricLogin] FCM token sync failed: $e');
-          print('🚨 [FCM_CRITICAL] BiometricLogin: syncFcmToken exception: $e');
           // Continue anyway - user can still use the app
         }
 
@@ -318,7 +279,6 @@ class _LoginScreenState extends State<LoginScreen>
         try {
           await SocketService().authenticateSocket(token);
         } catch (e) {
-          debugPrint('⚠️ [BiometricLogin] Socket connection failed: $e');
         }
 
         // Navigate to main app
@@ -328,22 +288,18 @@ class _LoginScreenState extends State<LoginScreen>
             final notificationsCubit = context.read<NotificationsCubit>();
             notificationsCubit.getUnreadCount();
           } catch (e) {
-            debugPrint('⚠️ [BiometricLogin] NotificationsCubit error: $e');
           }
 
-          debugPrint('🏠 [BiometricLogin] Navigating to home screen');
           Navigator.of(context).pushNamedAndRemoveUntil(
             AppRoutes.mainNavigation,
             (route) => false,
           );
         }
       } else {
-        debugPrint('⚠️ [BiometricLogin] Token retrieval failed or cancelled');
         
         // Cleanup broken biometric data to allow re-enablement
         if (mounted) {
           await biometricService.clearBiometricDataForIdentifier(identifier);
-          debugPrint('🧹 [BiometricLogin] Cleared broken biometric data for $identifier');
           
           final localization = Provider.of<LocalizationService>(
             context,
@@ -357,7 +313,6 @@ class _LoginScreenState extends State<LoginScreen>
         }
       }
     } catch (e) {
-      debugPrint('❌ [BiometricLogin] Error: $e');
       // User cancelled or biometric failed - stay on login screen
       // User can try again with manual icon or use password
     } finally {
@@ -469,21 +424,9 @@ class _LoginScreenState extends State<LoginScreen>
       try {
         fcmToken = await FirebaseMessaging.instance.getToken();
         if (fcmToken != null) {
-          debugPrint('');
-          debugPrint('═══════════════════════════════════════════════════════════════════');
-          debugPrint('🔔 [Login] FCM TOKEN (for Firebase Console testing):');
-          debugPrint('');
-          debugPrint('   $fcmToken');
-          debugPrint('');
-          debugPrint('═══════════════════════════════════════════════════════════════════');
-          debugPrint('📋 Copy this token to Firebase Console → Cloud Messaging → Test');
-          debugPrint('═══════════════════════════════════════════════════════════════════');
-          debugPrint('');
         } else {
-          debugPrint('⚠️ [Login] FCM Token is null - may need notification permissions');
         }
       } catch (e) {
-        debugPrint('⚠️ [Login] Failed to get FCM token: $e');
         // Continue with login even if FCM token fails (e.g., on emulator)
         fcmToken = null;
       }
@@ -499,13 +442,9 @@ class _LoginScreenState extends State<LoginScreen>
         // Ensure NotificationsCubit is initialized and fetch unread count
         try {
           final notificationsCubit = context.read<NotificationsCubit>();
-          debugPrint(
-            '✅ LoginScreen: NotificationsCubit accessed, fetching unread count...',
-          );
           // Fetch unread count immediately after login
           notificationsCubit.getUnreadCount();
         } catch (e) {
-          debugPrint('⚠️ LoginScreen: Could not access NotificationsCubit: $e');
         }
 
         // Check if biometric is available and NOT enabled for THIS specific account
@@ -518,15 +457,8 @@ class _LoginScreenState extends State<LoginScreen>
         final isEnabledForThisAccount = await biometricService
             .isEnabledForIdentifier(identifier);
 
-        debugPrint('🔍 [Login] Biometric check for $identifier:');
-        debugPrint('   - Available: $isAvailable');
-        debugPrint('   - Enabled for this account: $isEnabledForThisAccount');
-
         if (isAvailable && !isEnabledForThisAccount) {
           // Show biometric enablement prompt for this account
-          debugPrint(
-            '✅ [Login] Showing biometric prompt for new/non-enrolled account',
-          );
           
           // Get user data from SharedPreferences to pass to prompt
           final prefs = await SharedPreferences.getInstance();
@@ -540,9 +472,6 @@ class _LoginScreenState extends State<LoginScreen>
           );
         } else {
           // Navigate to main app directly
-          debugPrint(
-            '➡️ [Login] Navigating to home (biometrics already enabled or not available)',
-          );
           Navigator.pushNamedAndRemoveUntil(
             context,
             AppRoutes.mainNavigation,
@@ -653,9 +582,7 @@ class _LoginScreenState extends State<LoginScreen>
       String sanitizedPhone = username;
       try {
         sanitizedPhone = authRepository.sanitizePhoneForFirebase(username);
-        debugPrint('📱 [Login] Sanitized phone (E.164): $sanitizedPhone');
       } catch (e) {
-        debugPrint('⚠️ [Login] Error sanitizing phone: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -688,7 +615,6 @@ class _LoginScreenState extends State<LoginScreen>
             verificationId = id;
             hasNavigated = true;
             
-            debugPrint('✅ [Login] SMS code sent. VerificationId: $id, UserId: $userId');
             
             if (mounted) {
               setState(() => _isLoading = false);
@@ -738,7 +664,6 @@ class _LoginScreenState extends State<LoginScreen>
             if (verificationId != null) {
               hasNavigated = true;
               
-              debugPrint('⏱️ [Login] Code auto-retrieval timeout. VerificationId: $verificationId, UserId: $userId');
               
               if (mounted) {
                 setState(() => _isLoading = false);
@@ -1716,12 +1641,7 @@ class _LoginScreenState extends State<LoginScreen>
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
 
-    debugPrint(
-      '🔍 [BiometricEnable] Token from SharedPreferences: ${token != null ? "exists (${token.length} chars)" : "null"}',
-    );
-
     if (token == null || token.isEmpty) {
-      debugPrint('❌ [BiometricEnable] No token found in SharedPreferences');
       // No token, navigate directly
       if (mounted) {
         UnifiedSnackbar.showError(
@@ -1824,9 +1744,6 @@ class _LoginScreenState extends State<LoginScreen>
                         height: 56.0,
                         child: OutlinedButton(
                           onPressed: () {
-                            debugPrint(
-                              '⏭️ [BiometricPrompt] User clicked "Not Now"',
-                            );
 
                             // Option A: Don't save any "declined" flag
                             // This means the prompt will show again next manual login
@@ -1839,9 +1756,6 @@ class _LoginScreenState extends State<LoginScreen>
                             parentNavigator.pop();
 
                             // Navigate to home screen IMMEDIATELY (user already logged in)
-                            debugPrint(
-                              '🏠 [BiometricPrompt] Redirecting to home after "Not Now"',
-                            );
                             parentNavigator.pushNamedAndRemoveUntil(
                               AppRoutes.mainNavigation,
                               (route) => false,
@@ -1878,9 +1792,6 @@ class _LoginScreenState extends State<LoginScreen>
                           text:
                               localization.translate('auth.enable') ?? 'Enable',
                           onPressed: () async {
-                            debugPrint(
-                              '✅ [BiometricPrompt] User clicked "Enable"',
-                            );
 
                             // CRITICAL: Save references to parent navigator and scaffold messenger
                             // BEFORE closing the bottom sheet, because the context will be invalid after pop()
@@ -1917,9 +1828,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                             // Verify token exists and is not empty
                             if (token == null || token.isEmpty) {
-                              debugPrint(
-                                '❌ [BiometricEnable] Token is null or empty',
-                              );
                               scaffoldMessenger.hideCurrentSnackBar();
                               scaffoldMessenger.showSnackBar(
                                 SnackBar(
@@ -1933,9 +1841,6 @@ class _LoginScreenState extends State<LoginScreen>
                               );
 
                               // Navigate to home anyway (user already logged in)
-                              debugPrint(
-                                '🏠 [BiometricEnable] Redirecting to home after error (no token)',
-                              );
                               parentNavigator.pushNamedAndRemoveUntil(
                                 AppRoutes.mainNavigation,
                                 (route) => false,
@@ -1947,9 +1852,6 @@ class _LoginScreenState extends State<LoginScreen>
                             final identifier = _usernameController.text.trim();
 
                             if (identifier.isEmpty) {
-                              debugPrint(
-                                '❌ [BiometricEnable] No identifier available',
-                              );
                               scaffoldMessenger.hideCurrentSnackBar();
                               scaffoldMessenger.showSnackBar(
                                 SnackBar(
@@ -1963,9 +1865,6 @@ class _LoginScreenState extends State<LoginScreen>
                               );
 
                               // Navigate to home anyway (user already logged in)
-                              debugPrint(
-                                '🏠 [BiometricEnable] Redirecting to home after error (no identifier)',
-                              );
                               parentNavigator.pushNamedAndRemoveUntil(
                                 AppRoutes.mainNavigation,
                                 (route) => false,
@@ -1973,18 +1872,10 @@ class _LoginScreenState extends State<LoginScreen>
                               return;
                             }
 
-                            debugPrint(
-                              '🔍 [BiometricEnable] Saving token for account: $identifier (length: ${token.length})',
-                            );
-
                             // Get user ID and Name from SharedPreferences if not provided
                             final prefs = await SharedPreferences.getInstance();
                             final finalUserId = userId ?? prefs.getString('user_id');
                             final finalUserName = userName ?? prefs.getString('user_name');
-
-                            debugPrint('🔍 [BiometricEnable] User data:');
-                            debugPrint('   👤 User ID: ${finalUserId ?? "not available"}');
-                            debugPrint('   👤 User Name: ${finalUserName ?? "not available"}');
 
                             // Save token and user data to secure storage with THIS account's identifier
                             // This creates a per-account biometric profile
@@ -1996,17 +1887,10 @@ class _LoginScreenState extends State<LoginScreen>
                               userName: finalUserName,
                             );
 
-                            debugPrint(
-                              '🔍 [BiometricEnable] Save result for $identifier: $success',
-                            );
-
                             // Hide loading and show result using saved reference
                             scaffoldMessenger.hideCurrentSnackBar();
 
                             if (success) {
-                              debugPrint(
-                                '✅ [BiometricEnable] Biometric enabled successfully for $identifier',
-                              );
                               scaffoldMessenger.showSnackBar(
                                 SnackBar(
                                   content: Text(
@@ -2018,9 +1902,6 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               );
                             } else {
-                              debugPrint(
-                                '❌ [BiometricEnable] Failed to enable for $identifier',
-                              );
                               scaffoldMessenger.showSnackBar(
                                 SnackBar(
                                   content: Text(
@@ -2036,16 +1917,11 @@ class _LoginScreenState extends State<LoginScreen>
                             // Authenticate Socket.IO after enabling biometric (user already logged in)
                             try {
                               await SocketService().authenticateSocket(token);
-                              debugPrint('✅ [BiometricEnable] Socket authenticated');
                             } catch (e) {
-                              debugPrint('⚠️ [BiometricEnable] Socket authentication failed: $e');
                             }
 
                             // Navigate to main app IMMEDIATELY after enabling (or failing)
                             // User already logged in, so redirect right away
-                            debugPrint(
-                              '🏠 [BiometricPrompt] Redirecting to home after "Enable"',
-                            );
                             parentNavigator.pushNamedAndRemoveUntil(
                               AppRoutes.mainNavigation,
                               (route) => false,

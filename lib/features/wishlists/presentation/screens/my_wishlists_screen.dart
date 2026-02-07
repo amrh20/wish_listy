@@ -646,7 +646,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         });
       }
     } else {
-      debugPrint('🔄 MyWishlistsScreen (Guest): Background refresh (no skeleton)');
       if (_errorMessage != null && mounted) {
         setState(() {
           _errorMessage = null;
@@ -752,7 +751,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         });
       }
     } else {
-      debugPrint('🔄 MyWishlistsScreen: Background refresh (no skeleton)');
       // Still clear error message
       if (_errorMessage != null && mounted) {
         setState(() {

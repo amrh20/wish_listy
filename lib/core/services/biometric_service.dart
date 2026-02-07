@@ -102,7 +102,6 @@ class BiometricService {
 
       return availableBiometrics.isNotEmpty;
     } catch (e) {
-      debugPrint('❌ [BiometricService] Error checking availability: $e');
       return false;
     }
   }
@@ -125,7 +124,6 @@ class BiometricService {
 
       return 'Biometric';
     } catch (e) {
-      debugPrint('❌ [BiometricService] Error getting biometric type: $e');
       return 'Biometric';
     }
   }
@@ -135,7 +133,6 @@ class BiometricService {
   Future<bool> isEnabledForIdentifier(String identifier) async {
     try {
       if (identifier.trim().isEmpty) {
-        debugPrint('⚠️ [BiometricService] Empty identifier provided');
         return false;
       }
 
@@ -143,14 +140,8 @@ class BiometricService {
       final enabled = await _secureStorage.read(key: key);
       final result = enabled == 'true';
 
-      debugPrint('🔍 [BiometricService] isEnabledForIdentifier: $result');
-      debugPrint('   📧 Identifier: ${_sanitizeIdentifier(identifier)}');
-      debugPrint('   🔑 Key: $key');
-      debugPrint('   ✅ Stored value: $enabled');
-
       return result;
     } catch (e) {
-      debugPrint('❌ [BiometricService] Error checking if enabled: $e');
       return false;
     }
   }
@@ -168,7 +159,6 @@ class BiometricService {
       );
       return hasAnyEnabled;
     } catch (e) {
-      debugPrint('❌ [BiometricService] Error checking legacy enabled: $e');
       return false;
     }
   }
@@ -184,13 +174,8 @@ class BiometricService {
       final token = await _secureStorage.read(key: key);
       final exists = token != null && token.isNotEmpty;
 
-      debugPrint('🔍 [BiometricService] hasStoredTokenForIdentifier: $exists');
-      debugPrint('   📧 Identifier: ${_sanitizeIdentifier(identifier)}');
-      debugPrint('   🔑 Key: $key');
-
       return exists;
     } catch (e) {
-      debugPrint('❌ [BiometricService] Error checking stored token: $e');
       return false;
     }
   }
@@ -211,12 +196,10 @@ class BiometricService {
   }) async {
     try {
       if (token.isEmpty) {
-        debugPrint('❌ [BiometricService] Cannot save empty token');
         return false;
       }
 
       if (identifier.trim().isEmpty) {
-        debugPrint('❌ [BiometricService] Cannot save without identifier');
         return false;
       }
 
@@ -225,18 +208,6 @@ class BiometricService {
       final userIdKey = _getUserIdKey(identifier);
       final userNameKey = _getUserNameKey(identifier);
       final sanitized = _sanitizeIdentifier(identifier);
-
-      debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint('🔐 [BiometricService] Saving biometric credentials');
-      debugPrint('   📧 Identifier: $sanitized');
-      debugPrint('   🔑 Token key: $tokenKey');
-      debugPrint('   🔑 Enabled key: $enabledKey');
-      debugPrint('   🔑 User ID key: $userIdKey');
-      debugPrint('   🔑 User Name key: $userNameKey');
-      debugPrint('   📏 Token length: ${token.length}');
-      debugPrint('   👤 User ID: ${userId ?? "not provided"}');
-      debugPrint('   👤 User Name: ${userName ?? "not provided"}');
-      debugPrint('═══════════════════════════════════════════════════════');
 
       // Save token
       await _secureStorage.write(key: tokenKey, value: token);
@@ -261,22 +232,11 @@ class BiometricService {
       final success = savedToken == token && savedFlag == 'true';
 
       if (success) {
-        debugPrint('✅ [BiometricService] Token and flag saved successfully');
-        if (userId != null && userId.isNotEmpty) {
-          debugPrint('✅ [BiometricService] User ID saved successfully');
-        }
-        if (userName != null && userName.isNotEmpty) {
-          debugPrint('✅ [BiometricService] User Name saved successfully');
-        }
       } else {
-        debugPrint('❌ [BiometricService] Verification failed');
-        debugPrint('   Token match: ${savedToken == token}');
-        debugPrint('   Flag match: ${savedFlag == 'true'}');
       }
 
       return success;
     } catch (e) {
-      debugPrint('❌ [BiometricService] Error saving token: $e');
       return false;
     }
   }
@@ -287,7 +247,6 @@ class BiometricService {
     required BuildContext context,
     String? reason,
   }) async {
-    debugPrint('⚠️ [BiometricService] getStoredToken() is deprecated - use getStoredTokenForIdentifier');
     return null;
   }
   
@@ -299,7 +258,6 @@ class BiometricService {
   Future<String?> getStoredTokenForIdentifier(String identifier) async {
     try {
       if (identifier.trim().isEmpty) {
-        debugPrint('❌ [BiometricService] Cannot retrieve token without identifier');
         return null;
       }
       
@@ -309,16 +267,12 @@ class BiometricService {
       // Check if biometric is enabled for this identifier
       final isEnabled = await isEnabledForIdentifier(identifier);
       if (!isEnabled) {
-        debugPrint('⚠️ [BiometricService] Biometric not enabled for: $sanitized');
         return null;
       }
       
       // Retrieve token
       final token = await _secureStorage.read(key: tokenKey);
       if (token == null || token.isEmpty) {
-        debugPrint('⚠️ [BiometricService] No stored token found');
-        debugPrint('   📧 Identifier: $sanitized');
-        debugPrint('   🔑 Token key: $tokenKey');
         
         // List all keys for debugging
         try {
@@ -326,21 +280,15 @@ class BiometricService {
           final biometricKeys = allKeys.keys
               .where((k) => k.startsWith(_tokenKeyPrefix) || k.startsWith(_enabledKeyPrefix))
               .toList();
-          debugPrint('   🔍 Available biometric keys: $biometricKeys');
         } catch (e) {
-          debugPrint('   ⚠️ Could not list keys: $e');
         }
         
         return null;
       }
 
-      debugPrint('✅ [BiometricService] Token retrieved successfully');
-      debugPrint('   📧 Identifier: $sanitized');
-      debugPrint('   📏 Token length: ${token.length}');
       
       return token;
     } catch (e) {
-      debugPrint('❌ [BiometricService] Error retrieving token: $e');
       return null;
     }
   }
@@ -352,7 +300,6 @@ class BiometricService {
   Future<Map<String, String>?> getStoredCredentialsForIdentifier(String identifier) async {
     try {
       if (identifier.trim().isEmpty) {
-        debugPrint('❌ [BiometricService] Cannot retrieve credentials without identifier');
         return null;
       }
       
@@ -361,7 +308,6 @@ class BiometricService {
       // Check if biometric is enabled for this identifier
       final isEnabled = await isEnabledForIdentifier(identifier);
       if (!isEnabled) {
-        debugPrint('⚠️ [BiometricService] Biometric not enabled for: $sanitized');
         return null;
       }
       
@@ -375,15 +321,9 @@ class BiometricService {
       final userName = await _secureStorage.read(key: userNameKey);
       
       if (token == null || token.isEmpty) {
-        debugPrint('⚠️ [BiometricService] No stored token found for: $sanitized');
         return null;
       }
       
-      debugPrint('✅ [BiometricService] Credentials retrieved successfully');
-      debugPrint('   📧 Identifier: $sanitized');
-      debugPrint('   📏 Token length: ${token.length}');
-      debugPrint('   👤 User ID: ${userId ?? "not stored"}');
-      debugPrint('   👤 User Name: ${userName ?? "not stored"}');
       
       return {
         'token': token,
@@ -391,7 +331,6 @@ class BiometricService {
         if (userName != null && userName.isNotEmpty) 'userName': userName,
       };
     } catch (e) {
-      debugPrint('❌ [BiometricService] Error retrieving credentials: $e');
       return null;
     }
   }
@@ -425,7 +364,6 @@ class BiometricService {
 
       return didAuthenticate;
     } catch (e) {
-      debugPrint('❌ [BiometricService] Authentication error: $e');
       return false;
     }
   }
@@ -436,7 +374,6 @@ class BiometricService {
 
   /// @deprecated Use clearStoredTokenForIdentifier instead
   Future<void> clearStoredToken() async {
-    debugPrint('⚠️ [BiometricService] clearStoredToken() is deprecated');
     // This is now a no-op - use clearStoredTokenForIdentifier
   }
   
@@ -445,7 +382,6 @@ class BiometricService {
   Future<void> clearStoredTokenForIdentifier(String identifier) async {
     try {
       if (identifier.trim().isEmpty) {
-        debugPrint('⚠️ [BiometricService] Cannot clear token without identifier');
         return;
       }
       
@@ -454,11 +390,7 @@ class BiometricService {
       
       await _secureStorage.delete(key: tokenKey);
       
-      debugPrint('✅ [BiometricService] Token cleared (keeping enabled flag)');
-      debugPrint('   📧 Identifier: $sanitized');
-      debugPrint('   🔑 Cleared key: $tokenKey');
     } catch (e) {
-      debugPrint('❌ [BiometricService] Error clearing token: $e');
     }
   }
   
@@ -467,7 +399,6 @@ class BiometricService {
   Future<void> clearBiometricDataForIdentifier(String identifier) async {
     try {
       if (identifier.trim().isEmpty) {
-        debugPrint('⚠️ [BiometricService] Cannot clear data without identifier');
         return;
       }
       
@@ -482,11 +413,7 @@ class BiometricService {
       await _secureStorage.delete(key: userIdKey);
       await _secureStorage.delete(key: userNameKey);
       
-      debugPrint('✅ [BiometricService] All biometric data cleared');
-      debugPrint('   📧 Identifier: $sanitized');
-      debugPrint('   🔑 Cleared keys: $tokenKey, $enabledKey, $userIdKey, $userNameKey');
     } catch (e) {
-      debugPrint('❌ [BiometricService] Error clearing biometric data: $e');
     }
   }
   
@@ -502,16 +429,12 @@ class BiometricService {
                  key.startsWith(_userNameKeyPrefix),
       ).toList();
       
-      debugPrint('🗑️ [BiometricService] Clearing all biometric data');
-      debugPrint('   📊 Found ${biometricKeys.length} keys to delete');
       
       for (final key in biometricKeys) {
         await _secureStorage.delete(key: key);
       }
       
-      debugPrint('✅ [BiometricService] All biometric data cleared');
     } catch (e) {
-      debugPrint('❌ [BiometricService] Error clearing all biometric data: $e');
     }
   }
 

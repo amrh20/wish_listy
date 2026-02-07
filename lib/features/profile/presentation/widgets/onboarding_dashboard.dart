@@ -163,7 +163,6 @@ class _OnboardingDashboardState extends State<OnboardingDashboard>
   }
 }
 
-
 class _ActionCard extends StatefulWidget {
   final IconData icon;
   final String title;

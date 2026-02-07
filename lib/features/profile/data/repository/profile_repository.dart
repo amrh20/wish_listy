@@ -28,17 +28,11 @@ class ProfileRepository {
     } on ApiException {
       rethrow;
     } on SocketException catch (e) {
-      if (kDebugMode) {
-        debugPrint('📤 [ProfileRepository] POST SocketException: $e');
-      }
       throw ApiException(
         'No internet connection. Please check your network and try again.',
         kind: ApiErrorKind.noInternet,
       );
     } on FormatException catch (e) {
-      if (kDebugMode) {
-        debugPrint('📤 [ProfileRepository] POST FormatException: $e');
-      }
       throw ApiException(
         'Invalid response from server. Please try again.',
         kind: ApiErrorKind.unknown,
@@ -65,17 +59,11 @@ class ProfileRepository {
     } on ApiException {
       rethrow;
     } on SocketException catch (e) {
-      if (kDebugMode) {
-        debugPrint('📤 [ProfileRepository] PUT SocketException: $e');
-      }
       throw ApiException(
         'No internet connection. Please check your network and try again.',
         kind: ApiErrorKind.noInternet,
       );
     } on FormatException catch (e) {
-      if (kDebugMode) {
-        debugPrint('📤 [ProfileRepository] PUT FormatException: $e');
-      }
       throw ApiException(
         'Invalid response from server. Please try again.',
         kind: ApiErrorKind.unknown,
@@ -123,9 +111,6 @@ class ProfileRepository {
         : <String, dynamic>{};
 
     if (imageUrl == null || imageUrl.isEmpty) {
-      if (kDebugMode) {
-        debugPrint('📤 [ProfileRepository] No image URL in response. Keys: ${data.keys}, inner keys: ${inner.keys}');
-      }
       throw ApiException(
         'No image URL returned from server. Check backend response shape.',
       );

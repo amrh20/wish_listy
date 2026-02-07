@@ -75,25 +75,15 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
   NotificationsCubit() : super(NotificationsInitial()) {
     final initTimestamp = DateTime.now().toIso8601String();
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$initTimestamp] ========== INITIALIZING ==========');
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$initTimestamp] Initializing NotificationsCubit...');
     _setupSocketListeners();
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$initTimestamp] ✅ Initialized with socket listener');
     
     // Debug: Check if socket is connected after initialization
     SchedulerBinding.instance.addPostFrameCallback((_) {
       final statusCheckTimestamp = DateTime.now().toIso8601String();
       final status = _socketService.getConnectionStatus();
-      debugPrint('🔔 [NotificationsCubit] ⏰ [$statusCheckTimestamp] Socket status check (post-init)');
-      debugPrint('🔔 [NotificationsCubit] ⏰ [$statusCheckTimestamp]    Connected: ${status['isConnected']}');
-      debugPrint('🔔 [NotificationsCubit] ⏰ [$statusCheckTimestamp]    Connecting: ${status['isConnecting']}');
-      debugPrint('🔔 [NotificationsCubit] ⏰ [$statusCheckTimestamp]    Socket ID: ${status['socketId']}');
-      debugPrint('🔔 [NotificationsCubit] ⏰ [$statusCheckTimestamp]    Listeners: ${status['listenersCount']}');
-      debugPrint('🔔 [NotificationsCubit] ⏰ [$statusCheckTimestamp]    URL: ${status['socketUrl']}');
       
       // If socket is connected but listener count is 0, re-register
       if (status['isConnected'] == true && status['listenersCount'] == 0) {
-        debugPrint('🔔 [NotificationsCubit] ⏰ [$statusCheckTimestamp]    ⚠️ Socket connected but no listeners! Re-registering...');
         _setupSocketListeners();
       }
     });
@@ -103,51 +93,27 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   /// This method can be called multiple times safely (e.g., after reconnection)
   void _setupSocketListeners() {
     final setupTimestamp = DateTime.now().toIso8601String();
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp] ========== SETTING UP SOCKET LISTENER ==========');
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp] Setting up socket listener...');
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    SocketService instance: ${_socketService.hashCode}');
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Handler function: ${_handleSocketNotification.runtimeType}');
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Handler hash: ${_handleSocketNotification.hashCode}');
     
     // Get status before adding listener
     final statusBefore = _socketService.getConnectionStatus();
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Listeners count BEFORE: ${statusBefore['listenersCount']}');
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Socket connected: ${statusBefore['isConnected']}');
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Socket ID: ${statusBefore['socketId']}');
     
     // Remove existing listener first to avoid duplicates
     _socketService.removeNotificationListener(_handleSocketNotification);
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Removed existing listener (if any)');
     
     // Add the listener
     _socketService.addNotificationListener(_handleSocketNotification);
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    ✅ Listener added');
     
     // Get status after adding listener
     final statusAfter = _socketService.getConnectionStatus();
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Listeners count AFTER: ${statusAfter['listenersCount']}');
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Socket exists: ${_socketService.socket != null}');
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Is connected: ${statusAfter['isConnected']}');
     
     // Verify listener was added
     if (statusAfter['listenersCount'] == 0) {
-      debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    ❌❌❌ ERROR: Listener count is still 0 after adding!');
-      debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    This means the listener was not registered properly.');
     } else {
-      debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    ✅✅✅ Listener registered successfully!');
-      debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp]    Ready to receive socket notifications');
     }
-    debugPrint('🔔 [NotificationsCubit] ⏰ [$setupTimestamp] ========== SETUP COMPLETE ==========');
   }
 
   /// Handle notification from Socket.IO
   Future<void> _handleSocketNotification(Map<String, dynamic> data) async {
-    final timestamp = DateTime.now().toIso8601String();
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp] ========== SOCKET NOTIFICATION RECEIVED ==========');
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp] Received socket notification from SocketService');
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Raw data: $data');
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Data type: ${data.runtimeType}');
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Current state: ${state.runtimeType}');
     
     // Handle unread_count_update event from socket (e.g. when request accepted/declined/canceled)
     if (data['type'] == 'unreadCountUpdate') {
@@ -160,23 +126,10 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       // Try to parse as AppNotification
       AppNotification notification;
       try {
-        debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Attempting to parse notification...');
         notification = AppNotification.fromJson(data);
-        debugPrint('🔔 [Notifications] ⏰ [$timestamp]    ✅ Parsed successfully');
-        debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Notification details:');
-        debugPrint('🔔 [Notifications] ⏰ [$timestamp]       - ID: ${notification.id}');
-        debugPrint('🔔 [Notifications] ⏰ [$timestamp]       - Type: ${notification.type}');
-        debugPrint('🔔 [Notifications] ⏰ [$timestamp]       - Title: ${notification.title}');
-        debugPrint('🔔 [Notifications] ⏰ [$timestamp]       - Message: ${notification.message}');
-        debugPrint('🔔 [Notifications] ⏰ [$timestamp]       - User ID: ${notification.userId}');
-        debugPrint('🔔 [Notifications] ⏰ [$timestamp]       - Is Read: ${notification.isRead}');
-        debugPrint('🔔 [Notifications] ⏰ [$timestamp]       - Created At: ${notification.createdAt}');
       } catch (parseError) {
         final parseErrorTimestamp = DateTime.now().toIso8601String();
-        debugPrint('🔔 [Notifications] ⏰ [$parseErrorTimestamp]    ⚠️ Failed to parse notification, trying alternative format');
-        debugPrint('🔔 [Notifications] ⏰ [$parseErrorTimestamp]       Parse error: $parseError');
         // If direct parsing fails, try wrapping it
-        debugPrint('🔔 [Notifications] ⏰ [$parseErrorTimestamp]    Attempting alternative parsing...');
         notification = AppNotification.fromJson({
           '_id': data['_id'] ?? data['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
           'userId': data['userId'] ?? data['user_id'] ?? '',
@@ -187,39 +140,29 @@ class NotificationsCubit extends Cubit<NotificationsState> {
           'isRead': false,
           'createdAt': data['createdAt'] ?? data['created_at'] ?? DateTime.now().toIso8601String(),
         });
-        debugPrint('🔔 [Notifications] ⏰ [$parseErrorTimestamp]    ✅ Alternative parsing successful');
-        debugPrint('🔔 [Notifications] ⏰ [$parseErrorTimestamp]       - Type: ${notification.type}');
-        debugPrint('🔔 [Notifications] ⏰ [$parseErrorTimestamp]       - Title: ${notification.title}');
       }
       
       // CRITICAL: Always update state immediately, regardless of current state
       // This ensures instant badge count update for better UX
       final stateUpdateTimestamp = DateTime.now().toIso8601String();
-      debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp] ========== UPDATING STATE IMMEDIATELY ==========');
       
       List<AppNotification> updatedNotifications;
       int currentUnreadCount = 0;
       
       if (state is NotificationsLoaded) {
         final currentState = state as NotificationsLoaded;
-        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    Current state is NotificationsLoaded');
-        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       Current notifications count: ${currentState.notifications.length}');
-        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       Current unread count: ${currentState.unreadCount}');
         
         updatedNotifications = [notification, ...currentState.notifications];
         currentUnreadCount = currentState.unreadCount;
       } else {
         // State is NotificationsInitial or NotificationsLoading
         // Create a minimal state with just this notification for instant feedback
-        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    ⚠️ State is ${state.runtimeType} - Creating immediate state');
-        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       Will load full notifications in background');
         
         updatedNotifications = [notification];
         currentUnreadCount = 0; // Will be incremented to 1 below
         
         // Load full notifications in background (non-blocking)
         loadNotifications().catchError((e) {
-          debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    ⚠️ Background load failed: $e');
         });
       }
       
@@ -228,19 +171,12 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       int newUnreadCount;
       if (data['unreadCount'] != null || data['unread_count'] != null) {
         newUnreadCount = data['unreadCount'] as int? ?? data['unread_count'] as int? ?? 0;
-        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    ✅ Using unreadCount from payload: $newUnreadCount');
       } else {
         // Increment current count by 1 for immediate feedback
         newUnreadCount = currentUnreadCount + 1;
-        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    ⚠️ unreadCount not in payload');
-        debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    ✅ Incrementing unreadCount: $currentUnreadCount -> $newUnreadCount (INSTANT UPDATE)');
       }
       
       // Emit state IMMEDIATELY with incremented count
-      debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]    📤 EMITTING STATE NOW...');
-      debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       Notifications: ${updatedNotifications.length}');
-      debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       Unread count: $newUnreadCount');
-      debugPrint('🔔 [Notifications] ⏰ [$stateUpdateTimestamp]       Is new notification: true');
       
       emit(NotificationsLoaded(
         notifications: updatedNotifications,
@@ -249,51 +185,34 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       ));
       
       final emitCompleteTimestamp = DateTime.now().toIso8601String();
-      debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    ✅✅✅ STATE EMITTED SUCCESSFULLY ✅✅✅');
-      debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]       BlocBuilder should rebuild NOW');
-      debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]       Badge count should update to: $newUnreadCount');
       
       // If unreadCount was not in payload, fetch accurate count from backend (async, non-blocking)
       if (data['unreadCount'] == null && data['unread_count'] == null) {
-        debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    🔄 Fetching accurate count from backend (async)...');
         try {
           final accurateCount = await getUnreadCount();
-          debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    ✅ Fetched accurate unreadCount: $accurateCount');
           
           // Update state with accurate count (only if state hasn't changed)
           if (state is NotificationsLoaded) {
             final latestState = state as NotificationsLoaded;
             if (latestState.unreadCount != accurateCount) {
-              debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    🔄 Syncing unreadCount: ${latestState.unreadCount} -> $accurateCount');
               emit(latestState.copyWith(
                 unreadCount: accurateCount,
                 isNewNotification: false, // Don't show snackbar again
               ));
-              debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    ✅ Count synced successfully');
             } else {
-              debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    ✅ Count already accurate, no update needed');
             }
           }
         } catch (e) {
-          debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]    ⚠️ Failed to fetch accurate count: $e');
-          debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp]       Keeping optimistic count: $newUnreadCount');
           // Keep the optimistic count - it's better than showing nothing
         }
       }
       
-      debugPrint('🔔 [Notifications] ⏰ [$emitCompleteTimestamp] ========== HANDLING COMPLETE ==========');
     } catch (e, stackTrace) {
-      final errorTimestamp = DateTime.now().toIso8601String();
-      debugPrint('🔔 [Notifications] ⏰ [$errorTimestamp]    ❌❌❌ ERROR HANDLING SOCKET NOTIFICATION ❌❌❌');
-      debugPrint('🔔 [Notifications] ⏰ [$errorTimestamp]       Error: $e');
-      debugPrint('🔔 [Notifications] ⏰ [$errorTimestamp]       Error type: ${e.runtimeType}');
-      debugPrint('🔔 [Notifications] ⏰ [$errorTimestamp]       Stack trace: $stackTrace');
       
       // Even on error, try to increment count if state is loaded
       if (state is NotificationsLoaded) {
         final currentState = state as NotificationsLoaded;
         final errorCount = currentState.unreadCount + 1;
-        debugPrint('🔔 [Notifications] ⏰ [$errorTimestamp]    ⚠️ Attempting fallback: incrementing count to $errorCount');
         emit(currentState.copyWith(
           unreadCount: errorCount,
           isNewNotification: false,
@@ -306,7 +225,6 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   Future<void> loadNotifications() async {
     // Don't make API calls for guest users
     if (_authRepository.isGuest) {
-      debugPrint('⚠️ NotificationsCubit: Skipping API call for guest user');
       emit(NotificationsLoaded(
         notifications: [],
         unreadCount: 0,
@@ -320,8 +238,6 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
       final response = await _apiService.get('/notifications');
 
-      debugPrint('📥 NotificationsCubit: API Response: $response');
-
       // Handle different response formats
       List<dynamic> notificationsList = [];
       int unreadCount = 0;
@@ -333,18 +249,14 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       // Try multiple possible locations in response
       if (response.containsKey('unreadCount')) {
         unreadCount = response['unreadCount'] as int? ?? 0;
-        debugPrint('📥 NotificationsCubit: Found unreadCount at top level: $unreadCount');
       } else if (response.containsKey('unread_count')) {
         unreadCount = response['unread_count'] as int? ?? 0;
-        debugPrint('📥 NotificationsCubit: Found unread_count at top level: $unreadCount');
       } else if (response.containsKey('data') && response['data'] is Map<String, dynamic>) {
         final data = response['data'] as Map<String, dynamic>;
         if (data.containsKey('unreadCount')) {
           unreadCount = data['unreadCount'] as int? ?? 0;
-          debugPrint('📥 NotificationsCubit: Found unreadCount in data object: $unreadCount');
         } else if (data.containsKey('unread_count')) {
           unreadCount = data['unread_count'] as int? ?? 0;
-          debugPrint('📥 NotificationsCubit: Found unread_count in data object: $unreadCount');
         }
       }
 
@@ -355,17 +267,14 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         // Case 1: data is an array directly (actual API response)
         if (data is List) {
           notificationsList = data;
-          debugPrint('📥 NotificationsCubit: Found notifications array in data (${notificationsList.length} items)');
         }
         // Case 2: data is an object with 'notifications' field (documentation format)
         else if (data is Map<String, dynamic>) {
           notificationsList = data['notifications'] as List<dynamic>? ?? [];
-          debugPrint('📥 NotificationsCubit: Found notifications in data.notifications (${notificationsList.length} items)');
         }
       } else if (response is List) {
         // Case 3: Response is directly an array
         notificationsList = response as List<dynamic>;
-        debugPrint('📥 NotificationsCubit: Response is directly an array (${notificationsList.length} items)');
       }
 
       // WARNING: Do NOT calculate unreadCount locally!
@@ -375,7 +284,6 @@ class NotificationsCubit extends Cubit<NotificationsState> {
           !response.containsKey('unread_count') &&
           !(response.containsKey('data') && response['data'] is Map && 
             (response['data'] as Map).containsKey('unreadCount'))) {
-        debugPrint('⚠️ NotificationsCubit: unreadCount not found in response, fetching from dedicated endpoint...');
         try {
           // Note: getUnreadCount() is defined below, but we need to call it here
           // For now, we'll fetch it directly
@@ -389,12 +297,9 @@ class NotificationsCubit extends Cubit<NotificationsState> {
           } else if (unreadResponse is int) {
             unreadCount = unreadResponse as int;
           } else {
-            debugPrint('⚠️ NotificationsCubit: Unexpected unreadResponse type: ${unreadResponse.runtimeType}');
             unreadCount = 0;
           }
-          debugPrint('📥 NotificationsCubit: Fetched unreadCount from /notifications/unread-count: $unreadCount');
         } catch (e) {
-          debugPrint('⚠️ NotificationsCubit: Failed to fetch unreadCount, using 0: $e');
           unreadCount = 0;
         }
       }
@@ -405,15 +310,11 @@ class NotificationsCubit extends Cubit<NotificationsState> {
             try {
               return AppNotification.fromJson(json as Map<String, dynamic>);
             } catch (e) {
-              debugPrint('⚠️ NotificationsCubit: Failed to parse notification: $e');
-              debugPrint('   Notification data: $json');
               return null;
             }
           })
           .whereType<AppNotification>()
           .toList();
-
-      debugPrint('✅ NotificationsCubit: Loaded ${notifications.length} notifications, $unreadCount unread');
 
       emit(NotificationsLoaded(
         notifications: notifications,
@@ -421,41 +322,31 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         isNewNotification: false, // This is from API load, not new Socket notification
       ));
     } on ApiException catch (e) {
-      debugPrint('❌ NotificationsCubit: API Error: ${e.message}');
       emit(NotificationsError(e.message));
     } catch (e, stackTrace) {
-      debugPrint('❌ NotificationsCubit: Error loading notifications: $e');
-      debugPrint('❌ Stack trace: $stackTrace');
       emit(NotificationsError('Failed to load notifications. Please try again.'));
     }
   }
 
   /// Mark notification as read (individual notification)
   Future<void> markAsRead(String notificationId) async {
-    final timestamp = DateTime.now().toIso8601String();
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp] Marking notification as read');
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Notification ID: $notificationId');
     
     try {
       if (state is! NotificationsLoaded) {
-        debugPrint('🔔 [Notifications] ⏰ [$timestamp]    ⚠️ State is not loaded, skipping');
         return;
       }
 
       final currentState = state as NotificationsLoaded;
-      debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Current unread count: ${currentState.unreadCount}');
       
       // Optimistically update UI
       final updatedNotifications = currentState.notifications.map((n) {
         if (n.id == notificationId && !n.isRead) {
-          debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Found notification to mark as read');
           return n.markAsRead();
         }
         return n;
       }).toList();
 
       final unreadCount = updatedNotifications.where((n) => !n.isRead).length;
-      debugPrint('🔔 [Notifications] ⏰ [$timestamp]    New unread count: $unreadCount');
 
       emit(NotificationsLoaded(
         notifications: updatedNotifications,
@@ -464,15 +355,11 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       ));
 
       // Update on backend using PATCH as per requirements
-      debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Calling API: PATCH /notifications/$notificationId/read');
       await _apiService.patch('/notifications/$notificationId/read');
-      debugPrint('🔔 [Notifications] ⏰ [$timestamp]    ✅ Notification marked as read successfully');
     } on ApiException catch (e) {
-      debugPrint('❌ NotificationsCubit: Error marking as read: ${e.message}');
       // Reload to sync with backend
       loadNotifications();
     } catch (e) {
-      debugPrint('❌ NotificationsCubit: Error marking as read: $e');
       loadNotifications();
     }
   }
@@ -480,8 +367,6 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   /// Update unread count from socket or other source (e.g. unread_count_update event).
   /// Use this when the backend pushes a new count; for API-based refresh use getUnreadCount().
   void updateUnreadCount(int unreadCount) {
-    final timestamp = DateTime.now().toIso8601String();
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp] updateUnreadCount: $unreadCount');
     if (state is NotificationsLoaded) {
       final currentState = state as NotificationsLoaded;
       emit(currentState.copyWith(
@@ -504,16 +389,12 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   Future<int> getUnreadCount() async {
     // Don't make API calls for guest users
     if (_authRepository.isGuest) {
-      debugPrint('⚠️ NotificationsCubit: Skipping unread count API call for guest user');
       return 0;
     }
 
-    final timestamp = DateTime.now().toIso8601String();
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp] Fetching unread count from backend');
     
     try {
       final response = await _apiService.get('/notifications/unread-count');
-      debugPrint('🔔 [Notifications] ⏰ [$timestamp]    API Response: $response');
       
       // Handle different response formats
       int unreadCount = 0;
@@ -526,11 +407,9 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       } else if (response is int) {
         unreadCount = response as int;
       } else {
-        debugPrint('⚠️ NotificationsCubit: Unexpected response type for unread count: ${response.runtimeType}');
         unreadCount = 0;
       }
       
-      debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Unread count: $unreadCount');
       
       // Update state - if loaded, update it; if not loaded, create a minimal state with unreadCount
       if (state is NotificationsLoaded) {
@@ -551,10 +430,8 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       
       return unreadCount;
     } on ApiException catch (e) {
-      debugPrint('❌ NotificationsCubit: Error fetching unread count: ${e.message}');
       return 0;
     } catch (e) {
-      debugPrint('❌ NotificationsCubit: Error fetching unread count: $e');
       return 0;
     }
   }
@@ -563,17 +440,13 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   /// This is used when opening the notification dropdown - just hide the badge
   /// Individual notifications will be marked as read when clicked
   Future<void> dismissBadge() async {
-    final timestamp = DateTime.now().toIso8601String();
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp] Dismissing badge (updating lastBadgeSeenAt)');
     
     try {
       if (state is! NotificationsLoaded) {
-        debugPrint('🔔 [Notifications] ⏰ [$timestamp]    ⚠️ State is not loaded, skipping');
         return;
       }
 
       final currentState = state as NotificationsLoaded;
-      debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Current unreadCount: ${currentState.unreadCount}');
       
       // Optimistically set unreadCount to 0 immediately (better UX)
       emit(NotificationsLoaded(
@@ -583,7 +456,6 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       ));
       
       // Call backend API to update lastBadgeSeenAt (fire and forget)
-      debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Calling API: PATCH /api/notifications/dismiss-badge');
       _apiService.patch('/notifications/dismiss-badge').then((_) {
         // After API call succeeds, fetch accurate unreadCount from backend
         // This ensures sync but doesn't block UI
@@ -597,10 +469,8 @@ class NotificationsCubit extends Cubit<NotificationsState> {
             ));
           }
         }).catchError((e) {
-          debugPrint('🔔 [Notifications] ⏰ [$timestamp]    ⚠️ Error fetching unreadCount: $e');
         });
       }).catchError((e) {
-        debugPrint('❌ NotificationsCubit: Error dismissing badge: ${e.message}');
         // On error, revert to original unreadCount
         if (state is NotificationsLoaded) {
           final currentState = state as NotificationsLoaded;
@@ -614,9 +484,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         }
       });
       
-      debugPrint('🔔 [Notifications] ⏰ [$timestamp]    ✅ Badge dismissed (optimistic update)');
     } catch (e) {
-      debugPrint('❌ NotificationsCubit: Error dismissing badge: $e');
       // Don't reload on error - just log it
     }
   }
@@ -631,9 +499,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       // Reload notifications
       await loadNotifications();
     } on ApiException catch (e) {
-      debugPrint('❌ NotificationsCubit: Error marking all as read: ${e.message}');
     } catch (e) {
-      debugPrint('❌ NotificationsCubit: Error marking all as read: $e');
     }
   }
 
@@ -642,10 +508,6 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   /// [eventId] - Event ID to respond to
   /// [status] - RSVP status: 'accepted', 'declined', or 'maybe'
   Future<void> respondToEvent(String eventId, String status) async {
-    final timestamp = DateTime.now().toIso8601String();
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp] Responding to event invitation');
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Event ID: $eventId');
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Status: $status');
     
     try {
       // Call EventRepository to respond to invitation
@@ -654,22 +516,17 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         status: status,
       );
       
-      debugPrint('🔔 [Notifications] ⏰ [$timestamp]    ✅ Successfully responded to event invitation');
       
       // Notify EventDetailsScreen to refresh if it's open
       if (!_eventUpdateController.isClosed) {
         _eventUpdateController.add(eventId);
-        debugPrint('🔔 [Notifications] ⏰ [$timestamp]    📢 Sent event update signal for: $eventId');
       }
       
       // Note: loadNotifications() is called by deleteNotification() if needed
       // No need to reload here to avoid race conditions
     } on ApiException catch (e) {
-      debugPrint('❌ NotificationsCubit: Error responding to event: ${e.message}');
       rethrow; // Re-throw to allow UI to handle the error
     } catch (e, stackTrace) {
-      debugPrint('❌ NotificationsCubit: Error responding to event: $e');
-      debugPrint('❌ Stack trace: $stackTrace');
       rethrow; // Re-throw to allow UI to handle the error
     }
   }
@@ -685,13 +542,6 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   /// - Events (event_invite, event_update, event_response): Event Details Screen (relatedId)
   /// - Gifts (item_reserved, item_unreserved, item_purchased, item_received): Item Details Screen (relatedId + relatedWishlistId)
   Future<void> handleNotificationTap(AppNotification notification, BuildContext context) async {
-    final timestamp = DateTime.now().toIso8601String();
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp] ========== NOTIFICATION TAP HANDLER ==========');
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    ID: ${notification.id}');
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Type: ${notification.type}');
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    RelatedId: ${notification.relatedId}');
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    RelatedWishlistId: ${notification.relatedWishlistId}');
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Data keys: ${notification.data?.keys.toList()}');
     
     // Get localization service early
     final localization = Provider.of<LocalizationService>(context, listen: false);
@@ -771,14 +621,12 @@ class NotificationsCubit extends Cubit<NotificationsState> {
           final userId = extractUserId();
           
           if (userId != null && userId.isNotEmpty) {
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    → Navigating to friend profile: $userId');
             Navigator.pushNamed(
               context,
               AppRoutes.friendProfile,
               arguments: {'friendId': userId, 'popToHomeOnBack': true},
             );
           } else {
-            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing userId for ${notification.type}');
             showErrorToast('dialogs.userNoLongerAvailable');
             // Fallback to friends screen
             Navigator.pushNamed(
@@ -791,7 +639,6 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         
         // Friend request rejected - navigate to friends screen (Requests tab)
         case NotificationType.friendRequestRejected:
-          debugPrint('🔔 [Notifications] ⏰ [$timestamp]    → Navigating to friends screen (Requests tab)');
           Navigator.pushNamed(
             context,
             AppRoutes.friends,
@@ -810,14 +657,12 @@ class NotificationsCubit extends Cubit<NotificationsState> {
           final eventId = extractEventId();
           
           if (eventId != null && eventId.isNotEmpty) {
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    → Navigating to event details: $eventId');
             Navigator.pushNamed(
               context,
               AppRoutes.eventDetails,
               arguments: {'eventId': eventId},
             );
           } else {
-            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing eventId for ${notification.type}');
             showErrorToast('dialogs.eventNoLongerAvailable');
           }
           break;
@@ -832,27 +677,23 @@ class NotificationsCubit extends Cubit<NotificationsState> {
           final itemId = extractItemId();
           final wishlistId = extractWishlistId();
           
-          debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Item notification - itemId: $itemId, wishlistId: $wishlistId');
           
           // IMPORTANT: Capture navigator BEFORE any async operations
           // The context may become invalid after the dropdown is closed
           final navigator = Navigator.of(context);
           
           if (itemId != null && itemId.isNotEmpty && wishlistId != null && wishlistId.isNotEmpty) {
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    → Navigating to item details: $itemId');
             try {
               // Fetch item details and navigate
               final wishlistRepository = WishlistRepository();
               final itemData = await wishlistRepository.getItemById(itemId);
               final item = WishlistItem.fromJson(itemData);
               
-              debugPrint('🔔 [Notifications] ⏰ [$timestamp]    ✅ Item fetched, navigating...');
               navigator.pushNamed(
                 AppRoutes.itemDetails,
                 arguments: item,
               );
             } catch (e) {
-              debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Failed to fetch item: $e');
               // Fallback to wishlist items screen
               navigator.pushNamed(
                 AppRoutes.wishlistItems,
@@ -864,7 +705,6 @@ class NotificationsCubit extends Cubit<NotificationsState> {
             }
           } else if (wishlistId != null && wishlistId.isNotEmpty) {
             // Navigate to wishlist if only wishlistId is available
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    → Navigating to wishlist items: $wishlistId');
             navigator.pushNamed(
               AppRoutes.wishlistItems,
               arguments: {
@@ -873,7 +713,6 @@ class NotificationsCubit extends Cubit<NotificationsState> {
               },
             );
           } else {
-            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing required IDs for item notification');
             showErrorToast('dialogs.itemNoLongerAvailable');
           }
           break;
@@ -883,7 +722,6 @@ class NotificationsCubit extends Cubit<NotificationsState> {
           final wishlistId = extractWishlistId();
           
           if (wishlistId != null && wishlistId.isNotEmpty) {
-            debugPrint('🔔 [Notifications] ⏰ [$timestamp]    → Navigating to shared wishlist: $wishlistId');
             Navigator.pushNamed(
               context,
               AppRoutes.wishlistItems,
@@ -893,14 +731,12 @@ class NotificationsCubit extends Cubit<NotificationsState> {
               },
             );
           } else {
-            debugPrint('⚠️ [Notifications] ⏰ [$timestamp]    Missing wishlistId for wishlist shared notification');
             showErrorToast('dialogs.wishlistNoLongerAvailable');
           }
           break;
         
         // Default - show message as snackbar
         default:
-          debugPrint('🔔 [Notifications] ⏰ [$timestamp]    Unknown type, showing message');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(notification.message),
@@ -911,10 +747,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
           break;
       }
       
-      debugPrint('🔔 [Notifications] ⏰ [$timestamp] ========== NAVIGATION COMPLETE ==========');
     } catch (e, stackTrace) {
-      debugPrint('❌ NotificationsCubit: Error handling notification tap: $e');
-      debugPrint('❌ Stack trace: $stackTrace');
       showErrorToast('dialogs.errorOpeningNotification');
     }
   }
@@ -928,18 +761,13 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     Map<String, dynamic> data,
     BuildContext context,
   ) async {
-    final timestamp = DateTime.now().toIso8601String();
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp] ========== REMOTE NOTIFICATION TAP ==========');
-    debugPrint('🔔 [Notifications] ⏰ [$timestamp] Raw FCM data: $data');
 
     try {
       AppNotification notification;
       try {
         // Try direct parsing first if backend already sends a full notification object.
         notification = AppNotification.fromJson(data);
-        debugPrint('🔔 [Notifications] ⏰ [$timestamp] Parsed AppNotification directly from data.');
       } catch (e) {
-        debugPrint('⚠️ [Notifications] ⏰ [$timestamp] Failed direct parse, building fallback AppNotification: $e');
 
         final id = data['_id'] ??
             data['id'] ??
@@ -987,9 +815,6 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
       await handleNotificationTap(notification, context);
     } catch (e, stackTrace) {
-      final errorTimestamp = DateTime.now().toIso8601String();
-      debugPrint('❌ [Notifications] ⏰ [$errorTimestamp] Error in handleRemoteNotificationTap: $e');
-      debugPrint('❌ [Notifications] ⏰ [$errorTimestamp] Stack trace: $stackTrace');
     }
   }
 
@@ -1025,11 +850,9 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       // Sync unreadCount from backend (lastBadgeSeenAt logic)
       unawaited(getUnreadCount());
     } on ApiException catch (e) {
-      debugPrint('❌ NotificationsCubit: Error deleting notification: ${e.message}');
       // Reload to sync with backend
       loadNotifications();
     } catch (e) {
-      debugPrint('❌ NotificationsCubit: Error deleting notification: $e');
       loadNotifications();
     }
   }
@@ -1105,10 +928,8 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         await _apiService.delete('/notifications/$id');
       }
     } on ApiException catch (e) {
-      debugPrint('❌ NotificationsCubit: Error resolving friend request notification: ${e.message}');
       loadNotifications();
     } catch (e) {
-      debugPrint('❌ NotificationsCubit: Error resolving friend request notification: $e');
       loadNotifications();
     }
   }
@@ -1132,7 +953,6 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         isNewNotification: false,
       ));
       
-      debugPrint('🔔 NotificationsCubit: Optimistically removed notification: $notificationId');
     }
   }
 
@@ -1156,14 +976,12 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         isNewNotification: false,
       ));
       
-      debugPrint('🔔 NotificationsCubit: Updated notification: ${updatedNotification.id}');
     }
   }
 
   /// Reset notifications state to initial (used during logout)
   /// This clears all notifications and resets the cubit to a clean state
   void resetState() {
-    debugPrint('🔔 [NotificationsCubit] Resetting state to initial');
     emit(NotificationsInitial());
   }
 

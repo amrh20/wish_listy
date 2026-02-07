@@ -74,16 +74,13 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         (updatedEventId) {
           // Only refresh if this is the current event
           if (updatedEventId == widget.eventId && mounted) {
-            debugPrint('🔄 EventDetailsScreen: Received update signal for event: $updatedEventId');
             _refreshEventDetails();
           }
         },
         onError: (error) {
-          debugPrint('⚠️ EventDetailsScreen: Error in event update stream: $error');
         },
       );
     } catch (e) {
-      debugPrint('⚠️ EventDetailsScreen: Could not setup event update listener: $e');
     }
   }
 

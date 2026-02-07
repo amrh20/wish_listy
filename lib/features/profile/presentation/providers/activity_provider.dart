@@ -98,8 +98,6 @@ class ActivityProvider extends ChangeNotifier {
               }
               return null;
             } catch (e) {
-              debugPrint('❌ ActivityProvider: Error parsing activity: $e');
-              debugPrint('   Item data: $item');
               return null;
             }
           })
@@ -130,8 +128,6 @@ class ActivityProvider extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
     } catch (e, stackTrace) {
-      debugPrint('❌ ActivityProvider: Error loading activities: $e');
-      debugPrint('   Stack trace: $stackTrace');
       _isLoading = false;
       _errorMessage = 'Failed to load activities. Please try again.';
       notifyListeners();
@@ -212,7 +208,6 @@ class ActivityProvider extends ChangeNotifier {
               }
               return null;
             } catch (e) {
-              debugPrint('❌ ActivityProvider: Error parsing activity: $e');
               return null;
             }
           })
@@ -237,8 +232,6 @@ class ActivityProvider extends ChangeNotifier {
       _isLoadingMore = false;
       notifyListeners();
     } catch (e, stackTrace) {
-      debugPrint('❌ ActivityProvider: Error loading more activities: $e');
-      debugPrint('   Stack trace: $stackTrace');
       _currentPage--; // Revert page on error
       _isLoadingMore = false;
       notifyListeners();

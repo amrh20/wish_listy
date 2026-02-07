@@ -49,7 +49,6 @@ class HomeController extends ChangeNotifier {
     
     // Don't make API calls for guest users
     if (_authRepository.isGuest) {
-      debugPrint('⚠️ HomeController: Skipping API call for guest user');
       _isFetching = false;
       isLoading = false;
       notifyListeners();
@@ -67,7 +66,6 @@ class HomeController extends ChangeNotifier {
       errorKind = null;
       notifyListeners();
     } else {
-      debugPrint('🔄 HomeController: Background refresh (no skeleton)');
     }
 
     try {
@@ -98,8 +96,6 @@ class HomeController extends ChangeNotifier {
         _isFetching = false;
         notifyListeners();
       } catch (parseError) {
-        debugPrint('❌ HomeController: Error parsing dashboard data: $parseError');
-        debugPrint('   Response data: $response');
         // Set empty dashboard model on error to prevent null errors
         dashboardData.value = DashboardModel(
           user: DashboardUser(firstName: 'User'),
@@ -121,7 +117,6 @@ class HomeController extends ChangeNotifier {
       _isFetching = false;
       notifyListeners();
     } catch (e) {
-      debugPrint('❌ HomeController: Error loading dashboard data: $e');
       isLoading = false;
       errorMessage = 'Failed to load dashboard data. Please try again.';
       errorKind = ApiErrorKind.unknown;

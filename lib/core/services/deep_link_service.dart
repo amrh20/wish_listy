@@ -50,14 +50,11 @@ class DeepLinkService {
 
       // Debug log (Cold Start)
       // ignore: avoid_print
-      print('🧊 INITIAL LINK: $initialUri');
-      debugPrint('🔗 DeepLinkService: Initial link received: $initialUri');
 
       // Store pending route for cold start to avoid being overridden by SplashScreen pushReplacement.
       _pendingRoute = _routeSettingsFromUri(initialUri);
       _pendingUriString = initialUri.toString();
     } catch (e) {
-      debugPrint('❌ DeepLinkService: Error getting initial link: $e');
     }
   }
 
@@ -67,10 +64,7 @@ class DeepLinkService {
       (uri) {
         // Debug log (Warm Start / Foreground / Background)
         // ignore: avoid_print
-        print('🔥 STREAM RECEIVED: $uri');
-        debugPrint('🔗 DeepLinkService: Stream link received: $uri');
         if (_shouldIgnoreUri(uri)) {
-          debugPrint('🟡 DeepLinkService: Ignoring duplicate stream link: $uri');
           return;
         }
         // Safety: give the UI a tiny moment to resume/rebuild before navigating.
@@ -79,7 +73,6 @@ class DeepLinkService {
         });
       },
       onError: (Object err) {
-        debugPrint('❌ DeepLinkService: Error in link stream: $err');
       },
     );
   }
@@ -91,11 +84,9 @@ class DeepLinkService {
 
     final navigator = _navigatorKey?.currentState;
     if (navigator == null) {
-      debugPrint('⚠️ DeepLinkService: Cannot navigate pending link - navigator not ready');
       return;
     }
 
-    debugPrint('🔗 DeepLinkService: Navigating pending deep link to ${pending.name}');
     final pendingUriString = _pendingUriString;
     _pendingRoute = null; // consume
     _pendingUriString = null;
@@ -112,13 +103,11 @@ class DeepLinkService {
   /// Unified navigation logic for warm start (stream) and any manual calls.
   void handleDeepLink(Uri uri) {
     if (!_isSupportedUri(uri)) {
-      debugPrint('⚠️ DeepLinkService: Unsupported URI: $uri');
       return;
     }
 
     final navigator = _navigatorKey?.currentState;
     if (navigator == null) {
-      debugPrint('⚠️ DeepLinkService: Navigator not ready, storing pending route: $uri');
       _pendingRoute = _routeSettingsFromUri(uri);
       _pendingUriString = uri.toString();
       return;
@@ -176,19 +165,16 @@ class DeepLinkService {
       final token = uri.queryParameters['token'];
       if (token != null && token.isNotEmpty) {
         _markHandled(uri.toString());
-        debugPrint('🔗 DeepLinkService: Navigating to reset password with token');
         navigator.pushNamed(
           AppRoutes.resetPassword,
           arguments: {'token': token},
         );
         return;
       } else {
-        debugPrint('⚠️ DeepLinkService: Reset password link missing token parameter');
         return;
       }
     }
 
-    debugPrint('⚠️ DeepLinkService: Unknown deep link path: $path');
   }
 
   RouteSettings? _routeSettingsFromUri(Uri uri) {

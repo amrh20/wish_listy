@@ -65,7 +65,6 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
       if (authRepository.isAuthenticated && context.mounted) {
         FcmService().ensurePermissionRequested(context).catchError((error) {
           // Silently handle errors - permission dialog is best-effort
-          debugPrint('⚠️ HomeScreen: Failed to request notification permission: $error');
         });
       }
     });
@@ -556,7 +555,6 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {

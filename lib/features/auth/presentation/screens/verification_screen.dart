@@ -61,15 +61,6 @@ class _VerificationScreenState extends State<VerificationScreen>
     _currentVerificationId = widget.verificationId;
     
     // Debug: Log verificationId received from route arguments
-    debugPrint('═══════════════════════════════════════════════════════');
-    debugPrint('📱 [VerificationScreen] initState called');
-    debugPrint('📱 [VerificationScreen] Phone/Email: ${widget.username}');
-    debugPrint('📱 [VerificationScreen] Is Phone: ${widget.isPhone}');
-    debugPrint('📱 [VerificationScreen] VerificationId received: ${widget.verificationId}');
-    debugPrint('📱 [VerificationScreen] VerificationId length: ${widget.verificationId?.length ?? 0}');
-    debugPrint('📱 [VerificationScreen] UserId received: ${widget.userId}');
-    debugPrint('📱 [VerificationScreen] _currentVerificationId set to: $_currentVerificationId');
-    debugPrint('═══════════════════════════════════════════════════════');
     _shakeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -126,7 +117,6 @@ class _VerificationScreenState extends State<VerificationScreen>
         _startResendTimer();
       }
     } catch (e) {
-      debugPrint('⚠️ [Verification] Failed to load timer state: $e');
       // Start fresh if loading fails
       if (mounted) {
         _startResendTimer();
@@ -140,7 +130,6 @@ class _VerificationScreenState extends State<VerificationScreen>
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_timerKey, DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
-      debugPrint('⚠️ [Verification] Failed to save timer state: $e');
     }
   }
 
@@ -150,7 +139,6 @@ class _VerificationScreenState extends State<VerificationScreen>
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_timerKey);
     } catch (e) {
-      debugPrint('⚠️ [Verification] Failed to clear timer state: $e');
     }
   }
 
@@ -260,10 +248,8 @@ class _VerificationScreenState extends State<VerificationScreen>
         // Pass userId from registration/login response - MUST include userId in request body
         Map<String, dynamic>? verifySuccessResponse;
         if (widget.userId != null && widget.userId!.isNotEmpty) {
-          debugPrint('📤 [Verification] Calling verifySuccess with userId: ${widget.userId}');
           try {
             verifySuccessResponse = await authRepository.verifySuccess(widget.userId!);
-            debugPrint('✅ [Verification] verifySuccess completed successfully');
             // If verifySuccess returns a token, use it (takes precedence)
             if (verifySuccessResponse != null && verifySuccessResponse['token'] != null) {
               token = verifySuccessResponse['token'];
@@ -275,7 +261,6 @@ class _VerificationScreenState extends State<VerificationScreen>
           } on ApiException catch (e) {
             // If verifySuccess fails, show error but don't block navigation
             // The OTP verification already succeeded, so we proceed
-            debugPrint('⚠️ [Verification] verifySuccess failed: ${e.message}');
             if (mounted) {
               _showErrorSnackBar(
                 e.message.isNotEmpty 
@@ -286,18 +271,15 @@ class _VerificationScreenState extends State<VerificationScreen>
             }
             // Continue with navigation since OTP verification succeeded
           } catch (e) {
-            debugPrint('⚠️ [Verification] verifySuccess error: $e');
             // Continue with navigation since OTP verification succeeded
           }
         } else {
-          debugPrint('⚠️ [Verification] userId is missing, skipping verifySuccess call');
         }
 
         // Save token and update auth state BEFORE navigating
         // If Firebase verification succeeded but backend call failed, we still proceed
         // Token might come from verifySuccess call instead
         if (token != null && token.isNotEmpty) {
-          debugPrint('💾 [Verification] Saving token and updating auth state...');
           
           // Save token to SharedPreferences
           final prefs = await SharedPreferences.getInstance();
@@ -333,21 +315,16 @@ class _VerificationScreenState extends State<VerificationScreen>
             await _syncFcmTokenWithRetries(authRepository);
           }
           
-          debugPrint('✅ [Verification] Token saved and auth state updated');
         } else if (response['firebaseVerified'] == true) {
           // Firebase verification succeeded but no token yet
           // This can happen if backend call failed but Firebase verification succeeded
           // Try to get token from verifySuccess, or save userId at least
-          debugPrint('⚠️ [Verification] Firebase verified but no token yet');
-          debugPrint('⚠️ [Verification] This might be due to backend call failure');
-          debugPrint('⚠️ [Verification] Will try to proceed with userId: ${widget.userId}');
           
           // Save userId at least so user can login later
           if (widget.userId != null && widget.userId!.isNotEmpty) {
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('user_id', widget.userId!);
             await prefs.setString('user_email', widget.username);
-            debugPrint('✅ [Verification] Saved userId for later login');
           }
           
           // Show info message that verification succeeded but login may be needed
@@ -365,7 +342,6 @@ class _VerificationScreenState extends State<VerificationScreen>
           }
           return;
         } else {
-          debugPrint('❌ [Verification] No token and Firebase verification may have failed');
           // If no token and Firebase verification didn't succeed, show error
           if (mounted) {
             setState(() {
@@ -573,14 +549,8 @@ class _VerificationScreenState extends State<VerificationScreen>
     if (widget.isPhone) {
       // Phone verification - ensure verificationId is available
       if (_currentVerificationId == null) {
-        debugPrint('❌ [Verification] Verification ID is missing');
         throw Exception('Verification ID is missing. Please request a new code.');
       }
-
-      debugPrint('📱 [Verification] Verifying OTP with verificationId: $_currentVerificationId');
-      debugPrint('📱 [Verification] OTP Code: ${_otpController.text.trim()}');
-      debugPrint('📱 [Verification] Phone: ${widget.username}');
-      debugPrint('📱 [Verification] UserId: ${widget.userId}');
 
       return await authRepository.verifyPhoneOTP(
         verificationId: _currentVerificationId!, // Use latest verificationId
@@ -602,57 +572,37 @@ class _VerificationScreenState extends State<VerificationScreen>
   /// - Waits 2 seconds between retries if token is null.
   /// - Awaits updateFcmToken before navigation so the sync has a chance to complete.
   Future<void> _syncFcmTokenWithRetries(AuthRepository authRepository) async {
-    debugPrint('🔔 FCM: Starting token sync from VerificationScreen...');
 
     const int maxAttempts = 3;
     String? fcmToken;
 
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-      debugPrint('🔔 FCM: Starting token sync... (attempt $attempt/$maxAttempts)');
       try {
         fcmToken = await FcmService().getToken();
       } catch (e) {
-        debugPrint('⚠️ FCM: getToken() threw exception on attempt $attempt: $e');
         final errorStr = e.toString();
         if (errorStr.contains('FIS_AUTH_ERROR') || errorStr.contains('Firebase Installations Service')) {
-          debugPrint('❌ FCM: Firebase Installations Service error detected.');
-          debugPrint('   This usually means:');
-          debugPrint('   1. Google Play Services needs update');
-          debugPrint('   2. Firebase configuration issue (check google-services.json)');
-          debugPrint('   3. Network/Firebase server issue');
         }
         fcmToken = null;
       }
 
       if (fcmToken != null && fcmToken.isNotEmpty) {
-        debugPrint('🔔 FCM: Token acquired (length=${fcmToken.length}): $fcmToken');
         break;
       }
 
-      debugPrint('⚠️ FCM: getToken() returned null/empty on attempt $attempt');
       if (attempt < maxAttempts) {
-        debugPrint('⏱️ FCM: Waiting 2 seconds before retrying getToken()...');
         await Future.delayed(const Duration(seconds: 2));
       }
     }
 
     if (fcmToken == null || fcmToken.isEmpty) {
-      debugPrint('❌ FCM: Unable to obtain FCM token after $maxAttempts attempts. Skipping sync.');
-      debugPrint('❌ FCM: No API call will be made to /auth/fcm-token because token is null.');
       return;
     }
 
     try {
-      debugPrint('📤 FCM: Calling updateFcmToken on backend from VerificationScreen...');
       await authRepository.updateFcmToken(fcmToken);
-      debugPrint('✅ FCM: Token synced successfully from VerificationScreen');
     } on ApiException catch (e) {
-      debugPrint(
-        '❌ FCM: updateFcmToken failed from VerificationScreen. '
-        'status=${e.statusCode}, kind=${e.kind}, message=${e.message}, data=${e.data}',
-      );
     } catch (e) {
-      debugPrint('❌ FCM: Unexpected error during token sync from VerificationScreen: $e');
     }
   }
 

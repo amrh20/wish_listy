@@ -1,5 +1,4 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
 
 /// Service for managing notification permission preferences.
 ///
@@ -24,9 +23,7 @@ class NotificationPreferenceService {
       final prefs = await SharedPreferences.getInstance();
       final now = DateTime.now().millisecondsSinceEpoch;
       await prefs.setInt(_lastPermissionRequestTimeKey, now);
-      debugPrint('🔔 NotificationPreferenceService: Saved last permission request time');
     } catch (e) {
-      debugPrint('⚠️ NotificationPreferenceService: Failed to save timestamp: $e');
     }
   }
 
@@ -44,7 +41,6 @@ class NotificationPreferenceService {
 
       // First time - no timestamp exists
       if (lastRequestTimestamp == null) {
-        debugPrint('🔔 NotificationPreferenceService: No previous request found - showing dialog');
         return true;
       }
 
@@ -54,19 +50,12 @@ class NotificationPreferenceService {
       final timeDifference = now.difference(lastRequestTime);
 
       if (timeDifference >= _cooldownPeriod) {
-        debugPrint(
-          '🔔 NotificationPreferenceService: Cooldown period passed (${timeDifference.inDays} days) - showing dialog',
-        );
         return true;
       } else {
         final daysRemaining = (_cooldownPeriod - timeDifference).inDays;
-        debugPrint(
-          '🔔 NotificationPreferenceService: Cooldown active - ${daysRemaining} days remaining',
-        );
         return false;
       }
     } catch (e) {
-      debugPrint('⚠️ NotificationPreferenceService: Error checking cooldown: $e');
       // On error, allow showing the dialog (fail open)
       return true;
     }
@@ -77,9 +66,7 @@ class NotificationPreferenceService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_lastPermissionRequestTimeKey);
-      debugPrint('🔔 NotificationPreferenceService: Cleared last permission request time');
     } catch (e) {
-      debugPrint('⚠️ NotificationPreferenceService: Failed to clear timestamp: $e');
     }
   }
 }

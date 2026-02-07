@@ -216,7 +216,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
   Future<void> _loadWishlistDetails() async {
     final localization = Provider.of<LocalizationService>(context, listen: false);
 
-
     // Validate wishlistId
     if (widget.wishlistId.isEmpty) {
 
@@ -297,7 +296,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         );
       }
 
-
       // Validate response
       if (wishlistData.isEmpty) {
 
@@ -336,7 +334,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
               : 'Invalid response format from API',
         );
       }
-
 
       // Parse items from response
       final itemsList = data['items'] as List<dynamic>? ?? [];
@@ -1184,7 +1181,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       }
     }
   }
-
 
   void _editItem(WishlistItem item) {
     // Navigate to edit item screen

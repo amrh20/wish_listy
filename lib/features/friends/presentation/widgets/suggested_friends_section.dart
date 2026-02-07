@@ -92,7 +92,6 @@ class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> with 
       await _friendsRepository.dismissSuggestion(targetUserId: userId);
     } catch (e) {
       // Silent failure - UI already updated optimistically
-      debugPrint('Failed to dismiss suggestion: $e');
     }
   }
 

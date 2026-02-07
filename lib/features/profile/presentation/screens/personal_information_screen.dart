@@ -47,31 +47,25 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
 
   void _populateFields(Map<String, dynamic> data) {
     // Debug: Print received data
-    print('=== Populating fields with data: $data ===');
     
     // Handle name field - API returns 'fullName', but also support 'name' for backward compatibility
     final name = data['fullName'] ?? data['name'] ?? '';
     _nameController.text = name;
-    print('Name set to: "$name"');
     
     // Handle email
     final email = data['email'] ?? data['emailAddress'] ?? '';
     _emailController.text = email;
-    print('Email set to: "$email"');
     
     // Handle bio
     final bio = data['bio'] ?? data['biography'] ?? '';
     _bioController.text = bio;
-    print('Bio set to: "$bio"');
 
     // Parse gender - API returns 'male' or 'female'
     if (data['gender'] != null) {
       final gender = data['gender'].toString().toLowerCase();
       _selectedGender = (gender == 'male' || gender == 'female') ? gender : null;
-      print('Gender set to: "$_selectedGender"');
     } else {
       _selectedGender = null;
-      print('Gender is null');
     }
 
     // Parse date of birth - API returns 'birth_date', but also support other formats
@@ -81,17 +75,14 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
         try {
           _selectedDateOfBirth = DateTime.parse(dateStr);
           _dateOfBirthController.text = DateFormat('dd/MM/yyyy').format(_selectedDateOfBirth!);
-          print('Birth date set to: ${_dateOfBirthController.text}');
         } catch (e) {
           // Invalid date format
           _selectedDateOfBirth = null;
           _dateOfBirthController.text = '';
-          print('Error parsing birth_date: $e');
         }
       } else if (dateStr is DateTime) {
         _selectedDateOfBirth = dateStr;
         _dateOfBirthController.text = DateFormat('dd/MM/yyyy').format(_selectedDateOfBirth!);
-        print('Birth date set to: ${_dateOfBirthController.text}');
       }
     } else if (data['dateOfBirth'] != null || data['birthDate'] != null) {
       // Fallback to other field names for backward compatibility
@@ -100,21 +91,17 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
         try {
           _selectedDateOfBirth = DateTime.parse(dateStr);
           _dateOfBirthController.text = DateFormat('dd/MM/yyyy').format(_selectedDateOfBirth!);
-          print('Birth date set to: ${_dateOfBirthController.text}');
         } catch (e) {
           _selectedDateOfBirth = null;
           _dateOfBirthController.text = '';
-          print('Error parsing dateOfBirth: $e');
         }
       } else if (dateStr is DateTime) {
         _selectedDateOfBirth = dateStr;
         _dateOfBirthController.text = DateFormat('dd/MM/yyyy').format(_selectedDateOfBirth!);
-        print('Birth date set to: ${_dateOfBirthController.text}');
       }
     } else {
       _selectedDateOfBirth = null;
       _dateOfBirthController.text = '';
-      print('Birth date is null');
     }
 
     // Parse country - API returns 'country_code', but also support 'countryCode' for backward compatibility
@@ -123,12 +110,10 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
       try {
         _selectedCountry = Country.parse(countryCode.toString().toUpperCase());
         _countryController.text = _selectedCountry!.name;
-        print('Country set to: ${_countryController.text} (code: $countryCode)');
       } catch (e) {
         // Invalid country code
         _selectedCountry = null;
         _countryController.text = '';
-        print('Error parsing country_code: $e');
       }
     } else if (data['countryCode'] != null || data['country'] != null) {
       // Fallback to other field names for backward compatibility
@@ -136,19 +121,15 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
       try {
         _selectedCountry = Country.parse(countryCode.toString().toUpperCase());
         _countryController.text = _selectedCountry!.name;
-        print('Country set to: ${_countryController.text} (code: $countryCode)');
       } catch (e) {
         _selectedCountry = null;
         _countryController.text = '';
-        print('Error parsing countryCode: $e');
       }
     } else {
       _selectedCountry = null;
       _countryController.text = '';
-      print('Country is null');
     }
     
-    print('=== Finished populating fields ===');
   }
 
   Future<void> _loadProfileData() async {
@@ -160,10 +141,8 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
       final authRepository = Provider.of<AuthRepository>(context, listen: false);
       final response = await authRepository.getCurrentUserProfile();
 
-      print('=== API Response received: $response ===');
       
       final data = response['data'] ?? response;
-      print('=== Extracted data: $data ===');
       
       if (mounted) {
         setState(() {
@@ -803,20 +782,15 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
       // Add date of birth if selected - API expects 'birth_date'
       if (_selectedDateOfBirth != null) {
         profileData['birth_date'] = _selectedDateOfBirth!.toIso8601String();
-        print('Saving birth_date: ${profileData['birth_date']}');
       } else {
-        print('No birth_date to save - _selectedDateOfBirth is null');
       }
 
       // Add country code if selected - API expects 'country_code'
       if (_selectedCountry != null) {
         profileData['country_code'] = _selectedCountry!.countryCode;
-        print('Saving country_code: ${profileData['country_code']}');
       } else {
-        print('No country_code to save - _selectedCountry is null');
       }
       
-      print('=== Saving profile data: $profileData ===');
 
       // Call API to update profile
       await authRepository.updateProfile(profileData);

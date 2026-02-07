@@ -1454,7 +1454,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     );
   }
 
-
   Future<void> _refreshNotifications() async {
     await context.read<NotificationsCubit>().loadNotifications();
   }

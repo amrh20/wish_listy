@@ -304,10 +304,6 @@ class AppUtils {
   }
 
   static void debugLogError(String error, [StackTrace? stackTrace]) {
-
-    if (stackTrace != null) {
-
-    }
   }
 
   // Preference Utilities

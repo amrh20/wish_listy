@@ -64,36 +64,14 @@ class AuthRepository extends ChangeNotifier {
         if (token != null) {
           _apiService.setAuthToken(token);
           // Connect to Socket.IO in background so startup is not blocked by slow network
-          final timestamp = DateTime.now().toIso8601String();
-          debugPrint(
-            '🔌 [Auth] ⏰ [$timestamp] Starting SocketService.connect() in background (non-blocking)',
-          );
-          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User ID: $_userId');
-          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Email: $_userEmail');
           SocketService()
               .connect()
-              .timeout(
-                const Duration(seconds: 5),
-                onTimeout: () {
-                  debugPrint('⚠️ Socket connection timeout - continuing anyway');
-                },
-              )
-              .then((_) => debugPrint('✅ SocketService().connect() completed'))
-              .catchError((e) =>
-                  debugPrint('❌ ERROR calling SocketService().connect(): $e'));
+              .timeout(const Duration(seconds: 5), onTimeout: () {})
+              .catchError((_) {});
 
           // Sync FCM token in background so startup is not blocked
           // This ensures token is sent to backend when user restarts app while logged in
-          _syncFcmTokenWithRetries().then((bool ok) {
-            if (ok) {
-              debugPrint('✅ FCM token synced from initialize()');
-            } else {
-              debugPrint('⚠️ FCM token not synced from initialize() (no token or API failed)');
-            }
-          }).catchError((e) =>
-              debugPrint('⚠️ FCM token sync failed in initialize(): $e'));
-        } else {
-          debugPrint('⚠️ No auth token found in initialize()');
+          _syncFcmTokenWithRetries().catchError((_) {});
         }
       } else {
         _userState = UserState.guest;
@@ -215,7 +193,6 @@ class AuthRepository extends ChangeNotifier {
 
       // Check if user exists but is unverified
       if (response['requiresVerification'] == true) {
-        debugPrint('⚠️ [Auth] User exists but is not verified');
         // Throw special exception with requiresVerification flag
         throw ApiException(
           'Account not verified',
@@ -261,20 +238,9 @@ class AuthRepository extends ChangeNotifier {
           // CRITICAL: Set token in API service BEFORE any subsequent API calls
           // This ensures all API requests (including updateFcmToken) use the new token
           _apiService.setAuthToken(token);
-          debugPrint('✅ [Auth] JWT token set in API service headers');
           
           // Authenticate Socket.IO for real-time notifications (Option B: emit auth event)
           // Use forceReconnect=true to ensure clean connection after logout/login
-          final timestamp = DateTime.now().toIso8601String();
-          debugPrint(
-            '🔌 [Auth] ⏰ [$timestamp] Calling SocketService.authenticateSocket() from loginUser()',
-          );
-          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User ID: $_userId');
-          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Email: $_userEmail');
-          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Name: $_userName');
-          debugPrint(
-            '🔌 [Auth] ⏰ [$timestamp]    Token length: ${token.length}',
-          );
           await SocketService().authenticateSocket(token);
 
           // Sync FCM token with retry logic AFTER JWT token is set and session is initialized
@@ -290,8 +256,6 @@ class AuthRepository extends ChangeNotifier {
             response['message'] ??
             response['error'] ??
             'Login failed. Please check your credentials.';
-
-        debugPrint('❌ Login failed: $errorMessage');
 
         // Throw ApiException with the actual error message from backend
         throw ApiException(
@@ -357,16 +321,6 @@ class AuthRepository extends ChangeNotifier {
           // Set token in API service for future requests
           _apiService.setAuthToken(token);
           // Authenticate Socket.IO for real-time notifications (Option B: emit auth event)
-          final timestamp = DateTime.now().toIso8601String();
-          debugPrint(
-            '🔌 [Auth] ⏰ [$timestamp] Calling SocketService.authenticateSocket() from registerUser()',
-          );
-          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User ID: $_userId');
-          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Email: $_userEmail');
-          debugPrint('🔌 [Auth] ⏰ [$timestamp]    User Name: $_userName');
-          debugPrint(
-            '🔌 [Auth] ⏰ [$timestamp]    Token length: ${token.length}',
-          );
           await SocketService().authenticateSocket(token);
         }
 
@@ -384,32 +338,25 @@ class AuthRepository extends ChangeNotifier {
 
   // Logout using real API
   Future<void> logout() async {
-    debugPrint('🔒 [Auth] Starting logout process');
     
     try {
       // Disconnect from Socket.IO first
       SocketService().disconnect();
-      debugPrint('✅ [Auth] Socket.IO disconnected');
     } catch (e) {
-      debugPrint('⚠️ [Auth] Error disconnecting Socket.IO: $e');
     }
 
     // Best-effort: tell backend to stop sending push notifications
     // for this device token. Do this BEFORE logout API call.
     try {
       await deleteFcmToken();
-      debugPrint('✅ [Auth] FCM token deleted');
     } catch (e) {
-      debugPrint('⚠️ [Auth] Failed to delete FCM token on logout: $e');
       // Continue with logout even if FCM deletion fails
     }
 
     // Call API to logout (best-effort, don't block on failure)
     try {
       await _apiService.post('/auth/logout');
-      debugPrint('✅ [Auth] Logout API call successful');
     } catch (e) {
-      debugPrint('⚠️ [Auth] Logout API call failed (continuing with local cleanup): $e');
       // Even if API logout fails, clear local data
     }
 
@@ -427,14 +374,8 @@ class AuthRepository extends ChangeNotifier {
     _userId = null;
     _userEmail = null;
     _userName = null;
-    debugPrint('✅ [Auth] Local state cleared');
 
     // Log that we're keeping biometric data
-    if (currentEmail != null && currentEmail.isNotEmpty) {
-      debugPrint('🔐 [Auth] Logout: Keeping biometric data for $currentEmail');
-      debugPrint('   ✅ User can log back in using biometrics without re-enabling');
-    }
-
     // Clear local storage
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -443,9 +384,7 @@ class AuthRepository extends ChangeNotifier {
       await prefs.remove('user_email');
       await prefs.remove('user_name');
       await prefs.remove('auth_token');
-      debugPrint('✅ [Auth] SharedPreferences cleared');
     } catch (e) {
-      debugPrint('⚠️ [Auth] Error clearing SharedPreferences: $e');
     }
 
     // CRITICAL: Clear API service token and ensure headers are completely removed
@@ -454,9 +393,7 @@ class AuthRepository extends ChangeNotifier {
       _apiService.clearAuthToken();
       // Double-check: explicitly remove Authorization header to ensure complete cleanup
       _apiService.dio.options.headers.remove('Authorization');
-      debugPrint('✅ [Auth] API service token cleared (headers verified)');
     } catch (e) {
-      debugPrint('⚠️ [Auth] Error clearing API token: $e');
     }
 
     notifyListeners();
@@ -466,13 +403,11 @@ class AuthRepository extends ChangeNotifier {
   /// This method clears all local state without making any backend requests
   /// to avoid infinite loops when handling unauthorized errors.
   Future<void> logoutSilently() async {
-    debugPrint('🔒 [Auth] Performing silent logout (no API calls)');
     
     // Disconnect from Socket.IO
     try {
       SocketService().disconnect();
     } catch (e) {
-      debugPrint('⚠️ [Auth] Error disconnecting socket during silent logout: $e');
     }
 
     // Clear local state
@@ -489,9 +424,7 @@ class AuthRepository extends ChangeNotifier {
       await prefs.remove('user_email');
       await prefs.remove('user_name');
       await prefs.remove('auth_token');
-      debugPrint('✅ [Auth] Cleared SharedPreferences during silent logout');
     } catch (e) {
-      debugPrint('⚠️ [Auth] Error clearing SharedPreferences: $e');
     }
 
     // Clear API service token
@@ -499,13 +432,10 @@ class AuthRepository extends ChangeNotifier {
       _apiService.clearAuthToken();
       // Double-check: explicitly remove Authorization header
       _apiService.dio.options.headers.remove('Authorization');
-      debugPrint('✅ [Auth] Cleared API service token');
     } catch (e) {
-      debugPrint('⚠️ [Auth] Error clearing API token: $e');
     }
 
     notifyListeners();
-    debugPrint('✅ [Auth] Silent logout completed');
   }
 
   /// Call after login (email/password or biometric) to sync FCM token to backend.
@@ -524,92 +454,56 @@ class AuthRepository extends ChangeNotifier {
   /// - Returns true only when token was obtained AND sent to backend successfully.
   Future<bool> _syncFcmTokenWithRetries() async {
     // Hard log: ALWAYS printed, no matter what (for debugging PUT /auth/fcm-token).
-    print('🚨 [FCM_CRITICAL] syncFcmToken started...');
 
     try {
       // Hard log: single direct getToken() to log token state NO MATTER WHAT.
       String? token;
       try {
         token = await FirebaseMessaging.instance.getToken();
-        print('🚨 [FCM_CRITICAL] Token retrieved: ${token ?? "null_token"}');
       } catch (e) {
-        print('🚨 [FCM_CRITICAL] Exception caught (getToken): $e');
         token = null;
       }
 
       if (token != null && token.isNotEmpty) {
         final url = '${ApiService.baseUrl}/auth/fcm-token';
-        print('🚨 [FCM_CRITICAL] Sending token to: $url');
       }
     } catch (e) {
-      print('🚨 [FCM_CRITICAL] Exception caught: $e');
     }
-
-    debugPrint('═══════════════════════════════════════════════════════');
-    debugPrint('🔔 FCM: Starting token sync from AuthRepository...');
-    debugPrint('🔔 FCM: Current auth state: $_userState');
-    debugPrint('🔔 FCM: isAuthenticated: $isAuthenticated');
-    debugPrint('🔔 FCM: User ID: $_userId');
-    debugPrint('🔔 FCM: User Email: $_userEmail');
-    debugPrint('═══════════════════════════════════════════════════════');
 
     const int maxAttempts = 3;
     String? fcmToken;
 
     for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-      debugPrint('🔔 FCM: Starting token sync... (attempt $attempt/$maxAttempts)');
       try {
         fcmToken = await FcmService().getToken();
       } catch (e) {
-        debugPrint('⚠️ FCM: getToken() threw exception on attempt $attempt: $e');
         // Log specific error types for debugging
         final errorStr = e.toString();
         if (errorStr.contains('FIS_AUTH_ERROR') || errorStr.contains('Firebase Installations Service')) {
-          debugPrint('❌ FCM: Firebase Installations Service error detected.');
-          debugPrint('   This usually means:');
-          debugPrint('   1. Google Play Services needs update');
-          debugPrint('   2. Firebase configuration issue (check google-services.json)');
-          debugPrint('   3. Network/Firebase server issue');
         }
         fcmToken = null;
       }
 
       if (fcmToken != null && fcmToken.isNotEmpty) {
-        debugPrint('🔔 FCM: Token acquired (length=${fcmToken.length}): $fcmToken');
         break;
       }
 
-      debugPrint('⚠️ FCM: getToken() returned null/empty on attempt $attempt');
       if (attempt < maxAttempts) {
-        debugPrint('⏱️ FCM: Waiting 2 seconds before retrying getToken()...');
         await Future.delayed(const Duration(seconds: 2));
       }
     }
 
     if (fcmToken == null || fcmToken.isEmpty) {
-      debugPrint('❌ FCM: Unable to obtain FCM token after $maxAttempts attempts. Skipping sync.');
-      debugPrint('❌ FCM: No API call will be made to /auth/fcm-token because token is null.');
-      debugPrint('❌ FCM: User will not receive push notifications until token is obtained.');
-      debugPrint('❌ FCM: Common causes: FIS_AUTH_ERROR, Firebase config issue, or Google Play Services.');
       return false;
     }
 
     // Repository should already be authenticated and JWT stored before this is called.
     try {
-      debugPrint('📤 FCM: Calling updateFcmToken on backend from AuthRepository...');
-      print('🚨 [FCM_CRITICAL] Sending token to: ${ApiService.baseUrl}/auth/fcm-token');
       await updateFcmToken(fcmToken);
-      debugPrint('✅ FCM: Token synced successfully via AuthRepository');
       return true;
     } on ApiException catch (e) {
-      debugPrint(
-        '❌ FCM: updateFcmToken failed from AuthRepository. '
-        'status=${e.statusCode}, kind=${e.kind}, message=${e.message}, data=${e.data}',
-      );
       return false;
     } catch (e) {
-      debugPrint('❌ FCM: Unexpected error during token sync from AuthRepository: $e');
-      print('🚨 [FCM_CRITICAL] Exception caught (updateFcmToken): $e');
       return false;
     }
   }
@@ -619,37 +513,19 @@ class AuthRepository extends ChangeNotifier {
   /// Endpoint: PUT /api/auth/fcm-token
   /// Body: { "token": "..." }
   Future<void> updateFcmToken(String token) async {
-    debugPrint('═══════════════════════════════════════════════════════');
-    debugPrint('📤 [Auth] updateFcmToken() called');
-    debugPrint('📤 [Auth] Current auth state: $_userState');
-    debugPrint('📤 [Auth] isAuthenticated: $isAuthenticated');
-    debugPrint('📤 [Auth] User ID: $_userId');
-    debugPrint('📤 [Auth] Token to send: ${token.substring(0, min(20, token.length))}...');
-    debugPrint('═══════════════════════════════════════════════════════');
     
     if (!isAuthenticated) {
-      debugPrint('❌ [Auth] updateFcmToken BLOCKED - user is NOT authenticated!');
-      debugPrint('❌ [Auth] Current state: $_userState');
-      debugPrint('⚠️ [Auth] Token will be sent automatically after login');
       return;
     }
 
     try {
-      debugPrint('📤 [Auth] Sending FCM token to backend via PUT /auth/fcm-token');
       await _apiService.put(
         '/auth/fcm-token',
         data: {'token': token},
       );
-      debugPrint('✅ [Auth] FCM token updated successfully on backend');
-      debugPrint('✅ [Auth] Backend now has the latest FCM token for push notifications');
     } on ApiException catch (e) {
-      debugPrint('❌ [Auth] Failed to update FCM token on backend');
-      debugPrint('❌ [Auth] Status code: ${e.statusCode}');
-      debugPrint('❌ [Auth] Error message: ${e.message}');
-      debugPrint('❌ [Auth] Token: ${token.substring(0, min(20, token.length))}...');
       rethrow;
     } catch (e) {
-      debugPrint('❌ [Auth] Unexpected error updating FCM token: $e');
       rethrow;
     }
   }
@@ -666,12 +542,9 @@ class AuthRepository extends ChangeNotifier {
 
     try {
       await _apiService.delete('/auth/fcm-token');
-      debugPrint('✅ [Auth] FCM token deleted on backend');
     } on ApiException catch (e) {
-      debugPrint('⚠️ [Auth] Failed to delete FCM token: ${e.message}');
       rethrow;
     } catch (e) {
-      debugPrint('⚠️ [Auth] Unexpected error deleting FCM token: $e');
       rethrow;
     }
   }
@@ -685,13 +558,11 @@ class AuthRepository extends ChangeNotifier {
       // Call API to delete account
       // Backend endpoint: DELETE /api/auth/delete-account
       await _apiService.delete('/auth/delete-account');
-      debugPrint('✅ [Auth] Account deleted successfully via API');
     } on ApiException {
       // Re-throw ApiException so UI can show error message
       rethrow;
     } catch (e) {
       // Convert unexpected errors to ApiException
-      debugPrint('⚠️ [Auth] Error deleting account: $e');
       throw ApiException('Failed to delete account: $e');
     }
 
@@ -862,36 +733,17 @@ class AuthRepository extends ChangeNotifier {
   /// Check if account exists and has linked email
   /// Returns: {"success": true, "email": "..."} or {"success": true, "email_linked": false} or {"success": false, "message": "..."}
   Future<Map<String, dynamic>> checkAccount(String username) async {
-    debugPrint('═══════════════════════════════════════════════════════');
-    debugPrint('🔍 AuthRepository: checkAccount called');
-    debugPrint('🔍 AuthRepository: Username: "$username"');
     try {
-      debugPrint('🔍 AuthRepository: Step 1 - Preparing API call...');
-      debugPrint('🔍 AuthRepository: Endpoint: POST /auth/check-account');
-      debugPrint('🔍 AuthRepository: Request data: {username: "$username"}');
 
-      debugPrint('🔍 AuthRepository: Step 2 - Calling _apiService.post()...');
       final response = await _apiService.post(
         '/auth/check-account',
         data: {'username': username},
       );
 
-      debugPrint('✅ AuthRepository: API call completed successfully');
-      debugPrint('🔍 AuthRepository: Response received: $response');
-      debugPrint('═══════════════════════════════════════════════════════');
       return response;
     } on ApiException catch (e) {
-      debugPrint('❌ AuthRepository: ApiException caught');
-      debugPrint('❌ ApiException message: ${e.message}');
-      debugPrint('❌ ApiException statusCode: ${e.statusCode}');
-      debugPrint('❌ ApiException kind: ${e.kind}');
-      debugPrint('═══════════════════════════════════════════════════════');
       rethrow;
     } catch (e, stackTrace) {
-      debugPrint('❌ AuthRepository: Unexpected exception caught');
-      debugPrint('❌ Error: $e');
-      debugPrint('❌ Stack trace: $stackTrace');
-      debugPrint('═══════════════════════════════════════════════════════');
       throw Exception('Failed to check account: $e');
     }
   }
@@ -1067,7 +919,6 @@ class AuthRepository extends ChangeNotifier {
   /// 
   /// This function is designed to match Firebase Console test numbers exactly in E.164 format
   String sanitizePhoneForFirebase(String phone) {
-    debugPrint('🔍 [Sanitizer] Input phone: "$phone" (length: ${phone.length})');
     
     // Convert Arabic/Eastern digits to Western digits first
     String normalized = phone
@@ -1092,26 +943,21 @@ class AuthRepository extends ChangeNotifier {
         .replaceAll('۸', '8')
         .replaceAll('۹', '9');
     
-    debugPrint('🔍 [Sanitizer] After Arabic digit conversion: "$normalized"');
     
     // UNIVERSAL SANITIZER: Remove ALL non-digit characters EXCEPT +
     // This removes: spaces, dashes, parentheses, dots, underscores, etc.
     // Only keeps: digits (0-9) and the + sign
     String sanitized = normalized.replaceAll(RegExp(r'[^\d+]'), '');
     
-    debugPrint('🔍 [Sanitizer] After removing all non-digits (except +): "$sanitized"');
     
     // Ensure we have at least some digits
     if (sanitized.isEmpty || sanitized == '+') {
-      debugPrint('❌ [Sanitizer] Invalid: empty or only + sign');
       throw Exception('Invalid phone number format');
     }
     
     // If it doesn't start with +, normalize it first (handles Egyptian numbers, etc.)
     if (!sanitized.startsWith('+')) {
-      debugPrint('🔍 [Sanitizer] No + prefix, normalizing...');
       sanitized = normalizePhoneNumber(sanitized);
-      debugPrint('🔍 [Sanitizer] After normalization: "$sanitized"');
     }
     
     // CRITICAL: Ensure exact match with Firebase Console format
@@ -1121,18 +967,13 @@ class AuthRepository extends ChangeNotifier {
     // Our sanitizer correctly removes spaces to match E.164 format
     if (sanitized.startsWith('+20')) {
       final digitsAfterCountryCode = sanitized.substring(3); // Everything after "+20"
-      debugPrint('🔍 [Sanitizer] Egyptian number detected. Digits after +20: "$digitsAfterCountryCode" (length: ${digitsAfterCountryCode.length})');
       
       // Ensure exactly 10 digits after +20 (matches Firebase Console test numbers in E.164 format)
       // Firebase Console may display "+20 10 64448681" but stores/accepts "+201064448681"
       if (digitsAfterCountryCode.length == 10) {
         final finalPhone = '+20$digitsAfterCountryCode';
-        debugPrint('✅ [Sanitizer] FINAL sanitized phone (E.164 format, matches Firebase requirements): "$finalPhone"');
-        debugPrint('✅ [Sanitizer] Format: +20 + 10 digits = ${finalPhone.length} characters total');
-        debugPrint('✅ [Sanitizer] Note: Firebase Console displays with spaces, but accepts E.164 format (no spaces)');
         return finalPhone;
       } else {
-        debugPrint('❌ [Sanitizer] Invalid Egyptian number: expected 10 digits after +20, got ${digitsAfterCountryCode.length}');
         throw Exception('Egyptian phone number must have exactly 10 digits after +20 (e.g., +201064448681)');
       }
     }
@@ -1140,11 +981,9 @@ class AuthRepository extends ChangeNotifier {
     // For other countries: validate general E.164 format (+ followed by 7-15 digits)
     final digitsOnly = sanitized.substring(1);
     if (!RegExp(r'^\d{7,15}$').hasMatch(digitsOnly)) {
-      debugPrint('❌ [Sanitizer] Invalid: must have 7-15 digits after +');
       throw Exception('Phone number must be between 7 and 15 digits after country code');
     }
     
-    debugPrint('✅ [Sanitizer] FINAL sanitized phone (international): "$sanitized"');
     return sanitized;
   }
 
@@ -1250,62 +1089,26 @@ class AuthRepository extends ChangeNotifier {
     required Function(String error) onCodeAutoRetrievalTimeout,
   }) async {
     try {
-      debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint('📱 [Auth] verifyPhoneNumber called');
-      debugPrint('📱 [Auth] Input phoneNumber: "$phoneNumber"');
-      debugPrint('📱 [Auth] Input length: ${phoneNumber.length}');
-      debugPrint('📱 [Auth] Input contains spaces: ${phoneNumber.contains(' ')}');
       
       // Use sanitizePhoneForFirebase to ensure exact match with Firebase Console format
       final sanitizedPhone = sanitizePhoneForFirebase(phoneNumber);
       
-      debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint('📱 [Auth] FINAL phone number being sent to Firebase:');
-      debugPrint('📱 [Auth] Phone: "$sanitizedPhone"');
-      debugPrint('📱 [Auth] Length: ${sanitizedPhone.length}');
-      debugPrint('📱 [Auth] Format check: ${sanitizedPhone.startsWith('+20') ? 'Egyptian (+20 + 10 digits)' : 'International'}');
       if (sanitizedPhone.startsWith('+20')) {
         final digitsAfter20 = sanitizedPhone.substring(3);
-        debugPrint('📱 [Auth] Digits after +20: "$digitsAfter20" (${digitsAfter20.length} digits)');
-        debugPrint('📱 [Auth] Expected format: +20XXXXXXXXXX (13 characters total: 1 for +, 2 for 20, 10 for digits)');
-        debugPrint('📱 [Auth] Matches Firebase Console: ${sanitizedPhone.length == 13 && digitsAfter20.length == 10 ? '✅ YES' : '❌ NO'}');
-        debugPrint('');
-        debugPrint('📱 [Auth] Format Explanation:');
-        debugPrint('   - Firebase Console DISPLAYS: "+20 10 64448681" (with spaces for readability)');
-        debugPrint('   - We SEND: "+201064448681" (E.164 format, no spaces)');
-        debugPrint('   - This is CORRECT - Firebase Phone Auth accepts E.164 format');
-        debugPrint('   - Firebase internally normalizes and matches test numbers');
       }
-      debugPrint('═══════════════════════════════════════════════════════');
 
       await FirebaseAuth.instance.verifyPhoneNumber(
         phoneNumber: sanitizedPhone,
         verificationCompleted: (PhoneAuthCredential credential) async {
-          debugPrint('✅ [Auth] Phone verification auto-completed');
-          debugPrint('✅ [Auth] Phone used: "$sanitizedPhone"');
           onVerificationCompleted();
         },
         verificationFailed: (FirebaseAuthException e) {
-          debugPrint('❌ [Auth] Phone verification failed');
-          debugPrint('❌ [Auth] Phone used: "$sanitizedPhone"');
-          debugPrint('❌ [Auth] Error code: ${e.code}');
-          debugPrint('❌ [Auth] Error message: ${e.message}');
           onVerificationFailed(e.message ?? 'Verification failed');
         },
         codeSent: (String verificationId, int? resendToken) {
-          debugPrint('═══════════════════════════════════════════════════════');
-          debugPrint('✅ [Auth] SMS code sent successfully');
-          debugPrint('✅ [Auth] Phone used: "$sanitizedPhone"');
-          debugPrint('✅ [Auth] VerificationId: $verificationId');
-          debugPrint('✅ [Auth] VerificationId length: ${verificationId.length}');
-          debugPrint('✅ [Auth] ResendToken: $resendToken');
-          debugPrint('═══════════════════════════════════════════════════════');
           onCodeSent(verificationId);
         },
         codeAutoRetrievalTimeout: (String verificationId) {
-          debugPrint('⏱️ [Auth] Code auto-retrieval timeout');
-          debugPrint('⏱️ [Auth] Phone used: "$sanitizedPhone"');
-          debugPrint('⏱️ [Auth] VerificationId: $verificationId');
           onCodeAutoRetrievalTimeout('Code auto-retrieval timeout');
         },
         timeout: const Duration(seconds: 60),
@@ -1314,8 +1117,6 @@ class AuthRepository extends ChangeNotifier {
       // Return a placeholder - actual verificationId comes from callback
       return '';
     } catch (e) {
-      debugPrint('❌ [Auth] Error in verifyPhoneNumber: $e');
-      debugPrint('❌ [Auth] Input phoneNumber was: "$phoneNumber"');
       throw Exception('Failed to send verification code: $e');
     }
   }
@@ -1328,13 +1129,6 @@ class AuthRepository extends ChangeNotifier {
     required String smsCode,
   }) async {
     try {
-      debugPrint('═══════════════════════════════════════════════════════');
-      debugPrint('📱 [Auth] verifyPhoneOTP called');
-      debugPrint('📱 [Auth] VerificationId: $verificationId');
-      debugPrint('📱 [Auth] VerificationId length: ${verificationId.length}');
-      debugPrint('📱 [Auth] SMS Code: $smsCode');
-      debugPrint('📱 [Auth] SMS Code length: ${smsCode.length}');
-      debugPrint('═══════════════════════════════════════════════════════');
 
       // Create credential from verification ID and SMS code
       // CRITICAL: Use the exact verificationId passed from VerificationScreen
@@ -1343,8 +1137,6 @@ class AuthRepository extends ChangeNotifier {
         smsCode: smsCode,
       );
       
-      debugPrint('📱 [Auth] PhoneAuthCredential created');
-      debugPrint('📱 [Auth] Using VerificationId: $verificationId');
 
       // Sign in with credential to verify (with timeout)
       final userCredential = await FirebaseAuth.instance
@@ -1356,8 +1148,6 @@ class AuthRepository extends ChangeNotifier {
             },
           );
       
-      debugPrint('✅ [Auth] Firebase phone verification successful');
-      debugPrint('   User ID: ${userCredential.user?.uid}');
 
       // Get Firebase ID token (with timeout)
       final idToken = await userCredential.user
@@ -1377,8 +1167,6 @@ class AuthRepository extends ChangeNotifier {
       // Also include it in body for backend to verify and extract user info
       // NOTE: Backend call is optional - if Firebase verification succeeded, we continue
       // even if backend call fails (e.g., 401, network issues)
-      debugPrint('📤 [Auth] Calling backend /auth/verify-phone');
-      debugPrint('📤 [Auth] Sending Firebase ID token in Authorization header');
       
       Map<String, dynamic>? backendResponse;
       try {
@@ -1399,23 +1187,17 @@ class AuthRepository extends ChangeNotifier {
               },
             );
 
-        debugPrint('✅ [Auth] Backend verification update successful');
       } on ApiException catch (e) {
         // Backend call failed, but Firebase verification succeeded
         // Log warning but continue - Firebase verification is the critical part
-        debugPrint('⚠️ [Auth] Backend verification failed (${e.statusCode}): ${e.message}');
-        debugPrint('⚠️ [Auth] Continuing anyway since Firebase verification succeeded');
         // Don't throw - Firebase verification succeeded, so we proceed
       } catch (e) {
         // Other errors (timeout, network, etc.)
-        debugPrint('⚠️ [Auth] Backend verification error: $e');
-        debugPrint('⚠️ [Auth] Continuing anyway since Firebase verification succeeded');
         // Don't throw - Firebase verification succeeded, so we proceed
       }
 
       // Sign out from Firebase (we only use it for verification)
       await FirebaseAuth.instance.signOut().catchError((e) {
-        debugPrint('⚠️ [Auth] Error signing out from Firebase: $e');
         // Don't throw - signing out is not critical
       });
 
@@ -1428,13 +1210,11 @@ class AuthRepository extends ChangeNotifier {
         if (backendResponse != null) ...backendResponse,
       };
     } on TimeoutException catch (e) {
-      debugPrint('⏱️ [Auth] Verification timeout: ${e.message}');
       throw ApiException(
         'Connection timeout. Please check your internet and try again.',
         statusCode: 408,
       );
     } on FirebaseAuthException catch (e) {
-      debugPrint('❌ [Auth] Firebase verification error: ${e.code} - ${e.message}');
       
       String errorMessage = 'Verification failed. Please try again.';
       if (e.code == 'invalid-verification-code') {
@@ -1449,7 +1229,6 @@ class AuthRepository extends ChangeNotifier {
     } on ApiException {
       rethrow;
     } catch (e) {
-      debugPrint('❌ [Auth] Error verifying phone OTP: $e');
       if (e.toString().contains('SocketException') ||
           e.toString().contains('network')) {
         throw ApiException(
@@ -1469,7 +1248,6 @@ class AuthRepository extends ChangeNotifier {
     required String otp,
   }) async {
     try {
-      debugPrint('📧 [Auth] Verifying email OTP for: $username');
 
       final response = await _apiService
           .post(
@@ -1486,10 +1264,8 @@ class AuthRepository extends ChangeNotifier {
             },
           );
 
-      debugPrint('✅ [Auth] Email OTP verification successful');
       return response;
     } on TimeoutException catch (e) {
-      debugPrint('⏱️ [Auth] Email verification timeout: ${e.message}');
       throw ApiException(
         'Connection timeout. Please check your internet and try again.',
         statusCode: 408,
@@ -1497,7 +1273,6 @@ class AuthRepository extends ChangeNotifier {
     } on ApiException {
       rethrow;
     } catch (e) {
-      debugPrint('❌ [Auth] Error verifying email OTP: $e');
       if (e.toString().contains('SocketException') ||
           e.toString().contains('network')) {
         throw ApiException(
@@ -1515,7 +1290,6 @@ class AuthRepository extends ChangeNotifier {
   /// Uses current JWT token in Authorization header.
   Future<Map<String, dynamic>> verifySuccess(String userId) async {
     try {
-      debugPrint('✅ [Auth] Notifying backend of verification success for userId: $userId');
       final response = await _apiService.post(
         '/auth/verify-success',
         data: {'userId': userId},
@@ -1525,7 +1299,6 @@ class AuthRepository extends ChangeNotifier {
       // Let UI handle ApiException with proper messaging
       rethrow;
     } catch (e) {
-      debugPrint('❌ [Auth] Error in verifySuccess: $e');
       throw Exception('Failed to complete verification: $e');
     }
   }
@@ -1545,7 +1318,6 @@ class AuthRepository extends ChangeNotifier {
         onCodeAutoRetrievalTimeout: (error) {},
       );
     } catch (e) {
-      debugPrint('❌ [Auth] Error resending phone verification: $e');
       rethrow;
     }
   }
@@ -1558,14 +1330,12 @@ class AuthRepository extends ChangeNotifier {
       if (username.trim().isEmpty) {
         throw ApiException('Username (email or phone) is required');
       }
-      debugPrint('📤 [Auth] Resending OTP to: $username');
 
       final response = await _apiService.post(
         '/auth/resend-otp',
         data: {'username': username.trim()},
       );
 
-      debugPrint('✅ [Auth] Resend OTP succeeded');
       final message = response['message']?.toString() ??
           response['data']?['message']?.toString() ??
           'OTP sent successfully';
@@ -1573,7 +1343,6 @@ class AuthRepository extends ChangeNotifier {
     } on ApiException {
       rethrow;
     } catch (e) {
-      debugPrint('❌ [Auth] Error resending OTP: $e');
       throw Exception('Failed to resend OTP. Please try again.');
     }
   }
@@ -1581,18 +1350,15 @@ class AuthRepository extends ChangeNotifier {
   /// Resend email OTP
   Future<void> resendEmailOTP(String email) async {
     try {
-      debugPrint('📧 [Auth] Resending email OTP to: $email');
 
       await _apiService.post(
         '/auth/resend-otp',
         data: {'email': email},
       );
 
-      debugPrint('✅ [Auth] Email OTP resent successfully');
     } on ApiException {
       rethrow;
     } catch (e) {
-      debugPrint('❌ [Auth] Error resending email OTP: $e');
       throw Exception('Failed to resend email OTP: $e');
     }
   }

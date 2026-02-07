@@ -551,7 +551,6 @@ class MyWishlistsSection extends StatelessWidget {
   }
 }
 
-
 /// Section 3: Friend Activity (Vertical List - Preview Mode: Max 3 items)
 class FriendActivitySection extends StatelessWidget {
   final List<Activity>? activities; // Changed from FriendActivity to Activity

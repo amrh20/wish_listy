@@ -52,17 +52,14 @@ class ProfileScreenState extends State<ProfileScreen>
   @override
   void initState() {
     super.initState();
-    debugPrint('ProfileScreen: initState called (_hasLoaded: $_hasLoaded)');
     _initializeAnimations();
     _startAnimations();
     _loadCurrentLanguage();
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_hasLoaded && !_isLoading) {
-        debugPrint('ProfileScreen: Loading profile from initState');
         _loadUserProfile();
       } else {
-        debugPrint('ProfileScreen: Skipping load from initState');
       }
     });
   }
@@ -70,7 +67,6 @@ class ProfileScreenState extends State<ProfileScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    debugPrint('ProfileScreen: didChangeDependencies called - NO ACTION TAKEN');
   }
 
   void _loadCurrentLanguage() {
@@ -514,23 +510,6 @@ class ProfileScreenState extends State<ProfileScreen>
               ],
             ),
           ),
-          // TODO: Re-enable share profile when HTTPS deep links are configured
-          // PopupMenuItem<String>(
-          //   value: 'share',
-          //   child: Row(
-          //     children: [
-          //       Icon(Icons.share_outlined, color: AppColors.primary, size: 20),
-          //       const SizedBox(width: 12),
-          //       Text(
-          //         localization.translate('profile.shareProfile') ?? 'Share Profile',
-          //         style: AppStyles.bodyMedium.copyWith(
-          //           color: AppColors.textPrimary,
-          //           fontFamily: localization.currentLanguage == 'ar' ? 'Alexandria' : 'Ubuntu',
-          //         ),
-          //       ),
-          //     ],
-          //   ),
-          // ),
         ],
       ),
     );
@@ -896,11 +875,9 @@ class ProfileScreenState extends State<ProfileScreen>
   Future<void> _loadUserProfile({bool forceRefresh = false}) async {
     // Don't reload if already loaded unless force refresh
     if (_hasLoaded && !forceRefresh) {
-      debugPrint('ProfileScreen: Skipping reload - already loaded (forceRefresh: $forceRefresh)');
       return;
     }
 
-    debugPrint('ProfileScreen: Loading profile (forceRefresh: $forceRefresh, _hasLoaded: $_hasLoaded)');
     
     // Smart Loading: Only show loading skeleton if profile data doesn't exist yet
     // If data exists, refresh in background without showing loading skeleton
@@ -911,7 +888,6 @@ class ProfileScreenState extends State<ProfileScreen>
       _errorMessage = null;
     });
     } else {
-      debugPrint('🔄 ProfileScreen: Background refresh (no loading skeleton)');
       // Still clear error message
       if (_errorMessage != null) {
         setState(() {
@@ -965,7 +941,6 @@ class ProfileScreenState extends State<ProfileScreen>
                   ? DateTime.parse(data['createdAt'])
                   : DateTime.now();
             } catch (e) {
-              debugPrint('Error parsing createdAt: $e');
               joinDate = DateTime.now();
             }
             
@@ -1015,12 +990,10 @@ class ProfileScreenState extends State<ProfileScreen>
               } catch (e) {
                 // ProfileCubit not available yet - will be set when BlocProvider is created
                 // This is normal if _loadUserProfile is called before build() completes
-                debugPrint('ProfileCubit not available in _loadUserProfile (this is normal): $e');
               }
             }
           } catch (parseError) {
             // Handle parsing errors specifically
-            debugPrint('Error parsing profile data: $parseError');
             if (mounted) {
               setState(() {
                 _errorMessage = 'Failed to parse profile data: $parseError';
@@ -1040,7 +1013,6 @@ class ProfileScreenState extends State<ProfileScreen>
         }
       }
     } on ApiException catch (e) {
-      debugPrint('ApiException in _loadUserProfile: ${e.message}');
       if (mounted) {
         setState(() {
           _errorMessage = e.message;
@@ -1049,8 +1021,6 @@ class ProfileScreenState extends State<ProfileScreen>
         });
       }
     } catch (e, stackTrace) {
-      debugPrint('Unexpected error in _loadUserProfile: $e');
-      debugPrint('Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load profile. Please try again.';
@@ -1164,10 +1134,8 @@ class ProfileScreenState extends State<ProfileScreen>
     // Only refresh if not already loading and data exists
     // This prevents unnecessary reloads when returning from full-screen viewer
     if (!_isLoading && _hasLoaded) {
-      debugPrint('ProfileScreen: refreshProfile called - background refresh...');
       _loadUserProfile(forceRefresh: false); // Background refresh without skeleton
     } else {
-      debugPrint('ProfileScreen: refreshProfile called but skipping (_isLoading: $_isLoading, _hasLoaded: $_hasLoaded)');
     }
   }
 

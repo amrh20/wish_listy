@@ -111,7 +111,6 @@ class EventsScreenState extends State<EventsScreen>
     // Don't make API calls for guest users
     final authService = Provider.of<AuthRepository>(context, listen: false);
     if (authService.isGuest) {
-      debugPrint('⚠️ EventsScreen: Skipping API call for guest user');
       setState(() {
         _isLoading = false;
         _myEvents = [];
@@ -132,7 +131,6 @@ class EventsScreenState extends State<EventsScreen>
         _errorMessage = null;
       });
     } else {
-      debugPrint('🔄 EventsScreen: Background refresh (no skeleton)');
       // Still clear error message
       if (_errorMessage != null) {
         setState(() {

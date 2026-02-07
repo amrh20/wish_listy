@@ -62,4 +62,3 @@ class EventDetailsController extends GetxController {
   }
 }
 
-

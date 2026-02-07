@@ -1,7 +1,0 @@
-# Copy to key.properties and fill with your real values.
-# key.properties is in .gitignore – never commit it.
-
-storePassword=YOUR_KEYSTORE_PASSWORD
-keyPassword=YOUR_KEY_PASSWORD
-keyAlias=upload
-storeFile=../upload-keystore.jks

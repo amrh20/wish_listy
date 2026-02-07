@@ -146,7 +146,6 @@ class AppRoutes {
       final args = settings.arguments as Map<String, dynamic>?;
       final wishlistId = args?['wishlistId']?.toString().trim();
       if (args == null || wishlistId == null || wishlistId.isEmpty) {
-        debugPrint('⚠️ [AppRoutes] wishlistItems: Invalid or missing wishlistId, redirecting to main');
         return MaterialPageRoute(
           builder: (context) => MainNavigation(),
         );
@@ -173,7 +172,6 @@ class AppRoutes {
         // Legacy support for Map arguments
         final args = settings.arguments as Map<String, dynamic>?;
         if (args == null) {
-          debugPrint('⚠️ [AppRoutes] itemDetails: Null arguments, redirecting to main');
           return MaterialPageRoute(
             builder: (context) => MainNavigation(),
           );
@@ -280,7 +278,6 @@ class AppRoutes {
       final args = settings.arguments as Map<String, dynamic>?;
       final eventId = args?['eventId']?.toString().trim();
       if (args == null || eventId == null || eventId.isEmpty) {
-        debugPrint('⚠️ [AppRoutes] eventDetails: Invalid or missing eventId, redirecting to main');
         return MaterialPageRoute(
           builder: (context) => MainNavigation(),
         );
@@ -344,15 +341,6 @@ class AppRoutes {
         final args = settings.arguments as Map<String, dynamic>?;
         
         // Debug: Log route arguments for verification screen
-        debugPrint('═══════════════════════════════════════════════════════');
-        debugPrint('🛣️ [AppRoutes] Verification route called');
-        debugPrint('🛣️ [AppRoutes] Username: ${args?['username']}');
-        debugPrint('🛣️ [AppRoutes] Is Phone: ${args?['isPhone']}');
-        debugPrint('🛣️ [AppRoutes] VerificationId: ${args?['verificationId']}');
-        debugPrint('🛣️ [AppRoutes] VerificationId type: ${args?['verificationId'].runtimeType}');
-        debugPrint('🛣️ [AppRoutes] VerificationId length: ${(args?['verificationId'] as String?)?.length ?? 0}');
-        debugPrint('🛣️ [AppRoutes] UserId: ${args?['userId']}');
-        debugPrint('═══════════════════════════════════════════════════════');
         
         return MaterialPageRoute(
           builder: (context) => BlocProvider<AuthCubit>(

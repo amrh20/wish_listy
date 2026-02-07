@@ -622,21 +622,13 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
       final users = await _friendsRepository.searchUsers(query);
 
       if (mounted) {
-        final timestamp = DateTime.now().toIso8601String();
-        debugPrint('👥 [AddFriend] ⏰ [$timestamp] Search completed');
-        debugPrint('👥 [AddFriend] ⏰ [$timestamp]    Total results from API: ${users.length}');
         
         // Filter out users who are already friends (isFriend: true)
         final filteredUsers = users.where((user) {
           final isAlreadyFriend = user.isFriend == true;
-          if (isAlreadyFriend) {
-            debugPrint('👥 [AddFriend] ⏰ [$timestamp]    Filtering out friend: ${user.fullName} (${user.username})');
-          }
           return !isAlreadyFriend;
         }).toList();
         
-        debugPrint('👥 [AddFriend] ⏰ [$timestamp]    Filtered results (excluding friends): ${filteredUsers.length}');
-        debugPrint('👥 [AddFriend] ⏰ [$timestamp]    Removed ${users.length - filteredUsers.length} friend(s) from results');
         
         setState(() {
           _searchResults = filteredUsers;
@@ -680,11 +672,6 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
       );
 
       if (mounted) {
-        final timestamp = DateTime.now().toIso8601String();
-        debugPrint('👥 [AddFriend] ⏰ [$timestamp] Friend request sent successfully');
-        debugPrint('👥 [AddFriend] ⏰ [$timestamp]    User ID: ${user.id}');
-        debugPrint('👥 [AddFriend] ⏰ [$timestamp]    User Name: ${user.fullName}');
-        debugPrint('👥 [AddFriend] ⏰ [$timestamp]    Updating UI to show "Request already sent"');
         
         // Update the user in search results to reflect that request was sent
         setState(() {
@@ -695,11 +682,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
               friendshipStatus: 'pending',
               canSendRequest: false,
             );
-            debugPrint('👥 [AddFriend] ⏰ [$timestamp]    ✅ User updated in search results at index $index');
-            debugPrint('👥 [AddFriend] ⏰ [$timestamp]       New status: pending');
-            debugPrint('👥 [AddFriend] ⏰ [$timestamp]       Can send request: false');
           } else {
-            debugPrint('👥 [AddFriend] ⏰ [$timestamp]    ⚠️ User not found in search results');
           }
         });
 

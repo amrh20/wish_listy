@@ -260,7 +260,6 @@ class _GuestEventsViewState extends State<GuestEventsView> {
     );
   }
 
-
   void _showGuestEventDetails(EventSummary event) {
     GuestRestrictionDialog.show(context, 'Event Details');
   }

@@ -89,7 +89,6 @@ class WishlistRepository {
         throw Exception('Invalid response format from API');
       }
 
-
       // API might return: {success: true, wishlist: {...}} or {success: true, data: {...}} or directly the wishlist object
       final wishlistData =
           response['wishlist'] as Map<String, dynamic>? ??
@@ -246,11 +245,8 @@ class WishlistRepository {
 
       // Validate response
       if (response is! Map<String, dynamic>) {
-        debugPrint('❌ WishlistRepository: getItemById - Response is not a Map: $response');
         throw Exception('Invalid response format from API');
       }
-
-      debugPrint('✅ WishlistRepository: getItemById - Response keys: ${response.keys.toList()}');
 
       // API might return: {success: true, item: {...}} or {success: true, data: {...}} or directly the item object
       final itemData =
@@ -259,21 +255,13 @@ class WishlistRepository {
           response;
 
       if (itemData == null || itemData.isEmpty) {
-        debugPrint('❌ WishlistRepository: getItemById - Item data is null or empty. Response: $response');
         throw Exception('Item data not found in response');
       }
 
-      debugPrint('✅ WishlistRepository: getItemById - Item data keys: ${itemData.keys.toList()}');
-      debugPrint('✅ WishlistRepository: getItemById - Item ID: ${itemData['_id'] ?? itemData['id']}');
-      debugPrint('✅ WishlistRepository: getItemById - Item name: ${itemData['name']}');
-
       return itemData;
     } on ApiException catch (e) {
-      debugPrint('❌ WishlistRepository: getItemById - ApiException: ${e.message}');
       rethrow;
     } catch (e, stackTrace) {
-      debugPrint('❌ WishlistRepository: getItemById - Exception: $e');
-      debugPrint('❌ WishlistRepository: getItemById - StackTrace: $stackTrace');
       throw Exception('Failed to load item. Please try again.');
     }
   }

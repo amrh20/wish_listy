@@ -412,7 +412,6 @@ class GuestDataRepository {
       await itemsBox.put(decorItem.id, decorItem);
 
     } catch (e) {
-      debugPrint('Error initializing dummy data: $e');
     }
   }
 }

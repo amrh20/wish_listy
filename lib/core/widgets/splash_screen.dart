@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -59,9 +58,6 @@ class _SplashScreenState extends State<SplashScreen>
     // don't override it by navigating to Home/MainNavigation.
     final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
     if (!isCurrent) {
-      debugPrint(
-        '🟡 SplashScreen: Not current route anymore, skipping auto navigation (likely deep link).',
-      );
       return;
     }
 

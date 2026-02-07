@@ -458,10 +458,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     }
   }
 
-
-
-
-
   bool _isReceived(WishlistItem item) {
     return item.isReceived;
   }
@@ -526,7 +522,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     return _rawItemData?['storeLocation']?.toString()?.trim();
   }
 
-
   bool _isReservedByMe(WishlistItem item) {
     final authService = Provider.of<AuthRepository>(context, listen: false);
     if (authService.isGuest || authService.userId == null) {
@@ -538,7 +533,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     final currentUserId = authService.userId?.toString();
     return item.isReservedByMe ?? (reservedById != null && reservedById == currentUserId);
   }
-
 
   Future<void> _toggleReservation(WishlistItem item) async {
     // Use _isReservedByMe to determine action
@@ -576,11 +570,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
     try {
       // Debug: Log the reservation state
-      debugPrint('🔍 _toggleReservationWithAction Debug:');
-      debugPrint('  - item.isReservedByMe (from API): ${item.isReservedByMe}');
-      debugPrint('  - item.reservedBy?.id: ${item.reservedBy?.id}');
-      debugPrint('  - authService.userId: ${authService.userId}');
-      debugPrint('  - action (explicit): $action');
 
       // Optimistic update
       setState(() {
@@ -699,7 +688,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     }
   }
 
-
   Widget _buildInfoGrid(WishlistItem item) {
     final priorityColor = _getPriorityColor(item.priority);
     final store = _rawItemData?['storeName']?.toString() ??
@@ -746,7 +734,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       ],
     );
   }
-
 
   String _formatDate(DateTime dt) {
     // lightweight formatting without intl
