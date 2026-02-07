@@ -71,14 +71,23 @@ class UnifiedTabBar extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOut,
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           decoration: BoxDecoration(
             color: isSelected
-                ? (selectedColor ?? AppColors.primary).withOpacity(0.08)
+                ? (selectedColor ?? AppColors.primary)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: (selectedColor ?? AppColors.primary).withOpacity(0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -89,7 +98,7 @@ class UnifiedTabBar extends StatelessWidget {
                   tab.icon,
                   size: 18,
                   color: isSelected
-                      ? AppColors.primary
+                      ? Colors.white
                       : (unselectedTextColor ?? AppColors.textSecondary),
                 ),
                 const SizedBox(width: 6),
@@ -101,9 +110,9 @@ class UnifiedTabBar extends StatelessWidget {
                   tab.label,
                   style: AppStyles.bodyMedium.copyWith(
                     color: isSelected
-                        ? AppColors.primary
+                        ? Colors.white
                         : (unselectedTextColor ?? AppColors.textSecondary),
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -119,7 +128,7 @@ class UnifiedTabBar extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? AppColors.primary.withOpacity(0.15)
+                        ? Colors.white.withOpacity(0.25)
                         : (tab.badgeColor ?? AppColors.primary).withOpacity(
                             0.15,
                           ),
@@ -129,7 +138,7 @@ class UnifiedTabBar extends StatelessWidget {
                     tab.badgeCount.toString(),
                     style: TextStyle(
                       color: isSelected
-                          ? AppColors.primary
+                          ? Colors.white
                           : (tab.badgeColor ?? AppColors.primary),
                       fontSize: 11,
                       fontWeight: FontWeight.bold,

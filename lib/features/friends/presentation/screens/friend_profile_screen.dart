@@ -10,6 +10,7 @@ import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/friends/data/models/friend_event_model.dart';
+import 'package:wish_listy/features/profile/data/repository/privacy_repository.dart';
 import 'package:wish_listy/features/friends/data/models/friend_wishlist_model.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/presentation/controllers/friend_profile_controller.dart';
@@ -34,6 +35,7 @@ class FriendProfileScreen extends StatefulWidget {
 
 class _FriendProfileScreenState extends State<FriendProfileScreen> {
   late final FriendProfileController _controller;
+  final PrivacyRepository _privacyRepository = PrivacyRepository();
 
   static const double _expandedHeaderHeight = 350.0; // Increased to accommodate handle field + Quick Actions buttons
 
@@ -103,8 +105,71 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                   shape: const CircleBorder(),
                 ),
               ),
-              // No actions needed - Quick Actions are shown below stats
-              actions: const [],
+              actions: [
+                Obx(() {
+                  final isBlockedByMe = _controller.isBlockedByMe.value;
+                  final localization = Provider.of<LocalizationService>(context, listen: false);
+                  return PopupMenuButton<String>(
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: AppColors.textPrimary,
+                      size: 22,
+                    ),
+                    padding: EdgeInsets.zero,
+                    onSelected: (value) {
+                      if (value == 'report') {
+                        _showReportDialog();
+                      } else if (value == 'block') {
+                        _showBlockConfirmationDialog();
+                      } else if (value == 'unblock') {
+                        _handleUnblock();
+                      }
+                    },
+                    itemBuilder: (context) {
+                      return [
+                        PopupMenuItem<String>(
+                          value: 'report',
+                          child: Row(
+                            children: [
+                              Icon(Icons.flag_outlined, color: AppColors.textPrimary, size: 20),
+                              const SizedBox(width: 12),
+                              Text(localization.translate('friends.reportUser')),
+                            ],
+                          ),
+                        ),
+                        if (isBlockedByMe)
+                          PopupMenuItem<String>(
+                            value: 'unblock',
+                            child: Row(
+                              children: [
+                                Icon(Icons.lock_open, color: AppColors.primary, size: 20),
+                                const SizedBox(width: 12),
+                                Text(
+                                  localization.translate('friends.unblockUser'),
+                                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          PopupMenuItem<String>(
+                            value: 'block',
+                            child: Row(
+                              children: [
+                                Icon(Icons.block, color: AppColors.error, size: 20),
+                                const SizedBox(width: 12),
+                                Text(
+                                  localization.translate('friends.blockUser'),
+                                  style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ];
+                    },
+                  );
+                }),
+              ],
               flexibleSpace: FlexibleSpaceBar(
                 background: _PatternedHeader(controller: _controller),
               ),
@@ -128,7 +193,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                       ),
                     ],
                   ),
-                  child: _BodyContent(controller: _controller),
+                  child: _BodyContent(controller: _controller, onUnblock: _handleUnblock),
                 ),
               ),
             ),
@@ -373,6 +438,303 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
         ),
       );
     }
+  }
+
+  void _showReportDialog() {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final reasonController = TextEditingController();
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: AppColors.surface,
+          title: Text(localization.translate('friends.reportUser')),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  localization.translate('friends.reportDescription'),
+                  style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: reasonController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: localization.translate('friends.reportDescriptionPlaceholder'),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(localization.translate('friends.cancelReport')),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                final reason = reasonController.text.trim();
+                try {
+                  await _privacyRepository.reportUser(widget.friendId, reason);
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Text(localization.translate('friends.reportSubmitted')),
+                        ],
+                      ),
+                      backgroundColor: AppColors.success,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  );
+                } on ApiException catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.error, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(e.message)),
+                        ],
+                      ),
+                      backgroundColor: AppColors.error,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  );
+                } catch (_) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(localization.translate('friends.failedToSendFriendRequest')),
+                      backgroundColor: AppColors.error,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  );
+                }
+              },
+              child: Text(localization.translate('friends.submitReport')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showBlockConfirmationDialog() {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final name = _controller.profile.value?.user.fullName ?? localization.translate('friends.friend');
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: AppColors.surface,
+          title: Text(localization.translate('friends.blockUserConfirmTitle', args: {'name': name})),
+          content: Text(
+            localization.translate('friends.blockUserConfirmMessage'),
+            style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(localization.translate('dialogs.cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                final scaffoldMessenger = ScaffoldMessenger.of(context);
+                final loadingSnackBar = _buildLoadingSnackBar(
+                  localization.translate('common.pleaseWait') ?? 'Processing...',
+                );
+                scaffoldMessenger.showSnackBar(loadingSnackBar);
+                try {
+                  await _privacyRepository.blockUser(widget.friendId);
+                  if (!mounted) return;
+                  scaffoldMessenger.hideCurrentSnackBar();
+                  scaffoldMessenger.showSnackBar(
+                    _buildSuccessSnackBar(localization.translate('friends.userBlocked')),
+                  );
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    AppRoutes.mainNavigation,
+                    (route) => false,
+                  );
+                } on ApiException catch (e) {
+                  if (!mounted) return;
+                  scaffoldMessenger.hideCurrentSnackBar();
+                  scaffoldMessenger.showSnackBar(
+                    _buildErrorSnackBar(e.message.isNotEmpty ? e.message : (localization.translate('friends.failedToSendFriendRequest') ?? 'Something went wrong')),
+                  );
+                } catch (_) {
+                  if (!mounted) return;
+                  scaffoldMessenger.hideCurrentSnackBar();
+                  scaffoldMessenger.showSnackBar(
+                    _buildErrorSnackBar(localization.translate('friends.failedToSendFriendRequest')),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+              child: Text(
+                localization.translate('friends.blockUser'),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  SnackBar _buildLoadingSnackBar(String message) {
+    return SnackBar(
+      content: Row(
+        children: [
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              message,
+              style: AppStyles.bodyMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: AppColors.primary,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      duration: const Duration(days: 1),
+    );
+  }
+
+  SnackBar _buildSuccessSnackBar(String message) {
+    return SnackBar(
+      content: Row(
+        children: [
+          const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: AppStyles.bodyMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: AppColors.success,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    );
+  }
+
+  SnackBar _buildErrorSnackBar(String message) {
+    return SnackBar(
+      content: Row(
+        children: [
+          const Icon(Icons.error_outline, color: Colors.white, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: AppStyles.bodyMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+      backgroundColor: AppColors.error,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    );
+  }
+
+  void _showUnblockConfirmationDialog() {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final name = _controller.profile.value?.user.fullName ?? localization.translate('friends.friend');
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: AppColors.surface,
+          title: Text(localization.translate('friends.unblockUserConfirmTitle', args: {'name': name})),
+          content: Text(
+            localization.translate('friends.unblockUserConfirmMessage'),
+            style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(localization.translate('dialogs.cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                _performUnblock();
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: Text(
+                localization.translate('friends.unblockUser'),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _performUnblock() async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final loadingSnackBar = _buildLoadingSnackBar(
+      localization.translate('common.pleaseWait') ?? 'Processing...',
+    );
+    scaffoldMessenger.showSnackBar(loadingSnackBar);
+    try {
+      await _privacyRepository.unblockUser(widget.friendId);
+      if (!mounted) return;
+      scaffoldMessenger.hideCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
+        _buildSuccessSnackBar(localization.translate('friends.userUnblocked')),
+      );
+      await _controller.fetchProfile();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      scaffoldMessenger.hideCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
+        _buildErrorSnackBar(e.message.isNotEmpty ? e.message : (localization.translate('friends.failedToRemoveFriend') ?? 'Something went wrong')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      scaffoldMessenger.hideCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
+        _buildErrorSnackBar(localization.translate('friends.failedToRemoveFriend') ?? 'Something went wrong'),
+      );
+    }
+  }
+
+  Future<void> _handleUnblock() async {
+    _showUnblockConfirmationDialog();
   }
 
   Future<void> _handleUnfriend() async {
@@ -645,6 +1007,7 @@ class _PatternedHeader extends StatelessWidget {
                               controller.hasIncomingRequest.value,
                           isRequestSent:
                               controller.hasOutgoingRequest.value,
+                          isBlockedByMe: controller.isBlockedByMe.value,
                           isBusy: controller.isSendingFriendRequest.value ||
                               controller.isLoading.value,
                           onRemove: () => (context.findAncestorStateOfType<
@@ -662,6 +1025,9 @@ class _PatternedHeader extends StatelessWidget {
                           onCancel: () => (context.findAncestorStateOfType<
                                   _FriendProfileScreenState>())
                               ?._handleCancelRequest(),
+                          onUnblock: () => (context.findAncestorStateOfType<
+                                  _FriendProfileScreenState>())
+                              ?._handleUnblock(),
                         ),
                       ],
                     );
@@ -842,23 +1208,27 @@ class _RelationshipQuickActions extends StatelessWidget {
   final bool isFriend;
   final bool hasIncomingRequest;
   final bool isRequestSent;
+  final bool isBlockedByMe;
   final bool isBusy;
   final VoidCallback? onRemove;
   final VoidCallback? onAccept;
   final VoidCallback? onDecline;
   final VoidCallback? onAdd;
   final VoidCallback? onCancel;
+  final VoidCallback? onUnblock;
 
   const _RelationshipQuickActions({
     required this.isFriend,
     required this.hasIncomingRequest,
     required this.isRequestSent,
+    required this.isBlockedByMe,
     required this.isBusy,
     required this.onRemove,
     required this.onAccept,
     required this.onDecline,
     required this.onAdd,
     this.onCancel,
+    this.onUnblock,
   });
 
   @override
@@ -876,6 +1246,25 @@ class _RelationshipQuickActions extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
         ),
+      );
+    }
+
+    // 0) Blocked by me -> Unblock
+    if (isBlockedByMe && onUnblock != null) {
+      return Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 10,
+        runSpacing: 10,
+        children: [
+          _QuickActionButton(
+            text: localization.translate('friends.unblockUser'),
+            icon: Icons.lock_open,
+            backgroundColor: AppColors.primary.withOpacity(0.10),
+            foregroundColor: AppColors.primary,
+            borderColor: AppColors.primary.withOpacity(0.25),
+            onTap: onUnblock,
+          ),
+        ],
       );
     }
 
@@ -1107,7 +1496,9 @@ class _GlassStatsContainer extends StatelessWidget {
 
 class _BodyContent extends StatefulWidget {
   final FriendProfileController controller;
-  const _BodyContent({required this.controller});
+  final VoidCallback? onUnblock;
+
+  const _BodyContent({required this.controller, this.onUnblock});
 
   @override
   State<_BodyContent> createState() => _BodyContentState();
@@ -1125,41 +1516,57 @@ class _BodyContentState extends State<_BodyContent> {
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 80,
-            height: 80,
+            width: 100,
+            height: 100,
             decoration: BoxDecoration(
-              color: Colors.purple.withOpacity(0.05),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.purple.shade100,
+                  Colors.purple.shade50,
+                ],
+              ),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.purple.shade200.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Icon(
               icon,
-              size: 40,
-              color: Colors.grey.shade400,
+              size: 48,
+              color: Colors.purple.shade400,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
             title,
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
               color: Colors.grey.shade800,
+              letterSpacing: -0.3,
             ),
             textAlign: TextAlign.center,
           ),
           if (subtitle != null) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 14,
                 color: Colors.grey.shade500,
+                height: 1.4,
               ),
               textAlign: TextAlign.center,
             ),
@@ -1185,19 +1592,19 @@ class _BodyContentState extends State<_BodyContent> {
   /// Build a single wishlist card skeleton
   Widget _buildWishlistCardSkeleton() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: Colors.grey.shade200,
           width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -1211,14 +1618,14 @@ class _BodyContentState extends State<_BodyContent> {
             children: [
               // Icon Skeleton
               Container(
-                height: 45,
-                width: 45,
+                height: 52,
+                width: 52,
                 decoration: BoxDecoration(
                   color: Colors.grey.shade300,
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               // Title & Metadata Skeleton
               Expanded(
                 child: Column(
@@ -1432,45 +1839,95 @@ class _BodyContentState extends State<_BodyContent> {
   @override
   Widget build(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context, listen: false);
-    
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Tabs
-          UnifiedTabBar(
-            tabs: [
-              UnifiedTab(
-                label: localization.translate('friends.wishlists'),
-                icon: Icons.favorite_rounded,
-              ),
-              UnifiedTab(
-                label: localization.translate('navigation.events'),
-                icon: Icons.event_outlined,
-              ),
-            ],
-            selectedIndex: _selectedMainTab,
-            onTabChanged: (index) {
-              setState(() {
-                _selectedMainTab = index;
-                // Reset filters when switching tabs
-                if (index == 0) {
-                  _selectedCategory = 'All';
-                } else {
-                  _selectedFilter = 'upcoming';
-                }
-              });
-            },
-          ),
-          const SizedBox(height: 20),
 
-          // Tab Content (no TabBarView here to avoid unbounded-height issues inside Slivers)
-          if (_selectedMainTab == 0) _buildWishlistsTab(localization) else _buildEventsTab(localization),
-        ],
-      ),
-    );
+    return Obx(() {
+      if (widget.controller.isBlockedByMe.value) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.block_outlined,
+                  size: 48,
+                  color: AppColors.textTertiary,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  localization.translate('friends.youHaveBlockedThisUser'),
+                  style: AppStyles.bodyLarge.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                if (widget.onUnblock != null)
+                  TextButton.icon(
+                    onPressed: widget.onUnblock,
+                    icon: const Icon(Icons.lock_open, size: 20, color: AppColors.primary),
+                    label: Text(
+                      localization.translate('friends.unblockUser'),
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      backgroundColor: AppColors.primary.withOpacity(0.10),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Tabs
+            UnifiedTabBar(
+              tabs: [
+                UnifiedTab(
+                  label: localization.translate('friends.wishlists'),
+                  icon: Icons.favorite_rounded,
+                ),
+                UnifiedTab(
+                  label: localization.translate('navigation.events'),
+                  icon: Icons.event_outlined,
+                ),
+              ],
+              selectedIndex: _selectedMainTab,
+              onTabChanged: (index) {
+                setState(() {
+                  _selectedMainTab = index;
+                  // Reset filters when switching tabs
+                  if (index == 0) {
+                    _selectedCategory = 'All';
+                  } else {
+                    _selectedFilter = 'upcoming';
+                  }
+                });
+              },
+            ),
+            const SizedBox(height: 20),
+
+            // Tab Content (no TabBarView here to avoid unbounded-height issues inside Slivers)
+            if (_selectedMainTab == 0) _buildWishlistsTab(localization) else _buildEventsTab(localization),
+          ],
+        ),
+      );
+    });
   }
 
   /// Build Wishlists Tab Content
@@ -1764,19 +2221,24 @@ class _WishlistGridCard extends StatelessWidget {
     categoryName = categoryName[0].toUpperCase() + categoryName.substring(1);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: Colors.grey.shade200,
           width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+          BoxShadow(
+            color: categoryData.color.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -1784,7 +2246,7 @@ class _WishlistGridCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -1795,19 +2257,26 @@ class _WishlistGridCard extends StatelessWidget {
                 children: [
                   // A. The Hero Icon (Left Side) - LARGE & COLORFUL
                   Container(
-                    height: 45,
-                    width: 45,
+                    height: 52,
+                    width: 52,
                     decoration: BoxDecoration(
                       color: categoryData.color.withOpacity(0.15),
                       shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: categoryData.color.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: Icon(
                       categoryData.icon,
-                      size: 22,
+                      size: 26,
                       color: categoryData.color,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
                   // B. Title & Metadata (Right Side)
                   Expanded(
                     child: Column(
@@ -1819,38 +2288,53 @@ class _WishlistGridCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
-                              child: Text(
-                                wishlist.name,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.card_giftcard_rounded,
+                                    size: 18,
+                                    color: categoryData.color.withOpacity(0.7),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      wishlist.name,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textPrimary,
+                                        letterSpacing: -0.3,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
+                            const SizedBox(width: 8),
                             Icon(
                               privacyIcon,
-                              color: Colors.grey,
+                              color: Colors.grey.shade400,
                               size: 18,
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         // Metadata Row
                         Wrap(
-                          spacing: 6,
+                          spacing: 10,
+                          runSpacing: 6,
                           crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 3,
+                                horizontal: 8,
+                                vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: categoryData.color.withOpacity(0.10),
-                                borderRadius: BorderRadius.circular(6),
+                                color: categoryData.color.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
                                 categoryName,
@@ -1864,15 +2348,66 @@ class _WishlistGridCard extends StatelessWidget {
                             Builder(
                               builder: (context) {
                                 final localization = Provider.of<LocalizationService>(context, listen: false);
-                                return Text(
-                                  '• ${wishlist.itemCount} ${wishlist.itemCount == 1 ? localization.translate('friends.wish') : localization.translate('friends.wishes')}',
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 11,
-                                  ),
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.card_giftcard_outlined,
+                                      size: 13,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${wishlist.itemCount} ${wishlist.itemCount == 1 ? localization.translate('friends.wish') : localization.translate('friends.wishes')}',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
                                 );
                               },
                             ),
+                            if (wishlist.createdAt != null)
+                              Builder(
+                                builder: (context) {
+                                  final localization = Provider.of<LocalizationService>(context, listen: false);
+                                  final now = DateTime.now();
+                                  final diff = now.difference(wishlist.createdAt!);
+                                  final String timeAgo;
+                                  if (diff.inDays > 365) {
+                                    timeAgo = '${(diff.inDays / 365).floor()}y';
+                                  } else if (diff.inDays > 30) {
+                                    timeAgo = '${(diff.inDays / 30).floor()}mo';
+                                  } else if (diff.inDays > 0) {
+                                    timeAgo = '${diff.inDays}d';
+                                  } else if (diff.inHours > 0) {
+                                    timeAgo = '${diff.inHours}h';
+                                  } else {
+                                    timeAgo = 'now';
+                                  }
+                                  return Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.schedule_rounded,
+                                        size: 13,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        timeAgo,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade700,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
                           ],
                         ),
                         if (hasDescription) ...[
@@ -2196,6 +2731,43 @@ class _EventTicketCard extends StatelessWidget {
     }
   }
 
+  ({IconData icon, Color color, String label})
+      _getInvitationStatusStyle(InvitationStatus status) {
+    switch (status) {
+      case InvitationStatus.accepted:
+        return (
+          icon: Icons.check_circle,
+          color: Colors.green.shade600,
+          label: 'Accepted',
+        );
+      case InvitationStatus.declined:
+        return (
+          icon: Icons.cancel,
+          color: Colors.red.shade600,
+          label: 'Declined',
+        );
+      case InvitationStatus.maybe:
+        return (
+          icon: Icons.help_outline,
+          color: Colors.orange.shade600,
+          label: 'Maybe',
+        );
+      case InvitationStatus.pending:
+        return (
+          icon: Icons.schedule,
+          color: Colors.blue.shade600,
+          label: 'Pending',
+        );
+      case InvitationStatus.unknown:
+      default:
+        return (
+          icon: Icons.info_outline,
+          color: Colors.grey.shade600,
+          label: 'Unknown',
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final date = event.date;
@@ -2204,32 +2776,30 @@ class _EventTicketCard extends StatelessWidget {
         : '--';
     final day = date != null ? date.day.toString() : '--';
 
-    // Get status badge text
-    String statusText = localization.translate('friends.upcoming');
-    if (event.status != null) {
-      statusText = event.status!.split('_').map((s) {
-        return s[0].toUpperCase() + s.substring(1);
-      }).join(' ');
-    } else if (event.mode == 'online') {
-      statusText = localization.translate('friends.online');
-    }
+    // Get status badge text and color based on invitation status
+    final invitationStatusData = _getInvitationStatusStyle(event.invitationStatus);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(color: Colors.grey.shade200, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 12,
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 16,
                 offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: Colors.purple.withOpacity(0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -2240,39 +2810,54 @@ class _EventTicketCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Date Box
+                  // Date Box - More Prominent
                   Container(
-                    width: 56,
-                    height: 56,
+                    width: 64,
+                    height: 64,
                     decoration: BoxDecoration(
-                      color: Colors.purple.shade50,
-                      borderRadius: BorderRadius.circular(12),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Colors.purple.shade400,
+                          Colors.purple.shade600,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.purple.shade300.withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           month,
-                          style: TextStyle(
-                            fontSize: 11,
+                          style: const TextStyle(
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Colors.purple.shade700,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           day,
-                          style: TextStyle(
-                            fontSize: 18,
+                          style: const TextStyle(
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
-                            color: Colors.purple.shade700,
+                            color: Colors.white,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  // Title & Location (Expanded)
+                  const SizedBox(width: 14),
+                  // Title, Time & Location (Expanded)
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2280,14 +2865,36 @@ class _EventTicketCard extends StatelessWidget {
                         Text(
                           event.name,
                           style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 17,
                             color: AppColors.textPrimary,
+                            letterSpacing: -0.3,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
+                        if (event.time != null && event.time!.isNotEmpty)
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.schedule_rounded,
+                                size: 14,
+                                color: Colors.purple.shade600,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                event.time!,
+                                style: TextStyle(
+                                  color: Colors.purple.shade700,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        if (event.time != null && event.time!.isNotEmpty)
+                          const SizedBox(height: 4),
                         Row(
                           children: [
                             const Icon(
@@ -2312,17 +2919,51 @@ class _EventTicketCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Badges Column (Trailing) - Only Event Type Badge (Status removed)
-                  if (event.type != null && event.type!.isNotEmpty)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
+                  // Badges Column (Trailing) - Type Badge and Invitation Status
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (event.type != null && event.type!.isNotEmpty)
                         _EventTypeBadge(
                           type: event.type!,
                           style: _getEventTypeStyle(event.type),
                         ),
-                      ],
-                    ),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: invitationStatusData.color.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: invitationStatusData.color.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              invitationStatusData.icon,
+                              size: 12,
+                              color: invitationStatusData.color,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              invitationStatusData.label,
+                              style: TextStyle(
+                                color: invitationStatusData.color,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
 

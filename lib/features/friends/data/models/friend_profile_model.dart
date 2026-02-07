@@ -130,12 +130,14 @@ class FriendProfileRelationshipModel {
   final bool isFriend;
   final String? incomingRequestId;
   final String? outgoingRequestId;
+  final bool isBlockedByMe;
 
   const FriendProfileRelationshipModel({
     required this.status,
     required this.isFriend,
     this.incomingRequestId,
     this.outgoingRequestId,
+    this.isBlockedByMe = false,
   });
 
   factory FriendProfileRelationshipModel.fromJson(Map<String, dynamic> json) {
@@ -174,11 +176,15 @@ class FriendProfileRelationshipModel {
         json['is_friend'] == true ||
         status == FriendRelationshipStatus.friends;
 
+    final isBlockedByMe = json['isBlockedByMe'] == true ||
+        json['is_blocked_by_me'] == true;
+
     return FriendProfileRelationshipModel(
       status: status,
       isFriend: isFriend,
       incomingRequestId: incomingRequestId,
       outgoingRequestId: outgoingRequestId,
+      isBlockedByMe: isBlockedByMe,
     );
   }
 }
@@ -189,12 +195,14 @@ class FriendProfileModel {
   final FriendProfileCountsModel counts;
   final FriendProfileFriendshipStatusModel friendshipStatus;
   final FriendProfileRelationshipModel? relationship;
+  final bool isBlockedByMe;
 
   const FriendProfileModel({
     required this.user,
     required this.counts,
     required this.friendshipStatus,
     this.relationship,
+    this.isBlockedByMe = false,
   });
 
   factory FriendProfileModel.fromJson(Map<String, dynamic> json) {
@@ -227,15 +235,20 @@ class FriendProfileModel {
       final relationshipRaw = json['relationship'];
       final relationshipJson =
           relationshipRaw is Map<String, dynamic> ? relationshipRaw : null;
+      final rel = relationshipJson != null
+          ? FriendProfileRelationshipModel.fromJson(relationshipJson)
+          : null;
+      final isBlockedByMe = (rel?.isBlockedByMe ?? false) ||
+          json['isBlockedByMe'] == true ||
+          json['is_blocked_by_me'] == true;
       return FriendProfileModel(
         user: FriendProfileUserModel.fromJson(userJson),
         counts: FriendProfileCountsModel.fromJson(countsJson),
         friendshipStatus: friendshipJson.isNotEmpty
             ? FriendProfileFriendshipStatusModel.fromJson(friendshipJson)
             : FriendProfileFriendshipStatusModel.fromJson(json),
-        relationship: relationshipJson != null
-            ? FriendProfileRelationshipModel.fromJson(relationshipJson)
-            : null,
+        relationship: rel,
+        isBlockedByMe: isBlockedByMe,
       );
     }
 
@@ -243,6 +256,12 @@ class FriendProfileModel {
     final relationshipRaw = json['relationship'];
     final relationshipJson =
         relationshipRaw is Map<String, dynamic> ? relationshipRaw : null;
+    final rel = relationshipJson != null
+        ? FriendProfileRelationshipModel.fromJson(relationshipJson)
+        : null;
+    final isBlockedByMe = (rel?.isBlockedByMe ?? false) ||
+        json['isBlockedByMe'] == true ||
+        json['is_blocked_by_me'] == true;
     return FriendProfileModel(
       user: FriendProfileUserModel.fromJson(json),
       // counts may be embedded as flat keys
@@ -252,9 +271,8 @@ class FriendProfileModel {
       friendshipStatus: friendshipJson.isNotEmpty
           ? FriendProfileFriendshipStatusModel.fromJson(friendshipJson)
           : FriendProfileFriendshipStatusModel.fromJson(json),
-      relationship: relationshipJson != null
-          ? FriendProfileRelationshipModel.fromJson(relationshipJson)
-          : null,
+      relationship: rel,
+      isBlockedByMe: isBlockedByMe,
     );
   }
 }

@@ -1,28 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
-import 'package:wish_listy/core/widgets/custom_button.dart';
+import 'package:wish_listy/features/friends/data/models/user_model.dart';
+import 'package:wish_listy/features/profile/presentation/cubit/blocked_users_cubit.dart';
 
-class BlockedUsersScreen extends StatefulWidget {
-  final List<Map<String, dynamic>> blockedUsers;
-
-  const BlockedUsersScreen({super.key, required this.blockedUsers});
-
-  @override
-  _BlockedUsersScreenState createState() => _BlockedUsersScreenState();
-}
-
-class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
-  List<Map<String, dynamic>> _blockedUsers = [];
-  final bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _blockedUsers = List.from(widget.blockedUsers);
-  }
+class BlockedUsersScreen extends StatelessWidget {
+  const BlockedUsersScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +16,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
       builder: (context, localization, child) {
         return Scaffold(
           appBar: AppBar(
-            title: Text('Blocked Users'),
+            title: Text(localization.translate('friends.blockedUsers')),
             backgroundColor: Colors.transparent,
             elevation: 0,
             leading: IconButton(
@@ -55,9 +41,39 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
               ),
             ),
             child: SafeArea(
-              child: _blockedUsers.isEmpty
-                  ? _buildEmptyState(localization)
-                  : _buildBlockedUsersList(localization),
+              child: BlocBuilder<BlockedUsersCubit, BlockedUsersState>(
+                builder: (context, state) {
+                  if (state is BlockedUsersLoading) {
+                    return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+                  }
+                  if (state is BlockedUsersError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                            const SizedBox(height: 16),
+                            Text(
+                              state.message,
+                              style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  if (state is BlockedUsersLoaded) {
+                    if (state.users.isEmpty) {
+                      return _buildEmptyState(localization);
+                    }
+                    return _buildBlockedUsersList(context, state.users, localization);
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
             ),
           ),
         );
@@ -87,7 +103,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'No Blocked Users',
+              localization.translate('friends.noBlockedUsers'),
               style: AppStyles.headingMedium.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w600,
@@ -95,18 +111,11 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'You haven\'t blocked any users yet. When you block someone, they won\'t be able to see your profile or send you messages.',
+              localization.translate('friends.noBlockedUsersDescription'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            CustomButton(
-              text: 'Learn More About Blocking',
-              onPressed: _showBlockingInfo,
-              variant: ButtonVariant.outline,
-              icon: Icons.info_outline,
             ),
           ],
         ),
@@ -114,14 +123,20 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
     );
   }
 
-  Widget _buildBlockedUsersList(LocalizationService localization) {
+  Widget _buildBlockedUsersList(
+    BuildContext context,
+    List<User> users,
+    LocalizationService localization,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.all(20.0),
           child: Text(
-            '${_blockedUsers.length} Blocked User${_blockedUsers.length == 1 ? '' : 's'}',
+            users.length == 1
+                ? localization.translate('friends.blockedUserCountOne')
+                : localization.translate('friends.blockedUserCountMany', args: {'count': users.length.toString()}),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -130,32 +145,27 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            itemCount: _blockedUsers.length,
+            itemCount: users.length,
             itemBuilder: (context, index) {
-              final user = _blockedUsers[index];
-              return _buildBlockedUserCard(user, index, localization);
+              final user = users[index];
+              return _buildBlockedUserCard(context, user, localization);
             },
           ),
         ),
-        if (_blockedUsers.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: CustomButton(
-              text: 'Unblock All Users',
-              onPressed: _unblockAllUsers,
-              variant: ButtonVariant.outline,
-              icon: Icons.lock_open_outlined,
-            ),
-          ),
       ],
     );
   }
 
   Widget _buildBlockedUserCard(
-    Map<String, dynamic> user,
-    int index,
+    BuildContext context,
+    User user,
     LocalizationService localization,
   ) {
+    final initial = user.fullName.trim().isNotEmpty
+        ? user.fullName.trim()[0].toUpperCase()
+        : 'U';
+    final hasImage = user.profileImage != null && user.profileImage!.isNotEmpty;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -171,307 +181,152 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.primary.withValues(alpha: 0.1),
-          ),
-          child: Center(
-            child: Text(
-              user['name']?[0]?.toUpperCase() ?? 'U',
-              style: AppStyles.bodyLarge.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-              ),
+        leading: CircleAvatar(
+          radius: 25,
+          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+          backgroundImage: hasImage ? NetworkImage(user.profileImage!) : null,
+          child: hasImage ? null : Text(
+            initial,
+            style: AppStyles.bodyLarge.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ),
         title: Text(
-          user['name'] ?? 'Unknown User',
+          user.fullName,
           style: AppStyles.bodyMedium.copyWith(
             fontWeight: FontWeight.w600,
             color: AppColors.textPrimary,
           ),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              user['email'] ?? 'No email',
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Blocked on ${_formatBlockDate(user['blockedDate'])}',
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textTertiary,
-                fontSize: 12,
-              ),
-            ),
-          ],
+        subtitle: Text(
+          user.getDisplayHandle(),
+          style: AppStyles.bodySmall.copyWith(
+            color: AppColors.textSecondary,
+          ),
         ),
-        trailing: PopupMenuButton<String>(
-          icon: Icon(Icons.more_vert, color: AppColors.textTertiary),
-          onSelected: (value) {
-            if (value == 'unblock') {
-              _unblockUser(index);
-            } else if (value == 'report') {
-              _reportUser(user);
-            }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'unblock',
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.lock_open_outlined,
-                    color: AppColors.success,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Text('Unblock User'),
-                ],
-              ),
+        trailing: TextButton(
+          onPressed: () => _unblockUser(context, user, localization),
+          child: Text(
+            localization.translate('friends.unblockUser'),
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
             ),
-            PopupMenuItem(
-              value: 'report',
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.report_outlined,
-                    color: AppColors.warning,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Text('Report User'),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  String _formatBlockDate(dynamic blockedDate) {
-    if (blockedDate == null) return 'Unknown date';
-
-    try {
-      if (blockedDate is String) {
-        final date = DateTime.parse(blockedDate);
-        return '${date.day}/${date.month}/${date.year}';
-      } else if (blockedDate is DateTime) {
-        return '${blockedDate.day}/${blockedDate.month}/${blockedDate.year}';
-      }
-    } catch (e) {
-      // Handle parsing error
-    }
-
-    return 'Unknown date';
-  }
-
-  void _unblockUser(int index) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Unblock User'),
-        content: Text(
-          'Are you sure you want to unblock ${_blockedUsers[index]['name']}? They will be able to see your profile and send you messages again.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+  SnackBar _buildLoadingSnackBar(String message) {
+    return SnackBar(
+      content: Row(
+        children: [
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
           ),
-          CustomButton(
-            text: 'Unblock',
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _blockedUsers.removeAt(index);
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('User unblocked successfully!'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            },
-            variant: ButtonVariant.primary,
-            size: ButtonSize.small,
-            fullWidth: false,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              message,
+              style: AppStyles.bodyMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w500),
+            ),
           ),
         ],
       ),
+      backgroundColor: AppColors.primary,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      duration: const Duration(days: 1),
     );
   }
 
-  void _unblockAllUsers() {
-    if (_blockedUsers.isEmpty) return;
-
-    showDialog(
+  Future<void> _unblockUser(
+    BuildContext context,
+    User user,
+    LocalizationService localization,
+  ) async {
+    final name = user.fullName.trim().isNotEmpty ? user.fullName : user.getDisplayHandle();
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Unblock All Users'),
-        content: Text(
-          'Are you sure you want to unblock all ${_blockedUsers.length} users? They will be able to see your profile and send you messages again.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          CustomButton(
-            text: 'Unblock All',
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _blockedUsers.clear();
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('All users unblocked successfully!'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            },
-            variant: ButtonVariant.primary,
-            size: ButtonSize.small,
-            fullWidth: false,
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _reportUser(Map<String, dynamic> user) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Report User'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Report ${user['name']} for inappropriate behavior.',
-              style: AppStyles.bodyMedium,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: AppColors.surface,
+          title: Text(
+            localization.translate('friends.unblockUserConfirmTitle', args: {'name': name}),
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Your report will be reviewed by our team. Please provide details about the issue.',
-              style: AppStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+          ),
+          content: Text(
+            localization.translate('friends.unblockUserConfirmMessage'),
+            style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(localization.translate('dialogs.cancel')),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: Text(
+                localization.translate('friends.unblockUser'),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
               ),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          CustomButton(
-            text: 'Submit Report',
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Report submitted successfully!'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
-            },
-            variant: ButtonVariant.primary,
-            size: ButtonSize.small,
-            fullWidth: false,
-          ),
-        ],
-      ),
+        );
+      },
     );
-  }
 
-  void _showBlockingInfo() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('About Blocking Users'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildInfoItem(
-              icon: Icons.block_outlined,
-              title: 'What happens when you block someone?',
-              description:
-                  'Blocked users cannot see your profile, send you messages, or view your wishlists.',
-            ),
-            const SizedBox(height: 16),
-            _buildInfoItem(
-              icon: Icons.visibility_off_outlined,
-              title: 'Profile visibility',
-              description:
-                  'Your profile and activities will be completely hidden from blocked users.',
-            ),
-            const SizedBox(height: 16),
-            _buildInfoItem(
-              icon: Icons.settings_outlined,
-              title: 'Managing blocked users',
-              description:
-                  'You can unblock users anytime from this screen. They will be notified when unblocked.',
-            ),
-          ],
-        ),
-        actions: [
-          CustomButton(
-            text: 'Got It',
-            onPressed: () => Navigator.pop(context),
-            variant: ButtonVariant.primary,
-            size: ButtonSize.small,
-            fullWidth: false,
-          ),
-        ],
-      ),
+    if (confirmed != true || !context.mounted) return;
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final loadingSnackBar = _buildLoadingSnackBar(
+      localization.translate('common.pleaseWait') ?? 'Processing...',
     );
-  }
+    scaffoldMessenger.showSnackBar(loadingSnackBar);
 
-  Widget _buildInfoItem({
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: AppColors.primary, size: 20),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final cubit = context.read<BlockedUsersCubit>();
+    final success = await cubit.unblockUser(user.id);
+
+    if (!context.mounted) return;
+    scaffoldMessenger.hideCurrentSnackBar();
+
+    if (success) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Row(
             children: [
-              Text(
-                title,
-                style: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: AppStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
+              const Icon(Icons.lock_open, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Text(localization.translate('friends.userUnblocked')),
             ],
           ),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
-      ],
-    );
+      );
+    } else {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(localization.translate('friends.failedToRemoveFriend')),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
   }
 }

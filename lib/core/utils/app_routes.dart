@@ -31,6 +31,8 @@ import '../../features/profile/presentation/screens/personal_information_screen.
 import '../../features/profile/presentation/screens/privacy_security_screen.dart';
 import '../../features/profile/presentation/screens/change_password_screen.dart';
 import '../../features/profile/presentation/screens/blocked_users_screen.dart';
+import '../../features/profile/presentation/cubit/blocked_users_cubit.dart';
+import '../../features/profile/data/repository/privacy_repository.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/events/presentation/screens/guest_management_screen.dart';
 import '../../features/events/presentation/screens/event_settings_screen.dart';
@@ -257,9 +259,11 @@ class AppRoutes {
         builder: (context) => const ChangePasswordScreen(),
       );
     } else if (settings.name == blockedUsers) {
-      final args = settings.arguments as List<Map<String, dynamic>>;
       return MaterialPageRoute(
-        builder: (context) => BlockedUsersScreen(blockedUsers: args),
+        builder: (context) => BlocProvider(
+          create: (_) => BlockedUsersCubit(repository: PrivacyRepository())..loadBlockedUsers(),
+          child: const BlockedUsersScreen(),
+        ),
       );
     } else if (settings.name == friendProfile) {
       final args = settings.arguments as Map<String, dynamic>;

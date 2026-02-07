@@ -19,13 +19,12 @@ import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 import 'package:wish_listy/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:wish_listy/features/profile/presentation/cubit/profile_state.dart';
+import 'package:wish_listy/features/profile/presentation/widgets/profile/profile_decorative_background_widget.dart';
+import 'package:wish_listy/features/profile/presentation/widgets/profile/profile_error_state_widget.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/profile/profile_header_widget.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/profile/profile_stats_widget.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/profile/profile_setting_section_widget.dart';
-import 'package:wish_listy/features/profile/presentation/widgets/profile/profile_logout_section_widget.dart';
-import 'package:wish_listy/features/profile/presentation/widgets/profile/profile_decorative_background_widget.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/profile/profile_interests_section_widget.dart';
-import 'package:wish_listy/features/profile/presentation/widgets/profile/profile_error_state_widget.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -174,7 +173,6 @@ class ProfileScreenState extends State<ProfileScreen>
   Widget _buildMainContent(LocalizationService localization) {
     return Column(
       children: [
-        // Profile Header
         ProfileHeaderWidget(
           userName: _userProfile?.name ?? '',
           profileImage: _userProfile?.profilePicture,
@@ -183,39 +181,37 @@ class ProfileScreenState extends State<ProfileScreen>
           onEditPersonalInfo: _editPersonalInfo,
           onShowFullScreenImage: _showFullScreenImageView,
         ),
-        // Content
-                Expanded(
-                    child: Transform(
-                      transform: Matrix4.translationValues(0.0, -20.0, 0.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
+        Expanded(
+          child: Transform(
+            transform: Matrix4.translationValues(0.0, -20.0, 0.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
-                              blurRadius: 18,
-                              offset: const Offset(0, -2),
-                            ),
-                          ],
-                        ),
-                    child: RefreshIndicator(
-                      onRefresh: _refreshProfile,
-                      color: AppColors.primary,
-                child: _buildContentBody(localization),
-                                ),
-                    ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 18,
+                    offset: const Offset(0, -2),
                   ),
-                ),
-              ],
+                ],
+              ),
+              child: RefreshIndicator(
+                onRefresh: _refreshProfile,
+                color: AppColors.primary,
+                child: _buildContentBody(localization),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildContentBody(LocalizationService localization) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
-    
     if (_errorMessage != null) {
       return ProfileErrorStateWidget(
         errorMessage: _errorMessage!,
@@ -223,9 +219,8 @@ class ProfileScreenState extends State<ProfileScreen>
         onRetry: () => _loadUserProfile(forceRefresh: true),
       );
     }
-    
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       child: AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {
@@ -234,11 +229,10 @@ class ProfileScreenState extends State<ProfileScreen>
             child: SlideTransition(
               position: _slideAnimation,
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Stats
                     if (_userProfile != null)
                       ProfileStatsWidget(
                         friendsCount: _userProfile!.friendsCount,
@@ -250,9 +244,8 @@ class ProfileScreenState extends State<ProfileScreen>
                         onFriendsTap: () => MainNavigation.switchToTab(context, 3),
                         onWishlistsTap: () => MainNavigation.switchToTab(context, 1),
                         onEventsTap: () => MainNavigation.switchToTab(context, 2),
-                    ),
+                      ),
                     const SizedBox(height: 16),
-                    // Interests
                     if (_userProfile != null)
                       ProfileInterestsSectionWidget(
                         interests: _userProfile!.interests,
@@ -263,109 +256,132 @@ class ProfileScreenState extends State<ProfileScreen>
                         onEditInterests: _showInterestsSelectionSheet,
                       ),
                     const SizedBox(height: 16),
-                    // Account Settings
                     ProfileSettingSectionWidget(
-                      title: localization.translate('profile.accountSettings'),
-                      sectionIcon: Icons.settings,
-                      gradientColors: [AppColors.info, AppColors.info.withOpacity(0.8)],
+                      title: localization.translate('profile.account'),
+                      sectionIcon: Icons.person_outline,
+                      gradientColors: [AppColors.info, AppColors.info.withValues(alpha: 0.8)],
                       items: [
                         ProfileSettingItem(
-            icon: Icons.person_outline,
-                          title: localization.translate('profile.personalInformation'),
+                          icon: Icons.person_outline,
+                          title: localization.translate('profile.editProfile'),
                           subtitle: localization.translate('profile.nameEmailBio'),
-            onTap: _editPersonalInfo,
-            color: AppColors.primary,
-          ),
+                          onTap: _editPersonalInfo,
+                          color: AppColors.primary,
+                        ),
                         ProfileSettingItem(
-            icon: Icons.lock_outline,
+                          icon: Icons.lock_outline,
                           title: localization.translate('profile.changePassword'),
                           subtitle: localization.translate('profile.changePasswordSubtitle'),
-            onTap: _changePassword,
-            color: AppColors.secondary,
-          ),
+                          onTap: _changePassword,
+                          color: AppColors.secondary,
+                          showDivider: false,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ProfileSettingSectionWidget(
+                      title: localization.translate('profile.settings'),
+                      sectionIcon: Icons.tune,
+                      gradientColors: [AppColors.warning, AppColors.warning.withValues(alpha: 0.8)],
+                      items: [
                         ProfileSettingItem(
-            icon: Icons.notifications_outlined,
+                          icon: Icons.notifications_outlined,
                           title: localization.translate('profile.notificationSettings'),
                           subtitle: localization.translate('profile.notificationSettingsSubtitle'),
-            onTap: _notificationSettings,
-            color: AppColors.accent,
-          ),
-        ],
-      ),
-                    const SizedBox(height: 16),
-                    // App Settings
-                    ProfileSettingSectionWidget(
-                      title: localization.translate('profile.appSettings'),
-                      sectionIcon: Icons.tune,
-                      gradientColors: [AppColors.warning, AppColors.warning.withOpacity(0.8)],
-                      items: [
+                          onTap: _notificationSettings,
+                          color: AppColors.accent,
+                        ),
                         ProfileSettingItem(
-            icon: Icons.language_outlined,
-                          title: localization.translate('profile.language'),
-            subtitle: _currentLanguage == 'en' 
+                          icon: Icons.language_outlined,
+                          title: localization.translate('profile.languageAndTheme'),
+                          subtitle: _currentLanguage == 'en'
                               ? localization.translate('profile.english')
                               : localization.translate('profile.arabic'),
-            onTap: _languageSettings,
-            color: AppColors.secondary,
+                          onTap: _languageSettings,
+                          color: AppColors.secondary,
                           showDivider: false,
-          ),
-        ],
-      ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
-                    // Support & Legal
                     ProfileSettingSectionWidget(
-                      title: localization.translate('profile.supportLegal'),
-                      sectionIcon: Icons.help_outline,
-                      gradientColors: [AppColors.success, AppColors.success.withOpacity(0.8)],
+                      title: localization.translate('profile.privacy'),
+                      sectionIcon: Icons.shield_outlined,
+                      gradientColors: [AppColors.secondary, AppColors.secondary.withValues(alpha: 0.8)],
                       items: [
                         ProfileSettingItem(
-            icon: Icons.email_outlined,
-                          title: localization.translate('profile.contactUs'),
-                          subtitle: localization.translate('profile.contactUsSubtitle'),
-            onTap: _contactUs,
-            color: AppColors.primary,
-          ),
+                          icon: Icons.block_outlined,
+                          title: localization.translate('friends.blockedUser'),
+                          subtitle: localization.translate('profile.blockedUsersSubtitle'),
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.blockedUsers),
+                          color: AppColors.secondary,
+                        ),
                         ProfileSettingItem(
-            icon: Icons.shield_outlined,
+                          icon: Icons.verified_user,
                           title: localization.translate('profile.privacyPolicy'),
                           subtitle: localization.translate('profile.privacyPolicySubtitle'),
-            onTap: _openPrivacyPolicy,
-            color: AppColors.secondary,
-          ),
+                          onTap: _openPrivacyPolicy,
+                          color: AppColors.secondary,
+                          showDivider: false,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    ProfileSettingSectionWidget(
+                      title: localization.translate('profile.support'),
+                      sectionIcon: Icons.help_outline,
+                      gradientColors: [AppColors.success, AppColors.success.withValues(alpha: 0.8)],
+                      items: [
                         ProfileSettingItem(
-            icon: Icons.description_outlined,
-                          title: localization.translate('profile.termsConditions'),
-                          subtitle: localization.translate('profile.termsConditionsSubtitle'),
-            onTap: _openTermsConditions,
-            color: AppColors.accent,
-          ),
+                          icon: Icons.headset_outlined,
+                          title: localization.translate('profile.contactUs'),
+                          subtitle: localization.translate('profile.contactUsSubtitle'),
+                          onTap: _contactUs,
+                          color: AppColors.primary,
+                        ),
                         ProfileSettingItem(
-            icon: Icons.help_outline,
+                          icon: Icons.help_outline,
                           title: localization.translate('profile.faq'),
                           subtitle: localization.translate('profile.faqSubtitle'),
-            onTap: _openFAQ,
-            color: AppColors.info,
+                          onTap: _openFAQ,
+                          color: AppColors.info,
+                        ),
+                        ProfileSettingItem(
+                          icon: Icons.description_outlined,
+                          title: localization.translate('profile.termsConditions'),
+                          subtitle: localization.translate('profile.termsConditionsSubtitle'),
+                          onTap: _openTermsConditions,
+                          color: AppColors.accent,
                           showDivider: false,
-          ),
-        ],
-      ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
-                    // Logout & Delete
-                    ProfileLogoutSectionWidget(
-                      logoutText: localization.translate('auth.logout'),
-                      logoutSubtitle: localization.translate('profile.signOutOfAccount'),
-                      deleteAccountText: localization.translate('profile.deleteAccount'),
-                      deleteAccountSubtitle: localization.translate('profile.deleteAccountMessage'),
-                      onLogout: () => _confirmLogout(localization),
-                      onDeleteAccount: () => _confirmDeleteAccount(localization),
+                    ProfileSettingSectionWidget(
+                      title: localization.translate('profile.dangerZone'),
+                      sectionIcon: Icons.warning_amber_rounded,
+                      gradientColors: [AppColors.error, AppColors.error.withValues(alpha: 0.8)],
+                      items: [
+                        ProfileSettingItem(
+                          icon: Icons.logout,
+                          title: localization.translate('auth.logout'),
+                          subtitle: localization.translate('profile.signOutOfAccount'),
+                          onTap: () => _confirmLogout(localization),
+                          color: AppColors.textSecondary,
+                        ),
+                        ProfileSettingItem(
+                          icon: Icons.delete_outline,
+                          title: localization.translate('profile.deleteAccount'),
+                          subtitle: localization.translate('profile.deleteAccountMessage'),
+                          onTap: () => _confirmDeleteAccount(localization),
+                          color: AppColors.error,
+                          showDivider: false,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 24),
-                    // App Version - long press to copy FCM token
                     _buildVersionWidget(),
-                    // Extra bottom padding so version text stays above bottom nav bar
-                    SizedBox(
-                      height: MediaQuery.of(context).padding.bottom + 88,
-                    ),
+                    SizedBox(height: MediaQuery.of(context).padding.bottom + 88),
                   ],
                 ),
               ),

@@ -32,6 +32,7 @@ class FriendProfileController extends GetxController {
   final RxString outgoingRequestId = ''.obs;
   final RxBool hasIncomingRequest = false.obs;
   final RxBool hasOutgoingRequest = false.obs;
+  final RxBool isBlockedByMe = false.obs;
 
   @override
   void onInit() {
@@ -90,6 +91,8 @@ class FriendProfileController extends GetxController {
 
   void _syncRelationshipFromProfile() {
     final p = profile.value;
+    isBlockedByMe.value = p?.isBlockedByMe ?? false;
+
     final rel = p?.relationship;
     if (rel != null) {
       relationshipStatus.value = rel.status;
