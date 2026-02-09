@@ -711,21 +711,24 @@ class FriendsScreenState extends State<FriendsScreen>
   }
 
   Widget _buildEmptyState() {
-    // Important: Empty state still needs to be scrollable so RefreshIndicator works.
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Use the full available height to center content properly
+        final availableHeight = constraints.maxHeight;
         return SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: SizedBox(
+            height: availableHeight.isFinite && availableHeight > 0 
+                ? availableHeight 
+                : MediaQuery.of(context).size.height * 0.6,
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: theme.AppTheme.spacing32,
-                  vertical: theme.AppTheme.spacing40,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
                       width: 80,
@@ -798,61 +801,82 @@ class FriendsScreenState extends State<FriendsScreen>
   }
 
   Widget _buildEmptyFriendRequests() {
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              color: AppColors.info.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(60),
-            ),
-            child: Icon(
-              Icons.person_add_outlined,
-              size: 60,
-              color: AppColors.info,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Use the full available height to center content properly
+        final availableHeight = constraints.maxHeight;
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: SizedBox(
+            height: availableHeight.isFinite && availableHeight > 0 
+                ? availableHeight 
+                : MediaQuery.of(context).size.height * 0.6,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: theme.AppTheme.spacing32,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: AppColors.info.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(40),
+                      ),
+                      child: Icon(
+                        Icons.person_add_outlined,
+                        size: 40,
+                        color: AppColors.info,
+                      ),
+                    ),
+                    const SizedBox(height: theme.AppTheme.spacing16),
+                    Consumer<LocalizationService>(
+                      builder: (context, localization, child) {
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              localization.translate('friends.noFriendRequests'),
+                              style: AppStyles.headingMedium.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: theme.AppTheme.spacing12),
+                            Text(
+                              localization.translate('friends.noFriendRequestsDescription'),
+                              style: AppStyles.bodyMedium.copyWith(
+                                color: AppColors.textTertiary,
+                                height: 1.5,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: theme.AppTheme.spacing24),
+                            CustomButton(
+                              text: localization.translate('friends.addFriend'),
+                              onPressed: () {
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.addFriend,
+                                );
+                              },
+                              variant: ButtonVariant.primary,
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 24),
-          Consumer<LocalizationService>(
-            builder: (context, localization, child) {
-              return Column(
-                children: [
-                  Text(
-                    localization.translate('friends.noFriendRequests'),
-                    style: AppStyles.headingMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    localization.translate('friends.noFriendRequestsDescription'),
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.textTertiary,
-                      height: 1.5,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  CustomButton(
-                    text: localization.translate('friends.addFriend'),
-                    onPressed: () {
-                      Navigator.pushNamed(
-                        context,
-                        AppRoutes.addFriend,
-                      );
-                    },
-                    variant: ButtonVariant.primary,
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

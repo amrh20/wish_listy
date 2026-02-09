@@ -1050,6 +1050,12 @@
     "female": "أنثى",
     "dateOfBirth": "تاريخ الميلاد",
     "selectDateOfBirth": "اختر تاريخ الميلاد",
+    "selectDate": "اختر التاريخ",
+    "enterDateDDMMYYYY": "أدخل التاريخ (يوم/شهر/سنة)",
+    "enterDateManually": "أدخل التاريخ يدوياً",
+    "pickFromCalendar": "اختر من التقويم",
+    "enterValidDate": "أدخل تاريخاً صحيحاً (يوم/شهر/سنة)",
+    "dateCannotBeFuture": "التاريخ لا يمكن أن يكون في المستقبل",
     "country": "الدولة",
     "selectCountry": "اختر دولتك",
     "searchCountry": "بحث",
@@ -1113,6 +1119,8 @@
     "signOutOfAccount": "تسجيل الخروج من حسابك"
   },
   "cards": {
+    "interestsUpdatedSuccessfully": "تم تحديث الاهتمامات بنجاح",
+    "failedToUpdateInterests": "فشل تحديث الاهتمامات",
     "saveChanges": "احفظ التغييرات",
     "wish": "أمنية",
     "wishes": "أمنيات",
@@ -1374,6 +1382,7 @@
   "dialogs": {
     "close": "إغلاق",
     "cancel": "إلغاء",
+    "ok": "موافق",
     "gotIt": "فهمت",
     "change": "تغيير",
     "delete": "حذف",

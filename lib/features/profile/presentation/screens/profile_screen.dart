@@ -1046,86 +1046,55 @@ class ProfileScreenState extends State<ProfileScreen>
 
   /// Update user interests
   Future<void> updateInterests(List<String> selectedInterests) async {
+    if (!mounted) return;
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    scaffoldMessenger.showSnackBar(
+      _buildLoadingSnackBar(
+        localization.translate('common.pleaseWait') ?? 'Saving...',
+        localization,
+      ),
+    );
     try {
       final apiService = ApiService();
-      
-      // Call API: PUT /api/users/interests
       final response = await apiService.put(
         '/users/interests',
         data: {'interests': selectedInterests},
       );
 
+      if (!mounted) return;
+      scaffoldMessenger.hideCurrentSnackBar();
+
       if (response['success'] == true || response['success'] == null) {
-        // Update local user profile instantly
-        if (mounted && _userProfile != null) {
+        if (_userProfile != null) {
           setState(() {
             _userProfile = _userProfile!.copyWith(interests: selectedInterests);
           });
         }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Text(Provider.of<LocalizationService>(context, listen: false).translate('cards.interestsUpdatedSuccessfully')),
-                ],
-              ),
-              backgroundColor: AppColors.success,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          );
-        }
+        scaffoldMessenger.showSnackBar(
+          _buildSuccessSnackBar(localization.translate('cards.interestsUpdatedSuccessfully'), localization),
+        );
       } else {
         throw Exception(response['message'] ?? 'Failed to update interests');
       }
     } on ApiException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(e.message),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        );
-      }
+      if (!mounted) return;
+      scaffoldMessenger.hideCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
+        _buildErrorSnackBar(
+          e.message.isNotEmpty ? e.message : (localization.translate('dialogs.errorGeneric') ?? 'Something went wrong'),
+          localization,
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.error_outline, color: Colors.white),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(Provider.of<LocalizationService>(context, listen: false).translate('cards.failedToUpdateInterests')),
-                ),
-              ],
-            ),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        );
-      }
+      if (!mounted) return;
+      scaffoldMessenger.hideCurrentSnackBar();
+      scaffoldMessenger.showSnackBar(
+        _buildErrorSnackBar(
+          localization.translate('cards.failedToUpdateInterests') ?? 'Failed to update interests',
+          localization,
+        ),
+      );
     }
   }
 

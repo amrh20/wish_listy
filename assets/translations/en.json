@@ -1018,6 +1018,12 @@
     "enterValidEmail": "Please enter a valid email",
     "dateOfBirth": "Date of Birth",
     "selectDateOfBirth": "Select Date of Birth",
+    "selectDate": "Select date",
+    "enterDateDDMMYYYY": "Enter date (DD/MM/YYYY)",
+    "enterDateManually": "Enter date manually",
+    "pickFromCalendar": "Pick from calendar",
+    "enterValidDate": "Enter a valid date (DD/MM/YYYY)",
+    "dateCannotBeFuture": "Date cannot be in the future",
     "country": "Country",
     "selectCountry": "Select your country",
     "searchCountry": "Search",
@@ -1135,6 +1141,8 @@
     "signOutOfAccount": "Sign out of your account"
   },
   "cards": {
+    "interestsUpdatedSuccessfully": "Interests updated successfully",
+    "failedToUpdateInterests": "Failed to update interests",
     "saveChanges": "Save Changes",
     "wish": "Wish",
     "wishes": "Wishes",
@@ -1395,6 +1403,7 @@
   "dialogs": {
     "close": "Close",
     "cancel": "Cancel",
+    "ok": "OK",
     "gotIt": "Got it",
     "change": "Change",
     "delete": "Delete",

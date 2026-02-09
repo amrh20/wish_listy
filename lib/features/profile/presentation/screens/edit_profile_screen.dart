@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:country_picker/country_picker.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -9,6 +10,7 @@ import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/utils/app_routes.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -421,6 +423,18 @@ class _EditProfileScreenState extends State<EditProfileScreen>
                       ],
                     ),
                   ),
+                  if (_selectedBirthDate != null) ...[
+                    // Edit icon only when date is already set
+                    GestureDetector(
+                      onTap: () => _enterDateManually(localization),
+                      child: Icon(
+                        Icons.edit_outlined,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                   Icon(
                     Icons.arrow_forward_ios,
                     color: AppColors.textTertiary,
@@ -491,6 +505,9 @@ class _EditProfileScreenState extends State<EditProfileScreen>
             label: localization.translate('auth.phone'),
             prefixIcon: Icons.phone,
             keyboardType: TextInputType.phone,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[\d+\-\s]')),
+            ],
           ),
         ],
       ),
@@ -724,12 +741,14 @@ class _EditProfileScreenState extends State<EditProfileScreen>
     }
   }
 
+  // Normal date picker (calendar only - no switch to input)
   void _selectBirthDate(LocalizationService localization) async {
     final date = await showDatePicker(
       context: context,
       initialDate: _selectedBirthDate ?? DateTime(2000),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -745,9 +764,123 @@ class _EditProfileScreenState extends State<EditProfileScreen>
       },
     );
 
-    if (date != null) {
+    if (date != null && mounted) {
       setState(() {
         _selectedBirthDate = date;
+      });
+    }
+  }
+
+  // Manual date entry with auto-formatting
+  void _enterDateManually(LocalizationService localization) async {
+    final controller = TextEditingController();
+    if (_selectedBirthDate != null) {
+      final d = _selectedBirthDate!;
+      controller.text =
+          '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+    }
+    String? errorText;
+
+    final picked = await showDialog<DateTime>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text(localization.translate('profile.selectDate') ?? 'Select date'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      localization.translate('profile.enterDateDDMMYYYY') ?? 'Enter date (DD/MM/YYYY)',
+                      style: AppStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: controller,
+                      keyboardType: TextInputType.number,
+                      maxLength: 10,
+                      autofocus: true,
+                      inputFormatters: [
+                        _DateSlashFormatter(),
+                      ],
+                      decoration: InputDecoration(
+                        hintText: 'DD/MM/YYYY',
+                        errorText: errorText,
+                        errorMaxLines: 2,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.calendar_today),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(localization.translate('dialogs.cancel') ?? 'Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    final raw = controller.text.replaceAll('/', '');
+                    if (raw.length != 8) {
+                      setDialogState(() {
+                        errorText = localization.translate('profile.enterValidDate') ?? 'Enter a valid date (DD/MM/YYYY)';
+                      });
+                      return;
+                    }
+                    final day = int.tryParse(raw.substring(0, 2));
+                    final month = int.tryParse(raw.substring(2, 4));
+                    final year = int.tryParse(raw.substring(4, 8));
+                    if (day == null || month == null || year == null ||
+                        day < 1 || day > 31 || month < 1 || month > 12 ||
+                        year < 1900) {
+                      setDialogState(() {
+                        errorText = localization.translate('profile.enterValidDate') ?? 'Enter a valid date (DD/MM/YYYY)';
+                      });
+                      return;
+                    }
+                    DateTime date;
+                    try {
+                      date = DateTime(year, month, day);
+                      if (date.day != day || date.month != month) {
+                        setDialogState(() {
+                          errorText = localization.translate('profile.enterValidDate') ?? 'Enter a valid date (DD/MM/YYYY)';
+                        });
+                        return;
+                      }
+                    } catch (_) {
+                      setDialogState(() {
+                        errorText = localization.translate('profile.enterValidDate') ?? 'Enter a valid date (DD/MM/YYYY)';
+                      });
+                      return;
+                    }
+                    if (date.isAfter(DateTime.now())) {
+                      setDialogState(() {
+                        errorText = localization.translate('profile.dateCannotBeFuture') ?? 'Date cannot be in the future';
+                      });
+                      return;
+                    }
+                    Navigator.pop(context, date);
+                  },
+                  child: Text(localization.translate('dialogs.ok') ?? 'OK'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (picked != null && mounted) {
+      setState(() {
+        _selectedBirthDate = picked;
       });
     }
   }
@@ -785,6 +918,9 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         profileData['country_code'] = _selectedCountry!.countryCode;
       }
 
+      // Include phone in payload (API may use for profile/contact)
+      profileData['phone'] = _phoneController.text.trim();
+
       // Call API to update profile
       await authRepository.updateProfile(profileData);
 
@@ -807,7 +943,16 @@ class _EditProfileScreenState extends State<EditProfileScreen>
           ),
         );
 
-        Navigator.pop(context, profileData);
+        // Check if we can pop, otherwise navigate to main navigation
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context, profileData);
+        } else {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.mainNavigation,
+            (route) => false,
+          );
+        }
       }
     } on ApiException catch (e) {
       if (mounted) {
@@ -834,6 +979,134 @@ class _EditProfileScreenState extends State<EditProfileScreen>
         );
       }
     }
+  }
+}
+
+/// Formats numeric input as DD/MM/YYYY with smart validation:
+/// - Day: max 31, auto-pads with 0 (e.g. 4 → 04)
+/// - Month: max 12, auto-pads with 0 (e.g. 9 → 09)
+/// - Adds slashes automatically after day and month
+/// - Handles backspace correctly (deletes through slashes)
+class _DateSlashFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final oldDigits = oldValue.text.replaceAll(RegExp(r'[^\d]'), '');
+    final newDigits = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
+
+    // If deleting, just strip to raw digits and reformat simply
+    if (newDigits.length < oldDigits.length) {
+      // User is deleting - use simple formatting without smart padding
+      if (newDigits.isEmpty) {
+        return const TextEditingValue(
+          text: '',
+          selection: TextSelection.collapsed(offset: 0),
+        );
+      }
+      final buffer = StringBuffer();
+      for (int i = 0; i < newDigits.length; i++) {
+        if (i == 2 || i == 4) buffer.write('/');
+        buffer.write(newDigits[i]);
+      }
+      final formatted = buffer.toString();
+      return TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
+
+    // Adding digits - apply smart validation
+    String digits = newDigits;
+    if (digits.length > 8) return oldValue;
+
+    final buffer = StringBuffer();
+    int i = 0;
+
+    // === Day (positions 0-1) ===
+    if (i < digits.length) {
+      final d1 = int.parse(digits[i]);
+      if (d1 > 3) {
+        buffer.write('0');
+        buffer.write(digits[i]);
+        i++;
+      } else if (d1 == 3 && i + 1 < digits.length) {
+        final d2 = int.parse(digits[i + 1]);
+        if (d2 > 1) {
+          buffer.write('31');
+          i += 2;
+        } else {
+          buffer.write(digits[i]);
+          i++;
+          buffer.write(digits[i]);
+          i++;
+        }
+      } else if (d1 == 0 && i + 1 < digits.length && digits[i + 1] == '0') {
+        buffer.write('01');
+        i += 2;
+      } else {
+        buffer.write(digits[i]);
+        i++;
+        if (i < digits.length) {
+          buffer.write(digits[i]);
+          i++;
+        }
+      }
+    }
+
+    // Slash after day
+    if (buffer.length == 2 && i <= digits.length) {
+      buffer.write('/');
+    }
+
+    // === Month (positions 2-3) ===
+    if (i < digits.length) {
+      final m1 = int.parse(digits[i]);
+      if (m1 > 1) {
+        buffer.write('0');
+        buffer.write(digits[i]);
+        i++;
+      } else if (m1 == 1 && i + 1 < digits.length) {
+        final m2 = int.parse(digits[i + 1]);
+        if (m2 > 2) {
+          buffer.write('12');
+          i += 2;
+        } else {
+          buffer.write(digits[i]);
+          i++;
+          buffer.write(digits[i]);
+          i++;
+        }
+      } else if (m1 == 0 && i + 1 < digits.length && digits[i + 1] == '0') {
+        buffer.write('01');
+        i += 2;
+      } else {
+        buffer.write(digits[i]);
+        i++;
+        if (i < digits.length) {
+          buffer.write(digits[i]);
+          i++;
+        }
+      }
+    }
+
+    // Slash after month
+    if (buffer.length == 5 && i <= digits.length) {
+      buffer.write('/');
+    }
+
+    // === Year (positions 4-7) ===
+    while (i < digits.length) {
+      buffer.write(digits[i]);
+      i++;
+    }
+
+    final formatted = buffer.toString();
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
   }
 }
 

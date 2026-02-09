@@ -15,19 +15,23 @@ class EmptyMyEvents extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Use the full available height to center content properly
+        final availableHeight = constraints.maxHeight;
         // Keep empty state scrollable so RefreshIndicator works.
         return SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: SizedBox(
+            height: availableHeight.isFinite && availableHeight > 0 
+                ? availableHeight 
+                : MediaQuery.of(context).size.height * 0.6,
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: theme.AppTheme.spacing32,
-                  vertical: theme.AppTheme.spacing40,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
                       width: 80,
@@ -95,19 +99,23 @@ class EmptyInvitedEvents extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Use the full available height to center content properly
+        final availableHeight = constraints.maxHeight;
         // Keep empty state scrollable so RefreshIndicator works.
         return SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: SizedBox(
+            height: availableHeight.isFinite && availableHeight > 0 
+                ? availableHeight 
+                : MediaQuery.of(context).size.height * 0.6,
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: theme.AppTheme.spacing32,
-                  vertical: theme.AppTheme.spacing40,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
                       width: 80,

@@ -5,7 +5,7 @@ description: "WishListy - Connect through thoughtful gifting. A modern Flutter a
 publish_to: 'none'
 
 # Version and build number
-version: 1.0.0+35
+version: 1.0.0+48
 
 environment:
   sdk: ^3.8.1
@@ -127,10 +127,7 @@ flutter:
   # Assets configuration - Minimal set
   assets:
     - assets/images/
-    - assets/images/categories/
-    - assets/icons/
     - assets/translations/
-    - assets/lottie/
     - assets/vectors/bottom_sheets/
 
   # Fonts configuration
@@ -160,18 +157,14 @@ flutter:
 
 # App Icon Configuration
 flutter_launcher_icons:
+  # Android Configuration (icon_android_fg always as background)
   android: "launcher_icon"
-  ios: true
-  image_path: "assets/images/app_logo.png"
   min_sdk_android: 21
-  
-  # For Android (Adaptive Icon) - Force White Background
-  adaptive_icon_background: "#FFFFFF"  # Pure white background
-  adaptive_icon_foreground: "assets/images/app_logo.png"
-  
-  # For iOS - Remove Transparency (fill with white)
-  remove_alpha_ios: true  # Attempts to fill transparency with white
-  
-  # Android specific settings
-  android_gravity: center
-  adaptive_icon_padding: true
+  image_path_android: "assets/images/wishlisty_icon.png"
+  adaptive_icon_background: "#7C3AED"
+  adaptive_icon_foreground: "assets/images/icon_android_fg.png"
+
+  # iOS Configuration (Uses the full solid image directly)
+  ios: true
+  image_path_ios: "assets/images/wishlisty_icon.png"
+  remove_alpha_ios: true
