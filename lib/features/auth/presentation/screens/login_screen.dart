@@ -14,6 +14,7 @@ import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
 import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/core/widgets/unified_snackbar.dart';
+import 'package:country_picker/country_picker.dart';
 import 'package:wish_listy/core/services/biometric_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
@@ -50,6 +51,9 @@ class _LoginScreenState extends State<LoginScreen>
   bool _showBiometricIcon = false; // Dynamic visibility based on identifier
   String?
   _lastCheckedIdentifier; // Track last identifier to prevent duplicate auto-triggers
+  bool _isPhoneMode = false;
+  bool _hasManuallySelectedCountry = false;
+  late Country _selectedCountry;
 
   @override
   void initState() {
@@ -59,6 +63,8 @@ class _LoginScreenState extends State<LoginScreen>
 
     // Add listener to email field for dynamic biometric icon
     _usernameController.addListener(_onIdentifierChanged);
+    _usernameController.addListener(_detectInputMode);
+    _selectedCountry = Country.parse('EG');
 
     // Use addPostFrameCallback to ensure widget is fully built before checking biometrics
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -91,6 +97,63 @@ class _LoginScreenState extends State<LoginScreen>
     // Check if biometric is available and enabled for this specific identifier asynchronously
     if (_isBiometricAvailable) {
       _checkBiometricForIdentifier(identifier);
+    }
+  }
+
+  void _detectInputMode() {
+    if (!mounted) return;
+    final text = _usernameController.text;
+    final hasLetters = RegExp(r'[a-zA-Z@]').hasMatch(text);
+    final shouldBePhoneMode = text.isNotEmpty && !hasLetters;
+    if (shouldBePhoneMode != _isPhoneMode) {
+      setState(() {
+        _isPhoneMode = shouldBePhoneMode;
+        if (!shouldBePhoneMode) {
+          _hasManuallySelectedCountry = false;
+        }
+      });
+    }
+    // Auto-detect country from phone number pattern
+    if (shouldBePhoneMode) {
+      _autoDetectCountry(text);
+    }
+  }
+
+  void _autoDetectCountry(String phone) {
+    if (_hasManuallySelectedCountry) return;
+
+    final digits = phone.replaceAll(RegExp(r'[^\d]'), '');
+    if (digits.length < 3) return;
+
+    String? detectedCode;
+    final prefix3 = digits.substring(0, 3);
+
+    // Egyptian mobile: 010, 011, 012, 015
+    if (['010', '011', '012', '015'].contains(prefix3)) {
+      detectedCode = 'EG';
+    }
+    // Saudi mobile: 050, 053, 054, 055, 056, 058, 059
+    else if (['050', '053', '054', '055', '056', '058', '059']
+        .contains(prefix3)) {
+      detectedCode = 'SA';
+    }
+    // UAE mobile: 050, 052, 054, 055, 056, 058 (use 052 as unique UAE indicator)
+    else if (prefix3 == '052') {
+      detectedCode = 'AE';
+    }
+    // UK mobile: 07X
+    else if (digits.startsWith('07') && digits.length >= 3) {
+      detectedCode = 'GB';
+    }
+
+    if (detectedCode != null &&
+        _selectedCountry.countryCode != detectedCode) {
+      try {
+        final country = Country.parse(detectedCode);
+        setState(() {
+          _selectedCountry = country;
+        });
+      } catch (_) {}
     }
   }
 
@@ -408,6 +471,7 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _animationController.dispose();
     _staggerAnimationController.dispose();
+    _usernameController.removeListener(_detectInputMode);
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -433,7 +497,7 @@ class _LoginScreenState extends State<LoginScreen>
 
       final authService = Provider.of<AuthRepository>(context, listen: false);
       final success = await authService.loginUser(
-        _usernameController.text.trim(),
+        _getFormattedUsername(),
         _passwordController.text.trim(),
         fcmToken: fcmToken,
       );
@@ -482,12 +546,17 @@ class _LoginScreenState extends State<LoginScreen>
       // Note: Login failures now throw ApiException, so no else block needed
     } on ApiException catch (e) {
       // Check if this is an unverified account case
-      // New backend contract: 401 + message 'You already have an unverified account'
       final message = e.message.toLowerCase();
-      final isUnverifiedByMessage = e.statusCode == 401 &&
-          message.contains('unverified account');
-      final isUnverifiedByFlag =
-          e.data != null && e.data['requiresVerification'] == true;
+      final isUnverifiedByMessage =
+          (e.statusCode == 401 || e.statusCode == 403) &&
+              (message.contains('unverified') ||
+                  message.contains('not verified') ||
+                  message.contains('verify your') ||
+                  message.contains('verification'));
+      final isUnverifiedByFlag = e.data != null &&
+          (e.data['requiresVerification'] == true ||
+              e.data['isVerified'] == false ||
+              e.data['verified'] == false);
 
       if (isUnverifiedByMessage || isUnverifiedByFlag) {
         // Extract userId from error response if available
@@ -555,6 +624,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   /// Handle unverified account during login
+  /// Sends a new OTP via backend API and redirects to verification screen
   Future<void> _handleUnverifiedAccount({String? userId}) async {
     if (!mounted) return;
 
@@ -567,154 +637,48 @@ class _LoginScreenState extends State<LoginScreen>
       listen: false,
     );
 
-    final username = _usernameController.text.trim();
-    final isPhone = authRepository.isValidPhone(username);
+    final username = _getFormattedUsername();
+    final isPhone = _isPhoneMode;
 
-    // Show clean snackbar with Alexandria font for Arabic
+    // Show unverified account snackbar
     _showUnverifiedAccountSnackbar(localization);
 
-    // Handle verification flow based on phone/email
-    if (isPhone) {
-      // Phone: Trigger Firebase Phone Auth to send SMS
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
+
+    try {
+      // Send new OTP via backend API (works for both phone and email)
+      await authRepository.resendOtp(username);
+
       if (!mounted) return;
-      
-      // Sanitize phone number to strict E.164 format (no spaces) before calling Firebase
-      String sanitizedPhone = username;
-      try {
-        sanitizedPhone = authRepository.sanitizePhoneForFirebase(username);
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Invalid phone number format. Please check and try again.'),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
-        return;
-      }
-      
-      if (mounted) {
-        setState(() => _isLoading = true);
-      }
-      
-      bool hasNavigated = false; // Prevent multiple navigations
-      
-      try {
-        String? verificationId;
-        
-        await authRepository.verifyPhoneNumber(
-          phoneNumber: sanitizedPhone, // Already sanitized to E.164 format
-          onCodeSent: (id) {
-            if (!mounted || hasNavigated) return;
-            
-            verificationId = id;
-            hasNavigated = true;
-            
-            
-            if (mounted) {
-              setState(() => _isLoading = false);
-            }
-            
-            if (mounted) {
-              // Pass sanitized phone number and userId to VerificationScreen
-              Navigator.pushNamed(
-                context,
-                AppRoutes.verification,
-                arguments: {
-                  'username': sanitizedPhone, // E.164 format: +201064448681
-                  'isPhone': true,
-                  'verificationId': verificationId, // Persist verificationId
-                  'userId': userId, // Ensure userId is passed
-                },
-              );
-            }
-          },
-          onVerificationCompleted: () {
-            if (!mounted || hasNavigated) return;
-            
-            if (mounted) {
-              setState(() => _isLoading = false);
-            }
-          },
-          onVerificationFailed: (error) {
-            if (!mounted) return;
-            
-            if (mounted) {
-              setState(() => _isLoading = false);
-            }
-            
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Failed to send verification code: $error'),
-                  backgroundColor: AppColors.error,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
-          },
-          onCodeAutoRetrievalTimeout: (error) {
-            if (!mounted || hasNavigated) return;
-            
-            if (verificationId != null) {
-              hasNavigated = true;
-              
-              
-              if (mounted) {
-                setState(() => _isLoading = false);
-              }
-              
-              if (mounted) {
-                // Pass sanitized phone number and userId to VerificationScreen
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.verification,
-                  arguments: {
-                    'username': sanitizedPhone, // E.164 format: +201064448681
-                    'isPhone': true,
-                    'verificationId': verificationId, // Persist verificationId
-                    'userId': userId, // Ensure userId is passed
-                  },
-                );
-              }
-            } else if (mounted) {
-              // If verificationId is null, just stop loading
-              setState(() => _isLoading = false);
-            }
-          },
-        );
-      } catch (e) {
-        if (!mounted) return;
-        
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to send verification code'),
-              backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
-    } else {
-      // Email: Navigate directly to verification screen
-      await Future.delayed(const Duration(milliseconds: 500));
+      setState(() => _isLoading = false);
+
+      // Navigate to verification/OTP screen
       if (mounted) {
         Navigator.pushNamed(
           context,
           AppRoutes.verification,
           arguments: {
             'username': username,
-            'isPhone': false,
+            'isPhone': isPhone,
+            'userId': userId,
+          },
+        );
+      }
+    } catch (e) {
+      // Even if resendOtp fails, still navigate to OTP screen
+      // (user can tap "Resend" from there)
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (mounted) {
+        Navigator.pushNamed(
+          context,
+          AppRoutes.verification,
+          arguments: {
+            'username': username,
+            'isPhone': isPhone,
             'userId': userId,
           },
         );
@@ -1072,46 +1036,8 @@ class _LoginScreenState extends State<LoginScreen>
                                             key: _formKey,
                                             child: Column(
                                               children: [
-                                                // Username Field (Email or Phone)
-                                                _buildGlassInputField(
-                                                  controller:
-                                                      _usernameController,
-                                                  label: localization.translate(
-                                                    'auth.emailOrPhone',
-                                                  ),
-                                                  hint: localization.translate(
-                                                    'auth.emailOrPhone',
-                                                  ),
-                                                  keyboardType:
-                                                      TextInputType.text,
-                                                  prefixIcon:
-                                                      Icons.person_outline,
-                                                  validator: (value) {
-                                                    if (value?.isEmpty ??
-                                                        true) {
-                                                      return localization.translate(
-                                                        'auth.pleaseEnterEmail',
-                                                      );
-                                                    }
-                                                    // Validate as email or phone
-                                                    final authRepository =
-                                                        Provider.of<
-                                                          AuthRepository
-                                                        >(
-                                                          context,
-                                                          listen: false,
-                                                        );
-                                                    if (!authRepository
-                                                        .isValidUsername(
-                                                          value!,
-                                                        )) {
-                                                      return localization.translate(
-                                                        'auth.invalidEmailOrPhone',
-                                                      );
-                                                    }
-                                                    return null;
-                                                  },
-                                                ),
+                                                // Username Field (Smart Hybrid Input)
+                                                _buildUsernameField(localization),
 
                                                 const SizedBox(height: 20),
 
@@ -1621,6 +1547,158 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
+  Widget _buildUsernameField(LocalizationService localization) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Country Code Picker - animated show/hide
+          AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          child: _isPhoneMode
+              ? Padding(
+                  padding: const EdgeInsetsDirectional.only(end: 12),
+                  child: _buildCountryCodeButton(),
+                )
+              : const SizedBox.shrink(),
+        ),
+        // Username Text Field
+        Expanded(
+          child: _buildGlassInputField(
+            controller: _usernameController,
+            label: localization.translate('auth.emailOrPhone'),
+            hint: _isPhoneMode
+                ? '1XXXXXXXXX'
+                : localization.translate('auth.emailOrPhone'),
+            keyboardType:
+                _isPhoneMode ? TextInputType.phone : TextInputType.text,
+            prefixIcon:
+                _isPhoneMode ? Icons.phone_outlined : Icons.person_outline,
+            validator: (value) {
+              if (value?.isEmpty ?? true) {
+                return localization.translate('auth.pleaseEnterEmail');
+              }
+              if (_isPhoneMode) {
+                final cleaned = value!.replaceAll(RegExp(r'[^\d]'), '');
+                if (cleaned.length < 7 || cleaned.length > 15) {
+                  return localization.translate('auth.invalidEmailOrPhone');
+                }
+                return null;
+              }
+              final authRepository = Provider.of<AuthRepository>(
+                context,
+                listen: false,
+              );
+              if (!authRepository.isValidUsername(value!)) {
+                return localization.translate('auth.invalidEmailOrPhone');
+              }
+              return null;
+            },
+          ),
+        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCountryCodeButton() {
+    return GestureDetector(
+      onTap: _openCountryPicker,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              offset: const Offset(0, 2),
+              blurRadius: 4,
+              spreadRadius: 0,
+            ),
+          ],
+          border: Border.all(
+            color: AppColors.border.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _selectedCountry.flagEmoji,
+              style: const TextStyle(fontSize: 22),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '+${_selectedCountry.phoneCode}',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 2),
+            Icon(
+              Icons.keyboard_arrow_down,
+              size: 18,
+              color: AppColors.textSecondary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openCountryPicker() {
+    final allCountries = CountryService().getAll();
+    final favCodes = ['EG', 'SA', 'AE', 'US', 'GB'];
+    final favorites = CountryService().findCountriesByCode(favCodes);
+    final others = allCountries
+        .where((c) => !favCodes.contains(c.countryCode))
+        .toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return _CountryPickerSheet(
+          favorites: favorites,
+          allCountries: others,
+          onSelect: (Country country) {
+            Navigator.pop(ctx);
+            setState(() {
+              _selectedCountry = country;
+              _hasManuallySelectedCountry = true;
+            });
+          },
+        );
+      },
+    );
+  }
+
+  String _getFormattedUsername() {
+    final text = _usernameController.text.trim();
+    if (_isPhoneMode) {
+      // Strip all non-digit characters (spaces, dashes, etc.)
+      final digitsOnly = text.replaceAll(RegExp(r'[^\d+]'), '');
+      // If already in international format, return cleaned
+      if (digitsOnly.startsWith('+')) {
+        return digitsOnly;
+      }
+      // Remove leading zeros from local number
+      String cleaned = digitsOnly.replaceFirst(RegExp(r'^0+'), '');
+      return '+${_selectedCountry.phoneCode}$cleaned';
+    }
+    return text;
+  }
+
   /// Show bottom sheet to enable biometric login
   Future<void> _showBiometricEnablementPrompt(
     AuthRepository authService, {
@@ -2016,6 +2094,151 @@ class _GlassInputWrapperState extends State<_GlassInputWrapper> {
         keyboardType: widget.keyboardType,
         validator: widget.validator,
       ),
+    );
+  }
+}
+
+/// Custom country picker bottom sheet with close button and search
+class _CountryPickerSheet extends StatefulWidget {
+  final List<Country> favorites;
+  final List<Country> allCountries;
+  final ValueChanged<Country> onSelect;
+
+  const _CountryPickerSheet({
+    required this.favorites,
+    required this.allCountries,
+    required this.onSelect,
+  });
+
+  @override
+  State<_CountryPickerSheet> createState() => _CountryPickerSheetState();
+}
+
+class _CountryPickerSheetState extends State<_CountryPickerSheet> {
+  final _searchController = TextEditingController();
+  List<Country> _filteredCountries = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredCountries = widget.allCountries;
+  }
+
+  void _onSearch(String query) {
+    final q = query.toLowerCase().trim();
+    setState(() {
+      if (q.isEmpty) {
+        _filteredCountries = widget.allCountries;
+      } else {
+        _filteredCountries = widget.allCountries.where((c) {
+          return c.name.toLowerCase().contains(q) ||
+              c.phoneCode.contains(q) ||
+              c.countryCode.toLowerCase().contains(q);
+        }).toList();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: MediaQuery.of(context).size.height * 0.75,
+      child: Column(
+        children: [
+          // Header with close button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+            child: Row(
+              children: [
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close, size: 22),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.grey.shade100,
+                    shape: const CircleBorder(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Search field
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: _onSearch,
+              decoration: InputDecoration(
+                hintText: 'Search country',
+                hintStyle: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textTertiary,
+                ),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: AppColors.textSecondary,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.border.withOpacity(0.3),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: AppColors.border.withOpacity(0.3),
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+          // Country list
+          Expanded(
+            child: ListView(
+              children: [
+                // Favorites section
+                if (_searchController.text.isEmpty) ...[
+                  ...widget.favorites.map((c) => _buildCountryTile(c)),
+                  const Divider(height: 1),
+                ],
+                // All countries (filtered)
+                ..._filteredCountries.map((c) => _buildCountryTile(c)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCountryTile(Country country) {
+    return ListTile(
+      leading: Text(
+        country.flagEmoji,
+        style: const TextStyle(fontSize: 24),
+      ),
+      title: Text(
+        country.name,
+        style: AppStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+      ),
+      trailing: Text(
+        '+${country.phoneCode}',
+        style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+      ),
+      onTap: () => widget.onSelect(country),
     );
   }
 }
