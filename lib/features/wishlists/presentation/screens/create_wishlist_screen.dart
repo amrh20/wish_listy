@@ -1112,59 +1112,21 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
 
   /// Build Online Store Content
   Widget _buildItemOnlineContent(LocalizationService localization) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: CustomTextField(
-                controller: _itemUrlController,
-                label: localization.translate('wishlists.addProductLink') ?? 'Product URL',
-                hint: localization.translate('wishlists.enterProductUrl') ?? 'Enter product URL',
-                prefixIcon: Icons.link_outlined,
-                keyboardType: TextInputType.url,
-                validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    if (!_isValidUrl(value)) {
-                      return localization.translate('wishlists.pleaseEnterValidUrl') ?? 
-                             'Please enter a valid URL';
-                    }
-                  }
-                  return null;
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Paste/Clear button
-            IconButton(
-              onPressed: () {
-                if (_itemUrlController.text.isEmpty) {
-                  _pasteItemUrlFromClipboard();
-                } else {
-                  setState(() {
-                    _itemUrlController.clear();
-                  });
-                }
-              },
-              icon: Icon(
-                _itemUrlController.text.isEmpty
-                    ? Icons.content_paste_rounded
-                    : Icons.close_rounded,
-                color: _itemUrlController.text.isEmpty
-                    ? AppColors.primary
-                    : AppColors.textTertiary,
-              ),
-              style: IconButton.styleFrom(
-                backgroundColor: _itemUrlController.text.isEmpty
-                    ? AppColors.primary.withOpacity(0.1)
-                    : AppColors.surfaceVariant,
-                padding: const EdgeInsets.all(12),
-              ),
-            ),
-          ],
-        ),
-      ],
+    return CustomTextField(
+      controller: _itemUrlController,
+      label: localization.translate('wishlists.addProductLink') ?? 'Product URL',
+      hint: localization.translate('wishlists.enterProductUrl') ?? 'Enter product URL',
+      prefixIcon: Icons.link_outlined,
+      keyboardType: TextInputType.url,
+      validator: (value) {
+        if (value != null && value.isNotEmpty) {
+          if (!_isValidUrl(value)) {
+            return localization.translate('wishlists.pleaseEnterValidUrl') ??
+                'Please enter a valid URL';
+          }
+        }
+        return null;
+      },
     );
   }
 

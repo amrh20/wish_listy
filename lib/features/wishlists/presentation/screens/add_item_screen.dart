@@ -1037,57 +1037,22 @@ class _AddItemScreenState extends State<AddItemScreen>
         ],
 
         // Add Link Field
-        Row(
-          children: [
-            Expanded(
-              child: CustomTextField(
-                controller: _linkController,
-                label: localization.translate('wishlists.addProductLink'),
-                hint: localization.translate('wishlists.itemLinkHint'),
-                prefixIcon: Icons.link_outlined,
-                keyboardType: TextInputType.url,
-                validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    if (!_isValidUrl(value)) {
-                      return localization.translate(
-                        'wishlists.pleaseEnterValidUrl',
-                      );
-                    }
-                  }
-                  return null;
-                },
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Dynamic button: Paste when empty, Clear when not empty
-            IconButton(
-              onPressed: () {
-                if (_linkController.text.isEmpty) {
-                  // Paste from clipboard
-                  _pasteFromClipboard();
-                } else {
-                  // Clear the field
-                  setState(() {
-                    _linkController.clear();
-                  });
-                }
-              },
-              icon: Icon(
-                _linkController.text.isEmpty
-                    ? Icons.content_paste_rounded
-                    : Icons.close_rounded,
-                color: _linkController.text.isEmpty
-                    ? AppColors.primary
-                    : AppColors.textTertiary,
-              ),
-              style: IconButton.styleFrom(
-                backgroundColor: _linkController.text.isEmpty
-                    ? AppColors.primary.withOpacity(0.1)
-                    : AppColors.surfaceVariant,
-                padding: const EdgeInsets.all(12),
-              ),
-            ),
-          ],
+        CustomTextField(
+          controller: _linkController,
+          label: localization.translate('wishlists.addProductLink'),
+          hint: localization.translate('wishlists.itemLinkHint'),
+          prefixIcon: Icons.link_outlined,
+          keyboardType: TextInputType.url,
+          validator: (value) {
+            if (value != null && value.isNotEmpty) {
+              if (!_isValidUrl(value)) {
+                return localization.translate(
+                  'wishlists.pleaseEnterValidUrl',
+                );
+              }
+            }
+            return null;
+          },
         ),
 
         const SizedBox(height: 16),
