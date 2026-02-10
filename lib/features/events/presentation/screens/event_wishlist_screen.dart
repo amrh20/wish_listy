@@ -442,37 +442,42 @@ class _EventWishlistScreenState extends State<EventWishlistScreen>
           const SizedBox(height: 16),
 
           // Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildFilterChip('all', 'All', Icons.all_inclusive),
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  'available',
-                  'Available',
-                  Icons.shopping_bag_outlined,
+          Builder(
+            builder: (context) {
+              final loc = Provider.of<LocalizationService>(context, listen: false);
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildFilterChip('all', loc.translate('ui.all') ?? 'All', Icons.all_inclusive),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                      'available',
+                      loc.translate('ui.available') ?? 'Available',
+                      Icons.shopping_bag_outlined,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                      'reserved',
+                      loc.translate('ui.reserved') ?? 'Reserved',
+                      Icons.person_add_outlined,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                      'purchased',
+                      loc.translate('ui.purchased') ?? 'Purchased',
+                      Icons.check_circle_outline,
+                    ),
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                      'high_priority',
+                      loc.translate('ui.highPriority') ?? 'High Priority',
+                      Icons.priority_high,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  'reserved',
-                  'Reserved',
-                  Icons.person_add_outlined,
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  'purchased',
-                  'Purchased',
-                  Icons.check_circle_outline,
-                ),
-                const SizedBox(width: 8),
-                _buildFilterChip(
-                  'high_priority',
-                  'High Priority',
-                  Icons.priority_high,
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ],
       ),

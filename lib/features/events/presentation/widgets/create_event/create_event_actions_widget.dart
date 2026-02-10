@@ -8,6 +8,7 @@ import 'package:wish_listy/core/widgets/custom_button.dart';
 class CreateEventActionsWidget extends StatelessWidget {
   final VoidCallback onCreatePressed;
   final bool isLoading;
+  final bool isEnabled;
   final Color primaryColor;
   final String? buttonText; // Optional custom button text
 
@@ -15,6 +16,7 @@ class CreateEventActionsWidget extends StatelessWidget {
     super.key,
     required this.onCreatePressed,
     required this.isLoading,
+    this.isEnabled = true,
     required this.primaryColor,
     this.buttonText,
   });
@@ -32,7 +34,7 @@ class CreateEventActionsWidget extends StatelessWidget {
         // Create/Update Button
         CustomButton(
           text: displayText,
-          onPressed: onCreatePressed,
+          onPressed: (isEnabled && !isLoading) ? onCreatePressed : null,
           isLoading: isLoading,
           variant: ButtonVariant.gradient,
           gradientColors: [primaryColor, AppColors.accent],

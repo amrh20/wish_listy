@@ -573,7 +573,7 @@ class _AddItemScreenState extends State<AddItemScreen>
                                             'wishlists.wishTitle',
                                           ),
                                           hint: localization.translate(
-                                            'wishlists.whatDoYouWishFor',
+                                            'wishlists.itemNameHint',
                                           ),
                                           prefixIcon:
                                               Icons.card_giftcard_outlined,
@@ -597,7 +597,7 @@ class _AddItemScreenState extends State<AddItemScreen>
                                             'wishlists.wishDescriptionLabel',
                                           ),
                                           hint: localization.translate(
-                                            'wishlists.wishDescriptionHint',
+                                            'wishlists.itemDescriptionHint',
                                           ),
                                           prefixIcon:
                                               Icons.description_outlined,
@@ -1043,7 +1043,7 @@ class _AddItemScreenState extends State<AddItemScreen>
               child: CustomTextField(
                 controller: _linkController,
                 label: localization.translate('wishlists.addProductLink'),
-                hint: localization.translate('wishlists.enterProductUrl'),
+                hint: localization.translate('wishlists.itemLinkHint'),
                 prefixIcon: Icons.link_outlined,
                 keyboardType: TextInputType.url,
                 validator: (value) {

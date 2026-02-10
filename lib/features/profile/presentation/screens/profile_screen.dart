@@ -691,8 +691,10 @@ class ProfileScreenState extends State<ProfileScreen>
       );
       await authRepository.logout();
 
-      // Dismiss loading snackbar
-      scaffoldMessenger.hideCurrentSnackBar();
+      // Dismiss loading snackbar immediately when API succeeds (so it doesn't persist after navigation)
+      if (mounted) {
+        scaffoldMessenger.clearSnackBars();
+      }
 
       if (mounted) {
         // Navigate to login screen
@@ -704,7 +706,7 @@ class ProfileScreenState extends State<ProfileScreen>
       }
     } on ApiException catch (e) {
       // Dismiss loading snackbar
-      scaffoldMessenger.hideCurrentSnackBar();
+      if (mounted) scaffoldMessenger.clearSnackBars();
       
       if (mounted) {
         // Show error snackbar with backend message
@@ -719,7 +721,7 @@ class ProfileScreenState extends State<ProfileScreen>
       }
     } catch (e) {
       // Dismiss loading snackbar
-      scaffoldMessenger.hideCurrentSnackBar();
+      if (mounted) scaffoldMessenger.clearSnackBars();
       
       if (mounted) {
         // Show error snackbar

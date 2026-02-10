@@ -106,7 +106,7 @@ class WishlistItemsSearchFilterWidget extends StatelessWidget {
                 const SizedBox(width: 8),
                 WishlistFilterChipWidget(
                   value: 'purchased',
-                  label: localization.translate('ui.gifted'),
+                  label: localization.translate('ui.giftedShort') ?? localization.translate('ui.gifted') ?? 'Gifted',
                   icon: Icons.check_circle_outline,
                   isSelected: selectedFilter == 'purchased',
                   onTap: () => onFilterChanged('purchased'),

@@ -464,18 +464,19 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
   // Helper functions to determine item status (matching wishlist_items_screen logic)
   String _getItemStatusText(WishlistItem item) {
+    final loc = Provider.of<LocalizationService>(context, listen: false);
     final isPurchased = item.isPurchasedValue;
     final isReserved = item.isReservedValue;
     final isReceived = item.isReceived;
     
     if (isReceived) {
-      return 'Gifted';
+      return loc.translate('ui.gifted') ?? 'Gifted';
     } else if (isPurchased && !isReceived) {
-      return 'Purchased';
+      return loc.translate('ui.purchased') ?? 'Purchased';
     } else if (isReserved) {
-      return 'Reserved';
+      return loc.translate('ui.reserved') ?? 'Reserved';
     } else {
-      return 'Available';
+      return loc.translate('ui.available') ?? 'Available';
     }
   }
 
@@ -901,15 +902,16 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   String _getPriorityText(ItemPriority priority) {
+    final loc = Provider.of<LocalizationService>(context, listen: false);
     switch (priority) {
       case ItemPriority.high:
-        return 'High';
+        return loc.translate('ui.priorityHigh') ?? 'High';
       case ItemPriority.medium:
-        return 'Medium';
+        return loc.translate('ui.priorityMedium') ?? 'Medium';
       case ItemPriority.low:
-        return 'Low';
+        return loc.translate('ui.priorityLow') ?? 'Low';
       case ItemPriority.urgent:
-        return 'Urgent';
+        return loc.translate('ui.priorityUrgent') ?? 'Urgent';
     }
   }
 

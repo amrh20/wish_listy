@@ -315,7 +315,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                                     'wishlists.wishlistName',
                                   ),
                                   hint: localization.translate(
-                                    'wishlists.wishlistName',
+                                    'wishlists.wishlistNameHint',
                                   ),
                                   prefixIcon: Icons.favorite_outline,
                                   isRequired: true,
@@ -923,7 +923,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
             CustomTextField(
               controller: _itemNameController,
               label: localization.translate('wishlists.wishTitle') ?? 'Item Name',
-              hint: localization.translate('wishlists.whatDoYouWishFor') ?? 'What do you wish for?',
+              hint: localization.translate('wishlists.itemNameHint') ?? 'e.g., Nike Air Jordan',
               prefixIcon: Icons.card_giftcard_outlined,
               validator: (value) {
                 if (_hasAnyItemFieldFilled()) {

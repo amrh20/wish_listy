@@ -20,7 +20,7 @@ class CustomButton extends StatefulWidget {
   const CustomButton({
     super.key,
     required this.text,
-    required this.onPressed,
+    this.onPressed,
     this.variant = ButtonVariant.primary,
     this.size = ButtonSize.medium,
     this.icon,

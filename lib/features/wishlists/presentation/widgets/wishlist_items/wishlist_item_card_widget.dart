@@ -74,7 +74,7 @@ class _WishlistItemCardWidgetState extends State<WishlistItemCardWidget> {
                 );
               },
               child: Text(
-                'Delete',
+                localization.translate('app.delete'),
                 style: TextStyle(color: AppColors.error),
               ),
             ),
@@ -85,15 +85,16 @@ class _WishlistItemCardWidgetState extends State<WishlistItemCardWidget> {
   }
 
   String _getPriorityText(ItemPriority priority) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     switch (priority) {
       case ItemPriority.high:
-        return 'High';
+        return localization.translate('ui.priorityHigh') ?? 'High';
       case ItemPriority.medium:
-        return 'Medium';
+        return localization.translate('ui.priorityMedium') ?? 'Medium';
       case ItemPriority.low:
-        return 'Low';
+        return localization.translate('ui.priorityLow') ?? 'Low';
       case ItemPriority.urgent:
-        return 'Urgent';
+        return localization.translate('ui.priorityUrgent') ?? 'Urgent';
     }
   }
 
@@ -135,10 +136,11 @@ class _WishlistItemCardWidgetState extends State<WishlistItemCardWidget> {
     
     // Helper function to show snackbar when trying to edit/delete reserved item
     void _showReservedItemSnackbar() {
+      final loc = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-            'You cannot edit or delete this item because a friend has already reserved it for you! 🎁',
+          content: Text(
+            loc.translate('ui.cannotEditReservedItem') ?? 'You cannot edit or delete this item because a friend has already reserved it for you!',
           ),
           backgroundColor: AppColors.primary,
           behavior: SnackBarBehavior.floating,
@@ -185,7 +187,7 @@ class _WishlistItemCardWidgetState extends State<WishlistItemCardWidget> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Edit',
+                      Provider.of<LocalizationService>(context, listen: false).translate('app.edit') ?? 'Edit',
                       style: TextStyle(
                         color: isReservedForOwner 
                             ? Colors.white.withOpacity(0.7)
@@ -219,7 +221,7 @@ class _WishlistItemCardWidgetState extends State<WishlistItemCardWidget> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Delete',
+                      Provider.of<LocalizationService>(context, listen: false).translate('app.delete') ?? 'Delete',
                       style: TextStyle(
                         color: isReservedForOwner 
                             ? Colors.white.withOpacity(0.7)
@@ -314,10 +316,11 @@ class _ModernWishlistItemContent extends StatelessWidget {
     
     // Helper function to show snackbar when trying to edit/delete reserved item
     void _showReservedItemSnackbar() {
+      final loc = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-            'You cannot edit or delete this item because a friend has already reserved it for you! 🎁',
+          content: Text(
+            loc.translate('ui.cannotEditReservedItem') ?? 'You cannot edit or delete this item because a friend has already reserved it for you!',
           ),
           backgroundColor: AppColors.primary,
           behavior: SnackBarBehavior.floating,
@@ -442,7 +445,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                     const SizedBox(width: 6),
                                     Expanded(
                                       child: Text(
-                                        'Reserved by a friend 🤫',
+                                        Provider.of<LocalizationService>(context, listen: false).translate('ui.reservedByAFriend') ?? 'Reserved by a friend',
                                         style: AppStyles.caption.copyWith(
                                           color: const Color(0xFF6A1B9A), // Deep Purple
                                           fontWeight: FontWeight.w600,
@@ -454,7 +457,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  'A friend has reserved this gift for you!',
+                                  Provider.of<LocalizationService>(context, listen: false).translate('ui.friendReservedThisGift') ?? 'A friend has reserved this gift for you!',
                                   style: AppStyles.caption.copyWith(
                                     color: AppColors.textSecondary,
                                     fontSize: 10,
@@ -474,7 +477,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Gifted',
+                                  Provider.of<LocalizationService>(context, listen: false).translate('ui.gifted') ?? 'Gifted',
                                   style: AppStyles.caption.copyWith(
                                     color: AppColors.success,
                                     fontWeight: FontWeight.w600,
@@ -493,7 +496,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Purchased ✅',
+                                  Provider.of<LocalizationService>(context, listen: false).translate('ui.purchasedWithCheck') ?? 'Purchased',
                                   style: AppStyles.caption.copyWith(
                                     color: AppColors.success,
                                     fontWeight: FontWeight.w600,
@@ -648,7 +651,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
-                                    'Delete',
+                                    Provider.of<LocalizationService>(context, listen: false).translate('app.delete') ?? 'Delete',
                                     style: AppStyles.bodyMedium.copyWith(
                                       color: ((isReserved || isPurchased) && !isReceived)
                                           ? AppColors.error.withOpacity(0.5)
@@ -711,18 +714,19 @@ class _ModernWishlistItemContent extends StatelessWidget {
 
   /// Show confirmation dialog before toggling reservation status
   void _confirmToggleReservation(BuildContext context, bool isReservedByMe) {
+    final loc = Provider.of<LocalizationService>(context, listen: false);
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text(
-            isReservedByMe ? 'Cancel Reservation?' : 'Reserve Gift?',
+            isReservedByMe ? (loc.translate('ui.cancelReservationQuestion') ?? 'Cancel Reservation?') : (loc.translate('ui.reserveGiftQuestion') ?? 'Reserve Gift?'),
             style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
           ),
           content: Text(
             isReservedByMe
-                ? 'This will release the item so others can reserve it. Are you sure?'
-                : 'This will mark the item as reserved by you, preventing others from reserving it. Continue?',
+                ? (loc.translate('ui.cancelReservationConfirmContent') ?? 'This will release the item so others can reserve it. Are you sure?')
+                : (loc.translate('ui.reserveGiftConfirmContent') ?? 'This will mark the item as reserved by you, preventing others from reserving it. Continue?'),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -734,7 +738,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(
-                'Cancel',
+                loc.translate('app.cancel'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -756,7 +760,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),
               child: Text(
-                'Confirm',
+                loc.translate('dialogs.confirm') ?? 'Confirm',
                 style: AppStyles.bodyMedium.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -771,16 +775,17 @@ class _ModernWishlistItemContent extends StatelessWidget {
 
   /// Show confirmation dialog before marking as purchased
   void _confirmMarkAsPurchased(BuildContext context) {
+    final loc = Provider.of<LocalizationService>(context, listen: false);
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text(
-            'Mark as Purchased?',
+            loc.translate('ui.markAsPurchasedQuestion') ?? 'Mark as Purchased?',
             style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
           ),
           content: Text(
-            'This will mark the item as purchased and received. Have you already bought this gift?',
+            loc.translate('ui.markAsPurchasedContent') ?? 'This will mark the item as purchased and received. Have you already bought this gift?',
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -792,7 +797,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(
-                'Cancel',
+                loc.translate('app.cancel'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -813,7 +818,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),
               child: Text(
-                'Mark as Purchased',
+                loc.translate('ui.markAsPurchased') ?? 'Mark as Purchased',
                 style: AppStyles.bodyMedium.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -828,18 +833,19 @@ class _ModernWishlistItemContent extends StatelessWidget {
 
   /// Show confirmation dialog before toggling received status
   void _confirmToggleStatus(BuildContext context, bool isReceived) {
+    final loc = Provider.of<LocalizationService>(context, listen: false);
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: Text(
-            isReceived ? 'Undo Received Status?' : 'Mark as Received?',
+            isReceived ? (loc.translate('ui.undoReceivedQuestion') ?? 'Undo Received Status?') : (loc.translate('ui.markAsReceivedQuestion') ?? 'Mark as Received?'),
             style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
           ),
           content: Text(
             isReceived
-                ? 'This will mark the item as active again.'
-                : 'This will mark the item as purchased and received. Are you sure you got this gift?',
+                ? (loc.translate('ui.undoReceivedContent') ?? 'This will mark the item as active again.')
+                : (loc.translate('ui.markAsReceivedContent') ?? 'This will mark the item as purchased and received. Are you sure you got this gift?'),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -851,7 +857,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
               child: Text(
-                'Cancel',
+                loc.translate('app.cancel'),
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -872,7 +878,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),
               child: Text(
-                'Confirm',
+                loc.translate('dialogs.confirm') ?? 'Confirm',
                 style: AppStyles.bodyMedium.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w600,
@@ -903,7 +909,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              'Marked as gifted',
+              Provider.of<LocalizationService>(context, listen: false).translate('ui.markedAsGifted') ?? 'Marked as gifted',
               style: TextStyle(
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,
@@ -1091,7 +1097,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Gifted',
+                                  Provider.of<LocalizationService>(context, listen: false).translate('ui.gifted') ?? 'Gifted',
                                   style: AppStyles.caption.copyWith(
                                     color: AppColors.success,
                                     fontWeight: FontWeight.w600,
@@ -1309,7 +1315,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'Reserved by You',
+                                Provider.of<LocalizationService>(context, listen: false).translate('ui.reservedByYou') ?? 'Reserved by You',
                                 style: AppStyles.caption.copyWith(
                                   color: AppColors.success,
                                   fontWeight: FontWeight.w600,
@@ -1343,7 +1349,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                           color: Colors.white,
                         ),
                         label: Text(
-                          'Mark as Purchased',
+                          Provider.of<LocalizationService>(context, listen: false).translate('ui.markAsPurchased') ?? 'Mark as Purchased',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.white,
@@ -1372,7 +1378,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                           color: AppColors.error,
                         ),
                         label: Text(
-                          'Cancel Reserve',
+                          Provider.of<LocalizationService>(context, listen: false).translate('ui.cancelReserve') ?? 'Cancel Reserve',
                           style: TextStyle(
                             fontSize: 12,
                             color: AppColors.error,
@@ -1464,7 +1470,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'Reserved',
+                                    Provider.of<LocalizationService>(context, listen: false).translate('ui.reserved') ?? 'Reserved',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 12,
@@ -1521,7 +1527,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    'Reserved by others',
+                                    Provider.of<LocalizationService>(context, listen: false).translate('ui.reservedByOthers') ?? 'Reserved by others',
                                     style: AppStyles.caption.copyWith(
                                       color: AppColors.textTertiary,
                                       fontSize: 11,
@@ -1561,7 +1567,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      'Taken by another friend ✨',
+                      Provider.of<LocalizationService>(context, listen: false).translate('ui.takenByAnotherFriend') ?? 'Taken by another friend',
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontWeight: FontWeight.w600,
@@ -1682,9 +1688,9 @@ class _ModernWishlistItemContent extends StatelessWidget {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Reserve This Gift',
-                    style: TextStyle(
+                  child: Text(
+                    Provider.of<LocalizationService>(context, listen: false).translate('ui.reserveThisGift') ?? 'Reserve This Gift',
+                    style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),

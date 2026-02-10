@@ -126,6 +126,25 @@ class _CreateEventScreenState extends State<CreateEventScreen>
     _initializeAnimations();
     _startAnimations();
     _handleRouteArguments();
+    _nameController.addListener(_onFormChanged);
+    _locationController.addListener(_onFormChanged);
+    _meetingLinkController.addListener(_onFormChanged);
+  }
+
+  void _onFormChanged() => setState(() {});
+
+  /// True when all required fields are filled so Create/Update button can be enabled.
+  bool get _isCreateEventEnabled {
+    if (_nameController.text.trim().isEmpty) return false;
+    if (_selectedDate == null) return false;
+    if (_selectedTime == null) return false;
+    if ((_selectedEventMode == EventMode.inPerson ||
+            _selectedEventMode == EventMode.hybrid) &&
+        _locationController.text.trim().isEmpty) return false;
+    if ((_selectedEventMode == EventMode.online ||
+            _selectedEventMode == EventMode.hybrid) &&
+        _meetingLinkController.text.trim().isEmpty) return false;
+    return true;
   }
 
   void _handleRouteArguments() {
@@ -273,6 +292,9 @@ class _CreateEventScreenState extends State<CreateEventScreen>
 
   @override
   void dispose() {
+    _nameController.removeListener(_onFormChanged);
+    _locationController.removeListener(_onFormChanged);
+    _meetingLinkController.removeListener(_onFormChanged);
     _animationController.dispose();
     _nameController.dispose();
     _descriptionController.dispose();
@@ -562,6 +584,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                                         onCreatePressed: () =>
                                             _saveEvent(localization),
                                         isLoading: _isLoading,
+                                        isEnabled: _isCreateEventEnabled,
                                         primaryColor:
                                             _getSelectedEventTypeColor(localization),
                                         buttonText: _isEditMode

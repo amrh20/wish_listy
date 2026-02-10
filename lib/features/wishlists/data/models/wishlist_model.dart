@@ -202,7 +202,9 @@ class WishlistItem {
 
   // Computed properties (fallback if API fields are null)
   bool get isPurchasedValue => isPurchased ?? isReceived;
-  bool get isReservedValue => isReserved ?? (reservedBy != null);
+  // Treat item as reserved if API flag is true OR reservedBy is non-null.
+  // This avoids cases where backend sends isReserved = false but still includes reservedBy.
+  bool get isReservedValue => (isReserved ?? false) || reservedBy != null;
   String get price => priceRange?.toString() ?? 'Price not specified';
 
   WishlistItem({

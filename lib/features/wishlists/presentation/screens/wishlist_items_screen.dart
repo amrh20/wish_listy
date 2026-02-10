@@ -914,14 +914,29 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
     try {
       final authService = Provider.of<AuthRepository>(context, listen: false);
 
-      // Optimistic update
+      // Optimistic update so "Reserved" filter shows the item immediately
       setState(() {
         final index = _items.indexWhere((i) => i.id == item.id);
         if (index != -1) {
           if (action == 'cancel') {
-            _items[index] = item.copyWith(reservedBy: null);
+            _items[index] = item.copyWith(
+              reservedBy: null,
+              isReserved: false,
+              isReservedByMe: false,
+            );
           } else {
-            _items[index] = item;
+            final userId = authService.userId;
+            _items[index] = item.copyWith(
+              isReserved: true,
+              isReservedByMe: true,
+              reservedBy: userId != null && userId.isNotEmpty
+                  ? friends.User(
+                      id: userId,
+                      fullName: '',
+                      username: '',
+                    )
+                  : null,
+            );
           }
         }
       });
@@ -937,16 +952,13 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
       final isNowReserved = action == 'reserve';
 
-      // Update with server response
+      // Update with server response (no full refresh so Reserved filter keeps working)
       setState(() {
         final index = _items.indexWhere((i) => i.id == item.id);
         if (index != -1) {
           _items[index] = updatedItem;
         }
       });
-
-      // Refresh wishlist items to ensure UI is up to date
-      await _loadWishlistDetails();
 
       if (mounted) {
         UnifiedSnackbar.hideCurrent(context);
