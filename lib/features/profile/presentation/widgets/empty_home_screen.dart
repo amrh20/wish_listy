@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/deep_link_service.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 
 /// Empty Home Screen with interactive stacked cards animation
@@ -24,38 +27,33 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
 
   late final AnimationController _watermarkController;
 
-  // Card data
+  // Card data (use translation keys for localized strings)
   final List<_CardData> _cards = [
     _CardData(
       icon: Icons.favorite_border_rounded,
-      label: 'My Wishlists',
       color: AppColors.primary,
       route: AppRoutes.createWishlist,
-      actionText: 'Create new Wishlist',
-      categoryTitle: 'Wishlists',
-      countPlaceholder: '0 lists',
+      categoryTitleKey: 'home.emptyView.categoryWishlists',
+      countPlaceholderKey: 'home.emptyView.countLists',
+      ctaKey: 'home.emptyView.createFirstWishlist',
       watermarkIcon: Icons.card_giftcard_rounded,
     ),
     _CardData(
       icon: Icons.event_outlined,
-      label: 'My Events',
-      // Color swap: Events -> Accent (Pink)
       color: AppColors.accent,
       route: AppRoutes.createEvent,
-      actionText: 'Create new Event',
-      categoryTitle: 'Events',
-      countPlaceholder: '0 events',
+      categoryTitleKey: 'home.emptyView.categoryEvents',
+      countPlaceholderKey: 'home.emptyView.countEvents',
+      ctaKey: 'home.emptyView.createFirstEvent',
       watermarkIcon: Icons.calendar_month_rounded,
     ),
     _CardData(
       icon: Icons.people_outline_rounded,
-      label: 'My Friends',
-      // Color swap: Friends -> Secondary (Teal)
       color: AppColors.secondary,
       route: AppRoutes.addFriend,
-      actionText: 'Add new Friend',
-      categoryTitle: 'Friends',
-      countPlaceholder: '0 friends',
+      categoryTitleKey: 'home.emptyView.categoryFriends',
+      countPlaceholderKey: 'home.emptyView.countFriends',
+      ctaKey: 'home.emptyView.addFirstFriend',
       watermarkIcon: Icons.group_rounded,
     ),
   ];
@@ -77,6 +75,7 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context);
     final selectedCard = _cards[_selectedIndex];
     return Padding(
       padding: const EdgeInsets.only(
@@ -95,12 +94,32 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
           const SizedBox(height: 28), // Tightened spacing between stack and text
           
           // Dynamic Contextual Text (Category + count)
-          _buildContextualInfo(selectedCard),
+          _buildContextualInfo(context, selectedCard, localization),
           
           const SizedBox(height: 20), // Tightened spacing between text and button
           
           // Dynamic Main CTA (compact pill)
-          _buildDynamicMainCta(selectedCard),
+          _buildDynamicMainCta(context, selectedCard, localization),
+          const SizedBox(height: 16),
+          // Invite friends (secondary action)
+          TextButton.icon(
+            onPressed: () {
+              final message = localization.translate('invite.inviteFriendsShareMessage') +
+                  DeepLinkService.inviteLink;
+              DeepLinkService.shareAppInvite(message);
+            },
+            icon: const Icon(Icons.share_outlined, size: 20),
+            label: Text(
+              localization.translate('invite.inviteFriendsButton'),
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.textSecondary,
+            ),
+          ),
         ],
       ),
     );
@@ -254,7 +273,14 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
     );
   }
 
-  Widget _buildContextualInfo(_CardData selectedCard) {
+  Widget _buildContextualInfo(
+    BuildContext context,
+    _CardData selectedCard,
+    LocalizationService localization,
+  ) {
+    final categoryTitle = localization.translate(selectedCard.categoryTitleKey);
+    final countPlaceholder =
+        localization.translate(selectedCard.countPlaceholderKey);
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 260),
       transitionBuilder: (Widget child, Animation<double> animation) {
@@ -273,11 +299,11 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
         );
       },
       child: Column(
-        key: ValueKey('context_info_${selectedCard.categoryTitle}'),
+        key: ValueKey('context_info_${selectedCard.categoryTitleKey}'),
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            selectedCard.categoryTitle,
+            categoryTitle.isNotEmpty ? categoryTitle : selectedCard.categoryTitleKey,
             style: AppStyles.headingSmall.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w800,
@@ -287,7 +313,7 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
           ),
           const SizedBox(height: 6),
           Text(
-            selectedCard.countPlaceholder,
+            countPlaceholder.isNotEmpty ? countPlaceholder : selectedCard.countPlaceholderKey,
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary.withOpacity(0.75),
               fontWeight: FontWeight.w500,
@@ -300,14 +326,14 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
     );
   }
 
-  Widget _buildDynamicMainCta(_CardData selectedCard) {
+  Widget _buildDynamicMainCta(
+    BuildContext context,
+    _CardData selectedCard,
+    LocalizationService localization,
+  ) {
     final Color bg = selectedCard.color;
-    final String text = switch (selectedCard.route) {
-      AppRoutes.createWishlist => 'Create first wishlist',
-      AppRoutes.addFriend => 'Add first friend',
-      AppRoutes.createEvent => 'Create first event',
-      _ => selectedCard.actionText,
-    };
+    final String text = localization.translate(selectedCard.ctaKey);
+    final String buttonText = text.isNotEmpty ? text : selectedCard.ctaKey;
 
     final double maxWidth = MediaQuery.of(context).size.width;
     final double buttonWidth = (maxWidth * 0.78).clamp(220.0, 320.0);
@@ -319,7 +345,7 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
         child: FadeTransition(opacity: anim, child: child),
       ),
       child: SizedBox(
-        key: ValueKey('main_cta_${selectedCard.categoryTitle}'),
+        key: ValueKey('main_cta_${selectedCard.categoryTitleKey}'),
         width: buttonWidth,
         height: 52,
         child: ElevatedButton(
@@ -340,7 +366,7 @@ class _EmptyHomeScreenState extends State<EmptyHomeScreen>
             shape: const StadiumBorder(),
           ),
           child: Text(
-            text,
+            buttonText,
             style: AppStyles.bodyLarge.copyWith(
               fontWeight: FontWeight.w800,
               color: Colors.white,
@@ -370,22 +396,20 @@ class _CardPose {
 
 class _CardData {
   final IconData icon;
-  final String label;
   final Color color;
   final String route;
-  final String actionText;
-  final String categoryTitle;
-  final String countPlaceholder;
+  final String categoryTitleKey;
+  final String countPlaceholderKey;
+  final String ctaKey;
   final IconData watermarkIcon;
 
   _CardData({
     required this.icon,
-    required this.label,
     required this.color,
     required this.route,
-    required this.actionText,
-    required this.categoryTitle,
-    required this.countPlaceholder,
+    required this.categoryTitleKey,
+    required this.countPlaceholderKey,
+    required this.ctaKey,
     required this.watermarkIcon,
   });
 }

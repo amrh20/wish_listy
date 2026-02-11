@@ -258,14 +258,62 @@ class CompactActivityCard extends StatelessWidget {
     }
   }
 
+  String _getTimeAgoLocalized(LocalizationService loc, DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    if (difference.inDays > 365) {
+      final years = (difference.inDays / 365).floor();
+      if (years == 1) return loc.translate('activity.oneYearAgo');
+      return loc.translate('activity.yearsAgo', args: {'count': years});
+    } else if (difference.inDays > 30) {
+      final months = (difference.inDays / 30).floor();
+      if (months == 1) return loc.translate('activity.oneMonthAgo');
+      return loc.translate('activity.monthsAgo', args: {'count': months});
+    } else if (difference.inDays > 0) {
+      if (difference.inDays == 1) return loc.translate('activity.oneDayAgo');
+      return loc.translate('activity.daysAgo', args: {'count': difference.inDays});
+    } else if (difference.inHours > 0) {
+      if (difference.inHours == 1) return loc.translate('activity.oneHourAgo');
+      return loc.translate('activity.hoursAgo', args: {'count': difference.inHours});
+    } else if (difference.inMinutes > 0) {
+      if (difference.inMinutes == 1) return loc.translate('activity.oneMinuteAgo');
+      return loc.translate('activity.minutesAgo', args: {'count': difference.inMinutes});
+    } else {
+      return loc.translate('activity.justNow');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final actorName = activity.actor.displayName ?? 'Someone';
+    final loc = Provider.of<LocalizationService>(context);
+    final actorName = activity.actor.displayName ?? loc.translate('activity.someone');
     final actorImage = activity.actor.imageUrl;
     final activityIcon = _getActivityIcon(activity.type);
     final activityColor = _getActivityColor(activity.type);
-    final timeAgo = activity.getTimeAgo();
+    final timeAgo = _getTimeAgoLocalized(loc, activity.createdAt);
     final friendId = activity.actor.id;
+
+    final typeLower = activity.type.toLowerCase();
+    final itemName = activity.itemName ?? loc.translate('activity.anItem');
+    final wishlistName = activity.wishlistName ?? '';
+    String displayText;
+    if (typeLower == 'wishlist_item_added') {
+      displayText = loc.translate('activity.addedToWishlist', args: {
+        'actor': actorName,
+        'item': itemName,
+        'wishlist': wishlistName,
+      });
+      if (displayText == 'activity.addedToWishlist') {
+        displayText = '$actorName added $itemName to their wishlist $wishlistName';
+      }
+    } else if (typeLower == 'item_received') {
+      displayText = loc.translate('activity.receivedTheir', args: {'actor': actorName, 'item': itemName});
+      if (displayText == 'activity.receivedTheir') {
+        displayText = '$actorName received their $itemName!';
+      }
+    } else {
+      displayText = activity.getDisplayText();
+    }
 
     return GestureDetector(
       onTap: friendId.isNotEmpty
@@ -320,7 +368,7 @@ class CompactActivityCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    activity.getDisplayText(),
+                    displayText,
                     style: AppStyles.bodySmall.copyWith(
                       color: AppColors.textPrimary,
                       fontFamily: 'Alexandria',

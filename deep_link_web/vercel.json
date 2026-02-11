@@ -2,28 +2,15 @@
   "buildCommand": "",
   "outputDirectory": ".",
   "rewrites": [
-    {
-      "source": "/privacy",
-      "destination": "/privacy.html"
-    },
-    {
-      "source": "/terms",
-      "destination": "/terms.html"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/"
-    }
+    { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/terms", "destination": "/terms.html" },
+    { "source": "/invite", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
       "source": "/.well-known/(.*)",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/json"
-        }
-      ]
+      "headers": [{ "key": "Content-Type", "value": "application/json" }]
     }
   ]
 }

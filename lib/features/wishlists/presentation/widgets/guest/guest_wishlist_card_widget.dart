@@ -211,7 +211,7 @@ class GuestWishlistCardWidget extends StatelessWidget {
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
-                                        'Edit',
+                                        Provider.of<LocalizationService>(context, listen: false).translate('app.edit') ?? 'Edit',
                                         style: AppStyles.bodyMedium.copyWith(
                                           color: AppColors.textPrimary,
                                           fontWeight: FontWeight.w600,
@@ -231,7 +231,7 @@ class GuestWishlistCardWidget extends StatelessWidget {
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
-                                        'Delete',
+                                        Provider.of<LocalizationService>(context, listen: false).translate('app.delete') ?? 'Delete',
                                         style: AppStyles.bodyMedium.copyWith(
                                           color: AppColors.error,
                                           fontWeight: FontWeight.w600,

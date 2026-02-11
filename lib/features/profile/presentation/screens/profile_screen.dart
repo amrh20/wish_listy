@@ -13,6 +13,7 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/utils/app_constants.dart';
+import 'package:wish_listy/core/services/deep_link_service.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/services/api_service.dart';
@@ -329,6 +330,13 @@ class ProfileScreenState extends State<ProfileScreen>
                       gradientColors: [AppColors.success, AppColors.success.withValues(alpha: 0.8)],
                       items: [
                         ProfileSettingItem(
+                          icon: Icons.person_add_alt_1_outlined,
+                          title: localization.translate('invite.inviteFriendsTitle'),
+                          subtitle: localization.translate('invite.inviteFriendsSubtitle'),
+                          onTap: () => _shareAppInvite(localization),
+                          color: AppColors.primary,
+                        ),
+                        ProfileSettingItem(
                           icon: Icons.headset_outlined,
                           title: localization.translate('profile.contactUs'),
                           subtitle: localization.translate('profile.contactUsSubtitle'),
@@ -587,6 +595,12 @@ class ProfileScreenState extends State<ProfileScreen>
 
   void _openFAQ() {
     Navigator.pushNamed(context, AppRoutes.faq);
+  }
+
+  void _shareAppInvite(LocalizationService localization) {
+    final message = localization.translate('invite.inviteFriendsShareMessage') +
+        DeepLinkService.inviteLink;
+    DeepLinkService.shareAppInvite(message);
   }
 
   void _confirmLogout(LocalizationService localization) {

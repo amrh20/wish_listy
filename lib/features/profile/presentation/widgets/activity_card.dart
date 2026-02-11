@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/profile/data/models/activity_model.dart';
 
@@ -75,93 +77,90 @@ class ActivityCard extends StatelessWidget {
     }
   }
 
+  /// Localized time-ago string
+  String _getTimeAgoLocalized(
+    LocalizationService loc,
+    DateTime dateTime,
+  ) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays > 365) {
+      final years = (difference.inDays / 365).floor();
+      if (years == 1) {
+        return loc.translate('activity.oneYearAgo');
+      }
+      return loc.translate('activity.yearsAgo', args: {'count': years});
+    } else if (difference.inDays > 30) {
+      final months = (difference.inDays / 30).floor();
+      if (months == 1) {
+        return loc.translate('activity.oneMonthAgo');
+      }
+      return loc.translate('activity.monthsAgo', args: {'count': months});
+    } else if (difference.inDays > 0) {
+      if (difference.inDays == 1) {
+        return loc.translate('activity.oneDayAgo');
+      }
+      return loc.translate('activity.daysAgo', args: {'count': difference.inDays});
+    } else if (difference.inHours > 0) {
+      if (difference.inHours == 1) {
+        return loc.translate('activity.oneHourAgo');
+      }
+      return loc.translate('activity.hoursAgo', args: {'count': difference.inHours});
+    } else if (difference.inMinutes > 0) {
+      if (difference.inMinutes == 1) {
+        return loc.translate('activity.oneMinuteAgo');
+      }
+      return loc.translate('activity.minutesAgo', args: {'count': difference.inMinutes});
+    } else {
+      return loc.translate('activity.justNow');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final actorName = activity.actor.displayName ?? 'Someone';
+    final loc = Provider.of<LocalizationService>(context);
+    final actorName = activity.actor.displayName ?? loc.translate('activity.someone');
     final actorImage = activity.actor.imageUrl;
     final activityIcon = _getActivityIcon(activity.type);
     final activityColor = _getActivityColor(activity.type);
-    final timeAgo = activity.getTimeAgo();
+    final timeAgo = _getTimeAgoLocalized(loc, activity.createdAt);
     final typeLower = activity.type.toLowerCase();
-    final itemName = activity.itemName;
-    final wishlistName = activity.wishlistName;
+    final itemName = activity.itemName ?? loc.translate('activity.anItem');
+    final wishlistName = activity.wishlistName ?? '';
     
-    // Build RichText children based on activity type
-    List<TextSpan> textSpans = [];
-    
+    // Build display text using localized templates
+    String displayText;
     if (typeLower == 'wishlist_item_added') {
-      // [Actor Name] added [itemName] to their wishlist [wishlistName]
-      textSpans = [
-        TextSpan(
-          text: actorName,
-          style: TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-          ),
-        ),
-        const TextSpan(text: ' added '),
-        TextSpan(
-          text: itemName ?? 'an item',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const TextSpan(text: ' to their wishlist '),
-        TextSpan(
-          text: wishlistName ?? '',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ];
+      displayText = loc.translate('activity.addedToWishlist', args: {
+        'actor': actorName,
+        'item': itemName,
+        'wishlist': wishlistName,
+      });
+      if (displayText == 'activity.addedToWishlist') {
+        displayText = '$actorName added $itemName to their wishlist $wishlistName';
+      }
     } else if (typeLower == 'item_received') {
-      // [Actor Name] received their [itemName]!
-      textSpans = [
-        TextSpan(
-          text: actorName,
-          style: TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-          ),
-        ),
-        const TextSpan(text: ' received their '),
-        TextSpan(
-          text: itemName ?? 'item',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const TextSpan(text: '!'),
-      ];
+      displayText = loc.translate('activity.receivedTheir', args: {
+        'actor': actorName,
+        'item': itemName,
+      });
+      if (displayText == 'activity.receivedTheir') {
+        displayText = '$actorName received their $itemName!';
+      }
     } else {
-      // Fallback for other types
-      final displayText = activity.getDisplayText();
-      textSpans = [
-        TextSpan(
-          text: actorName,
-          style: TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-          ),
-        ),
-        TextSpan(
-          text: ' ${displayText.replaceFirst(actorName, '').trim()}',
-          style: TextStyle(
-            fontSize: 14,
-            color: AppColors.textPrimary,
-          ),
-        ),
-      ];
+      displayText = activity.getDisplayText();
     }
+
+    final textSpans = [
+      TextSpan(
+        text: displayText,
+        style: AppStyles.bodyMedium.copyWith(
+          color: AppColors.textPrimary,
+          fontSize: 14,
+        ),
+      ),
+    ];
 
     // Navigate to friend profile when card is tapped
     final friendId = activity.actor.id;

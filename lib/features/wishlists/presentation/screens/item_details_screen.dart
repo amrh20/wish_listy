@@ -844,7 +844,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Edit',
+                          Provider.of<LocalizationService>(context, listen: false).translate('app.edit') ?? 'Edit',
                           style: TextStyle(
                             color: isReservedForOwner 
                                 ? AppColors.textTertiary.withOpacity(0.5)
@@ -868,7 +868,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Delete',
+                          Provider.of<LocalizationService>(context, listen: false).translate('app.delete') ?? 'Delete',
                           style: TextStyle(
                             color: isReservedForOwner 
                                 ? AppColors.error.withOpacity(0.5)
@@ -1265,7 +1265,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             onPressed: () => _performDeleteItem(item),
             style: TextButton.styleFrom(foregroundColor: AppColors.error),
             child: Text(
-              'Delete',
+              Provider.of<LocalizationService>(context, listen: false).translate('app.delete') ?? 'Delete',
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.error,
                 fontWeight: FontWeight.w600,

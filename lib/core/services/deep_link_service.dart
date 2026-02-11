@@ -27,6 +27,14 @@ class DeepLinkService {
   /// Base URL for deep links
   static const String baseUrl = 'https://$baseDomain';
 
+  /// Smart link for app invite (handles App Store / Play Store / deep link externally)
+  static const String inviteLink = 'https://wishlisty.app/invite';
+
+  /// Share app invite: [shareMessage] should be the localized message (invite.inviteFriendsShareMessage) + inviteLink.
+  static Future<void> shareAppInvite(String shareMessage) async {
+    await Share.share(shareMessage, subject: 'WishListy');
+  }
+
   /// Generates a deep link URL for a wishlist or event
   /// 
   /// [type] should be 'wishlist' or 'event'
@@ -175,6 +183,11 @@ class DeepLinkService {
       }
     }
 
+    // /invite - treat as normal launch: splash already chose Home or Welcome; no extra route to push
+    if (path == '/invite') {
+      _markHandled(uri.toString());
+      return;
+    }
   }
 
   RouteSettings? _routeSettingsFromUri(Uri uri) {
@@ -227,6 +240,9 @@ class DeepLinkService {
       return null;
     }
 
+    // /invite - no specific route; splash will show Home or Welcome based on auth
+    if (path == '/invite') return null;
+
     return null;
   }
 
@@ -252,7 +268,7 @@ class DeepLinkService {
 
   bool _isSupportedUri(Uri uri) {
     if (uri.scheme == 'https' || uri.scheme == 'http') {
-      return uri.host == baseDomain;
+      return uri.host == baseDomain || uri.host == 'wishlisty.app';
     }
     if (uri.scheme == 'wishlink' || uri.scheme == 'wishlisty') {
       return true;

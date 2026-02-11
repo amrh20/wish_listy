@@ -1,5 +1,6 @@
 {
   "app": {
+    "retry":"Retry",
     "faq_title": "Frequently Asked Questions",
     "faq_q1": "What is Wish Listy?",
     "faq_a1": "It's your social space to organize all your wishes and gifts in one place, and share them with friends so they know exactly what to get you for your occasions!",
@@ -58,6 +59,12 @@
     "events": "Events",
     "friends": "Friends",
     "profile": "Profile"
+  },
+  "invite": {
+    "inviteFriendsButton": "Invite friends to WishListy",
+    "inviteFriendsShareMessage": "Hey! I'm using WishListy to create and share my wishlists. Join me and download the app here: ",
+    "inviteFriendsTitle": "Invite Friends",
+    "inviteFriendsSubtitle": "Share WishListy with friends and family"
   },
   "auth": {
     "logoutConfirmation": "Are you sure you want to logout?",
@@ -253,7 +260,18 @@
     "noFriendActivity": "No friend activity",
     "noFriendActivitySubtitle": "Add friends to see their wishlist updates",
     "noGiftSuggestions": "No gift suggestions",
-    "noGiftSuggestionsSubtitle": "We'll suggest gifts based on your friends' wishlists"
+    "noGiftSuggestionsSubtitle": "We'll suggest gifts based on your friends' wishlists",
+    "emptyView": {
+      "categoryWishlists": "Wishlists",
+      "categoryEvents": "Events",
+      "categoryFriends": "Friends",
+      "countLists": "0 lists",
+      "countEvents": "0 events",
+      "countFriends": "0 friends",
+      "createFirstWishlist": "Create first wishlist",
+      "createFirstEvent": "Create first event",
+      "addFirstFriend": "Add first friend"
+    }
   },
   "wishlists": {
     "viewwishlist": "View Wishlist",
@@ -528,7 +546,7 @@
     "addItemsToWishlist": "Add Wishes to Wishlist",
     "viewWishlist": "View Wishlist",
     "createAnotherWishlist": "Create Another Wishlist",
-    "addNewWish": "Add New Wish",
+    "addNewWish": "Add New wish Item",
     "wishTitle": "Item Name",
     "giftName": "Gift Name",
     "uploadImage": "Upload Image",
@@ -541,7 +559,7 @@
     "onlineStore": "Online Store",
     "physicalStore": "Physical Store",
     "anywhere": "Anywhere",
-    "productLinks": "Wish Links",
+    "productLinks": "ItemLinks",
     "addProductLink": "Add Wish Link",
     "enterProductUrl": "Enter wish URL",
     "storeName": "Store Name",
@@ -550,7 +568,7 @@
     "enterStoreLocation": "Enter store location",
     "brandOrKeywords": "Brand or Keywords",
     "enterBrandOrKeywords": "Enter brand or keywords",
-    "productLink": "Wish Link"
+    "productLink": "Item Link"
   },
   "events": {
     "past": "Past",
@@ -574,6 +592,9 @@
     "time": "Time",
     "location": "Location",
     "description": "Description",
+    "eventPreview": "Event Preview",
+    "yourEventName": "Your Event Name",
+    "dateTimeTbd": "Date & Time TBD",
     "guests": "Guests",
     "eventSettings": "Event Settings",
     "viewWishlist": "View Wishlist",
@@ -727,11 +748,11 @@
     "reservationConfirmed": "Reservation Confirmed",
     "reservationCancelled": "Reservation Cancelled",
     "wishlistItemDetails": "Wishlist Item Details",
-    "itemName": "Wish Name",
+    "itemName": "Item Name",
     "itemDescription": "Item Description",
     "itemPrice": "Item Price",
     "itemPriority": "Item Priority",
-    "itemStatus": "Wish Status",
+    "itemStatus": "Item Status",
     "available": "Available",
     "reserved": "Reserved",
     "purchased": "Purchased",
@@ -794,6 +815,7 @@
   "friends": {
     "title": "Friends",
     "myFriends": "My Friends",
+    "peopleYouMayKnow": "People you may know",
     "friendRequests": "Friend Requests",
     "addFriend": "Add Friend",
     "searchFriends": "Search Friends",
@@ -889,8 +911,8 @@
     "noPastEvents": "No past events",
     "noPastEventsDescription": "No past events to display.",
     "nothingScheduled": "Nothing scheduled at the moment.",
-    "wish": "Wish",
-    "wishes": "Wishes",
+    "wish": "Item",
+    "wishes": "Items",
     "noWishesYet": "No wishes yet",
     "invitedGuests": "Invited Guests",
     "tapToViewWishes": "Tap to view wishes",
@@ -1149,8 +1171,8 @@
     "interestsUpdatedSuccessfully": "Interests updated successfully",
     "failedToUpdateInterests": "Failed to update interests",
     "saveChanges": "Save Changes",
-    "wish": "Wish",
-    "wishes": "Wishes",
+    "wish": "Item",
+    "wishes": "Items",
     "hostedBy": "Hosted by",
     "myWishlists": "My Wishlists",
     "invitedGuests": "Invited Guests",
@@ -1178,9 +1200,20 @@
     "activityFromFriends": "Activity from your friends will appear here",
     "failedToLoadActivities": "Failed to load activities",
     "justNow": "Just now",
-    "daysAgo": "{count} {count, plural, =1 {day} other {days}} ago",
-    "hoursAgo": "{count} {count, plural, =1 {hour} other {hours}} ago",
-    "minutesAgo": "{count} {count, plural, =1 {minute} other {minutes}} ago"
+    "oneMinuteAgo": "1 minute ago",
+    "minutesAgo": "{count} minutes ago",
+    "oneHourAgo": "1 hour ago",
+    "hoursAgo": "{count} hours ago",
+    "oneDayAgo": "1 day ago",
+    "daysAgo": "{count} days ago",
+    "oneMonthAgo": "1 month ago",
+    "monthsAgo": "{count} months ago",
+    "oneYearAgo": "1 year ago",
+    "yearsAgo": "{count} years ago",
+    "addedToWishlist": "{actor} added {item} to their wishlist {wishlist}",
+    "receivedTheir": "{actor} received their {item}!",
+    "someone": "Someone",
+    "anItem": "an item"
   },
   "details": {
     "reservedBy": "Reserved by",
@@ -1699,8 +1732,8 @@
       "getInspiredSubtitle": "Sample collections to spark your creativity",
       "createFirstWishlist": "Create Your First Wishlist",
       "addFirstWish": "Add Your First Wish Item",
-      "wishes": "Wishes",
-      "wish": "Wish",
+      "wishes": "Items",
+      "wish": "Item",
       "dummyData": {
         "graduationGoals": {
           "title": "Graduation Goals",
@@ -1738,7 +1771,7 @@
       "onlineStore": "Online Store",
       "physicalStore": "Physical Store",
       "anywhere": "Anywhere",
-      "productLinks": "Wish Links",
+      "productLinks": "Item Links",
       "addWishLink": "Add Wish Link",
       "enterWishUrl": "Enter wish URL",
       "storeName": "Store Name",

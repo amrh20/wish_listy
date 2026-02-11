@@ -625,7 +625,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
-                                    'Edit',
+                                    Provider.of<LocalizationService>(context, listen: false).translate('app.edit') ?? 'Edit',
                                     style: AppStyles.bodyMedium.copyWith(
                                       color: (isReserved || isPurchased || isReceived)
                                           ? AppColors.textTertiary.withOpacity(0.5)
@@ -894,7 +894,9 @@ class _ModernWishlistItemContent extends StatelessWidget {
   /// Build the sleek interactive status toggle widget
   Widget _buildReceivedStatusToggle(BuildContext context, bool isReceived, ThemeData theme) {
     final isPurchased = item.isPurchasedValue;
-    
+    final loc = Provider.of<LocalizationService>(context, listen: false);
+    final markReceivedLabel = loc.translate('details.markReceived') ?? 'Mark Received';
+
     if (isReceived) {
       // State B: Item IS Received - Hide action button, show status text
       return Container(
@@ -950,7 +952,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
-                    'Purchased by another friend, awaiting confirmation from you that you have received it',
+                    loc.translate('details.purchasedAwaitingConfirmation') ?? 'Purchased by another friend, awaiting confirmation from you that you have received it',
                     style: TextStyle(
                       color: AppColors.warning,
                       fontWeight: FontWeight.w600,
@@ -971,9 +973,9 @@ class _ModernWishlistItemContent extends StatelessWidget {
               size: 16,
               color: Colors.white,
             ),
-            label: const Text(
-              'Mark Received',
-              style: TextStyle(
+            label: Text(
+              markReceivedLabel,
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
@@ -999,9 +1001,9 @@ class _ModernWishlistItemContent extends StatelessWidget {
           size: 16,
           color: Colors.white,
         ),
-        label: const Text(
-          'Mark Received',
-          style: TextStyle(
+        label: Text(
+          markReceivedLabel,
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 12,
