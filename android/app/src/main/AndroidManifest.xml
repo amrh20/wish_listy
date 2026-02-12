@@ -147,6 +147,25 @@
                     android:host="wish-listy-self.vercel.app"
                     android:pathPrefix="/item" />
             </intent-filter>
+            <!-- App Links - invite (wishlisty.app) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="wishlisty.app"
+                    android:pathPrefix="/invite" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="http"
+                    android:host="wishlisty.app"
+                    android:pathPrefix="/invite" />
+            </intent-filter>
             
         </activity>
 
