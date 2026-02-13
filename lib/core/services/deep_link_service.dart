@@ -28,7 +28,7 @@ class DeepLinkService {
   static const String baseUrl = 'https://$baseDomain';
 
   /// Smart link for app invite (handles App Store / Play Store / deep link externally)
-  static const String inviteLink = 'https://wishlisty.app/invite';
+  static const String inviteLink = 'https://wish-listy-self.vercel.app/invite';
 
   /// Share app invite: [shareMessage] should be the localized message (invite.inviteFriendsShareMessage) + inviteLink.
   static Future<void> shareAppInvite(String shareMessage) async {
