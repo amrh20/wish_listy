@@ -787,7 +787,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         }
 
         final title =
-            data['title']?.toString() ?? data['notificationTitle']?.toString() ?? 'Wish Listy';
+            data['title']?.toString() ?? data['notificationTitle']?.toString() ?? 'wishListy';
         final message =
             data['message']?.toString() ?? data['notificationBody']?.toString() ?? '';
 

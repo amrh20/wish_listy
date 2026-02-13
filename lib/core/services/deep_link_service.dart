@@ -324,12 +324,12 @@ class DeepLinkService {
     
     // Create share message
     final entityDisplayName = entityName ?? type.capitalize();
-    final message = 'Check out my $entityDisplayName on Wish Listy: $url';
+    final message = 'Check out my $entityDisplayName on wishListy: $url';
     
     // Share the link
     await Share.share(
       message,
-      subject: 'Wish Listy - $entityDisplayName',
+      subject: 'wishListy - $entityDisplayName',
     );
   }
 

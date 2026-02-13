@@ -146,6 +146,7 @@ class ProfileInterestsSectionWidget extends StatelessWidget {
                 ),
               ),
               backgroundColor: Colors.purple.withOpacity(0.1),
+              side: BorderSide.none,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               visualDensity: VisualDensity.compact,

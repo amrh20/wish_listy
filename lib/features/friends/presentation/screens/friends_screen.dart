@@ -275,8 +275,8 @@ class FriendsScreenState extends State<FriendsScreen>
                       );
                     }
                     return const SizedBox(
-                      height: 100,
-                    ); // Bottom padding for FAB
+                      height: 120,
+                    ); // Bottom padding so content is not stuck to bottom nav
                   }
                   return AnimationConfiguration.staggeredList(
                     position: index,
@@ -398,7 +398,7 @@ class FriendsScreenState extends State<FriendsScreen>
                   // Last item: show "Add Friend" button under the list
                   if (index == _friendRequests.length) {
                     return Padding(
-                      padding: const EdgeInsets.only(top: 16, bottom: 100),
+                      padding: const EdgeInsets.only(top: 16, bottom: 120),
                       child: Center(
                         child: CustomButton(
                           text: localization.translate('friends.addFriend'),

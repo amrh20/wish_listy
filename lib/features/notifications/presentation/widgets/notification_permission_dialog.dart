@@ -3,7 +3,7 @@ import 'package:wish_listy/core/theme/app_theme.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:provider/provider.dart';
 
-/// A professional, themed dialog that explains why Wish Listy
+/// A professional, themed dialog that explains why wishListy
 /// needs notification permissions and asks the user for consent.
 ///
 /// Returns `true` if the user chose to allow notifications,

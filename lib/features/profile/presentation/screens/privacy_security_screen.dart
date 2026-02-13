@@ -207,7 +207,7 @@ class _PrivacySecurityScreenState extends State<PrivacySecurityScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'To provide a full experience, Wish Listy may request access to certain features on your device:',
+                'To provide a full experience, wishListy may request access to certain features on your device:',
                 style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 12),

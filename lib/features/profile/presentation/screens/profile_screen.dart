@@ -385,7 +385,7 @@ class ProfileScreenState extends State<ProfileScreen>
                     ),
                     const SizedBox(height: 24),
                     _buildVersionWidget(),
-                    SizedBox(height: MediaQuery.of(context).padding.bottom + 88),
+                    SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
                   ],
                 ),
               ),
@@ -531,8 +531,8 @@ class ProfileScreenState extends State<ProfileScreen>
       
       // Create share text with localization
       final shareText = localization.currentLanguage == 'ar'
-          ? 'تحقق من قائمة الأمنيات الخاصة بي على Wish Listy! $profileLink'
-          : 'Check out my wish list on Wish Listy! $profileLink';
+          ? 'تحقق من قائمة الأمنيات الخاصة بي على wishListy! $profileLink'
+          : 'Check out my wish list on wishListy! $profileLink';
       
       await Share.share(
         shareText,
@@ -1256,6 +1256,7 @@ class ProfileScreenState extends State<ProfileScreen>
                 ),
               ),
               backgroundColor: Colors.purple.withOpacity(0.1),
+              side: BorderSide.none,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               visualDensity: VisualDensity.compact,

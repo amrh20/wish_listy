@@ -104,7 +104,7 @@ class GenericErrorScreen extends StatelessWidget {
     return GenericErrorScreen(
       title: 'Under Maintenance',
       description:
-          'We are currently improving Wish Listy. We\'ll be back shortly!',
+          'We are currently improving wishListy. We\'ll be back shortly!',
       icon: Icons.engineering_rounded,
       actionButtonText: onCheckStatus != null ? 'Check Status' : null,
       onActionPressed: onCheckStatus,

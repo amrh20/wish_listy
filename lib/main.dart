@@ -248,7 +248,7 @@ class _MyAppState extends State<MyApp> {
         builder: (context, localization, child) {
           final currentLocale = Locale(localization.currentLanguage);
           return MaterialApp(
-            title: 'Wish Listy',
+            title: 'wishListy',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme(locale: currentLocale),
             darkTheme: AppTheme.darkTheme(locale: currentLocale),

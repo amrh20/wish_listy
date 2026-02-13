@@ -663,9 +663,9 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                                 activities: controller.latestActivityPreview ?? [],
                               ),
                             ),
-                          // Bottom padding to clear Bottom Navigation Bar
+                          // Bottom padding to clear Bottom Navigation Bar (extra space so content is not stuck to nav)
                           const SliverToBoxAdapter(
-                            child: SizedBox(height: 120),
+                            child: SizedBox(height: 140),
                           ),
                         ],
                       ),

@@ -1,11 +1,11 @@
 class LegalContent {
   // English Content
   static const String privacyPolicyEn = """
-**Privacy Policy for Wish Listy**
+**Privacy Policy for wishListy**
 Last Updated: Dec 30, 2025
 
 **1. Introduction**
-Welcome to Wish Listy. We value your privacy. This policy explains how we handle your data to help you organize gifts and events.
+Welcome to wishListy. We value your privacy. This policy explains how we handle your data to help you organize gifts and events.
 
 **2. Information We Collect**
 * **Account Info:** Name, email, and profile picture.
@@ -28,28 +28,28 @@ You can request account deletion at any time from the app settings.
 **Terms and Conditions**
 
 **1. Acceptance**
-By using Wish Listy, you agree to these terms.
+By using wishListy, you agree to these terms.
 
 **2. User Conduct**
 * You agree not to post fake items or spam events.
 * You are responsible for the content you upload.
 
 **3. Gifting Disclaimer**
-Wish Listy is a coordination tool. We are not responsible for:
+wishListy is a coordination tool. We are not responsible for:
 * Friends failing to buy a reserved gift.
 * The quality or delivery of gifts purchased from third-party links.
 
 **4. Intellectual Property**
-The Wish Listy design and code are owned by us. User content belongs to the user.
+The wishListy design and code are owned by us. User content belongs to the user.
 """;
 
   // Arabic Content
   static const String privacyPolicyAr = """
-**سياسة الخصوصية لتطبيق Wish Listy**
+**سياسة الخصوصية لتطبيق wishListy**
 آخر تحديث: 30 ديسمبر 2025
 
 **1. مقدمة**
-نحن في Wish Listy نحترم خصوصيتك. توضح هذه السياسة كيف نتعامل مع بياناتك لمساعدتك في تنظيم الهدايا والمناسبات.
+نحن في wishListy نحترم خصوصيتك. توضح هذه السياسة كيف نتعامل مع بياناتك لمساعدتك في تنظيم الهدايا والمناسبات.
 
 **2. المعلومات التي نجمعها**
 * **معلومات الحساب:** الاسم، البريد الإلكتروني، والصورة الشخصية.
@@ -72,14 +72,14 @@ The Wish Listy design and code are owned by us. User content belongs to the user
 **الشروط والأحكام**
 
 **1. الموافقة**
-باستخدامك لتطبيق Wish Listy، فإنك توافق على هذه الشروط.
+باستخدامك لتطبيق wishListy، فإنك توافق على هذه الشروط.
 
 **2. سلوك المستخدم**
 * تتعهد بعدم نشر محتوى وهمي أو مزعج (Spam).
 * أنت مسؤول مسؤولية كاملة عن المحتوى الذي تضيفه.
 
 **3. إخلاء المسؤولية عن الهدايا**
-تطبيق Wish Listy هو أداة للتنسيق فقط. نحن غير مسؤولين عن:
+تطبيق wishListy هو أداة للتنسيق فقط. نحن غير مسؤولين عن:
 * عدم قيام الأصدقاء بشراء هدية تم حجزها.
 * جودة أو توصيل الهدايا التي يتم شراؤها عبر روابط خارجية.
 
