@@ -902,6 +902,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Row(
+          textDirection: Directionality.of(context),
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
@@ -911,7 +912,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              Provider.of<LocalizationService>(context, listen: false).translate('ui.markedAsGifted') ?? 'Marked as gifted',
+              Provider.of<LocalizationService>(context, listen: false).translate('ui.markedAsGifted') ?? 'Received',
               style: TextStyle(
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w500,
@@ -1061,6 +1062,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    textDirection: Directionality.of(context),
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
@@ -1091,26 +1093,44 @@ class _ModernWishlistItemContent extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Row(
-                              children: [
-                                const Icon(
-                                  Icons.check_circle,
-                                  size: 14,
-                                  color: AppColors.success,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  Provider.of<LocalizationService>(context, listen: false).translate('ui.gifted') ?? 'Gifted',
-                                  style: AppStyles.caption.copyWith(
-                                    color: AppColors.success,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                              textDirection: Directionality.of(context),
+                              mainAxisSize: MainAxisSize.min,
+                              children: Directionality.of(context) == TextDirection.rtl
+                                  ? [
+                                      Text(
+                                        Provider.of<LocalizationService>(context, listen: false).translate('ui.gifted') ?? 'Gifted',
+                                        style: AppStyles.caption.copyWith(
+                                          color: AppColors.success,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      const Icon(
+                                        Icons.check_circle,
+                                        size: 14,
+                                        color: AppColors.success,
+                                      ),
+                                    ]
+                                  : [
+                                      const Icon(
+                                        Icons.check_circle,
+                                        size: 14,
+                                        color: AppColors.success,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        Provider.of<LocalizationService>(context, listen: false).translate('ui.gifted') ?? 'Gifted',
+                                        style: AppStyles.caption.copyWith(
+                                          color: AppColors.success,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
+                      Icon(
                         Icons.celebration_rounded,
                         color: AppColors.success,
                         size: 18,
@@ -1131,7 +1151,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                     ),
                     child: Center(
                       child: Text(
-                        'Marked as gifted',
+                        Provider.of<LocalizationService>(context, listen: false).translate('ui.markedAsGifted') ?? 'Received',
                         style: AppStyles.bodySmall.copyWith(
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
@@ -1309,6 +1329,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Row(
+                            textDirection: Directionality.of(context),
                             children: [
                               Icon(
                                 Icons.check_circle,
@@ -1464,6 +1485,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
+                                textDirection: Directionality.of(context),
                                 children: [
                                   Icon(
                                     Icons.lock_outline,
@@ -1501,6 +1523,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Row(
+                              textDirection: Directionality.of(context),
                               children: [
                                 if (item.reservedBy?.profileImage != null)
                                   CircleAvatar(

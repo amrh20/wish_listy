@@ -27,33 +27,38 @@ class ItemStatusCardWidget extends StatelessWidget {
     final isReserved = item.isReservedValue;
     final isReservedByOther = isReserved && !isReservedByMe;
 
-    // Case 1: Reserved by Others
+    // Case 1: Gifted/Received – show celebratory card (no "reserved by friend")
+    if (isReceived) {
+      return _buildGiftedCard(context, localization);
+    }
+
+    // Case 2: Purchased but not yet received
+    if (isPurchased) {
+      return _buildPurchasedCard(context, localization);
+    }
+
+    // Case 3: Reserved by Others
     if (isReservedByOther) {
-      return _buildReservedCard(localization);
+      return _buildReservedCard(context, localization);
     }
 
-    // Case 2: Purchased/Gifted
-    if (isReceived || isPurchased) {
-      return _buildPurchasedCard(localization, isPurchased, isReceived);
-    }
-
-    // Case 3: Available
-    return _buildAvailableCard(localization);
+    // Case 4: Available
+    return _buildAvailableCard(context, localization);
   }
 
-  Widget _buildReservedCard(LocalizationService localization) {
+  BoxDecoration _flatCardDecoration(BuildContext context) {
+    return BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(16),
+    );
+  }
+
+  Widget _buildReservedCard(BuildContext context, LocalizationService localization) {
     final reservedByName = item.reservedBy?.fullName ?? 'a friend';
     
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.orange.shade200,
-          width: 1.5,
-        ),
-      ),
+      decoration: _flatCardDecoration(context),
       child: Row(
         children: [
           Container(
@@ -98,25 +103,58 @@ class ItemStatusCardWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildPurchasedCard(
-    LocalizationService localization,
-    bool isPurchased,
-    bool isReceived,
-  ) {
-    final statusText = isReceived 
-        ? localization.translate('details.gifted')
-        : localization.translate('details.purchased');
-    
+  Widget _buildGiftedCard(BuildContext context, LocalizationService localization) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.green.shade200,
-          width: 1.5,
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+      decoration: _flatCardDecoration(context),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.shade100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.celebration_rounded,
+                color: Colors.green.shade700,
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              localization.translate('details.giftedStatus'),
+              style: AppStyles.bodyMedium.copyWith(
+                color: Colors.green.shade700,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              localization.translate('details.giftedCelebration'),
+              style: AppStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPurchasedCard(
+    BuildContext context,
+    LocalizationService localization,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _flatCardDecoration(context),
       child: Row(
         children: [
           Container(
@@ -137,14 +175,14 @@ class ItemStatusCardWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  statusText,
+                  localization.translate('details.purchased'),
                   style: AppStyles.bodyMedium.copyWith(
                     color: Colors.green.shade700,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
                 ),
-                if (isPurchased && !isReceived && isOwner && onMarkReceived != null) ...[
+                if (isOwner && onMarkReceived != null) ...[
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
@@ -178,17 +216,10 @@ class ItemStatusCardWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildAvailableCard(LocalizationService localization) {
+  Widget _buildAvailableCard(BuildContext context, LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.2),
-          width: 1.5,
-        ),
-      ),
+      decoration: _flatCardDecoration(context),
       child: Row(
         children: [
           Container(
@@ -205,26 +236,13 @@ class ItemStatusCardWidget extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  localization.translate('details.available'),
-                  style: AppStyles.bodyMedium.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  localization.translate('details.available'),
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
+            child: Text(
+              localization.translate('details.available'),
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
           ),
         ],

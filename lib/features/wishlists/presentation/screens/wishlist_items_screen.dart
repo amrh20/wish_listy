@@ -1465,7 +1465,7 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
   }
 
   void _openItemDetails(WishlistItem item) {
-    // Navigate to item details screen
+    // Navigate to item details screen and refresh list when returning
     Navigator.pushNamed(
       context,
       AppRoutes.itemDetails,
@@ -1479,7 +1479,9 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         'priority': item.priority.toString().split('.').last,
         'status': item.status.toString().split('.').last,
       },
-    );
+    ).then((_) {
+      if (mounted) _loadWishlistDetails();
+    });
   }
 }
 

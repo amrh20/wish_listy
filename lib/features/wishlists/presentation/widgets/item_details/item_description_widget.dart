@@ -26,32 +26,17 @@ class ItemDescriptionWidget extends StatelessWidget {
       children: [
         Text(
           localization.translate('details.description'),
-          style: AppStyles.headingSmall.copyWith(
-            color: AppColors.textPrimary,
+          style: AppStyles.bodySmall.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 10),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Text(
-            desc,
-            style: AppStyles.bodyMedium.copyWith(
-              color: AppColors.textPrimary,
-              height: 1.5,
-            ),
+        const SizedBox(height: 8),
+        Text(
+          desc,
+          style: AppStyles.bodyMedium.copyWith(
+            color: AppColors.textPrimary,
+            height: 1.5,
           ),
         ),
       ],

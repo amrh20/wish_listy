@@ -243,7 +243,7 @@ class ItemActionBarWidget extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Reserved by You',
+                localization.translate('details.reservedByYou') ?? 'Reserved by You',
                 style: AppStyles.bodyMedium.copyWith(
                   color: Colors.green.shade700,
                   fontWeight: FontWeight.w700,

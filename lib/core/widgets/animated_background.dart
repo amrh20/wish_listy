@@ -143,103 +143,12 @@ class _AnimatedBackgroundState extends State<AnimatedBackground>
             },
           ),
 
-        // Geometric Shapes
-        _buildFloatingShapes(),
-
         // Child Content
         if (widget.child != null) widget.child!,
       ],
     );
   }
 
-  Widget _buildFloatingShapes() {
-    return Stack(
-      children: [
-        // Top Right Circle
-        Positioned(
-          top: -50,
-          right: -50,
-          child: AnimatedBuilder(
-            animation: _gradientController,
-            builder: (context, child) {
-              if (!mounted) return const SizedBox.shrink();
-
-              return Transform.rotate(
-                angle: _gradientAnimation.value * 2 * pi,
-                child: Container(
-                  width: 150,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        Colors.blue.shade100.withOpacity(0.4),
-                        Colors.blue.shade50.withOpacity(0.2),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-
-        // Bottom Left Shape
-        Positioned(
-          bottom: -30,
-          left: -30,
-          child: AnimatedBuilder(
-            animation: _gradientController,
-            builder: (context, child) {
-              if (!mounted) return const SizedBox.shrink();
-
-              return Transform.rotate(
-                angle: -_gradientAnimation.value * 1.5 * pi,
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.purple.shade100.withOpacity(0.3),
-                        Colors.pink.shade50.withOpacity(0.2),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-
-        // Center Right Triangle
-        Positioned(
-          top: MediaQuery.of(context).size.height * 0.3,
-          right: -20,
-          child: AnimatedBuilder(
-            animation: _gradientController,
-            builder: (context, child) {
-              if (!mounted) return const SizedBox.shrink();
-
-              return Transform.rotate(
-                angle: _gradientAnimation.value * pi,
-                child: CustomPaint(
-                  painter: TrianglePainter(
-                    color: Colors.green.shade100.withOpacity(0.25),
-                  ),
-                  size: const Size(80, 80),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 class Particle {
@@ -307,28 +216,4 @@ class ParticlesPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}
-
-class TrianglePainter extends CustomPainter {
-  final Color color;
-
-  TrianglePainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    final path = Path();
-    path.moveTo(size.width / 2, 0);
-    path.lineTo(0, size.height);
-    path.lineTo(size.width, size.height);
-    path.close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

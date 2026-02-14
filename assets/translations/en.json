@@ -1226,6 +1226,7 @@
     "reservedByFriend": "Reserved by a friend 🤫",
     "reservedByYou": "Reserved by You",
     "giftedStatus": "🎁 Gifted!",
+    "giftedCelebration": "This wish has been fulfilled! 🎉",
     "demoWishlist": "This is a demo wishlist.",
     "demoItem": "This is a demo item",
     "totalWishes": "{total} Wishes",
@@ -1240,6 +1241,7 @@
     "cancellingReservation": "Cancelling reservation...",
     "purchasedAwaitingConfirmation": "Purchased by another friend, awaiting confirmation from you that you have received it",
     "markReceived": "Mark Received",
+    "undo": "Undo",
     "alreadyReservedByFriend": "Already reserved by another friend 🔒",
     "reserveGift": "Reserve Gift 🎁",
     "byFriend": "By {name}",
@@ -1264,7 +1266,7 @@
     "physicalStore": "Physical Store",
     "openInMaps": "Open in Maps",
     "noSpecificStoreListed": "No specific store listed. You can find this gift anywhere!",
-    "markedAsGifted": "Marked as gifted",
+    "markedAsGifted": "Received",
     "visitStore": "Visit Store 🌐",
     "dateAdded": "Date Added",
     "purchased": "Purchased",
@@ -1651,7 +1653,7 @@
     "markAsReceivedQuestion": "Mark as Received?",
     "undoReceivedContent": "This will mark the item as active again.",
     "markAsReceivedContent": "This will mark the item as purchased and received. Are you sure you got this gift?",
-    "markedAsGifted": "Marked as gifted"
+    "markedAsGifted": "Received"
   },
   "guest": {
     "welcome": {

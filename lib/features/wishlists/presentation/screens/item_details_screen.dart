@@ -319,13 +319,13 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                                       isOwner: _isOwner(),
                                       dateText: _formatDate(item.createdAt),
                                     ),
-                                    const SizedBox(height: 20),
+                                    const SizedBox(height: 24),
                                     
                                     // Image
                                     if (item.imageUrl != null &&
                                         item.imageUrl!.trim().isNotEmpty) ...[
                                       ItemImageCardWidget(imageUrl: item.imageUrl!),
-                                      const SizedBox(height: 20),
+                                      const SizedBox(height: 24),
                                     ],
                                     
                                     // Status Card (Reserved/Purchased/Gifted/Available)
@@ -335,7 +335,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                                       isReservedByMe: _isReservedByMe(item),
                                       onMarkReceived: _toggleReceivedStatus,
                                     ),
-                                    const SizedBox(height: 20),
+                                    const SizedBox(height: 24),
                                     
                                     // Where to Buy Card
                                     ItemWhereToBuyCardWidget(
@@ -344,7 +344,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                                       storeLocation: _getStoreLocation(),
                                       onTap: () => _openStoreUrl(item),
                                     ),
-                                    const SizedBox(height: 20),
+                                    const SizedBox(height: 24),
                                     
                                     // Description
                                     ItemDescriptionWidget(description: item.description),
@@ -367,16 +367,19 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       // Hide when item is received (gifted) for everyone
       // Show "Mark as Received" only for owner when purchased but not received
       bottomNavigationBar: _shouldShowBottomActionBar(item)
-          ? ItemActionBarWidget(
-              item: item,
-              isOwner: _isOwner(),
-              isReservedByMe: _isReservedByMe(item),
-              onMarkReceived: _toggleReceivedStatus,
-              onCancelReservation: () {
-                final currentItem = _currentItem ?? item;
-                _toggleReservationWithAction(currentItem, action: 'cancel');
-              },
-              onReserve: () => _toggleReservation(item),
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: ItemActionBarWidget(
+                item: item,
+                isOwner: _isOwner(),
+                isReservedByMe: _isReservedByMe(item),
+                onMarkReceived: _toggleReceivedStatus,
+                onCancelReservation: () {
+                  final currentItem = _currentItem ?? item;
+                  _toggleReservationWithAction(currentItem, action: 'cancel');
+                },
+                onReserve: () => _toggleReservation(item),
+              ),
             )
           : null,
       ),
