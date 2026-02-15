@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/utils/interest_translation_extension.dart';
 
 class ProfileInterestsSectionWidget extends StatelessWidget {
   final List<String> interests;
@@ -46,7 +47,7 @@ class ProfileInterestsSectionWidget extends StatelessWidget {
           ),
         ],
       ),
-      child: isEmpty ? _buildEmptyState() : _buildPopulatedState(),
+      child: isEmpty ? _buildEmptyState() : _buildPopulatedState(context),
     );
   }
 
@@ -96,7 +97,7 @@ class ProfileInterestsSectionWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildPopulatedState() {
+  Widget _buildPopulatedState(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -139,7 +140,7 @@ class ProfileInterestsSectionWidget extends StatelessWidget {
           children: interests.map((interest) {
             return Chip(
               label: Text(
-                interest,
+                interest.translateInterest(context),
                 style: AppStyles.bodySmall.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w500,

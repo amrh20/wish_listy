@@ -6,6 +6,7 @@ import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/data/models/suggestion_user_model.dart';
+import 'package:wish_listy/features/friends/presentation/widgets/stacked_mutual_friends_widget.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 
@@ -498,18 +499,26 @@ class _SuggestionUserCardState extends State<_SuggestionUserCard> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    widget.localization.translate(
-                      'friends.mutualFriendsCount',
-                      args: {'count': widget.suggestion.mutualFriendsCount.toString()},
-                    ),
-                    style: AppStyles.bodySmall.copyWith(
-                      color: AppColors.textTertiary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
+                  Center(
+                    child: widget.suggestion.mutualFriendsData != null &&
+                            widget.suggestion.mutualFriendsData!.totalCount > 0
+                        ? StackedMutualFriendsWidget(
+                            data: widget.suggestion.mutualFriendsData,
+                            avatarSize: 24,
+                          )
+                        : Text(
+                            widget.localization.translate(
+                              'friends.mutualFriendsCount',
+                              args: {'count': widget.suggestion.mutualFriendsCount.toString()},
+                            ),
+                            style: AppStyles.bodySmall.copyWith(
+                              color: AppColors.textTertiary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                          ),
                   ),
                   const Spacer(),
                   SizedBox(

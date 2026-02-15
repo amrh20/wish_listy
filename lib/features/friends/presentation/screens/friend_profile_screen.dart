@@ -13,6 +13,7 @@ import 'package:wish_listy/features/friends/data/models/friend_event_model.dart'
 import 'package:wish_listy/features/profile/data/repository/privacy_repository.dart';
 import 'package:wish_listy/features/friends/data/models/friend_wishlist_model.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
+import 'package:wish_listy/features/friends/presentation/widgets/stacked_mutual_friends_widget.dart';
 import 'package:wish_listy/features/friends/presentation/controllers/friend_profile_controller.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
@@ -1029,6 +1030,16 @@ class _PatternedHeader extends StatelessWidget {
                                   _FriendProfileScreenState>())
                               ?._handleUnblock(),
                         ),
+                        if (p?.mutualFriendsData != null &&
+                            p!.mutualFriendsData!.totalCount > 0) ...[
+                          const SizedBox(height: 10),
+                          Center(
+                            child: StackedMutualFriendsWidget(
+                              data: p.mutualFriendsData,
+                              avatarSize: 28,
+                            ),
+                          ),
+                        ],
                       ],
                     );
                   }),

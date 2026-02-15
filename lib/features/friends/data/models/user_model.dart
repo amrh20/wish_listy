@@ -1,3 +1,5 @@
+import 'package:wish_listy/features/friends/data/models/mutual_friends_data_model.dart';
+
 /// User model for friends/search results
 /// Matches backend API response structure
 class User {
@@ -7,6 +9,7 @@ class User {
   final String? handle; // Public handle (e.g., "@amr_hamdy_99")
   final String? profileImage;
   final int? mutualFriendsCount; // Only for suggestions
+  final MutualFriendsData? mutualFriendsData;
   final bool? canSendRequest; // Whether user can send friend request
   final String? friendshipStatus; // Status: 'pending', 'received', 'accepted', etc.
   final String? requestId; // Friend request ID (if status is 'received' or 'pending')
@@ -19,6 +22,7 @@ class User {
     this.handle,
     this.profileImage,
     this.mutualFriendsCount,
+    this.mutualFriendsData,
     this.canSendRequest,
     this.friendshipStatus,
     this.requestId,
@@ -26,6 +30,11 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    final mutualDataRaw = json['mutualFriendsData'] ?? json['mutual_friends_data'];
+    final mutualFriendsData = mutualDataRaw is Map<String, dynamic>
+        ? MutualFriendsData.fromJson(mutualDataRaw)
+        : null;
+
     return User(
       id: json['_id'] ?? json['id'] ?? '',
       fullName: json['fullName'] ?? json['name'] ?? '',
@@ -33,10 +42,11 @@ class User {
       handle: json['handle'],
       profileImage: json['profileImage'] ?? json['profile_image'],
       mutualFriendsCount: json['mutualFriendsCount'] ?? json['mutual_friends_count'],
-      canSendRequest: json['canSendRequest'] ?? true, // Default to true if not provided
+      mutualFriendsData: mutualFriendsData,
+      canSendRequest: json['canSendRequest'] ?? true,
       friendshipStatus: json['friendshipStatus'] ?? json['friendship_status'],
-      requestId: json['friendRequestId'] ?? json['friend_request_id'] ?? json['requestId'] ?? json['request_id'], // Extract friendRequestId if available
-      isFriend: json['isFriend'] ?? json['is_friend'] ?? false, // Default to false if not provided
+      requestId: json['friendRequestId'] ?? json['friend_request_id'] ?? json['requestId'] ?? json['request_id'],
+      isFriend: json['isFriend'] ?? json['is_friend'] ?? false,
     );
   }
 
@@ -48,6 +58,7 @@ class User {
       if (handle != null) 'handle': handle,
       'profileImage': profileImage,
       if (mutualFriendsCount != null) 'mutualFriendsCount': mutualFriendsCount,
+      if (mutualFriendsData != null) 'mutualFriendsData': mutualFriendsData!.toJson(),
       if (canSendRequest != null) 'canSendRequest': canSendRequest,
       if (friendshipStatus != null) 'friendshipStatus': friendshipStatus,
       if (requestId != null) 'requestId': requestId,
@@ -62,6 +73,7 @@ class User {
     String? handle,
     String? profileImage,
     int? mutualFriendsCount,
+    MutualFriendsData? mutualFriendsData,
     bool? canSendRequest,
     String? friendshipStatus,
     String? requestId,
@@ -74,6 +86,7 @@ class User {
       handle: handle ?? this.handle,
       profileImage: profileImage ?? this.profileImage,
       mutualFriendsCount: mutualFriendsCount ?? this.mutualFriendsCount,
+      mutualFriendsData: mutualFriendsData ?? this.mutualFriendsData,
       canSendRequest: canSendRequest ?? this.canSendRequest,
       friendshipStatus: friendshipStatus ?? this.friendshipStatus,
       requestId: requestId ?? this.requestId,

@@ -1,11 +1,14 @@
+import 'package:wish_listy/features/friends/data/models/mutual_friends_data_model.dart';
+
 /// Suggestion User model for "People You May Know" feature
-/// Maps from API response structure: {_id, fullName, username, avatar, mutualFriendsCount}
+/// Maps from API response structure: {_id, fullName, username, avatar, mutualFriendsCount, mutualFriendsData}
 class SuggestionUser {
   final String id;
   final String fullName;
   final String username;
   final String? profileImage; // Mapped from 'avatar' field in API
   final int mutualFriendsCount;
+  final MutualFriendsData? mutualFriendsData;
 
   const SuggestionUser({
     required this.id,
@@ -13,16 +16,22 @@ class SuggestionUser {
     required this.username,
     this.profileImage,
     required this.mutualFriendsCount,
+    this.mutualFriendsData,
   });
 
   factory SuggestionUser.fromJson(Map<String, dynamic> json) {
+    final mutualDataRaw = json['mutualFriendsData'] ?? json['mutual_friends_data'];
+    final mutualFriendsData = mutualDataRaw is Map<String, dynamic>
+        ? MutualFriendsData.fromJson(mutualDataRaw)
+        : null;
+
     return SuggestionUser(
       id: json['_id'] ?? json['id'] ?? '',
       fullName: json['fullName'] ?? json['name'] ?? '',
       username: json['username'] ?? '',
-      // Map 'avatar' field from API to 'profileImage' internally
       profileImage: json['avatar'] ?? json['profileImage'] ?? json['profile_image'],
       mutualFriendsCount: json['mutualFriendsCount'] ?? json['mutual_friends_count'] ?? 0,
+      mutualFriendsData: mutualFriendsData,
     );
   }
 
@@ -31,8 +40,9 @@ class SuggestionUser {
       '_id': id,
       'fullName': fullName,
       'username': username,
-      'avatar': profileImage, // Map back to 'avatar' for API compatibility
+      'avatar': profileImage,
       'mutualFriendsCount': mutualFriendsCount,
+      if (mutualFriendsData != null) 'mutualFriendsData': mutualFriendsData!.toJson(),
     };
   }
 

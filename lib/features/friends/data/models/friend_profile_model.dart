@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:wish_listy/features/friends/data/models/mutual_friends_data_model.dart';
 
 @immutable
 class FriendProfileUserModel {
@@ -196,6 +197,7 @@ class FriendProfileModel {
   final FriendProfileFriendshipStatusModel friendshipStatus;
   final FriendProfileRelationshipModel? relationship;
   final bool isBlockedByMe;
+  final MutualFriendsData? mutualFriendsData;
 
   const FriendProfileModel({
     required this.user,
@@ -203,6 +205,7 @@ class FriendProfileModel {
     required this.friendshipStatus,
     this.relationship,
     this.isBlockedByMe = false,
+    this.mutualFriendsData,
   });
 
   factory FriendProfileModel.fromJson(Map<String, dynamic> json) {
@@ -241,6 +244,10 @@ class FriendProfileModel {
       final isBlockedByMe = (rel?.isBlockedByMe ?? false) ||
           json['isBlockedByMe'] == true ||
           json['is_blocked_by_me'] == true;
+      final mutualDataRaw = json['mutualFriendsData'] ?? json['mutual_friends_data'] ?? userJson['mutualFriendsData'] ?? userJson['mutual_friends_data'];
+      final mutualFriendsData = mutualDataRaw is Map<String, dynamic>
+          ? MutualFriendsData.fromJson(mutualDataRaw)
+          : null;
       return FriendProfileModel(
         user: FriendProfileUserModel.fromJson(userJson),
         counts: FriendProfileCountsModel.fromJson(countsJson),
@@ -249,6 +256,7 @@ class FriendProfileModel {
             : FriendProfileFriendshipStatusModel.fromJson(json),
         relationship: rel,
         isBlockedByMe: isBlockedByMe,
+        mutualFriendsData: mutualFriendsData,
       );
     }
 
@@ -262,17 +270,19 @@ class FriendProfileModel {
     final isBlockedByMe = (rel?.isBlockedByMe ?? false) ||
         json['isBlockedByMe'] == true ||
         json['is_blocked_by_me'] == true;
+    final mutualDataRaw = json['mutualFriendsData'] ?? json['mutual_friends_data'];
+    final mutualFriendsData = mutualDataRaw is Map<String, dynamic>
+        ? MutualFriendsData.fromJson(mutualDataRaw)
+        : null;
     return FriendProfileModel(
       user: FriendProfileUserModel.fromJson(json),
-      // counts may be embedded as flat keys
       counts: FriendProfileCountsModel.fromJson(json),
-      // If backend returns friendship flags at root (e.g., {isFriend:true}),
-      // parse from root as a safe fallback instead of defaulting to false.
       friendshipStatus: friendshipJson.isNotEmpty
           ? FriendProfileFriendshipStatusModel.fromJson(friendshipJson)
           : FriendProfileFriendshipStatusModel.fromJson(json),
       relationship: rel,
       isBlockedByMe: isBlockedByMe,
+      mutualFriendsData: mutualFriendsData,
     );
   }
 }

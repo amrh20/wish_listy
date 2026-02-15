@@ -419,11 +419,11 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                                   },
                                 ),
 
-                                const SizedBox(height: 24),
-
-                                // Add Item Section (Optional)
-                                _buildAddItemSection(localization),
-
+                                if (widget.wishlistId == null) ...[
+                                  const SizedBox(height: 24),
+                                  // Add Item Section (Optional) – only when creating, not when editing
+                                  _buildAddItemSection(localization),
+                                ],
                                 const SizedBox(height: 40),
 
                                 // Action Buttons
@@ -542,6 +542,42 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
   Future<void> _createWishlist(LocalizationService localization) async {
     if (!_formKey.currentState!.validate()) {
       return;
+    }
+    // When "Add item" section has Online Store and a URL, it must be a valid link
+    if (_hasAnyItemFieldFilled() &&
+        _itemSelectedWhereToFind == 'online') {
+      final url = _itemUrlController.text.trim();
+      if (url.isNotEmpty && !_isValidUrl(url)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      localization.translate('wishlists.pleaseEnterValidUrl') ??
+                          'Please enter a valid URL (e.g. https://...)',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.error,
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+        return;
+      }
     }
     final isEditing = widget.wishlistId != null;
     // Calculate final category - can be null if no category selected
@@ -1120,9 +1156,9 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       keyboardType: TextInputType.url,
       validator: (value) {
         if (value != null && value.isNotEmpty) {
-          if (!_isValidUrl(value)) {
+          if (!_isValidUrl(value.trim())) {
             return localization.translate('wishlists.pleaseEnterValidUrl') ??
-                'Please enter a valid URL';
+                'Please enter a valid URL (e.g. https://...)';
           }
         }
         return null;
@@ -1405,10 +1441,10 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
       item['description'] = description;
     }
 
-    // Add fields based on "Where to Find" selection
+    // Add fields based on "Where to Find" selection (only add URL if valid)
     if (_itemSelectedWhereToFind == 'online') {
       final url = _itemUrlController.text.trim();
-      if (url.isNotEmpty) {
+      if (url.isNotEmpty && _isValidUrl(url)) {
         item['url'] = url;
       }
     } else if (_itemSelectedWhereToFind == 'physical') {

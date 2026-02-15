@@ -5,7 +5,7 @@ import 'package:wish_listy/core/widgets/custom_button.dart';
 /// Action buttons widget for add item screen
 class AddItemActionButtonsWidget extends StatelessWidget {
   final bool isEditing;
-  final bool isNameEmpty;
+  final bool isFormValid;
   final bool isLoading;
   final VoidCallback onSave;
   final String Function() getButtonText;
@@ -13,7 +13,7 @@ class AddItemActionButtonsWidget extends StatelessWidget {
   const AddItemActionButtonsWidget({
     super.key,
     required this.isEditing,
-    required this.isNameEmpty,
+    required this.isFormValid,
     required this.isLoading,
     required this.onSave,
     required this.getButtonText,
@@ -23,7 +23,7 @@ class AddItemActionButtonsWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomButton(
       text: getButtonText(),
-      onPressed: isNameEmpty || isLoading ? null : onSave,
+      onPressed: !isFormValid || isLoading ? null : onSave,
       isLoading: isLoading,
       variant: ButtonVariant.gradient,
       gradientColors: [AppColors.primary, AppColors.secondary],

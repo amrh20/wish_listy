@@ -74,6 +74,26 @@
     "inviteFriendsTitle": "دعوة الأصدقاء",
     "inviteFriendsSubtitle": "شارك التطبيق مع أصدقائك وعائلتك"
   },
+  "interests": {
+    "interestWatches": "ساعات",
+    "interestPerfumes": "عطور",
+    "interestSneakers": "أحذية رياضية",
+    "interestJewelry": "مجوهرات",
+    "interestHandbags": "حقائب يد",
+    "interestMakeupAndSkincare": "مكياج وعناية بالبشرة",
+    "interestGadgets": "أجهزة إلكترونية",
+    "interestGaming": "ألعاب الفيديو",
+    "interestPhotography": "تصوير",
+    "interestHomeDecor": "ديكور المنزل",
+    "interestPlants": "نباتات",
+    "interestCoffeeAndTea": "قهوة وشاي",
+    "interestBooks": "كتب",
+    "interestFitnessGear": "معدات رياضية",
+    "interestCarAccessories": "إكسسوارات السيارات",
+    "interestMusicInstruments": "آلات موسيقية",
+    "interestArt": "فنون",
+    "interestDiyAndCrafts": "أعمال يدوية وحرف"
+  },
   "auth": {
     "logoutConfirmation": "متأكد إنك عايز تخرج؟",
     "logout": "خروج",

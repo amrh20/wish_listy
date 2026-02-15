@@ -9,6 +9,7 @@ import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
+import 'package:wish_listy/core/services/deep_link_service.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/data/models/user_model.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
@@ -141,6 +142,11 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
 
                           // Suggested Friends
                           _buildSuggestedFriends(localization),
+
+                          const SizedBox(height: 24),
+
+                          // Invite friends – always visible below empty state, no results, or search list
+                          _buildInviteFriendsSection(localization),
 
                           const SizedBox(height: 100),
                         ],
@@ -590,6 +596,89 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
     // TODO: Load friend suggestions from API
     // This will be implemented when we add getFriendSuggestions API
     return const SizedBox.shrink();
+  }
+
+  /// Invite friends section – always visible below search/empty state/results.
+  Widget _buildInviteFriendsSection(LocalizationService localization) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.textTertiary.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.person_add_alt_1_outlined,
+                  size: 24,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      localization.translate('invite.inviteFriendsTitle'),
+                      style: AppStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      localization.translate('invite.inviteFriendsSubtitle'),
+                      style: AppStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 44,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                final message = localization.translate('invite.inviteFriendsShareMessage') +
+                    DeepLinkService.inviteLink;
+                DeepLinkService.shareAppInvite(message);
+              },
+              icon: const Icon(Icons.share_outlined, size: 20),
+              label: Text(
+                localization.translate('invite.inviteFriendsButton'),
+                style: AppStyles.bodyMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _getSearchLabel(LocalizationService localization) {

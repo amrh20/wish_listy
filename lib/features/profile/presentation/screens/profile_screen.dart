@@ -25,6 +25,7 @@ import 'package:wish_listy/features/profile/presentation/widgets/profile/profile
 import 'package:wish_listy/features/profile/presentation/widgets/profile/profile_header_widget.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/profile/profile_stats_widget.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/profile/profile_setting_section_widget.dart';
+import 'package:wish_listy/core/utils/interest_translation_extension.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/profile/profile_interests_section_widget.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -1249,7 +1250,7 @@ class ProfileScreenState extends State<ProfileScreen>
           children: _userProfile!.interests.map((interest) {
             return Chip(
               label: Text(
-                interest,
+                interest.translateInterest(context),
                 style: AppStyles.bodySmall.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w500,
@@ -1663,7 +1664,7 @@ class _InterestsSelectionSheetState extends State<InterestsSelectionSheet> {
                   children: _allCategories.map((category) {
                     final isSelected = _selectedInterests.contains(category);
                     return FilterChip(
-                      label: Text(category),
+                      label: Text(category.translateInterest(context)),
                       selected: isSelected,
                       onSelected: (selected) {
                         setState(() {

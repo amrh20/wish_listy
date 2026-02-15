@@ -82,6 +82,17 @@ class _AddItemScreenState extends State<AddItemScreen>
     }
   }
 
+  /// Form is valid when: name not empty, wishlist selected, and when "Online Store"
+  /// is selected with a non-empty link, the link must be a valid URL.
+  bool get _isFormValid {
+    if (_isNameEmpty || _selectedWishlist.isEmpty) return false;
+    if (_selectedWhereToFind == 'online') {
+      final link = _linkController.text.trim();
+      if (link.isNotEmpty && !_isValidUrl(link)) return false;
+    }
+    return true;
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -621,7 +632,7 @@ class _AddItemScreenState extends State<AddItemScreen>
                                         // Action Buttons
                                         AddItemActionButtonsWidget(
                                           isEditing: _isEditing,
-                                          isNameEmpty: _isNameEmpty,
+                                          isFormValid: _isFormValid,
                                           isLoading: _isLoading,
                                           onSave: () => _saveItem(localization),
                                           getButtonText: () => _isEditing
@@ -1045,10 +1056,10 @@ class _AddItemScreenState extends State<AddItemScreen>
           keyboardType: TextInputType.url,
           validator: (value) {
             if (value != null && value.isNotEmpty) {
-              if (!_isValidUrl(value)) {
+              if (!_isValidUrl(value.trim())) {
                 return localization.translate(
                   'wishlists.pleaseEnterValidUrl',
-                );
+                ) ?? 'Please enter a valid URL (e.g. https://...)';
               }
             }
             return null;
@@ -1268,6 +1279,39 @@ class _AddItemScreenState extends State<AddItemScreen>
         // Anywhere: use notes
         if (_brandKeywordsController.text.trim().isNotEmpty) {
           notes = _brandKeywordsController.text.trim();
+        }
+      }
+
+      // When Online Store is selected, ensure link is a valid URL (not plain text)
+      if (_selectedWhereToFind == 'online' && url != null && url.isNotEmpty) {
+        if (!_isValidUrl(url)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      localization.translate('wishlists.pleaseEnterValidUrl') ?? 'Please enter a valid URL (e.g. https://...)',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.error,
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.only(top: 60, left: 16, right: 16, bottom: 0),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+          return;
         }
       }
 

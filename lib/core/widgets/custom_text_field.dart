@@ -112,6 +112,11 @@ class _CustomTextFieldState extends State<CustomTextField>
     } else {
       _animationController.reverse();
     }
+
+    // When user leaves the field (unfocus), run validator and show error below if invalid
+    if (!hasFocus && widget.validator != null) {
+      _validateField();
+    }
   }
 
   void _validateField() {
