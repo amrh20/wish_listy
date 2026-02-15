@@ -54,18 +54,19 @@ class StackedMutualFriendsWidget extends StatelessWidget {
           height: avatarSize,
           child: Stack(
             clipBehavior: Clip.none,
-            children: List.generate(preview.length, (index) {
-              final friend = preview[index];
-              return Positioned(
-                left: index * (avatarSize - overlap),
-                child: _AvatarCircle(
-                  fullName: friend.fullName,
-                  profileImage: friend.profileImage,
-                  size: avatarSize,
-                  borderColor: borderColor,
+            // Draw left-to-right: each next circle is painted after the previous so it appears on top (higher z-index).
+            children: [
+              for (int index = 0; index < preview.length; index++)
+                Positioned(
+                  left: index * (avatarSize - overlap),
+                  child: _AvatarCircle(
+                    fullName: preview[index].fullName,
+                    profileImage: preview[index].profileImage,
+                    size: avatarSize,
+                    borderColor: borderColor,
+                  ),
                 ),
-              );
-            }),
+            ],
           ),
         ),
         const SizedBox(width: 8),
