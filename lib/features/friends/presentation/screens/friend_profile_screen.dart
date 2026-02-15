@@ -38,7 +38,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   late final FriendProfileController _controller;
   final PrivacyRepository _privacyRepository = PrivacyRepository();
 
-  static const double _expandedHeaderHeight = 350.0; // Increased to accommodate handle field + Quick Actions buttons
+  static const double _expandedHeaderHeight = 360.0; // Accommodate avatar, handle, stats, Quick Actions, mutual friends (avoids bottom overflow)
 
   @override
   void initState() {
@@ -927,7 +927,7 @@ class _PatternedHeader extends StatelessWidget {
               SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   child: Obx(() {
                     final localization = Provider.of<LocalizationService>(context, listen: false);
                     final isLoading = controller.isLoading.value;
