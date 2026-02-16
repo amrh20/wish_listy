@@ -5,6 +5,7 @@ import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
+import 'package:wish_listy/features/wishlists/presentation/utils/reservation_expiry_helper.dart';
 
 class ItemActionBarWidget extends StatelessWidget {
   final WishlistItem item;
@@ -13,6 +14,8 @@ class ItemActionBarWidget extends StatelessWidget {
   final VoidCallback? onMarkReceived;
   final VoidCallback? onCancelReservation;
   final VoidCallback? onReserve;
+  final VoidCallback? onExtendReservation;
+  final bool isExtendingReservation;
 
   const ItemActionBarWidget({
     super.key,
@@ -22,6 +25,8 @@ class ItemActionBarWidget extends StatelessWidget {
     this.onMarkReceived,
     this.onCancelReservation,
     this.onReserve,
+    this.onExtendReservation,
+    this.isExtendingReservation = false,
   });
 
   @override
@@ -33,18 +38,14 @@ class ItemActionBarWidget extends StatelessWidget {
 
     // Owner View: Only show "Mark as Received" for Reserved or Purchased items
     if (isOwner) {
-      // Owner should NOT see Reserve, Buy, or Undo actions
-      // Only show "Mark as Received" if item is Reserved or Purchased (and not received)
+      // When received (gifted), show celebratory banner for owner too
       if (item.isReceived) {
-        // Item is already received - no action needed
-        return const SizedBox.shrink();
+        return _buildCelebratoryBanner(context, localization);
       }
-      
       // Show "Mark as Received" if item is Reserved or Purchased
       if (isReserved || isPurchased) {
-        return _buildOwnerMarkReceivedBar(localization);
+        return _buildOwnerMarkReceivedBar(context, localization);
       }
-      
       // Item is Available - owner sees no action button (Edit is in top bar)
       return const SizedBox.shrink();
     }
@@ -52,7 +53,7 @@ class ItemActionBarWidget extends StatelessWidget {
     // Non-Owner View: Standard guest actions
     // Case A: Item is Received - No action needed
     if (item.isReceived) {
-      return _buildReceivedBar(localization);
+      return _buildReceivedBar(context, localization);
     }
 
     // Case A.5: Purchased but not Received (should not show for non-owners)
@@ -62,69 +63,79 @@ class ItemActionBarWidget extends StatelessWidget {
 
     // Case B: Reserved by ME
     if (isReservedByMe) {
-      return _buildReservedByMeBar(localization);
+      return _buildReservedByMeBar(context, localization);
     }
 
     // Case C: Reserved by OTHERS (Guest view)
     if (isReservedByOther) {
-      return _buildReservedByOthersBar(localization);
+      return _buildReservedByOthersBar(context, localization);
     }
 
     // Case D: Available - Clean Primary Button
-    return _buildAvailableBar(localization);
+    return _buildAvailableBar(context, localization);
   }
 
-  Widget _buildReceivedBar(LocalizationService localization) {
+  Color _getBarSurfaceColor(BuildContext context) {
+    return Colors.transparent;
+  }
+
+  Widget _buildReceivedBar(BuildContext context, LocalizationService localization) {
+    return _buildCelebratoryBanner(context, localization);
+  }
+
+  /// Celebratory banner when item is gifted/received (non-clickable, gradient, bounce).
+  Widget _buildCelebratoryBanner(BuildContext context, LocalizationService localization) {
+    const softGreen = Color(0xFF4CAF50);
+    const softGold = Color(0xFFFFD54F);
     return Container(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 12,
-        bottom: 12,
-      ),
+      padding: const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        color: _getBarSurfaceColor(context),
       ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: Colors.grey.shade300,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            const Text(
-              '🎁',
-              style: TextStyle(fontSize: 24),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.92, end: 1.0),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.elasticOut,
+        builder: (context, value, child) {
+          return Transform.scale(scale: value, child: child);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                softGreen.withOpacity(0.85),
+                softGold.withOpacity(0.75),
+              ],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                localization.translate('details.giftReceivedPurchased'),
-                style: AppStyles.bodyMedium.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: softGreen.withOpacity(0.25),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              localization.translate('details.wishGrantedBanner') ?? 'This wish has been granted! 🎉',
+              textAlign: TextAlign.center,
+              style: AppStyles.bodyLarge.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildPurchasedAwaitingBar(LocalizationService localization) {
+  Widget _buildPurchasedAwaitingBar(BuildContext context, LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.only(
         left: 20,
@@ -133,7 +144,7 @@ class ItemActionBarWidget extends StatelessWidget {
         bottom: 12,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _getBarSurfaceColor(context),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -209,7 +220,14 @@ class ItemActionBarWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildReservedByMeBar(LocalizationService localization) {
+  Widget _buildReservedByMeBar(BuildContext context, LocalizationService localization) {
+    final reservedUntil = item.reservedUntil;
+    final expiryFormat = reservedUntil != null ? formatReservationExpiry(reservedUntil, localization) : null;
+    final expiryText = expiryFormat?.text;
+    final extensionCount = item.extensionCount;
+    final remaining = 2 - (extensionCount > 2 ? 2 : (extensionCount));
+    final maxExtensionsReached = remaining <= 0;
+
     return Container(
       padding: const EdgeInsets.only(
         left: 20,
@@ -218,7 +236,12 @@ class ItemActionBarWidget extends StatelessWidget {
         bottom: 12,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _getBarSurfaceColor(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: Colors.black.withOpacity(0.08),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -227,47 +250,134 @@ class ItemActionBarWidget extends StatelessWidget {
           ),
         ],
       ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.green.shade50,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: Colors.green.shade200,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green.shade700, size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                localization.translate('details.reservedByYou') ?? 'Reserved by You',
-                style: AppStyles.bodyMedium.copyWith(
-                  color: Colors.green.shade700,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+      child: Builder(
+        builder: (context) {
+          final primary = Theme.of(context).colorScheme.primary;
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
             ),
-            if (onCancelReservation != null)
-              TextButton(
-                onPressed: onCancelReservation,
-                child: Text(
-                  localization.translate('details.undo'),
-                  style: const TextStyle(
-                    color: AppColors.error,
-                    fontWeight: FontWeight.w600,
-                  ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Top: Status & Expiration
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.check_circle, color: primary, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            localization.translate('details.reservedByYou') ?? 'Reserved by You',
+                            style: AppStyles.bodyMedium.copyWith(
+                              color: primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (expiryText != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              expiryText,
+                              style: AppStyles.bodySmall.copyWith(
+                                color: primary.withOpacity(0.85),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-          ],
-        ),
+                // Divider
+                const SizedBox(height: 12),
+                // Bottom: Action buttons (each on its own row)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (onCancelReservation != null)
+                      OutlinedButton(
+                        onPressed: onCancelReservation,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.error,
+                          side: const BorderSide(color: AppColors.error),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          localization.translate('details.cancelReservation'),
+                          style: const TextStyle(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    if (onCancelReservation != null && onExtendReservation != null)
+                      const SizedBox(height: 8),
+                    if (onExtendReservation != null)
+                      Tooltip(
+                        message: maxExtensionsReached
+                            ? (localization.translate('details.maxExtensionsReached'))
+                            : '',
+                        child: OutlinedButton(
+                          onPressed: maxExtensionsReached || isExtendingReservation
+                              ? null
+                              : onExtendReservation,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: maxExtensionsReached
+                                ? AppColors.textTertiary
+                                : AppColors.primary,
+                            side: BorderSide(
+                              color: maxExtensionsReached
+                                  ? AppColors.textTertiary
+                                  : AppColors.primary,
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: isExtendingReservation
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : Text(
+                                  maxExtensionsReached
+                                      ? localization.translate('details.maxExtensionsReached')
+                                      : localization.translate('details.extendReservationWithCount', args: {'count': remaining}),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                    color: maxExtensionsReached
+                                        ? AppColors.textTertiary
+                                        : null,
+                                  ),
+                                ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildReservedByOthersBar(LocalizationService localization) {
+  Widget _buildReservedByOthersBar(BuildContext context, LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.only(
         left: 20,
@@ -276,7 +386,7 @@ class ItemActionBarWidget extends StatelessWidget {
         bottom: 12,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _getBarSurfaceColor(context),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -288,7 +398,7 @@ class ItemActionBarWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: Colors.transparent,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: Colors.grey.shade300,
@@ -315,7 +425,7 @@ class ItemActionBarWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildAvailableBar(LocalizationService localization) {
+  Widget _buildAvailableBar(BuildContext context, LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.only(
         left: 20,
@@ -324,7 +434,7 @@ class ItemActionBarWidget extends StatelessWidget {
         bottom: 16,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _getBarSurfaceColor(context),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
@@ -342,9 +452,7 @@ class ItemActionBarWidget extends StatelessWidget {
               ? CustomButton(
                   text: localization.translate('details.reserveGift'),
                   onPressed: onReserve,
-                  variant: ButtonVariant.gradient,
-                  gradientColors: const [AppColors.primary, AppColors.secondary],
-                  icon: Icons.bookmark_outline,
+                  variant: ButtonVariant.primary,
                   size: ButtonSize.large,
                 )
               : const SizedBox.shrink(),
@@ -355,7 +463,7 @@ class ItemActionBarWidget extends StatelessWidget {
 
   /// Build "Mark as Received" button for owner view
   /// Matches the style from wishlist_item_card_widget.dart
-  Widget _buildOwnerMarkReceivedBar(LocalizationService localization) {
+  Widget _buildOwnerMarkReceivedBar(BuildContext context, LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.only(
         left: 20,
@@ -364,7 +472,7 @@ class ItemActionBarWidget extends StatelessWidget {
         bottom: 16,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _getBarSurfaceColor(context),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),

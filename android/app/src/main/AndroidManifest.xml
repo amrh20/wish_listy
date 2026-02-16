@@ -5,8 +5,6 @@
     <!-- إضافة الصلاحيات هنا قبل الـ application tag -->
     <!-- ============================================= -->
     
-    <!-- Required when app uses advertising ID (e.g. Firebase Analytics). Without this, GAID is zeroed on Android 13+. -->
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="merge" />
     <!-- صلاحية الإنترنت - مطلوبة لجميع طلبات الشبكة -->
     <uses-permission android:name="android.permission.INTERNET" />
     
@@ -42,10 +40,13 @@
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
+    <!-- Force-remove AD_ID so no SDK can inject it; app declares "No" for Advertising ID on Play -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
+
     <!-- ============================================= -->
     <!-- بداية الـ application tag -->
     <!-- ============================================= -->
-    
+
     <application
         android:label="WishListy"
         android:name="${applicationName}"

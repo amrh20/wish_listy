@@ -948,6 +948,7 @@
     "wish": "أمنية",
     "wishes": "أمنيات",
     "noWishesYet": "لا توجد أمنيات بعد",
+    "invitedGuests": "الضيوف المدعوون",
     "tapToViewWishes": "اضغط لعرض الأمنيات"
   },
   "profile": {
@@ -1178,6 +1179,7 @@
     "hostedBy": "استضافه",
     "myWishlists": "قوائم أمنياتي",
     "invitedGuests": "الضيوف المدعوون",
+    "tapToView": "اضغط للعرض",
     "addWishlist": "إضافة قائمة أمنيات",
     "happeningNow": "يحدث الآن",
     "reservations": "الحجوزات",
@@ -1233,6 +1235,8 @@
     "demoItem": "دي أمنية تجريبية",
     "totalWishes": "{total} أمنية",
     "giftReceivedPurchased": "الأمنية دي اتشرت/اتسلمت.",
+    "wishGrantedBanner": "الأمنية دي بقت حقيقة خلاص! 🎉",
+    "giftedMessageCard": "حد خاص جداً اشترى الهدية دي. مش متاحة للحجز تاني.",
     "friendReceivedGift": "شكراً! صديقك {name} استلم هديتك 🎉",
     "forOwner": "أمنية لـ {name}",
     "unreserveGiftTitle": "إلغاء حجز الأمنية؟",
@@ -1244,8 +1248,18 @@
     "purchasedAwaitingConfirmation": "حد من صحابك اشتراها… أكد بس إنك استلمتها.",
     "markReceived": "استلمتها",
     "undo": "تراجع",
-    "alreadyReservedByFriend": "محجوز بالفعل من قبل صديق آخر 🔒",
-    "reserveGift": "احجز الأمنية 🎁",
+    "alreadyReservedByFriend": "محجوز بالفعل من قبل صديق آخر",
+    "reserveGift": "احجز الأمنية",
+    "extend": "تمديد",
+    "extendReservation": "تمديد الحجز",
+    "extendLeft": "{count} محاولات متبقية",
+    "extendReservationWithCount": "تمديد الحجز ({count} محاولات متبقية)",
+    "maxExtensionsReached": "تم الوصول للحد الأقصى للتمديد",
+    "expiresOn": "ينتهي الحجز {date}",
+    "expiresInDays": "تنتهي خلال {count} أيام",
+    "expiresToday": "تنتهي اليوم",
+    "expiresTomorrow": "تنتهي غداً",
+    "extendingReservation": "جاري التمديد...",
     "byFriend": "من {name}",
     "bySecretFriend": "من حد (سرّي) 🤫",
     "priority": "الأولوية",
@@ -1253,6 +1267,8 @@
     "store": "المتجر",
     "added": "اتضافت",
     "description": "الوصف",
+    "noDescription": "لا يوجد وصف",
+    "price": "السعر",
     "markAsReceived": "تمييز كمستلم",
     "markAsNotReceived": "تمييز كغير مستلم",
     "cannotEditDeleteReserved": "مش هتقدر تعدّل أو تمسح الأمنية دي عشان حد حجزها لك 🎁",
@@ -1321,7 +1337,9 @@
     "acceptedYourInvitation": "قبل دعوتك",
     "maybeYourInvitation": "حط يمكن على دعوتك",
     "declinedYourInvitation": "رفض دعوتك",
-    "respondedToYourInvitation": "رد على دعوتك"
+    "respondedToYourInvitation": "رد على دعوتك",
+    "itemReservedTitle": "الأمنية اتحجزت",
+    "someoneReservedGiftForYou": "حد حجزلك أمنية!"
   },
   "common": {
     "pleaseWait": "يرجى الإنتظار...",
@@ -1442,6 +1460,16 @@
     "google": "Google",
     "apple": "Apple"
   },
+  "reservation": {
+    "whenPlanToGetGift": "متى تخطط تجيب الهدية دي؟",
+    "selectNewDateForReservation": "اختر موعداً جديداً لحجزك",
+    "expiryNote": "ملاحظة: إذا انتهت هذه المدة ولم يتم شراء الهدية، ستعود الهدية متاحة مرة أخرى ليتمكن صديق آخر من إهدائها.",
+    "withinTwoWeeks": "خلال أسبوعين",
+    "withinMonth": "خلال شهر",
+    "customDate": "تاريخ مخصّص",
+    "tapToPickDate": "اضغط لاختيار التاريخ",
+    "confirmReservation": "تأكيد الحجز"
+  },
   "dialogs": {
     "close": "إغلاق",
     "cancel": "إلغاء",
@@ -1517,6 +1545,8 @@
     "areYouSureDeleteItemFull": "هل أنت متأكد من حذف \"{itemName}\"؟ هذا الإجراء لا يمكن التراجع عنه.",
     "pleaseLoginToReserve": "سجّل دخولك عشان تحجز الهدايا",
     "failedToUpdateReservation": "فشل تحديث الحجز",
+    "reservationExtendedSuccessfully": "تم تمديد الحجز!",
+    "failedToExtendReservation": "فشل تمديد الحجز",
     "invalidUrl": "رابط غير صحيح",
     "couldNotOpenLink": "تعذر فتح الرابط",
     "pleaseLoginToMarkReceived": "سجّل دخولك عشان تعلّم إنك استلمت الهدايا",

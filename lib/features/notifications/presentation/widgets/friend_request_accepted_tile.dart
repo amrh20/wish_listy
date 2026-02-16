@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class FriendRequestAcceptedTile extends StatelessWidget {
@@ -27,6 +29,8 @@ class FriendRequestAcceptedTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final actionText = localization.translate('notifications.acceptedYourFriendRequest') ?? 'accepted your friend request';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -101,9 +105,9 @@ class FriendRequestAcceptedTile extends StatelessWidget {
                         ),
                         recognizer: TapGestureRecognizer()..onTap = onProfileTap,
                       ),
-                      const TextSpan(
-                        text: ' accepted your friend request.',
-                        style: TextStyle(
+                      TextSpan(
+                        text: ' $actionText',
+                        style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.normal,
                         ),

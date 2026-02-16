@@ -314,7 +314,7 @@ class EventCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Tap to view',
+                      localization.translate('cards.tapToView') ?? 'Tap to view',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 11,

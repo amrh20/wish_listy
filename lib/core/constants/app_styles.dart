@@ -47,15 +47,17 @@ class AppStyles {
   }) {
     double effectiveFontSize = fontSize;
 
-    // Apply small-screen scaling when context is available
+    // Apply small-screen scaling when context is available (< 380px)
     if (context != null) {
       try {
         final width = MediaQuery.of(context).size.width;
         double scale = 1.0;
         if (width <= 320) {
-          scale = 0.9; // أكثر تصغير على الشاشات الأضيق
+          scale = 0.86; // أصغر على الشاشات الأضيق
         } else if (width <= 360) {
-          scale = 0.95; // تصغير خفيف حتى 360
+          scale = 0.90; // تصغير حتى 360
+        } else if (width < 380) {
+          scale = 0.92; // تصغير للشاشات أقل من 380px (العناوين أصغر)
         }
         effectiveFontSize = fontSize * scale;
       } catch (_) {

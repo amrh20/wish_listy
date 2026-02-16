@@ -607,6 +607,21 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       }
     }
 
+    // Parse reservedUntil (ISO date string) - backend returns only when isReservedByMe
+    DateTime? reservedUntil;
+    final reservedUntilStr = data['reservedUntil']?.toString() ?? data['reserved_until']?.toString();
+    if (reservedUntilStr != null && reservedUntilStr.isNotEmpty) {
+      reservedUntil = DateTime.tryParse(reservedUntilStr);
+    }
+
+    // Parse extensionCount (number of reservation extensions, max 2)
+    final rawExt = data['extensionCount'] ?? data['extension_count'];
+    final extensionCount = (rawExt is int)
+        ? rawExt
+        : (rawExt is num)
+            ? (rawExt as num).toInt()
+            : 0;
+
     return WishlistItem(
       id: data['id']?.toString() ?? data['_id']?.toString() ?? '',
       wishlistId: widget.wishlistId,
@@ -626,6 +641,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
       isReservedByMe: isReservedByMe,
       isReserved: isReservedFromApi,
       availableQuantity: availableQuantity,
+      reservedUntil: reservedUntil,
+      extensionCount: extensionCount,
     );
   }
 
@@ -862,9 +879,15 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                                       isOwner: _isOwner(),
                                       currentUserId: currentUserId,
                                       // Guest can reserve items in friend wishlists
-                                      // Pass action explicitly: 'reserve' or 'cancel'
+                                      // Reserve opens deadline sheet (onReserveWithDeadline); cancel uses onToggleReservation
                                       onToggleReservation: (!_isOwner() && !isGuest)
                                           ? (String action) => _toggleReservation(item, action: action)
+                                          : null,
+                                      onReserveWithDeadline: (!_isOwner() && !isGuest)
+                                          ? () => _openReservationSheetThenReserve(item)
+                                          : null,
+                                      onExtend: (!_isOwner() && !isGuest)
+                                          ? (WishlistItem i, DateTime date) => _extendReservation(i, date)
                                           : null,
                                       // Allow owner OR guest who reserved the item to mark as purchased
                                       onToggleReceivedStatus: (!isGuest && (_isOwner() || (item.isReservedByMe ?? false)))
@@ -896,9 +919,49 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
     );
   }
 
+  /// Open reservation deadline bottom sheet, then reserve with selected date.
+  Future<void> _openReservationSheetThenReserve(WishlistItem item) async {
+    await ReservationDeadlineBottomSheet.show(
+      context,
+      onConfirm: (DateTime? reservedUntil) {
+        _toggleReservation(item, action: 'reserve', reservedUntil: reservedUntil);
+      },
+    );
+  }
+
+  /// Extend reservation for an item (from list card). Shows deadline sheet from card; this is called with chosen date.
+  Future<void> _extendReservation(WishlistItem item, DateTime reservedUntil) async {
+    final loc = Provider.of<LocalizationService>(context, listen: false);
+    if (!mounted) return;
+    UnifiedSnackbar.showLoading(
+      context: context,
+      message: loc.translate('details.extendingReservation') ?? 'Extending...',
+      duration: const Duration(minutes: 1),
+    );
+    try {
+      await _wishlistRepository.extendReservation(item.id, reservedUntil);
+      if (!mounted) return;
+      await _loadWishlistDetails();
+      if (!mounted) return;
+      UnifiedSnackbar.hideCurrent(context);
+      UnifiedSnackbar.showSuccess(
+        context: context,
+        message: loc.translate('dialogs.reservationExtendedSuccessfully') ?? 'Reservation extended!',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      UnifiedSnackbar.hideCurrent(context);
+      UnifiedSnackbar.showError(
+        context: context,
+        message: loc.translate('dialogs.failedToExtendReservation') ?? 'Failed to extend reservation',
+      );
+    }
+  }
+
   /// Toggle reservation for an item
   /// [action] - 'reserve' or 'cancel' (required)
-  Future<void> _toggleReservation(WishlistItem item, {required String action}) async {
+  /// [reservedUntil] - optional expiry date for reserve action
+  Future<void> _toggleReservation(WishlistItem item, {required String action, DateTime? reservedUntil}) async {
     final loc = Provider.of<LocalizationService>(context, listen: false);
     // Show loading snackbar
     if (mounted) {
@@ -941,10 +1004,11 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
         }
       });
 
-      // Call API with explicit action
+      // Call API with explicit action (and optional reservedUntil for reserve)
       final updatedItemData = await _wishlistRepository.toggleReservation(
         item.id,
         action: action,
+        reservedUntil: action == 'reserve' ? reservedUntil : null,
       );
       final updatedItem = WishlistItem.fromJson(updatedItemData);
 
@@ -952,13 +1016,8 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
 
       final isNowReserved = action == 'reserve';
 
-      // Update with server response (no full refresh so Reserved filter keeps working)
-      setState(() {
-        final index = _items.indexWhere((i) => i.id == item.id);
-        if (index != -1) {
-          _items[index] = updatedItem;
-        }
-      });
+      // Re-fetch wishlist so cards show correct state and reservedUntil from API
+      await _loadWishlistDetails();
 
       if (mounted) {
         UnifiedSnackbar.hideCurrent(context);

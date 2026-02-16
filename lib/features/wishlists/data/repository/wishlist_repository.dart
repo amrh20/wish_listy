@@ -401,27 +401,32 @@ class WishlistRepository {
   /// [itemId] - Item ID (required)
   /// [action] - Action to perform: 'reserve' or 'cancel' (default: 'reserve')
   /// [quantity] - Quantity for reserve action (default: 1)
+  /// [reservedUntil] - Optional expiry date for reserve action (ISO string sent as reservedUntil)
   ///
   /// Returns the updated item data
   /// Uses API: PUT /api/items/:itemId/reserve
-  /// Reserve: PUT with body { "action": "reserve", "quantity": 1 }
+  /// Reserve: PUT with body { "action": "reserve", "quantity": 1, "reservedUntil"?: ISO date }
   /// Cancel: PUT with body { "action": "cancel" }
   /// Response contains isReserved in data.isReserved
   Future<Map<String, dynamic>> toggleReservation(
     String itemId, {
     String action = 'reserve',
     int quantity = 1,
+    DateTime? reservedUntil,
   }) async {
     try {
       // Prepare request body based on action
-      // Reserve: { "action": "reserve", "quantity": 1 }
+      // Reserve: { "action": "reserve", "quantity": 1, "reservedUntil"?: ISO }
       // Cancel: { "action": "cancel" }
-      final requestBody = action == 'cancel'
+      final Map<String, dynamic> requestBody = action == 'cancel'
           ? <String, dynamic>{'action': 'cancel'} // Cancel reservation
           : <String, dynamic>{
               'action': 'reserve',
               'quantity': quantity,
-            }; // Reserve with quantity
+            };
+      if (action == 'reserve' && reservedUntil != null) {
+        requestBody['reservedUntil'] = reservedUntil.toIso8601String();
+      }
 
       final response = await _apiService.put('/items/$itemId/reserve', data: requestBody);
 
@@ -453,6 +458,35 @@ class WishlistRepository {
       rethrow;
     } catch (e) {
       throw Exception('Failed to toggle reservation. Please try again.');
+    }
+  }
+
+  /// Extend reservation for an item.
+  /// Uses API: PUT /api/items/:itemId/extend-reservation
+  /// [reservedUntil] is required and sent in the request body (ISO string).
+  /// Returns the updated item data (including new reservedUntil and extensionCount).
+  Future<Map<String, dynamic>> extendReservation(String itemId, DateTime reservedUntil) async {
+    try {
+      final response = await _apiService.put(
+        '/items/$itemId/extend-reservation',
+        data: <String, dynamic>{'reservedUntil': reservedUntil.toIso8601String()},
+      );
+
+      final responseData = response['data'] as Map<String, dynamic>?;
+      final itemData = responseData?['item'] as Map<String, dynamic>? ??
+          response['item'] as Map<String, dynamic>? ??
+          responseData ??
+          response;
+
+      if (itemData == null || itemData.isEmpty) {
+        throw Exception('Item data not found in response');
+      }
+
+      return itemData;
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Failed to extend reservation. Please try again.');
     }
   }
 

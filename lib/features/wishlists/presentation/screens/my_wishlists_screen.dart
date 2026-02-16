@@ -329,6 +329,8 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                                           );
                                         },
                                         onRefresh: _fetchMyReservations,
+                                        onMarkAsPurchased: _markAsPurchased,
+                                        onExtend: _extendReservation,
                                       ),
                                     ],
                                   ),
@@ -983,6 +985,66 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
         UnifiedSnackbar.showError(
           context: context,
           message: localization.translate('dialogs.failedToCancelReservation') ?? 'Failed to cancel reservation',
+        );
+      }
+    }
+  }
+
+  /// Mark a reserved item as purchased (from My Reservations tab)
+  Future<void> _markAsPurchased(WishlistItem item) async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    if (!mounted) return;
+    UnifiedSnackbar.showLoading(
+      context: context,
+      message: localization.translate('details.markingAsPurchased') ?? 'Marking as purchased...',
+      duration: const Duration(minutes: 1),
+    );
+    try {
+      await _wishlistRepository.markAsPurchased(itemId: item.id);
+      if (mounted) {
+        UnifiedSnackbar.hideCurrent(context);
+        await _fetchMyReservations();
+        UnifiedSnackbar.showSuccess(
+          context: context,
+          message: localization.translate('dialogs.itemMarkedAsPurchased') ?? 'Item marked as purchased',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        UnifiedSnackbar.hideCurrent(context);
+        UnifiedSnackbar.showError(
+          context: context,
+          message: localization.translate('dialogs.failedToMarkAsPurchased') ?? 'Failed to mark as purchased',
+        );
+      }
+    }
+  }
+
+  /// Extend reservation (from My Reservations tab). Called when user confirms new date in bottom sheet.
+  Future<void> _extendReservation(WishlistItem item, DateTime reservedUntil) async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    if (!mounted) return;
+    UnifiedSnackbar.showLoading(
+      context: context,
+      message: localization.translate('details.extendingReservation') ?? 'Extending reservation...',
+      duration: const Duration(minutes: 1),
+    );
+    try {
+      await _wishlistRepository.extendReservation(item.id, reservedUntil);
+      if (mounted) {
+        UnifiedSnackbar.hideCurrent(context);
+        await _fetchMyReservations();
+        UnifiedSnackbar.showSuccess(
+          context: context,
+          message: localization.translate('dialogs.reservationExtendedSuccessfully') ?? 'Reservation extended!',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        UnifiedSnackbar.hideCurrent(context);
+        UnifiedSnackbar.showError(
+          context: context,
+          message: localization.translate('dialogs.failedToExtendReservation') ?? 'Failed to extend reservation',
         );
       }
     }

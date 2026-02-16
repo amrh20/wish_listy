@@ -12,6 +12,8 @@ class ReservationsTabWidget extends StatelessWidget {
   final Function(WishlistItem) onCancelReservation;
   final Function(WishlistItem) onItemTap;
   final VoidCallback onRefresh;
+  final Function(WishlistItem)? onMarkAsPurchased;
+  final void Function(WishlistItem item, DateTime newDate)? onExtend;
 
   const ReservationsTabWidget({
     super.key,
@@ -20,6 +22,8 @@ class ReservationsTabWidget extends StatelessWidget {
     required this.onCancelReservation,
     required this.onItemTap,
     required this.onRefresh,
+    this.onMarkAsPurchased,
+    this.onExtend,
   });
 
   @override
@@ -95,6 +99,8 @@ class ReservationsTabWidget extends StatelessWidget {
                         item: item,
                         onCancelReservation: () => onCancelReservation(item),
                         onTap: () => onItemTap(item),
+                        onMarkAsPurchased: onMarkAsPurchased != null ? () => onMarkAsPurchased!(item) : null,
+                        onExtend: onExtend != null ? (DateTime newDate) => onExtend!(item, newDate) : null,
                       ),
                     );
                   },

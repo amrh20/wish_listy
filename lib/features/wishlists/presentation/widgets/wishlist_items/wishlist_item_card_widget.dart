@@ -5,6 +5,8 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
+import 'package:wish_listy/features/wishlists/presentation/utils/reservation_expiry_helper.dart';
+import 'package:wish_listy/features/wishlists/presentation/widgets/item_details/reservation_deadline_bottom_sheet.dart';
 
 /// Modern swipeable wishlist item card widget
 class WishlistItemCardWidget extends StatefulWidget {
@@ -17,7 +19,11 @@ class WishlistItemCardWidget extends StatefulWidget {
   final bool isOwner; // Whether current user is the owner
   final String? currentUserId; // Current user ID for reservation checks
   final Function(String action)? onToggleReservation; // Toggle reservation (Guest only) - action: 'reserve' or 'cancel'
+  /// When set, tapping "Reserve This Gift" calls this instead of showing the confirm dialog (e.g. to open deadline bottom sheet).
+  final VoidCallback? onReserveWithDeadline;
   final VoidCallback? onToggleReceivedStatus; // Toggle received status (Owner only)
+  /// Called when user extends reservation from the card; parent should call API and refresh. Only shown when reserved by me + reservedUntil set + remaining extensions > 0.
+  final void Function(WishlistItem item, DateTime reservedUntil)? onExtend;
 
   const WishlistItemCardWidget({
     super.key,
@@ -30,7 +36,9 @@ class WishlistItemCardWidget extends StatefulWidget {
     this.isOwner = false,
     this.currentUserId,
     this.onToggleReservation,
+    this.onReserveWithDeadline,
     this.onToggleReceivedStatus,
+    this.onExtend,
   });
 
   @override
@@ -113,6 +121,63 @@ class _WishlistItemCardWidgetState extends State<WishlistItemCardWidget> {
     }
   }
 
+  void _showReserveConfirmDialog() {
+    final loc = Provider.of<LocalizationService>(context, listen: false);
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(
+            loc.translate('ui.reserveGiftQuestion'),
+            style: AppStyles.headingSmall.copyWith(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            loc.translate('ui.reserveGiftConfirmContent'),
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                loc.translate('app.cancel'),
+                style: AppStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                widget.onToggleReservation?.call('reserve');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: Text(
+                loc.translate('dialogs.confirm'),
+                style: AppStyles.bodyMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Build the clean card content
@@ -127,7 +192,9 @@ class _WishlistItemCardWidgetState extends State<WishlistItemCardWidget> {
       isOwner: widget.isOwner,
       currentUserId: widget.currentUserId,
       onToggleReservation: widget.onToggleReservation,
+      onReserveTap: widget.onReserveWithDeadline ?? _showReserveConfirmDialog,
       onToggleReceivedStatus: widget.onToggleReceivedStatus,
+      onExtend: widget.onExtend,
     );
 
     // Check if item is reserved and user is owner (Teaser Mode)
@@ -257,7 +324,9 @@ class _ModernWishlistItemContent extends StatelessWidget {
   final bool isOwner;
   final String? currentUserId;
   final Function(String action)? onToggleReservation; // action: 'reserve' or 'cancel'
+  final VoidCallback onReserveTap; // when user taps "Reserve This Gift" (may open deadline sheet or confirm dialog)
   final VoidCallback? onToggleReceivedStatus;
+  final void Function(WishlistItem item, DateTime reservedUntil)? onExtend;
 
   const _ModernWishlistItemContent({
     required this.item,
@@ -270,7 +339,9 @@ class _ModernWishlistItemContent extends StatelessWidget {
     this.isOwner = false,
     this.currentUserId,
     this.onToggleReservation,
+    required this.onReserveTap,
     this.onToggleReceivedStatus,
+    this.onExtend,
   });
 
   @override
@@ -708,6 +779,81 @@ class _ModernWishlistItemContent extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  bool _showExtendButton() {
+    if (item.reservedUntil == null || onExtend == null) return false;
+    final remaining = 2 - (item.extensionCount ?? 0);
+    return remaining > 0;
+  }
+
+  int _remainingExtensions() => 2 - (item.extensionCount ?? 0);
+
+  Future<void> _openExtendSheet(BuildContext context) async {
+    await ReservationDeadlineBottomSheet.show(
+      context,
+      isExtension: true,
+      onConfirm: (DateTime? date) {
+        if (date != null) onExtend?.call(item, date);
+      },
+    );
+  }
+
+  void _showReservedActionsBottomSheet(BuildContext context) {
+    final loc = Provider.of<LocalizationService>(context, listen: false);
+    final hasActions = (onToggleReceivedStatus != null && !item.isPurchasedValue) ||
+        onToggleReservation != null;
+    if (!hasActions) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: EdgeInsets.only(
+          top: 20,
+          left: 20,
+          right: 20,
+          bottom: MediaQuery.of(sheetContext).padding.bottom + 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (onToggleReceivedStatus != null && !item.isPurchasedValue)
+              ListTile(
+                leading: Icon(Icons.check_circle, color: AppColors.success),
+                title: Text(
+                  loc.translate('ui.markAsPurchased') ?? 'Mark as Purchased',
+                  style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+                ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _confirmMarkAsPurchased(context);
+                },
+              ),
+            if (onToggleReservation != null)
+              ListTile(
+                leading: Icon(Icons.close, color: AppColors.error),
+                title: Text(
+                  loc.translate('ui.cancelReserve') ?? 'Cancel Reserve',
+                  style: AppStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.error,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _confirmToggleReservation(context, true);
+                },
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1288,138 +1434,131 @@ class _ModernWishlistItemContent extends StatelessWidget {
         ),
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Main Content Row
-              InkWell(
-                onTap: onTap,
-                borderRadius: BorderRadius.circular(12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Icon
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        getCategoryIcon('General'),
-                        color: AppColors.success,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Title & Status Column
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            item.name,
-                            style: AppStyles.bodyMedium.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            textDirection: Directionality.of(context),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 380;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Main Content Row + three-dots menu (reserved actions)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: onTap,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.check_circle,
-                                size: 14,
-                                color: AppColors.success,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                Provider.of<LocalizationService>(context, listen: false).translate('ui.reservedByYou') ?? 'Reserved by You',
-                                style: AppStyles.caption.copyWith(
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: AppColors.success.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  getCategoryIcon('General'),
                                   color: AppColors.success,
-                                  fontWeight: FontWeight.w600,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      item.name,
+                                      style: AppStyles.bodyMedium.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 2,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      textDirection: Directionality.of(context),
+                                      children: [
+                                        Icon(
+                                          Icons.check_circle,
+                                          size: 14,
+                                          color: AppColors.success,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            Provider.of<LocalizationService>(context, listen: false).translate('ui.reservedByYou') ?? 'Reserved by You',
+                                            style: AppStyles.caption.copyWith(
+                                              color: AppColors.success,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
+                        ),
+                      ),
+                      if (onToggleReceivedStatus != null || onToggleReservation != null)
+                        IconButton(
+                          icon: const Icon(Icons.more_vert),
+                          onPressed: () => _showReservedActionsBottomSheet(context),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                    ],
+                  ),
+                  // Expiry in its own row, Extend action in row below
+                  if (item.reservedUntil != null) ...[
+                    const SizedBox(height: 12),
+                    _ReservationExpiryRow(reservedUntil: item.reservedUntil!),
+                    if (onExtend != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          _showExtendButton()
+                              ? OutlinedButton(
+                                  onPressed: () => _openExtendSheet(context),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.primary,
+                                    side: BorderSide(color: AppColors.primary),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  ),
+                                  child: Text(
+                                    Provider.of<LocalizationService>(context, listen: false)
+                                        .translate('details.extendReservationWithCount', args: {'count': _remainingExtensions()}) ?? 'Extend Reservation (${_remainingExtensions()} attempts left)',
+                                    style: AppStyles.bodySmall.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                )
+                              : Text(
+                                  Provider.of<LocalizationService>(context, listen: false).translate('details.maxExtensionsReached') ?? 'Max extensions reached',
+                                  style: AppStyles.bodySmall.copyWith(
+                                    color: AppColors.textTertiary,
+                                    fontSize: 12,
+                                  ),
+                                ),
                         ],
                       ),
-                    ),
+                    ],
                   ],
-                ),
-              ),
-              // Spacing
-              if (onToggleReservation != null || (onToggleReceivedStatus != null && !isPurchased))
-                const SizedBox(height: 8),
-              // Action Buttons Row (Cancel Reservation + Mark as Purchased)
-              if (onToggleReservation != null || (onToggleReceivedStatus != null && !isPurchased))
-                Wrap(
-                  alignment: WrapAlignment.end,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    // Mark as Purchased Button (if not purchased yet and onToggleReceivedStatus is available)
-                    if (onToggleReceivedStatus != null && !isPurchased)
-                      ElevatedButton.icon(
-                        onPressed: () => _confirmMarkAsPurchased(context),
-                        icon: Icon(
-                          Icons.check_circle,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                        label: Text(
-                          Provider.of<LocalizationService>(context, listen: false).translate('ui.markAsPurchased') ?? 'Mark as Purchased',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.success,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    // Cancel Reservation Button (Error/Red Style)
-                    if (onToggleReservation != null)
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          // Explicitly pass 'cancel' action for Cancel Reservation button
-                          _confirmToggleReservation(context, true);
-                        },
-                        icon: Icon(
-                          Icons.close,
-                          size: 16,
-                          color: AppColors.error,
-                        ),
-                        label: Text(
-                          Provider.of<LocalizationService>(context, listen: false).translate('ui.cancelReserve') ?? 'Cancel Reserve',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.error,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          side: BorderSide(color: AppColors.error, width: 1.5),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-            ],
+                ],
+              );
+            },
           ),
         ),
       );
@@ -1473,10 +1612,11 @@ class _ModernWishlistItemContent extends StatelessWidget {
                               size: 24,
                             ),
                           ),
-                          // Status Badge overlay (top-right corner)
+                          // Status Badge overlay: top-left in RTL (Arabic) so "محجوز" is on the left of card, top-right in LTR
                           Positioned(
                             top: -4,
-                            right: -4,
+                            right: Directionality.of(context) == TextDirection.rtl ? null : -4,
+                            left: Directionality.of(context) == TextDirection.rtl ? -4 : null,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
@@ -1700,10 +1840,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Explicitly pass 'reserve' action for Reserve button
-                    _confirmToggleReservation(context, false);
-                  },
+                  onPressed: onReserveTap,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -1725,6 +1862,40 @@ class _ModernWishlistItemContent extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Small row showing reservation expiry (icon + text). Muted color by default; amber when today/tomorrow.
+class _ReservationExpiryRow extends StatelessWidget {
+  const _ReservationExpiryRow({required this.reservedUntil});
+
+  final DateTime reservedUntil;
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = Provider.of<LocalizationService>(context, listen: false);
+    final theme = Theme.of(context);
+    final format = formatReservationExpiry(reservedUntil, loc);
+    final color = format.isUrgent
+        ? (AppColors.warning)
+        : theme.colorScheme.onSurfaceVariant;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.access_time_rounded, size: 12, color: color),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            format.text,
+            style: theme.textTheme.labelSmall?.copyWith(color: color) ??
+                AppStyles.bodySmall.copyWith(color: color, fontSize: 11),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

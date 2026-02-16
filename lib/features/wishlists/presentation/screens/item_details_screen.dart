@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
 import 'package:wish_listy/core/widgets/unified_snackbar.dart';
@@ -36,6 +37,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
   WishlistItem? _currentItem;
   bool _isLoading = true;
+  bool _isExtendingReservation = false;
   String? _errorMessage;
   String? _wishlistName; // Store wishlist name for navigation
   Map<String, dynamic>? _rawItemData; // keep raw API data (price/url/purchasedBy object)
@@ -270,9 +272,70 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         }
       },
       child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBodyBehindAppBar: true,
+        appBar: _isLoading || _errorMessage != null || _currentItem == null
+            ? null
+            : AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                scrolledUnderElevation: 0,
+                titleSpacing: 0.0,
+                centerTitle: false,
+                systemOverlayStyle: SystemUiOverlayStyle.dark,
+                iconTheme: IconThemeData(color: AppColors.textPrimary, size: 22),
+                leading: Padding(
+                  padding: EdgeInsets.zero,
+                  child: GestureDetector(
+                    onTap: _handleBackNavigation,
+                    behavior: HitTestBehavior.opaque,
+                    child: Icon(
+                      Icons.arrow_back_ios,
+                      size: 20,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                actions: _isOwner()
+                    ? [
+                        IconButton(
+                          tooltip: Provider.of<LocalizationService>(context, listen: false).translate('app.share'),
+                          onPressed: () => _shareItem(item),
+                          icon: const Icon(Icons.share_outlined, size: 22),
+                          color: AppColors.textPrimary,
+                          style: IconButton.styleFrom(
+                            padding: const EdgeInsets.all(8),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                        if (!item.isReceived && !(item.isReservedValue && _isOwner()))
+                          IconButton(
+                            tooltip: Provider.of<LocalizationService>(context, listen: false).translate('app.edit'),
+                            onPressed: _editItem,
+                            icon: const Icon(Icons.edit_outlined, size: 22),
+                            color: AppColors.textPrimary,
+                            style: IconButton.styleFrom(
+                              padding: const EdgeInsets.all(8),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          )
+                        else
+                          IconButton(
+                            tooltip: Provider.of<LocalizationService>(context, listen: false).translate('app.edit'),
+                            onPressed: _showReservedItemSnackbarForEdit,
+                            icon: const Icon(Icons.edit_outlined, size: 22),
+                            color: AppColors.textTertiary.withOpacity(0.5),
+                            style: IconButton.styleFrom(
+                              padding: const EdgeInsets.all(8),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                          ),
+                      ]
+                    : null,
+              ),
         body: DecorativeBackground(
           showGifts: true,
-          showCircles: true, // Enable gradient blobs
+          showCircles: true,
           child: SafeArea(
           child: _isLoading
               ? Center(
@@ -294,94 +357,330 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                           ),
                         )
                       : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ItemTopBarWidget(
-                              isOwner: _isOwner(),
-                              isReceived: item.isReceived,
-                              isReserved: item.isReservedValue,
-                              onBack: _handleBackNavigation,
-                              onShare: () => _shareItem(item),
-                              onEdit: _editItem,
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(20, 2 + kToolbarHeight, 20, 0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.name,
+                                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textPrimary,
+                                        ) ??
+                                        AppStyles.headingLarge.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 26,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _buildMetadataBadge(item, _formatDate(item.createdAt)),
+                                ],
+                              ),
                             ),
+                            const SizedBox(height: 16),
                             Expanded(
                               child: RefreshIndicator(
                                 onRefresh: _refreshItemDetails,
                                 color: AppColors.primary,
                                 child: SingleChildScrollView(
                                   physics: const AlwaysScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Header Section (Title + Priority + Date)
-                                    ItemHeaderSectionWidget(
-                                      item: item,
-                                      isOwner: _isOwner(),
-                                      dateText: _formatDate(item.createdAt),
-                                    ),
-                                    const SizedBox(height: 24),
-                                    
-                                    // Image
-                                    if (item.imageUrl != null &&
-                                        item.imageUrl!.trim().isNotEmpty) ...[
-                                      ItemImageCardWidget(imageUrl: item.imageUrl!),
-                                      const SizedBox(height: 24),
-                                    ],
-                                    
-                                    // Status Card (Reserved/Purchased/Gifted/Available)
-                                    ItemStatusCardWidget(
-                                      item: item,
-                                      isOwner: _isOwner(),
-                                      isReservedByMe: _isReservedByMe(item),
-                                      onMarkReceived: _toggleReceivedStatus,
-                                    ),
-                                    const SizedBox(height: 24),
-                                    
-                                    // Where to Buy Card
-                                    ItemWhereToBuyCardWidget(
-                                      url: _getItemUrl(item),
-                                      storeName: _getStoreName(),
-                                      storeLocation: _getStoreLocation(),
-                                      onTap: () => _openStoreUrl(item),
-                                    ),
-                                    const SizedBox(height: 24),
-                                    
-                                    // Description
-                                    ItemDescriptionWidget(description: item.description),
-                                    
-                                    // Add bottom padding for sticky bar
-                                    if (_shouldShowBottomActionBar(item)) 
-                                      const SizedBox(height: 100),
-                                  ],
+                                  padding: const EdgeInsets.only(bottom: 24),
+                                  child: _buildSingleContentCard(item),
                                 ),
                               ),
                             ),
-                          ),
                           ],
                         ),
         ),
       ),
-      // Sticky Bottom Action Bar
-      // Hide during loading to prevent showing button before data is ready
-      // Hide when item is purchased/gifted for non-owners
-      // Hide when item is received (gifted) for everyone
-      // Show "Mark as Received" only for owner when purchased but not received
       bottomNavigationBar: _shouldShowBottomActionBar(item)
-          ? Padding(
-              padding: const EdgeInsets.only(bottom: 20),
-              child: ItemActionBarWidget(
-                item: item,
-                isOwner: _isOwner(),
-                isReservedByMe: _isReservedByMe(item),
-                onMarkReceived: _toggleReceivedStatus,
-                onCancelReservation: () {
-                  final currentItem = _currentItem ?? item;
-                  _toggleReservationWithAction(currentItem, action: 'cancel');
-                },
-                onReserve: () => _toggleReservation(item),
+          ? Container(
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                border: Border(
+                  top: BorderSide(
+                    color: Theme.of(context).dividerColor.withOpacity(0.5),
+                    width: 1.0,
+                  ),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 20),
+                  child: ItemActionBarWidget(
+                    item: item,
+                    isOwner: _isOwner(),
+                    isReservedByMe: _isReservedByMe(item),
+                    onMarkReceived: _toggleReceivedStatus,
+                    onCancelReservation: () {
+                      final currentItem = _currentItem ?? item;
+                      final loc = Provider.of<LocalizationService>(context, listen: false);
+                      ConfirmationDialog.show(
+                        context: context,
+                        isSuccess: false,
+                        title: loc.translate('details.unreserveGiftTitle') ?? 'Cancel Reservation?',
+                        message: loc.translate('details.unreserveGiftMessage') ?? 'This will release the item so others can reserve it. Are you sure?',
+                        primaryActionLabel: loc.translate('details.cancelReservation'),
+                        onPrimaryAction: () => _toggleReservationWithAction(currentItem, action: 'cancel'),
+                        secondaryActionLabel: loc.translate('common.cancel'),
+                        onSecondaryAction: () {},
+                      );
+                    },
+                    onReserve: () => _openReservationDeadlineSheet(item),
+                    onExtendReservation: () => _openExtendReservationSheet(_currentItem ?? item),
+                    isExtendingReservation: _isExtendingReservation,
+                  ),
+                ),
               ),
             )
           : null,
+      ),
+    );
+  }
+
+  /// Description block: show content or placeholder when empty so layout doesn't look broken.
+  Widget _buildDescriptionSection(String? description) {
+    final hasDescription = description != null && description.trim().isNotEmpty;
+    final loc = Provider.of<LocalizationService>(context, listen: false);
+    final label = loc.translate('details.description') ?? 'Description';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppStyles.bodySmall.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          hasDescription ? description!.trim() : (loc.translate('details.noDescription') ?? 'No description'),
+          style: AppStyles.bodyMedium.copyWith(
+            color: hasDescription ? AppColors.textPrimary : AppColors.textTertiary,
+            height: 1.5,
+            fontStyle: hasDescription ? FontStyle.normal : FontStyle.italic,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Single white card: status badge + image, description, where to buy, price.
+  Widget _buildSingleContentCard(WishlistItem item) {
+    final statusText = _getItemStatusText(item);
+    final statusColor = _getItemStatusColor(item);
+    final statusIcon = _getItemStatusIcon(item);
+    final hasWhereToBuy = (_getItemUrl(item) != null && _getItemUrl(item)!.trim().isNotEmpty) ||
+        (_getStoreName() != null && _getStoreName()!.trim().isNotEmpty) ||
+        (_getStoreLocation() != null && _getStoreLocation()!.trim().isNotEmpty);
+    final hasDescription = item.description != null && item.description!.trim().isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Reserve space below status badge so content doesn't clash
+                const SizedBox(height: 36),
+                if (item.imageUrl != null && item.imageUrl!.trim().isNotEmpty) ...[
+                  _buildItemImageWithOptionalGiftedOverlay(item),
+                  const SizedBox(height: 20),
+                ],
+                if (_isGiftedOrPurchased(item)) ...[
+                  _buildGiftedMessageCard(context),
+                  const SizedBox(height: 20),
+                ],
+                if (item.description != null && item.description!.trim().isNotEmpty) ...[
+                  _buildDescriptionSection(item.description),
+                  const SizedBox(height: 20),
+                ],
+                ItemWhereToBuyCardWidget(
+                  url: _getItemUrl(item),
+                  storeName: _getStoreName(),
+                  storeLocation: _getStoreLocation(),
+                  onTap: () => _openStoreUrl(item),
+                ),
+                if (hasWhereToBuy) const SizedBox(height: 20),
+                if (!hasDescription && !hasWhereToBuy) ...[
+                  Text(
+                    Provider.of<LocalizationService>(context, listen: false).translate('details.noSpecificStoreListed') ?? 'No specific store listed. You can find this gift anywhere!',
+                    style: AppStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+                if (_getDisplayPrice(item) != null) ...[
+                  Text(
+                    Provider.of<LocalizationService>(context, listen: false).translate('details.price') ?? 'Price',
+                    style: AppStyles.bodySmall.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _getDisplayPrice(item)!,
+                    style: AppStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                if (_shouldShowBottomActionBar(item)) const SizedBox(height: 80),
+              ],
+            ),
+          ),
+          Positioned.directional(
+            textDirection: Directionality.of(context),
+            top: 12,
+            end: 12,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(statusIcon, size: 16, color: statusColor),
+                const SizedBox(width: 6),
+                Text(
+                  statusText,
+                  style: AppStyles.bodySmall.copyWith(
+                    color: statusColor,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _isGiftedOrPurchased(WishlistItem item) {
+    return item.isReceived || item.isPurchasedValue;
+  }
+
+  Widget _buildItemImageWithOptionalGiftedOverlay(WishlistItem item) {
+    final showOverlay = _isGiftedOrPurchased(item);
+    if (!showOverlay) {
+      return ItemImageCardWidget(imageUrl: item.imageUrl!);
+    }
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.center,
+      children: [
+        ItemImageCardWidget(imageUrl: item.imageUrl!),
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.35),
+              borderRadius: BorderRadius.circular(24),
+            ),
+          ),
+        ),
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.95),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF4CAF50).withOpacity(0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('🎁', style: TextStyle(fontSize: 28)),
+                const SizedBox(width: 10),
+                Text(
+                  Provider.of<LocalizationService>(context, listen: false).translate('details.gifted') ?? 'Gifted',
+                  style: AppStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF2E7D32),
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGiftedMessageCard(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final text = localization.translate('details.giftedMessageCard') ??
+        'Someone special has already purchased this gift. It\'s no longer available for reservation.';
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFE8F5E9).withOpacity(0.95),
+            const Color(0xFFFFF8E1).withOpacity(0.9),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF81C784).withOpacity(0.6), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4CAF50).withOpacity(0.12),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.card_giftcard_rounded, color: const Color(0xFF2E7D32), size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: AppStyles.bodyMedium.copyWith(
+                color: const Color(0xFF1B5E20),
+                height: 1.45,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -433,9 +732,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     }
 
     // Non-Owner View Logic
-    // Hide if item is received (gifted) - for everyone
+    // When received (gifted), show bottom bar with celebratory banner
     if (isReceived) {
-      return false;
+      return true;
     }
 
     // Hide if purchased and user is NOT the owner
@@ -459,6 +758,132 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       case ItemPriority.low:
         return Icons.spa;
     }
+  }
+
+  Color _getPriorityColor(ItemPriority priority) {
+    switch (priority) {
+      case ItemPriority.high:
+      case ItemPriority.urgent:
+        return AppColors.error;
+      case ItemPriority.medium:
+        return AppColors.warning;
+      case ItemPriority.low:
+        return AppColors.info;
+    }
+  }
+
+  String _getPriorityText(ItemPriority priority) {
+    final loc = Provider.of<LocalizationService>(context, listen: false);
+    switch (priority) {
+      case ItemPriority.high:
+        return loc.translate('ui.priorityHigh') ?? 'High';
+      case ItemPriority.urgent:
+        return loc.translate('ui.priorityUrgent') ?? 'Urgent';
+      case ItemPriority.medium:
+        return loc.translate('ui.priorityMedium') ?? 'Medium';
+      case ItemPriority.low:
+        return loc.translate('ui.priorityLow') ?? 'Low';
+    }
+  }
+
+  Widget _buildMetadataBadge(WishlistItem item, String dateText) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final isOwner = _isOwner();
+    final isReserved = item.isReservedValue;
+    final isReceived = item.isReceived;
+    final isReservedForOwner = isOwner && isReserved && !isReceived;
+    final priorityColor = _getPriorityColor(item.priority);
+
+    Widget badge;
+    if (isReservedForOwner) {
+      badge = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF6A1B9A).withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF6A1B9A).withOpacity(0.3), width: 1.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.visibility_off, size: 16, color: Color(0xFF6A1B9A)),
+            const SizedBox(width: 8),
+            Text(
+              localization.translate('details.reservedByFriend'),
+              style: const TextStyle(color: Color(0xFF6A1B9A), fontSize: 13, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      );
+    } else if (isReceived) {
+      badge = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.success.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.success.withOpacity(0.3), width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, size: 14, color: AppColors.success),
+            const SizedBox(width: 6),
+            Text(
+              localization.translate('details.gifted'),
+              style: const TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      );
+    } else {
+      badge = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: priorityColor.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: priorityColor.withOpacity(0.3), width: 1),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(_getPriorityIcon(item.priority), size: 14, color: priorityColor),
+            const SizedBox(width: 6),
+            Text(
+              _getPriorityText(item.priority),
+              style: TextStyle(color: priorityColor, fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      );
+    }
+    return Row(
+      children: [
+        Flexible(child: badge),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            '${localization.translate('details.addedOn')} $dateText',
+            style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 12),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showReservedItemSnackbarForEdit() {
+    final loc = Provider.of<LocalizationService>(context, listen: false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(loc.translate('details.cannotEditDeleteReserved')),
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        duration: const Duration(seconds: 3),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 
   bool _isReceived(WishlistItem item) {
@@ -538,6 +963,29 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     return item.isReservedByMe ?? (reservedById != null && reservedById == currentUserId);
   }
 
+  Future<void> _openReservationDeadlineSheet(WishlistItem item) async {
+    await ReservationDeadlineBottomSheet.show(
+      context,
+      onConfirm: (DateTime? reservedUntil) {
+        _toggleReservationWithAction(item, action: 'reserve', reservedUntil: reservedUntil);
+      },
+    );
+  }
+
+  /// Opens the reservation deadline bottom sheet in extension mode.
+  /// On confirm, calls the API with the selected [reservedUntil] date.
+  Future<void> _openExtendReservationSheet(WishlistItem item) async {
+    await ReservationDeadlineBottomSheet.show(
+      context,
+      isExtension: true,
+      onConfirm: (DateTime? reservedUntil) {
+        if (reservedUntil != null) {
+          _extendReservation(item, reservedUntil);
+        }
+      },
+    );
+  }
+
   Future<void> _toggleReservation(WishlistItem item) async {
     // Use _isReservedByMe to determine action
     final isCurrentlyReserved = _isReservedByMe(item);
@@ -548,6 +996,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   Future<void> _toggleReservationWithAction(
     WishlistItem item, {
     required String action, // 'reserve' or 'cancel'
+    DateTime? reservedUntil,
   }) async {
     final authService = Provider.of<AuthRepository>(context, listen: false);
     final localization = Provider.of<LocalizationService>(context, listen: false);
@@ -584,10 +1033,11 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         }
       });
 
-      // Call API with explicit action
+      // Call API with explicit action (and optional reservedUntil for reserve)
       final updatedItemData = await _wishlistRepository.toggleReservation(
         item.id,
-        action: action, // Explicitly pass 'reserve' or 'cancel'
+        action: action,
+        reservedUntil: action == 'reserve' ? reservedUntil : null,
       );
       final updatedItem = WishlistItem.fromJson(updatedItemData);
 
@@ -621,6 +1071,35 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         UnifiedSnackbar.showError(
           context: context,
           message: localization.translate('dialogs.failedToUpdateReservation') ?? 'Failed to update reservation',
+        );
+      }
+    }
+  }
+
+  Future<void> _extendReservation(WishlistItem item, DateTime reservedUntil) async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    if (!mounted) return;
+    setState(() => _isExtendingReservation = true);
+    try {
+      final updatedItemData = await _wishlistRepository.extendReservation(item.id, reservedUntil);
+      final updatedItem = WishlistItem.fromJson(updatedItemData);
+      if (mounted) {
+        setState(() {
+          _currentItem = updatedItem;
+          _isExtendingReservation = false;
+        });
+        await _fetchItemDetails();
+        UnifiedSnackbar.showSuccess(
+          context: context,
+          message: localization.translate('dialogs.reservationExtendedSuccessfully') ?? 'Reservation extended!',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isExtendingReservation = false);
+        UnifiedSnackbar.showError(
+          context: context,
+          message: localization.translate('dialogs.failedToExtendReservation') ?? 'Failed to extend reservation',
         );
       }
     }
@@ -888,34 +1367,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         ],
       ),
     );
-  }
-
-  // Helper Methods
-  Color _getPriorityColor(ItemPriority priority) {
-    switch (priority) {
-      case ItemPriority.high:
-        return AppColors.error;
-      case ItemPriority.medium:
-        return AppColors.warning;
-      case ItemPriority.low:
-        return AppColors.success;
-      case ItemPriority.urgent:
-        return AppColors.accent;
-    }
-  }
-
-  String _getPriorityText(ItemPriority priority) {
-    final loc = Provider.of<LocalizationService>(context, listen: false);
-    switch (priority) {
-      case ItemPriority.high:
-        return loc.translate('ui.priorityHigh') ?? 'High';
-      case ItemPriority.medium:
-        return loc.translate('ui.priorityMedium') ?? 'Medium';
-      case ItemPriority.low:
-        return loc.translate('ui.priorityLow') ?? 'Low';
-      case ItemPriority.urgent:
-        return loc.translate('ui.priorityUrgent') ?? 'Urgent';
-    }
   }
 
   IconData _getCategoryIcon(String category) {

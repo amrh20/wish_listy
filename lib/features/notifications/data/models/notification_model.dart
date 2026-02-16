@@ -130,6 +130,12 @@ class AppNotification {
         case 'wishlist_shared':
           type = NotificationType.wishlistShared;
           break;
+        case 'reservation_expired':
+          type = NotificationType.reservationExpired;
+          break;
+        case 'reservation_reminder':
+          type = NotificationType.reservationReminder;
+          break;
         default:
           // Fallback to enum search
           type = NotificationType.values.firstWhere(
@@ -356,6 +362,8 @@ enum NotificationType {
   itemReserved,
   itemUnreserved,
   wishlistShared,
+  reservationExpired,
+  reservationReminder,
   general,
 }
 
@@ -384,6 +392,10 @@ extension NotificationTypeExtension on NotificationType {
         return 'Item Unreserved';
       case NotificationType.wishlistShared:
         return 'Wishlist Shared';
+      case NotificationType.reservationExpired:
+        return 'Reservation Expired';
+      case NotificationType.reservationReminder:
+        return 'Reservation Reminder';
       case NotificationType.general:
         return 'Notification';
     }
@@ -413,6 +425,10 @@ extension NotificationTypeExtension on NotificationType {
         return '🔓';
       case NotificationType.wishlistShared:
         return '💝';
+      case NotificationType.reservationExpired:
+        return '⏱️';
+      case NotificationType.reservationReminder:
+        return '🔔';
       case NotificationType.general:
         return '🔔';
     }

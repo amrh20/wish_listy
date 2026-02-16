@@ -741,6 +741,39 @@ class _NotificationItem extends StatelessWidget {
       );
     }
     
+    // Item reserved: use translated title and message
+    if (notification.type == NotificationType.itemReserved) {
+      final title = localization.translate('notifications.itemReservedTitle') ?? notification.title;
+      final message = localization.translate('notifications.someoneReservedGiftForYou') ?? notification.message;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AppStyles.bodySmall.copyWith(
+              fontWeight: FontWeight.w600,
+              color: _getTitleColor(notification.type, data: notification.data),
+              fontFamily: 'Alexandria',
+              fontSize: 13,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            message,
+            style: AppStyles.caption.copyWith(
+              color: AppColors.textSecondary,
+              fontFamily: 'Alexandria',
+              fontSize: 12,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      );
+    }
+    
     // Fallback: show title and message
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1158,6 +1191,10 @@ class _NotificationItem extends StatelessWidget {
         return Icons.lock_open;
       case NotificationType.wishlistShared:
         return Icons.share_outlined;
+      case NotificationType.reservationExpired:
+        return Icons.event_busy;
+      case NotificationType.reservationReminder:
+        return Icons.schedule;
       default:
         return Icons.notifications_outlined;
     }
@@ -1194,6 +1231,10 @@ class _NotificationItem extends StatelessWidget {
         return Colors.grey;
       case NotificationType.wishlistShared:
         return AppColors.primary;
+      case NotificationType.reservationExpired:
+        return Colors.grey;
+      case NotificationType.reservationReminder:
+        return Colors.amber;
       default:
         return AppColors.textSecondary;
     }

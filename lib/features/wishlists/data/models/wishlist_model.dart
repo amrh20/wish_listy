@@ -199,6 +199,8 @@ class WishlistItem {
   final bool? isReservedByMe; // Whether the item is reserved by current user (from API)
   final bool? isReserved; // Whether the item is reserved (from API)
   final int? availableQuantity; // Available quantity (from API)
+  final DateTime? reservedUntil; // When the reservation expires (from API)
+  final int extensionCount; // Number of times reservation was extended (max 2 allowed)
 
   // Computed properties (fallback if API fields are null)
   bool get isPurchasedValue => isPurchased ?? isReceived;
@@ -226,6 +228,8 @@ class WishlistItem {
     this.isReservedByMe,
     this.isReserved,
     this.availableQuantity,
+    this.reservedUntil,
+    this.extensionCount = 0,
   });
 
   factory WishlistItem.fromJson(Map<String, dynamic> json) {
@@ -385,7 +389,22 @@ class WishlistItem {
         wishlist = null;
       }
     }
-    
+
+    // Parse reservedUntil: support both camelCase and snake_case (ISO date string)
+    DateTime? reservedUntil;
+    final reservedUntilStr = json['reservedUntil']?.toString() ?? json['reserved_until']?.toString();
+    if (reservedUntilStr != null && reservedUntilStr.isNotEmpty) {
+      reservedUntil = DateTime.tryParse(reservedUntilStr);
+    }
+
+    // Parse extensionCount: number of reservation extensions (max 2)
+    final rawExtensionCount = json['extensionCount'] ?? json['extension_count'];
+    final extensionCount = (rawExtensionCount is int)
+        ? rawExtensionCount
+        : (rawExtensionCount is num)
+            ? (rawExtensionCount as num).toInt()
+            : 0;
+
     return WishlistItem(
       id: id,
       wishlistId: wishlistId,
@@ -405,6 +424,8 @@ class WishlistItem {
       isReservedByMe: isReservedByMe,
       isReserved: isReservedFromApi,
       availableQuantity: availableQuantity,
+      reservedUntil: reservedUntil,
+      extensionCount: extensionCount,
     );
   }
 
@@ -421,6 +442,10 @@ class WishlistItem {
       'status': status.toString().split('.').last,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      if (reservedUntil != null) 'reserved_until': reservedUntil!.toIso8601String(),
+      if (reservedUntil != null) 'reservedUntil': reservedUntil!.toIso8601String(),
+      'extensionCount': extensionCount,
+      'extension_count': extensionCount,
     };
   }
 
@@ -443,6 +468,8 @@ class WishlistItem {
     bool? isReservedByMe,
     bool? isReserved,
     int? availableQuantity,
+    DateTime? reservedUntil,
+    int? extensionCount,
   }) {
     return WishlistItem(
       id: id ?? this.id,
@@ -463,6 +490,8 @@ class WishlistItem {
       isReservedByMe: isReservedByMe ?? this.isReservedByMe,
       isReserved: isReserved ?? this.isReserved,
       availableQuantity: availableQuantity ?? this.availableQuantity,
+      reservedUntil: reservedUntil ?? this.reservedUntil,
+      extensionCount: extensionCount ?? this.extensionCount,
     );
   }
 

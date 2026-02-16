@@ -300,128 +300,121 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     }
 
     // Default design for other notification types
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: notification.isRead
-              ? Colors.transparent
-              : AppColors.info.withOpacity(0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textTertiary.withOpacity(0.1),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-            spreadRadius: 0,
+    return Builder(
+      builder: (context) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
+        final displayTitle = notification.type == NotificationType.itemReserved
+            ? (localization.translate('notifications.itemReservedTitle') ?? notification.title)
+            : notification.title;
+        final displayMessage = notification.type == NotificationType.itemReserved
+            ? (localization.translate('notifications.someoneReservedGiftForYou') ?? notification.message)
+            : notification.message;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: notification.isRead
+                  ? Colors.transparent
+                  : AppColors.info.withOpacity(0.3),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.textTertiary.withOpacity(0.1),
+                offset: const Offset(0, 2),
+                blurRadius: 8,
+                spreadRadius: 0,
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            // Use cubit's smart navigation
-            context.read<NotificationsCubit>().handleNotificationTap(notification, context);
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Icon using helper method
-                _buildLeadingIcon(notification.type, data: notification.data),
-
-                const SizedBox(width: 16),
-
-                // Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                context.read<NotificationsCubit>().handleNotificationTap(notification, context);
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildLeadingIcon(notification.type, data: notification.data),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              notification.title,
-                              style: AppStyles.bodyMedium.copyWith(
-                                fontWeight: FontWeight.bold, // Always bold
-                                color: _getTitleColor(notification.type, data: notification.data),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  displayTitle,
+                                  style: AppStyles.bodyMedium.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: _getTitleColor(notification.type, data: notification.data),
+                                  ),
+                                ),
                               ),
+                              if (!notification.isRead)
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.info,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            displayMessage,
+                            style: AppStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                              height: 1.4,
                             ),
                           ),
-                          if (!notification.isRead)
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: AppColors.info,
-                                shape: BoxShape.circle,
-                              ),
+                          const SizedBox(height: 8),
+                          Text(
+                            notification.timeAgo,
+                            style: AppStyles.caption.copyWith(
+                              color: AppColors.textTertiary,
                             ),
+                          ),
+                          if (notification.type == NotificationType.eventInvitation) ...[
+                            const SizedBox(height: 8),
+                            Builder(
+                              builder: (context) {
+                                final eventId = notification.relatedId ??
+                                    notification.data?['eventId']?.toString() ??
+                                    notification.data?['event_id']?.toString() ??
+                                    notification.data?['event']?['_id']?.toString() ??
+                                    notification.data?['event']?['id']?.toString();
+                                if (eventId != null && eventId.isNotEmpty) {
+                                  final notificationWithId = notification.copyWith(relatedId: eventId);
+                                  return _buildRSVPButtons(notificationWithId, context.read<NotificationsCubit>());
+                                }
+                                return const SizedBox.shrink();
+                              },
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                          if (_hasActions(notification.type) &&
+                              notification.type != NotificationType.eventInvitation)
+                            _buildActionButtons(notification),
                         ],
                       ),
-
-                      const SizedBox(height: 4),
-
-                      Text(
-                        notification.message,
-                        style: AppStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.4,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Time ago
-                      Text(
-                        notification.timeAgo,
-                        style: AppStyles.caption.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-
-                      // RSVP Buttons for event invitations only
-                      if (notification.type == NotificationType.eventInvitation) ...[
-                        const SizedBox(height: 8),
-                        Builder(
-                          builder: (context) {
-                            // Get eventId from relatedId or data map
-                            final eventId = notification.relatedId ?? 
-                                           notification.data?['eventId']?.toString() ??
-                                           notification.data?['event_id']?.toString() ??
-                                           notification.data?['event']?['_id']?.toString() ??
-                                           notification.data?['event']?['id']?.toString();
-                            
-                            if (eventId != null && eventId.isNotEmpty) {
-                              // Create a notification copy with relatedId set
-                              final notificationWithId = notification.copyWith(relatedId: eventId);
-                              return _buildRSVPButtons(notificationWithId, context.read<NotificationsCubit>());
-                            }
-                            return const SizedBox.shrink();
-                          },
-                        ),
-                      ],
-
-                      const SizedBox(height: 8),
-
-                      // Action Buttons for friend requests
-                      if (_hasActions(notification.type) && 
-                          notification.type != NotificationType.eventInvitation)
-                        _buildActionButtons(notification),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -1225,6 +1218,10 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       
       case NotificationType.wishlistShared:
         return AppColors.primary;
+      case NotificationType.reservationExpired:
+        return Colors.grey;
+      case NotificationType.reservationReminder:
+        return Colors.amber;
       case NotificationType.general:
         return AppColors.info;
     }
@@ -1268,6 +1265,10 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       
       case NotificationType.wishlistShared:
         return Icons.share_outlined;
+      case NotificationType.reservationExpired:
+        return Icons.event_busy;
+      case NotificationType.reservationReminder:
+        return Icons.schedule;
       case NotificationType.general:
         return Icons.notifications_outlined;
     }
