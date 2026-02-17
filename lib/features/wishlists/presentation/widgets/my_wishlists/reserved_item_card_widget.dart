@@ -44,6 +44,8 @@ class ReservedItemCardWidget extends StatelessWidget {
       onPrimaryAction: onCancelReservation,
       secondaryActionLabel: localization.translate('common.cancel'),
       onSecondaryAction: () {},
+      accentColor: AppColors.warning,
+      icon: Icons.undo_rounded,
     );
   }
 
@@ -349,6 +351,7 @@ class ReservedItemCardWidget extends StatelessWidget {
     await ReservationDeadlineBottomSheet.show(
       context,
       isExtension: true,
+      initialDeadline: item.reservedUntil,
       onConfirm: (DateTime? date) {
         if (date != null) onExtend?.call(date);
       },

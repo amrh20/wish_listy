@@ -425,7 +425,7 @@ class WishlistRepository {
               'quantity': quantity,
             };
       if (action == 'reserve' && reservedUntil != null) {
-        requestBody['reservedUntil'] = reservedUntil.toIso8601String();
+        requestBody['reservedUntil'] = reservedUntil.toUtc().toIso8601String();
       }
 
       final response = await _apiService.put('/items/$itemId/reserve', data: requestBody);
@@ -463,13 +463,13 @@ class WishlistRepository {
 
   /// Extend reservation for an item.
   /// Uses API: PUT /api/items/:itemId/extend-reservation
-  /// [reservedUntil] is required and sent in the request body (ISO string).
-  /// Returns the updated item data (including new reservedUntil and extensionCount).
+  /// [reservedUntil] is the new absolute deadline (replaces the previous one; we do not add days to it).
+  /// Sent as UTC ISO-8601 so the backend stores the exact instant.
   Future<Map<String, dynamic>> extendReservation(String itemId, DateTime reservedUntil) async {
     try {
       final response = await _apiService.put(
         '/items/$itemId/extend-reservation',
-        data: <String, dynamic>{'reservedUntil': reservedUntil.toIso8601String()},
+        data: <String, dynamic>{'reservedUntil': reservedUntil.toUtc().toIso8601String()},
       );
 
       final responseData = response['data'] as Map<String, dynamic>?;
@@ -563,6 +563,36 @@ class WishlistRepository {
       rethrow;
     } catch (e) {
       throw Exception('Failed to mark item as purchased. Please try again.');
+    }
+  }
+
+  /// Mark item as not received (owner disputes "Purchased" status).
+  ///
+  /// [itemId] - Item ID (required)
+  ///
+  /// Returns the updated item data.
+  /// Uses API: PUT /api/items/:id/not-received
+  Future<Map<String, dynamic>> markItemAsNotReceived(String itemId) async {
+    try {
+      final response = await _apiService.put(
+        '/items/$itemId/not-received',
+        data: null,
+      );
+
+      final itemData =
+          response['item'] as Map<String, dynamic>? ??
+          response['data'] as Map<String, dynamic>? ??
+          response;
+
+      if (itemData == null || itemData.isEmpty) {
+        throw Exception('Item data not found in response');
+      }
+
+      return itemData;
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Failed to update item status. Please try again.');
     }
   }
 

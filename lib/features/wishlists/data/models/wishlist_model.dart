@@ -442,8 +442,8 @@ class WishlistItem {
       'status': status.toString().split('.').last,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
-      if (reservedUntil != null) 'reserved_until': reservedUntil!.toIso8601String(),
-      if (reservedUntil != null) 'reservedUntil': reservedUntil!.toIso8601String(),
+      if (reservedUntil != null) 'reserved_until': reservedUntil!.toUtc().toIso8601String(),
+      if (reservedUntil != null) 'reservedUntil': reservedUntil!.toUtc().toIso8601String(),
       'extensionCount': extensionCount,
       'extension_count': extensionCount,
     };

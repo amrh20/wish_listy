@@ -20,6 +20,8 @@ class ConfirmationDialog {
   /// [barrierDismissible] - Whether the dialog can be dismissed by tapping outside (default: false)
   /// [customImagePath] - Optional custom image path to replace Lottie animation
   /// [backgroundVectorPath] - Optional background vector image that appears behind and above dialog
+  /// [accentColor] - Optional override for icon/buttons (e.g. Colors.orange for a neutral confirmation)
+  /// [icon] - Optional override for the top icon (e.g. Icons.undo for cancel-reservation)
   static Future<void> show({
     required BuildContext context,
     required bool isSuccess,
@@ -33,6 +35,8 @@ class ConfirmationDialog {
     bool barrierDismissible = false,
     String? customImagePath,
     String? backgroundVectorPath,
+    Color? accentColor,
+    IconData? icon,
   }) {
     return showDialog(
       context: context,
@@ -48,6 +52,8 @@ class ConfirmationDialog {
         additionalActions: additionalActions,
         customImagePath: customImagePath,
         backgroundVectorPath: backgroundVectorPath,
+        accentColor: accentColor,
+        icon: icon,
       ),
     );
   }
@@ -80,6 +86,8 @@ class _ConfirmationDialogWidget extends StatelessWidget {
   final List<DialogAction>? additionalActions;
   final String? customImagePath;
   final String? backgroundVectorPath;
+  final Color? accentColor;
+  final IconData? icon;
 
   const _ConfirmationDialogWidget({
     required this.isSuccess,
@@ -92,12 +100,17 @@ class _ConfirmationDialogWidget extends StatelessWidget {
     this.additionalActions,
     this.customImagePath,
     this.backgroundVectorPath,
+    this.accentColor,
+    this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Determine colors based on success/error state
-    final accentColor = isSuccess ? AppColors.success : AppColors.error;
+    // Use optional override or fall back to success/error
+    final resolvedAccentColor =
+        accentColor ?? (isSuccess ? AppColors.success : AppColors.error);
+    final resolvedIcon =
+        icon ?? (isSuccess ? Icons.check_circle_outline : Icons.error_outline);
 
     return Stack(
       clipBehavior: Clip.none,
@@ -145,14 +158,12 @@ class _ConfirmationDialogWidget extends StatelessWidget {
                               width: 80,
                               height: 80,
                               decoration: BoxDecoration(
-                                color: accentColor.withOpacity(0.1),
+                                color: resolvedAccentColor.withOpacity(0.1),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
-                                isSuccess
-                                    ? Icons.check_circle_outline
-                                    : Icons.error_outline,
-                                color: accentColor,
+                                resolvedIcon,
+                                color: resolvedAccentColor,
                                 size: 40,
                               ),
                             );
@@ -162,14 +173,12 @@ class _ConfirmationDialogWidget extends StatelessWidget {
                           width: 80,
                           height: 80,
                           decoration: BoxDecoration(
-                            color: accentColor.withOpacity(0.1),
+                            color: resolvedAccentColor.withOpacity(0.1),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            isSuccess
-                                ? Icons.check_circle_outline
-                                : Icons.error_outline,
-                            color: accentColor,
+                            resolvedIcon,
+                            color: resolvedAccentColor,
                             size: 40,
                           ),
                         ),
@@ -221,10 +230,10 @@ class _ConfirmationDialogWidget extends StatelessWidget {
                         gradientColors: isSuccess
                             ? [AppColors.primary, AppColors.secondary]
                             : null,
-                        customColor: isSuccess ? null : accentColor,
+                        customColor: isSuccess ? null : resolvedAccentColor,
                         icon: isSuccess
                             ? Icons.check_rounded
-                            : Icons.refresh_rounded,
+                            : Icons.undo_rounded,
                       ),
                     ),
                   ],
@@ -244,7 +253,7 @@ class _ConfirmationDialogWidget extends StatelessWidget {
                         },
                         variant: ButtonVariant.outline,
                         size: ButtonSize.small,
-                        customColor: accentColor,
+                        customColor: resolvedAccentColor,
                       ),
                     ),
                   ],

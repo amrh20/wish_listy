@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -49,6 +50,9 @@ class ApiService {
 
   late Dio _dio;
   String _storedLanguageCode = 'en'; // Cache language code (default to English)
+
+  /// Lock for 401 refresh: only one refresh runs; concurrent 401s wait and then retry or fail.
+  Completer<String?>? _refreshCompleter;
   
   /// Initialize language code from SharedPreferences
   Future<void> _initializeLanguageCode() async {
@@ -92,52 +96,77 @@ class ApiService {
         },
       ),
 
-      // 401 Unauthorized interceptor - handles token expiration and invalid tokens
+      // 401 Unauthorized interceptor: try silent refresh, then retry or logout
       InterceptorsWrapper(
-        onError: (error, handler) {
-          if (error.response?.statusCode == 401) {
-            
-            // Skip 401 handling for auth endpoints to avoid infinite loops
-            final path = error.requestOptions.path.toLowerCase();
-            if (path.contains('/auth/login') || 
-                path.contains('/auth/register') || 
-                path.contains('/auth/logout') ||
-                path.contains('/auth/verify-success') ||
-                path.contains('/auth/verify-otp') ||
-                path.contains('/auth/verify-phone') ||
-                path.contains('/auth/resend-otp')) {
-              handler.next(error);
-              return;
-            }
-            
-            // Clear auth token immediately
-            clearAuthToken();
-            
-            // Clear auth data from AuthRepository (silent logout without API calls)
+        onError: (error, handler) async {
+          if (error.response?.statusCode != 401) {
+            handler.next(error);
+            return;
+          }
+
+          final path = error.requestOptions.path.toLowerCase();
+          final isAuthPath = path.contains('/auth/login') ||
+              path.contains('/auth/register') ||
+              path.contains('/auth/logout') ||
+              path.contains('/auth/verify-success') ||
+              path.contains('/auth/verify-otp') ||
+              path.contains('/auth/verify-phone') ||
+              path.contains('/auth/resend-otp') ||
+              path.contains('/auth/refresh');
+          if (isAuthPath) {
+            handler.next(error);
+            return;
+          }
+
+          String? newToken;
+          if (_refreshCompleter != null) {
             try {
-              final authRepository = AuthRepository();
-              authRepository.logoutSilently();
-            } catch (e) {
+              newToken = await _refreshCompleter!.future;
+            } catch (_) {
+              newToken = null;
             }
-            
-            // Redirect to login screen if navigator is available
+          } else {
+            _refreshCompleter = Completer<String?>();
             try {
-              final navigatorKey = MyApp.navigatorKey;
-              if (navigatorKey.currentContext != null) {
-                final context = navigatorKey.currentContext!;
-                // Use post-frame callback to ensure navigation happens after error handling
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (navigatorKey.currentContext != null) {
-                    Navigator.of(navigatorKey.currentContext!).pushNamedAndRemoveUntil(
-                      AppRoutes.login,
-                      (route) => false,
-                    );
-                  }
-                });
-              }
-            } catch (e) {
+              final authRepo = AuthRepository();
+              newToken = await authRepo.tryRefreshAndGetNewAccessToken();
+              _refreshCompleter!.complete(newToken);
+            } catch (_) {
+              _refreshCompleter!.complete(null);
+            } finally {
+              _refreshCompleter = null;
             }
           }
+
+          if (newToken != null && newToken.isNotEmpty) {
+            try {
+              final opts = error.requestOptions;
+              opts.headers['Authorization'] = 'Bearer $newToken';
+              final response = await _dio.fetch(opts);
+              handler.resolve(response);
+            } catch (e) {
+              handler.next(error);
+            }
+            return;
+          }
+
+          clearAuthToken();
+          try {
+            AuthRepository().logoutSilently();
+          } catch (_) {}
+          try {
+            final navigatorKey = MyApp.navigatorKey;
+            if (navigatorKey.currentContext != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (navigatorKey.currentContext != null) {
+                  Navigator.of(navigatorKey.currentContext!).pushNamedAndRemoveUntil(
+                    AppRoutes.login,
+                    (route) => false,
+                  );
+                }
+              });
+            }
+          } catch (_) {}
           handler.next(error);
         },
       ),

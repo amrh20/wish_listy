@@ -98,6 +98,7 @@ class AuthRepository extends ChangeNotifier {
     await prefs.remove('user_email');
     await prefs.remove('user_name');
     await prefs.remove('auth_token');
+    await prefs.remove('refresh_token');
 
     notifyListeners();
   }
@@ -227,10 +228,14 @@ class AuthRepository extends ChangeNotifier {
         await prefs.setString('user_email', _userEmail!);
         await prefs.setString('user_name', _userName!);
 
-        // Save auth token if available
+        // Save auth token and refresh token if available
         if (token != null) {
           // Save to SharedPreferences for backward compatibility
           await prefs.setString('auth_token', token);
+          final refreshToken = response['refreshToken'] ?? response['refresh_token'];
+          if (refreshToken != null) {
+            await prefs.setString('refresh_token', refreshToken.toString());
+          }
 
           // Note: Token will be saved to secure storage after user enables biometric
           // This happens in the post-login prompt (see login_screen.dart)
@@ -315,9 +320,13 @@ class AuthRepository extends ChangeNotifier {
         await prefs.setString('user_email', _userEmail!);
         await prefs.setString('user_name', _userName!);
 
-        // Save auth token if available
+        // Save auth token and refresh token if available
         if (token != null) {
           await prefs.setString('auth_token', token);
+          final refreshToken = response['refreshToken'] ?? response['refresh_token'];
+          if (refreshToken != null) {
+            await prefs.setString('refresh_token', refreshToken.toString());
+          }
           // Set token in API service for future requests
           _apiService.setAuthToken(token);
           // Authenticate Socket.IO for real-time notifications (Option B: emit auth event)
@@ -384,6 +393,7 @@ class AuthRepository extends ChangeNotifier {
       await prefs.remove('user_email');
       await prefs.remove('user_name');
       await prefs.remove('auth_token');
+      await prefs.remove('refresh_token');
     } catch (e) {
     }
 
@@ -424,6 +434,7 @@ class AuthRepository extends ChangeNotifier {
       await prefs.remove('user_email');
       await prefs.remove('user_name');
       await prefs.remove('auth_token');
+      await prefs.remove('refresh_token');
     } catch (e) {
     }
 
@@ -579,6 +590,7 @@ class AuthRepository extends ChangeNotifier {
     await prefs.remove('user_email');
     await prefs.remove('user_name');
     await prefs.remove('auth_token');
+    await prefs.remove('refresh_token');
 
     // Clear API service token
     _apiService.clearAuthToken();
@@ -807,9 +819,48 @@ class AuthRepository extends ChangeNotifier {
     }
   }
 
+  /// Called by API service 401 interceptor to get a new access token.
+  /// Returns the new access token on success; returns null if no refresh token;
+  /// throws on refresh API failure (e.g. refresh token expired).
+  Future<String?> tryRefreshAndGetNewAccessToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final refreshTokenValue = prefs.getString('refresh_token');
+    if (refreshTokenValue == null || refreshTokenValue.isEmpty) {
+      return null;
+    }
+    try {
+      // Do not send expired access token; backend uses refreshToken from body
+      _apiService.clearAuthToken();
+      final response = await _apiService.post(
+        '/auth/refresh',
+        data: <String, dynamic>{'refreshToken': refreshTokenValue},
+      );
+      final newToken = response['token'] ?? response['accessToken'];
+      final newRefreshToken = response['refreshToken'] ?? response['refresh_token'];
+      if (newToken == null) {
+        throw Exception('No token in refresh response');
+      }
+      await prefs.setString('auth_token', newToken.toString());
+      if (newRefreshToken != null) {
+        await prefs.setString('refresh_token', newRefreshToken.toString());
+      }
+      _apiService.setAuthToken(newToken.toString());
+      return newToken.toString();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> refreshToken() async {
     try {
-      final response = await _apiService.post('/auth/refresh');
+      final prefs = await SharedPreferences.getInstance();
+      final refreshTokenValue = prefs.getString('refresh_token');
+      final response = await _apiService.post(
+        '/auth/refresh',
+        data: refreshTokenValue != null
+            ? <String, dynamic>{'refreshToken': refreshTokenValue}
+            : null,
+      );
       return response;
     } catch (e) {
       throw Exception('Failed to refresh token');

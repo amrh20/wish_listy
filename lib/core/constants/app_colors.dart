@@ -38,6 +38,10 @@ class AppColors {
   // Info: Blue (Links, Information)
   static const Color info = Color(0xFF3B82F6);
 
+  // Purchased (Light blue – professional, distinct from Gifted green)
+  static const Color purchasedLight = Color(0xFFE3F2FD); // Light blue background
+  static const Color purchased = Color(0xFF1565C0);       // Dark blue text/icon
+
   // ===========================================================================
   // 3. NEUTRAL COLORS (Backgrounds & Text)
   // ===========================================================================

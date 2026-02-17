@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/utils/app_constants.dart';
 import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
@@ -38,6 +40,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   WishlistItem? _currentItem;
   bool _isLoading = true;
   bool _isExtendingReservation = false;
+  bool _hasCelebrated = false; // One-time confetti when item is gifted/received
   String? _errorMessage;
   String? _wishlistName; // Store wishlist name for navigation
   Map<String, dynamic>? _rawItemData; // keep raw API data (price/url/purchasedBy object)
@@ -333,72 +336,113 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                       ]
                     : null,
               ),
-        body: DecorativeBackground(
-          showGifts: true,
-          showCircles: true,
-          child: SafeArea(
-          child: _isLoading
-              ? Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                )
-              : _errorMessage != null
-                  ? ItemDetailsErrorStateWidget(
-                      message: _errorMessage!,
-                      onRetry: _fetchItemDetails,
-                    )
-                  : _currentItem == null
-                      ? Center(
-                          child: Text(
-                            Provider.of<LocalizationService>(context, listen: false)
-                                .translate('details.itemNotFound'),
-                            style: AppStyles.bodyMedium.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.fromLTRB(20, 2 + kToolbarHeight, 20, 0),
-                              child: Column(
+        body: Stack(
+          children: [
+            DecorativeBackground(
+              showGifts: true,
+              showCircles: true,
+              child: SafeArea(
+                child: _isLoading
+                    ? Center(
+                        child: CircularProgressIndicator(color: AppColors.primary),
+                      )
+                    : _errorMessage != null
+                        ? ItemDetailsErrorStateWidget(
+                            message: _errorMessage!,
+                            onRetry: _fetchItemDetails,
+                          )
+                        : _currentItem == null
+                            ? Center(
+                                child: Text(
+                                  Provider.of<LocalizationService>(context, listen: false)
+                                      .translate('details.itemNotFound'),
+                                  style: AppStyles.bodyMedium.copyWith(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              )
+                            : Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    item.name,
-                                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.textPrimary,
-                                        ) ??
-                                        AppStyles.headingLarge.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 26,
-                                          color: AppColors.textPrimary,
+                                  Padding(
+                                    padding: EdgeInsets.fromLTRB(20, 2 + kToolbarHeight, 20, 0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.name,
+                                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: AppColors.textPrimary,
+                                              ) ??
+                                              AppStyles.headingLarge.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 26,
+                                                color: AppColors.textPrimary,
+                                              ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                        const SizedBox(height: 12),
+                                        _buildMetadataBadge(item, _formatDate(item.createdAt)),
+                                      ],
+                                    ),
                                   ),
-                                  const SizedBox(height: 12),
-                                  _buildMetadataBadge(item, _formatDate(item.createdAt)),
+                                  const SizedBox(height: 16),
+                                  Expanded(
+                                    child: RefreshIndicator(
+                                      onRefresh: _refreshItemDetails,
+                                      color: AppColors.primary,
+                                      child: SingleChildScrollView(
+                                        physics: const AlwaysScrollableScrollPhysics(),
+                                        padding: const EdgeInsets.only(bottom: 24),
+                                        child: _buildSingleContentCard(item),
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            Expanded(
-                              child: RefreshIndicator(
-                                onRefresh: _refreshItemDetails,
-                                color: AppColors.primary,
-                                child: SingleChildScrollView(
-                                  physics: const AlwaysScrollableScrollPhysics(),
-                                  padding: const EdgeInsets.only(bottom: 24),
-                                  child: _buildSingleContentCard(item),
-                                ),
-                              ),
-                            ),
-                          ],
+              ),
+            ),
+            // One-time full-screen confetti only when item is Received (Gifted), not just Purchased
+            if (!_isLoading &&
+                _errorMessage == null &&
+                _currentItem != null &&
+                item.isReceived &&
+                !_hasCelebrated)
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: true,
+                  child: Lottie.network(
+                    AppConstants.confettiAnimationUrl,
+                    fit: BoxFit.cover,
+                    repeat: false,
+                    onLoaded: (composition) {
+                      final duration = composition.duration;
+                      Future.delayed(
+                        Duration(
+                          milliseconds: duration.inMilliseconds + 300,
                         ),
+                        () {
+                          if (mounted) {
+                            setState(() => _hasCelebrated = true);
+                          }
+                        },
+                      );
+                    },
+                    errorBuilder: (_, __, ___) {
+                      if (mounted) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          setState(() => _hasCelebrated = true);
+                        });
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                ),
+              ),
+          ],
         ),
-      ),
       bottomNavigationBar: _shouldShowBottomActionBar(item)
           ? Container(
               decoration: BoxDecoration(
@@ -425,17 +469,20 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                       ConfirmationDialog.show(
                         context: context,
                         isSuccess: false,
-                        title: loc.translate('details.unreserveGiftTitle') ?? 'Cancel Reservation?',
-                        message: loc.translate('details.unreserveGiftMessage') ?? 'This will release the item so others can reserve it. Are you sure?',
+                        title: loc.translate('details.unreserveGiftTitle') ?? 'Changed your mind?',
+                        message: loc.translate('details.unreserveGiftMessage') ?? 'By canceling, this gift will be available for others to reserve. Do you want to proceed?',
                         primaryActionLabel: loc.translate('details.cancelReservation'),
                         onPrimaryAction: () => _toggleReservationWithAction(currentItem, action: 'cancel'),
                         secondaryActionLabel: loc.translate('common.cancel'),
                         onSecondaryAction: () {},
+                        accentColor: AppColors.warning,
+                        icon: Icons.undo_rounded,
                       );
                     },
                     onReserve: () => _openReservationDeadlineSheet(item),
                     onExtendReservation: () => _openExtendReservationSheet(_currentItem ?? item),
                     isExtendingReservation: _isExtendingReservation,
+                    onMarkAsNotReceived: () => _showMarkAsNotReceivedConfirmation(_currentItem ?? item),
                   ),
                 ),
               ),
@@ -512,8 +559,12 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   _buildItemImageWithOptionalGiftedOverlay(item),
                   const SizedBox(height: 20),
                 ],
-                if (_isGiftedOrPurchased(item)) ...[
+                if (item.isReceived) ...[
                   _buildGiftedMessageCard(context),
+                  const SizedBox(height: 20),
+                ],
+                if (item.isPurchasedValue && !item.isReceived) ...[
+                  _buildPurchasedPendingMessageCard(context),
                   const SizedBox(height: 20),
                 ],
                 if (item.description != null && item.description!.trim().isNotEmpty) ...[
@@ -527,7 +578,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   onTap: () => _openStoreUrl(item),
                 ),
                 if (hasWhereToBuy) const SizedBox(height: 20),
-                if (!hasDescription && !hasWhereToBuy) ...[
+                if (!hasDescription && !hasWhereToBuy && !_isGiftedOrPurchased(item)) ...[
                   Text(
                     Provider.of<LocalizationService>(context, listen: false).translate('details.noSpecificStoreListed') ?? 'No specific store listed. You can find this gift anywhere!',
                     style: AppStyles.bodyMedium.copyWith(
@@ -587,10 +638,18 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   }
 
   Widget _buildItemImageWithOptionalGiftedOverlay(WishlistItem item) {
-    final showOverlay = _isGiftedOrPurchased(item);
-    if (!showOverlay) {
+    final isReceived = item.isReceived;
+    final isPurchasedPending = item.isPurchasedValue && !isReceived;
+    if (!isReceived && !isPurchasedPending) {
       return ItemImageCardWidget(imageUrl: item.imageUrl!);
     }
+    // Received: trophy/gift celebration style. Purchased pending: "On the way" style.
+    final isCelebration = isReceived;
+    final loc = Provider.of<LocalizationService>(context, listen: false);
+    final label = isCelebration
+        ? (loc.translate('details.gifted') ?? 'Granted')
+        : (loc.translate('details.purchasedPendingLabel') ?? 'Purchased & Pending');
+    final accentColor = isCelebration ? const Color(0xFF2E7D32) : AppColors.purchased;
     return Stack(
       clipBehavior: Clip.none,
       alignment: Alignment.center,
@@ -612,7 +671,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF4CAF50).withOpacity(0.3),
+                  color: accentColor.withOpacity(0.3),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -621,13 +680,16 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('🎁', style: TextStyle(fontSize: 28)),
+                if (isCelebration)
+                  const Text('🎁', style: TextStyle(fontSize: 28))
+                else
+                  Icon(Icons.schedule_rounded, color: accentColor, size: 28),
                 const SizedBox(width: 10),
                 Text(
-                  Provider.of<LocalizationService>(context, listen: false).translate('details.gifted') ?? 'Gifted',
+                  label,
                   style: AppStyles.bodyLarge.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF2E7D32),
+                    color: accentColor,
                     fontSize: 18,
                   ),
                 ),
@@ -642,7 +704,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   Widget _buildGiftedMessageCard(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context, listen: false);
     final text = localization.translate('details.giftedMessageCard') ??
-        'Someone special has already purchased this gift. It\'s no longer available for reservation.';
+        'Someone special has already granted this wish. It\'s no longer available for others.';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -685,6 +747,46 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     );
   }
 
+  /// "Waiting for confirmation" / "On the way" card when purchased but not yet received.
+  Widget _buildPurchasedPendingMessageCard(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final text = localization.translate('details.purchasedAwaitingConfirmation') ??
+        'This gift has been purchased and is on its way. Waiting for confirmation of receipt.';
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.purchasedLight.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.purchased.withOpacity(0.35), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.purchased.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.schedule_rounded, color: AppColors.purchased, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.purchased,
+                height: 1.45,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   bool _isOwner() {
     final authService = Provider.of<AuthRepository>(context, listen: false);
     if (authService.isGuest || authService.userId == null) {
@@ -697,6 +799,55 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     }
     
     return authService.userId == _wishlistOwnerId;
+  }
+
+  /// Shows confirmation dialog for "I didn't get this yet" (mark as not received).
+  void _showMarkAsNotReceivedConfirmation(WishlistItem item) {
+    final loc = Provider.of<LocalizationService>(context, listen: false);
+    ConfirmationDialog.show(
+      context: context,
+      isSuccess: false,
+      title: loc.translate('details.notReceivedYetTitle') ?? 'Not received yet?',
+      message: loc.translate('details.notReceivedYetMessage') ??
+          'We will notify the buyer to check the status, and the gift will be marked as not purchased. Proceed?',
+      primaryActionLabel: loc.translate('dialogs.confirm') ?? 'Proceed',
+      onPrimaryAction: () => _performMarkAsNotReceived(item),
+      secondaryActionLabel: loc.translate('common.cancel'),
+      onSecondaryAction: () {},
+      accentColor: AppColors.warning,
+      icon: Icons.help_outline_rounded,
+    );
+  }
+
+  /// Calls API to mark item as not received, then updates state and shows success.
+  Future<void> _performMarkAsNotReceived(WishlistItem item) async {
+    try {
+      final updatedItemData =
+          await _wishlistRepository.markItemAsNotReceived(item.id);
+      final updatedItem = WishlistItem.fromJson(updatedItemData);
+
+      if (!mounted) return;
+
+      setState(() {
+        _currentItem = updatedItem;
+      });
+      await _fetchItemDetails();
+
+      if (!mounted) return;
+      final loc = Provider.of<LocalizationService>(context, listen: false);
+      UnifiedSnackbar.showSuccess(
+        context: context,
+        message: loc.translate('messages.itemMarkedNotReceived') ?? 'Status updated. The buyer will be notified.',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final loc = Provider.of<LocalizationService>(context, listen: false);
+      UnifiedSnackbar.showError(
+        context: context,
+        message: loc.translate('dialogs.failedToUpdateStatus') ??
+            'Failed to update status. Please try again.',
+      );
+    }
   }
 
   /// Determine if bottom action bar should be shown
@@ -791,31 +942,14 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     final isOwner = _isOwner();
     final isReserved = item.isReservedValue;
     final isReceived = item.isReceived;
-    final isReservedForOwner = isOwner && isReserved && !isReceived;
+    final isPurchased = item.isPurchasedValue;
+    // Show "Reserved by friend" only when reserved and NOT purchased (purchased replaces reservation in the UI)
+    final isReservedForOwner = isOwner && isReserved && !isReceived && !isPurchased;
     final priorityColor = _getPriorityColor(item.priority);
 
     Widget badge;
-    if (isReservedForOwner) {
-      badge = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFF6A1B9A).withOpacity(0.12),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF6A1B9A).withOpacity(0.3), width: 1.5),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.visibility_off, size: 16, color: Color(0xFF6A1B9A)),
-            const SizedBox(width: 8),
-            Text(
-              localization.translate('details.reservedByFriend'),
-              style: const TextStyle(color: Color(0xFF6A1B9A), fontSize: 13, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-      );
-    } else if (isReceived) {
+    if (isReceived) {
+      // Received (Granted) – highest state
       badge = Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
@@ -835,7 +969,29 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           ],
         ),
       );
+    } else if (isReservedForOwner) {
+      // Reserved by a friend (owner view) – only when not purchased
+      badge = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF6A1B9A).withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF6A1B9A).withOpacity(0.3), width: 1.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.visibility_off, size: 16, color: Color(0xFF6A1B9A)),
+            const SizedBox(width: 8),
+            Text(
+              localization.translate('details.reservedByFriend'),
+              style: const TextStyle(color: Color(0xFF6A1B9A), fontSize: 13, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      );
     } else {
+      // Priority (available, etc.)
       badge = Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
@@ -856,17 +1012,25 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         ),
       );
     }
-    return Row(
+    // When purchased, hide top status entirely – only show date; status is in bottom action bar
+    if (isPurchased) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Text(
+          '${localization.translate('details.addedOn')} $dateText',
+          style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 12),
+        ),
+      );
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Flexible(child: badge),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            '${localization.translate('details.addedOn')} $dateText',
-            style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 12),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+        badge,
+        const SizedBox(height: 8),
+        Text(
+          '${localization.translate('details.addedOn')} $dateText',
+          style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary, fontSize: 12),
         ),
       ],
     );
@@ -898,7 +1062,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     final isReceived = item.isReceived;
     
     if (isReceived) {
-      return loc.translate('ui.gifted') ?? 'Gifted';
+      return loc.translate('details.gifted') ?? 'Granted';
     } else if (isPurchased && !isReceived) {
       return loc.translate('ui.purchased') ?? 'Purchased';
     } else if (isReserved) {
@@ -932,7 +1096,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     if (isReceived) {
       return AppColors.success; // Green for Gifted
     } else if (isPurchased && !isReceived) {
-      return AppColors.warning; // Orange/Yellow for Purchased
+      return AppColors.purchased; // Light blue theme for Purchased
     } else if (isReserved) {
       return AppColors.warning; // Orange/Yellow for Reserved
     } else {
@@ -974,10 +1138,12 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
   /// Opens the reservation deadline bottom sheet in extension mode.
   /// On confirm, calls the API with the selected [reservedUntil] date.
+  /// Pre-selects the item's current [reservedUntil] in the date picker.
   Future<void> _openExtendReservationSheet(WishlistItem item) async {
     await ReservationDeadlineBottomSheet.show(
       context,
       isExtension: true,
+      initialDeadline: item.reservedUntil,
       onConfirm: (DateTime? reservedUntil) {
         if (reservedUntil != null) {
           _extendReservation(item, reservedUntil);

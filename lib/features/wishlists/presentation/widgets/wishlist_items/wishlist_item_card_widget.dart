@@ -538,7 +538,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                               ],
                             )
                           else if (isReceived)
-                            // Gifted Badge - Item is received
+                            // Gifted/Granted Badge - Item is received (Mission Accomplished)
                             Row(
                               children: [
                                 Icon(
@@ -548,7 +548,14 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  Provider.of<LocalizationService>(context, listen: false).translate('ui.gifted') ?? 'Gifted',
+                                  '🎁',
+                                  style: AppStyles.caption.copyWith(
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  Provider.of<LocalizationService>(context, listen: false).translate('details.gifted') ?? 'Granted',
                                   style: AppStyles.caption.copyWith(
                                     color: AppColors.success,
                                     fontWeight: FontWeight.w600,
@@ -795,6 +802,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
     await ReservationDeadlineBottomSheet.show(
       context,
       isExtension: true,
+      initialDeadline: item.reservedUntil,
       onConfirm: (DateTime? date) {
         if (date != null) onExtend?.call(item, date);
       },
@@ -1244,12 +1252,14 @@ class _ModernWishlistItemContent extends StatelessWidget {
                               children: Directionality.of(context) == TextDirection.rtl
                                   ? [
                                       Text(
-                                        Provider.of<LocalizationService>(context, listen: false).translate('ui.gifted') ?? 'Gifted',
+                                        Provider.of<LocalizationService>(context, listen: false).translate('details.gifted') ?? 'Granted',
                                         style: AppStyles.caption.copyWith(
                                           color: AppColors.success,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
+                                      const SizedBox(width: 4),
+                                      Text('🎁', style: AppStyles.caption.copyWith(fontSize: 12)),
                                       const SizedBox(width: 6),
                                       const Icon(
                                         Icons.check_circle,
@@ -1264,8 +1274,10 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                         color: AppColors.success,
                                       ),
                                       const SizedBox(width: 6),
+                                      Text('🎁', style: AppStyles.caption.copyWith(fontSize: 12)),
+                                      const SizedBox(width: 4),
                                       Text(
-                                        Provider.of<LocalizationService>(context, listen: false).translate('ui.gifted') ?? 'Gifted',
+                                        Provider.of<LocalizationService>(context, listen: false).translate('details.gifted') ?? 'Granted',
                                         style: AppStyles.caption.copyWith(
                                           color: AppColors.success,
                                           fontWeight: FontWeight.w600,

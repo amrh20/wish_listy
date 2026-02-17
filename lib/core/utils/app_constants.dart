@@ -157,6 +157,9 @@ class AppConstants {
   static const String loadingAnimationPath = 'assets/animations/loading.json';
   static const String successAnimationPath = 'assets/animations/success.json';
   static const String errorAnimationPath = 'assets/animations/error.json';
+  /// Full-screen confetti for "Mission Accomplished" (Gifted) celebration
+  static const String confettiAnimationUrl =
+      'https://assets10.lottiefiles.com/packages/lf20_touohxv0.json';
 
   // App Store Links
   static const String iosAppStoreUrl =

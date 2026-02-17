@@ -12,6 +12,7 @@ class ItemActionBarWidget extends StatelessWidget {
   final bool isOwner;
   final bool isReservedByMe;
   final VoidCallback? onMarkReceived;
+  final VoidCallback? onMarkAsNotReceived;
   final VoidCallback? onCancelReservation;
   final VoidCallback? onReserve;
   final VoidCallback? onExtendReservation;
@@ -23,6 +24,7 @@ class ItemActionBarWidget extends StatelessWidget {
     required this.isOwner,
     required this.isReservedByMe,
     this.onMarkReceived,
+    this.onMarkAsNotReceived,
     this.onCancelReservation,
     this.onReserve,
     this.onExtendReservation,
@@ -44,7 +46,7 @@ class ItemActionBarWidget extends StatelessWidget {
       }
       // Show "Mark as Received" if item is Reserved or Purchased
       if (isReserved || isPurchased) {
-        return _buildOwnerMarkReceivedBar(context, localization);
+        return _buildOwnerMarkReceivedBar(context, localization, isPurchased);
       }
       // Item is Available - owner sees no action button (Edit is in top bar)
       return const SizedBox.shrink();
@@ -83,10 +85,10 @@ class ItemActionBarWidget extends StatelessWidget {
     return _buildCelebratoryBanner(context, localization);
   }
 
-  /// Celebratory banner when item is gifted/received (non-clickable, gradient, bounce).
+  /// Celebratory banner when item is gifted/received (Mission Accomplished).
   Widget _buildCelebratoryBanner(BuildContext context, LocalizationService localization) {
-    const softGreen = Color(0xFF4CAF50);
-    const softGold = Color(0xFFFFD54F);
+    const mintGreen = Color(0xFF98D4BB);
+    const softGold = Color(0xFFE8D5A3);
     return Container(
       padding: const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 12),
       decoration: BoxDecoration(
@@ -104,8 +106,8 @@ class ItemActionBarWidget extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                softGreen.withOpacity(0.85),
-                softGold.withOpacity(0.75),
+                mintGreen,
+                softGold,
               ],
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
@@ -113,7 +115,7 @@ class ItemActionBarWidget extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: softGreen.withOpacity(0.25),
+                color: mintGreen.withOpacity(0.35),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -121,12 +123,12 @@ class ItemActionBarWidget extends StatelessWidget {
           ),
           child: Center(
             child: Text(
-              localization.translate('details.wishGrantedBanner') ?? 'This wish has been granted! 🎉',
+              localization.translate('details.wishGrantedBanner') ?? 'Woot woot! This wish just came true! 🎉',
               textAlign: TextAlign.center,
               style: AppStyles.bodyLarge.copyWith(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                fontSize: 18,
               ),
             ),
           ),
@@ -461,9 +463,16 @@ class ItemActionBarWidget extends StatelessWidget {
     );
   }
 
-  /// Build "Mark as Received" button for owner view
-  /// Matches the style from wishlist_item_card_widget.dart
-  Widget _buildOwnerMarkReceivedBar(BuildContext context, LocalizationService localization) {
+  /// Build "Mark as Received" button for owner view.
+  /// When item is purchased but not received, show a subtle "I didn't get this yet" link.
+  Widget _buildOwnerMarkReceivedBar(
+    BuildContext context,
+    LocalizationService localization, [
+    bool isPurchased = false,
+  ]) {
+    final showNotReceivedLink =
+        isPurchased && !item.isReceived && onMarkAsNotReceived != null;
+
     return Container(
       padding: const EdgeInsets.only(
         left: 20,
@@ -484,10 +493,13 @@ class ItemActionBarWidget extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          width: double.infinity,
-          child: onMarkReceived != null
-              ? ElevatedButton.icon(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (onMarkReceived != null)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
                   onPressed: onMarkReceived,
                   icon: const Icon(
                     Icons.check_circle_outline,
@@ -510,8 +522,30 @@ class ItemActionBarWidget extends StatelessWidget {
                     ),
                     elevation: 0,
                   ),
-                )
-              : const SizedBox.shrink(),
+                ),
+              ),
+            if (showNotReceivedLink) ...[
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: onMarkAsNotReceived,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.textSecondary,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  localization.translate('details.notReceivedYetButton') ??
+                      'I didn\'t get this yet',
+                  style: AppStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    decoration: TextDecoration.underline,
+                    decorationColor: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

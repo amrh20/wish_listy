@@ -281,9 +281,13 @@ class _VerificationScreenState extends State<VerificationScreen>
         // Token might come from verifySuccess call instead
         if (token != null && token.isNotEmpty) {
           
-          // Save token to SharedPreferences
+          // Save token and refresh token to SharedPreferences
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('auth_token', token);
+          final refreshToken = verifySuccessResponse?['refreshToken'] ?? verifySuccessResponse?['refresh_token'] ?? response['refreshToken'] ?? response['refresh_token'];
+          if (refreshToken != null) {
+            await prefs.setString('refresh_token', refreshToken.toString());
+          }
           await prefs.setBool('is_logged_in', true);
           
           // Extract and save user data
