@@ -25,9 +25,11 @@ class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
   /// Helper to switch tabs from child screens while keeping the bottom nav.
-  static void switchToTab(BuildContext context, int index, {int? eventsTabIndex}) {
+  /// [returnToTabOnBack] When set (e.g. when opening Friends from "Browse Friends" in Wishlists),
+  /// the system back button will switch to this tab instead of exiting the app.
+  static void switchToTab(BuildContext context, int index, {int? eventsTabIndex, int? returnToTabOnBack}) {
     final state = context.findAncestorStateOfType<_MainNavigationState>();
-    state?._onTabTapped(index, eventsTabIndex: eventsTabIndex);
+    state?._onTabTapped(index, eventsTabIndex: eventsTabIndex, returnToTabOnBack: returnToTabOnBack);
   }
 
   @override
@@ -37,6 +39,9 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation>
     with TickerProviderStateMixin, RouteAware {
   int _currentIndex = 0;
+  /// When user opened Friends tab from another tab (e.g. "Browse Friends" from Wishlists),
+  /// back button should return to this tab index instead of exiting the app.
+  int? _returnToTabOnBack;
   late AnimationController _fabAnimationController;
   final PageStorageBucket _pageStorageBucket = PageStorageBucket();
   final GlobalKey<MyWishlistsScreenState> _wishlistsKey = GlobalKey();
@@ -110,8 +115,15 @@ class _MainNavigationState extends State<MainNavigation>
     });
   }
 
-  void _onTabTapped(int index, {int? eventsTabIndex}) {
+  void _onTabTapped(int index, {int? eventsTabIndex, int? returnToTabOnBack}) {
     final authService = Provider.of<AuthRepository>(context, listen: false);
+
+    // Remember which tab to return to when user presses back (e.g. from Friends back to Wishlists)
+    if (returnToTabOnBack != null) {
+      setState(() {
+        _returnToTabOnBack = returnToTabOnBack;
+      });
+    }
 
     // Check if guest user is trying to access restricted features
     if (authService.isGuest) {
@@ -162,6 +174,10 @@ class _MainNavigationState extends State<MainNavigation>
 
     setState(() {
       _currentIndex = index;
+      // Clear return target when user explicitly taps another tab (so back doesn't use stale value)
+      if (returnToTabOnBack == null) {
+        _returnToTabOnBack = null;
+      }
     });
 
     // Refresh newly selected tab content (important for IndexedStack tabs)
@@ -271,25 +287,42 @@ class _MainNavigationState extends State<MainNavigation>
             ),
           );
         } else {
+          final canPop = !(_currentIndex == 3 && _returnToTabOnBack != null);
           return ValueListenableBuilder<bool>(
             valueListenable: ApiService.isOffline,
             builder: (context, isOffline, _) {
-              return Scaffold(
-                backgroundColor: Colors.white,
-                extendBody: !isOffline,
-                body: PageStorage(
-                  bucket: _pageStorageBucket,
-                  child: IndexedStack(index: _currentIndex, children: _screens),
-                ),
-                bottomNavigationBar: isOffline
-                    ? null
-                    : Container(
-                        color: Colors.transparent,
-                        child: CustomBottomNavigation(
-                          currentIndex: _currentIndex,
-                          onTap: _onTabTapped,
+              return PopScope(
+                canPop: canPop,
+                onPopInvokedWithResult: (bool didPop, dynamic result) {
+                  if (didPop) return;
+                  if (_currentIndex == 3 && _returnToTabOnBack != null) {
+                    final returnTo = _returnToTabOnBack!;
+                    setState(() {
+                      _currentIndex = returnTo;
+                      _returnToTabOnBack = null;
+                    });
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _refreshTab(returnTo);
+                    });
+                  }
+                },
+                child: Scaffold(
+                  backgroundColor: Colors.white,
+                  extendBody: !isOffline,
+                  body: PageStorage(
+                    bucket: _pageStorageBucket,
+                    child: IndexedStack(index: _currentIndex, children: _screens),
+                  ),
+                  bottomNavigationBar: isOffline
+                      ? null
+                      : Container(
+                          color: Colors.transparent,
+                          child: CustomBottomNavigation(
+                            currentIndex: _currentIndex,
+                            onTap: _onTabTapped,
+                          ),
                         ),
-                      ),
+                ),
               );
             },
           );

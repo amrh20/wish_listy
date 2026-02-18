@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -40,7 +39,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   WishlistItem? _currentItem;
   bool _isLoading = true;
   bool _isExtendingReservation = false;
-  bool _hasCelebrated = false; // One-time confetti when item is gifted/received
   String? _errorMessage;
   String? _wishlistName; // Store wishlist name for navigation
   Map<String, dynamic>? _rawItemData; // keep raw API data (price/url/purchasedBy object)
@@ -276,6 +274,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       },
       child: Scaffold(
         backgroundColor: Colors.transparent,
+        extendBody: true,
         extendBodyBehindAppBar: true,
         appBar: _isLoading || _errorMessage != null || _currentItem == null
             ? null
@@ -404,56 +403,14 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                               ),
               ),
             ),
-            // One-time full-screen confetti only when item is Received (Gifted), not just Purchased
-            if (!_isLoading &&
-                _errorMessage == null &&
-                _currentItem != null &&
-                item.isReceived &&
-                !_hasCelebrated)
-              Positioned.fill(
-                child: IgnorePointer(
-                  ignoring: true,
-                  child: Lottie.network(
-                    AppConstants.confettiAnimationUrl,
-                    fit: BoxFit.cover,
-                    repeat: false,
-                    onLoaded: (composition) {
-                      final duration = composition.duration;
-                      Future.delayed(
-                        Duration(
-                          milliseconds: duration.inMilliseconds + 300,
-                        ),
-                        () {
-                          if (mounted) {
-                            setState(() => _hasCelebrated = true);
-                          }
-                        },
-                      );
-                    },
-                    errorBuilder: (_, __, ___) {
-                      if (mounted) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          setState(() => _hasCelebrated = true);
-                        });
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                ),
-              ),
+            // Confetti Lottie disabled: animation asset contained a trophy/cup graphic;
+            // user requested to remove the cup entirely from the screen.
           ],
         ),
       bottomNavigationBar: _shouldShowBottomActionBar(item)
-          ? Container(
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                border: Border(
-                  top: BorderSide(
-                    color: Theme.of(context).dividerColor.withOpacity(0.5),
-                    width: 1.0,
-                  ),
-                ),
-              ),
+          ? Material(
+              color: Colors.transparent,
+              elevation: 0.0,
               child: SafeArea(
                 top: false,
                 child: Padding(
@@ -560,6 +517,14 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   const SizedBox(height: 20),
                 ],
                 if (item.isReceived) ...[
+                  Center(
+                    child: Icon(
+                      Icons.celebration,
+                      color: const Color(0xFF2E7D32),
+                      size: 48,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   _buildGiftedMessageCard(context),
                   const SizedBox(height: 20),
                 ],
@@ -663,37 +628,47 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             ),
           ),
         ),
-        Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: accentColor.withOpacity(0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isCelebration)
-                  const Text('🎁', style: TextStyle(fontSize: 28))
-                else
-                  Icon(Icons.schedule_rounded, color: accentColor, size: 28),
-                const SizedBox(width: 10),
-                Text(
-                  label,
-                  style: AppStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: accentColor,
-                    fontSize: 18,
+        Positioned.fill(
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.95),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: accentColor.withOpacity(0.3),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-              ],
+                ],
+              ),
+              child: isCelebration
+                  ? Center(
+                      child: Text(
+                        label,
+                        style: AppStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: accentColor,
+                          fontSize: 18,
+                        ),
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.schedule_rounded, color: accentColor, size: 28),
+                        const SizedBox(width: 10),
+                        Text(
+                          label,
+                          style: AppStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: accentColor,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ],
+                    ),
             ),
           ),
         ),
@@ -709,19 +684,11 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFFE8F5E9).withOpacity(0.95),
-            const Color(0xFFFFF8E1).withOpacity(0.9),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.green.withOpacity(0.06),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF81C784).withOpacity(0.6), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4CAF50).withOpacity(0.12),
+            color: Colors.black.withOpacity(0.06),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -730,7 +697,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.card_giftcard_rounded, color: const Color(0xFF2E7D32), size: 22),
+          Icon(Icons.check_circle_outline, color: const Color(0xFF2E7D32), size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -949,22 +916,21 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
     Widget badge;
     if (isReceived) {
-      // Received (Granted) – highest state
+      // Received (Granted) – elegant chip, no border, subtle green tint
       badge = Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.success.withOpacity(0.12),
+          color: AppColors.success.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.success.withOpacity(0.3), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle, size: 14, color: AppColors.success),
+            const Icon(Icons.check_circle_outline, size: 14, color: AppColors.success),
             const SizedBox(width: 6),
             Text(
               localization.translate('details.gifted'),
-              style: const TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w700),
+              style: const TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w600),
             ),
           ],
         ),

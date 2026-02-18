@@ -145,23 +145,14 @@ class ItemActionBarWidget extends StatelessWidget {
         top: 12,
         bottom: 12,
       ),
-      decoration: BoxDecoration(
-        color: _getBarSurfaceColor(context),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
+      color: _getBarSurfaceColor(context),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.warning.withOpacity(0.1),
+          color: AppColors.warning.withOpacity(0.06),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: AppColors.warning.withOpacity(0.3),
+            color: AppColors.warning.withOpacity(0.25),
             width: 1,
           ),
         ),
@@ -207,7 +198,7 @@ class ItemActionBarWidget extends StatelessWidget {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -237,28 +228,14 @@ class ItemActionBarWidget extends StatelessWidget {
         top: 12,
         bottom: 12,
       ),
-      decoration: BoxDecoration(
-        color: _getBarSurfaceColor(context),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.black.withOpacity(0.08),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
+      color: _getBarSurfaceColor(context),
       child: Builder(
         builder: (context) {
           final primary = Theme.of(context).colorScheme.primary;
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.transparent,
+              color: _getBarSurfaceColor(context),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Column(
@@ -269,7 +246,7 @@ class ItemActionBarWidget extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.check_circle, color: primary, size: 24),
+                    Icon(Icons.check_circle, color: AppColors.primaryDark, size: 24),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -279,7 +256,7 @@ class ItemActionBarWidget extends StatelessWidget {
                           Text(
                             localization.translate('details.reservedByYou') ?? 'Reserved by You',
                             style: AppStyles.bodyMedium.copyWith(
-                              color: primary,
+                              color: AppColors.primaryDark,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -288,7 +265,7 @@ class ItemActionBarWidget extends StatelessWidget {
                             Text(
                               expiryText,
                               style: AppStyles.bodySmall.copyWith(
-                                color: primary.withOpacity(0.85),
+                                color: AppColors.textSecondary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -300,7 +277,7 @@ class ItemActionBarWidget extends StatelessWidget {
                 ),
                 // Divider
                 const SizedBox(height: 12),
-                // Bottom: Action buttons (each on its own row)
+                // Bottom: Action buttons (transparent bg for gradient)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
@@ -309,9 +286,10 @@ class ItemActionBarWidget extends StatelessWidget {
                       OutlinedButton(
                         onPressed: onCancelReservation,
                         style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
                           foregroundColor: AppColors.error,
-                          side: const BorderSide(color: AppColors.error),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          side: BorderSide(color: AppColors.error, width: 1.5),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -336,15 +314,17 @@ class ItemActionBarWidget extends StatelessWidget {
                               ? null
                               : onExtendReservation,
                           style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
                             foregroundColor: maxExtensionsReached
                                 ? AppColors.textTertiary
-                                : AppColors.primary,
+                                : AppColors.primaryDark,
                             side: BorderSide(
+                              width: 1.5,
                               color: maxExtensionsReached
                                   ? AppColors.textTertiary
-                                  : AppColors.primary,
+                                  : AppColors.primaryDark,
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -364,7 +344,7 @@ class ItemActionBarWidget extends StatelessWidget {
                                     fontSize: 12,
                                     color: maxExtensionsReached
                                         ? AppColors.textTertiary
-                                        : null,
+                                        : AppColors.primaryDark,
                                   ),
                                 ),
                         ),
@@ -387,35 +367,26 @@ class ItemActionBarWidget extends StatelessWidget {
         top: 12,
         bottom: 12,
       ),
-      decoration: BoxDecoration(
-        color: _getBarSurfaceColor(context),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
+      color: _getBarSurfaceColor(context),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.transparent,
+          color: _getBarSurfaceColor(context),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: Colors.grey.shade300,
+            color: AppColors.primary.withOpacity(0.25),
             width: 1,
           ),
         ),
         child: Row(
           children: [
-            Icon(Icons.lock_outline, color: Colors.grey.shade600, size: 24),
+            Icon(Icons.lock_outline, color: AppColors.primaryDark, size: 24),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 localization.translate('details.alreadyReservedByFriend'),
                 style: AppStyles.bodyMedium.copyWith(
-                  color: Colors.grey.shade700,
+                  color: AppColors.textSecondary,
                   fontWeight: FontWeight.w600,
                   fontStyle: FontStyle.italic,
                 ),
@@ -435,17 +406,7 @@ class ItemActionBarWidget extends StatelessWidget {
         top: 16,
         bottom: 16,
       ),
-      decoration: BoxDecoration(
-        color: _getBarSurfaceColor(context),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
+      color: _getBarSurfaceColor(context),
       child: SafeArea(
         top: false,
         child: SizedBox(
@@ -480,17 +441,7 @@ class ItemActionBarWidget extends StatelessWidget {
         top: 16,
         bottom: 16,
       ),
-      decoration: BoxDecoration(
-        color: _getBarSurfaceColor(context),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-            spreadRadius: 0,
-          ),
-        ],
-      ),
+      color: _getBarSurfaceColor(context),
       child: SafeArea(
         top: false,
         child: Column(
@@ -516,7 +467,7 @@ class ItemActionBarWidget extends StatelessWidget {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

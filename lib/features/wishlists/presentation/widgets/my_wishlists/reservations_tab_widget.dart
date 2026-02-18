@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
@@ -28,6 +30,7 @@ class ReservationsTabWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context);
     return RefreshIndicator(
       onRefresh: () async => onRefresh(),
       color: AppColors.primary,
@@ -62,7 +65,7 @@ class ReservationsTabWidget extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  "You haven't reserved any gifts for your friends yet",
+                                  localization.translate('cards.noReservationsYet'),
                                   style: AppStyles.headingMedium.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: AppColors.textPrimary,
@@ -71,10 +74,10 @@ class ReservationsTabWidget extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 24),
                                 CustomButton(
-                                  text: 'Browse Friends',
+                                  text: localization.translate('cards.browseFriends'),
                                   onPressed: () {
-                                    // Navigate to Friends tab (index 3 in MainNavigation)
-                                    MainNavigation.switchToTab(context, 3);
+                                    // Switch to Friends tab; back button will return to Wishlists (index 1)
+                                    MainNavigation.switchToTab(context, 3, returnToTabOnBack: 1);
                                   },
                                   icon: Icons.people_outlined,
                                   customColor: AppColors.primary,

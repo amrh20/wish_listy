@@ -35,6 +35,7 @@ class BiometricService {
   // Storage key prefixes - MUST be consistent across save and read operations
   // Keys are now dynamic based on user identifier (email or phone)
   static const String _tokenKeyPrefix = 'biometric_token_';
+  static const String _refreshTokenKeyPrefix = 'biometric_refresh_token_';
   static const String _enabledKeyPrefix = 'biometric_enabled_';
   static const String _userIdKeyPrefix = 'biometric_user_id_';
   static const String _userNameKeyPrefix = 'biometric_user_name_';
@@ -43,6 +44,12 @@ class BiometricService {
   String _getTokenKey(String identifier) {
     final sanitized = _sanitizeIdentifier(identifier);
     return '$_tokenKeyPrefix$sanitized';
+  }
+
+  /// Generate storage key for refresh token based on identifier
+  String _getRefreshTokenKey(String identifier) {
+    final sanitized = _sanitizeIdentifier(identifier);
+    return '$_refreshTokenKeyPrefix$sanitized';
   }
 
   /// Generate storage key for enabled flag based on identifier
@@ -180,17 +187,19 @@ class BiometricService {
     }
   }
 
-  /// Save authentication token securely after successful manual login
+  /// Save authentication tokens securely after successful manual login
   /// This should be called ONLY after a successful API login
   /// Returns true if token, flag, and user data were saved successfully
   ///
-  /// @param token The authentication token from the API
+  /// @param token The access token from the API
   /// @param identifier The user's email or phone number (will be sanitized)
+  /// @param refreshToken Optional refresh token; if provided, stored for use after biometric login
   /// @param userId Optional user ID to store for biometric login
   /// @param userName Optional user name to store for biometric login
   Future<bool> saveTokenSecurely(
     String token, {
     required String identifier,
+    String? refreshToken,
     String? userId,
     String? userName,
   }) async {
@@ -204,13 +213,18 @@ class BiometricService {
       }
 
       final tokenKey = _getTokenKey(identifier);
+      final refreshTokenKey = _getRefreshTokenKey(identifier);
       final enabledKey = _getEnabledKey(identifier);
       final userIdKey = _getUserIdKey(identifier);
       final userNameKey = _getUserNameKey(identifier);
-      final sanitized = _sanitizeIdentifier(identifier);
 
-      // Save token
+      // Save access token
       await _secureStorage.write(key: tokenKey, value: token);
+
+      // Save refresh token if provided (required for 401 interceptor to refresh after biometric login)
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        await _secureStorage.write(key: refreshTokenKey, value: refreshToken);
+      }
 
       // Save enabled flag
       await _secureStorage.write(key: enabledKey, value: 'true');
@@ -230,10 +244,6 @@ class BiometricService {
       final savedFlag = await _secureStorage.read(key: enabledKey);
 
       final success = savedToken == token && savedFlag == 'true';
-
-      if (success) {
-      } else {
-      }
 
       return success;
     } catch (e) {
@@ -293,40 +303,40 @@ class BiometricService {
     }
   }
 
-  /// Retrieve all stored credentials (token, userId, userName) for a specific identifier
-  /// Returns a map with 'token', 'userId', and 'userName' keys, or null if not found
-  /// 
+  /// Retrieve all stored credentials (token, refreshToken, userId, userName) for a specific identifier
+  /// Returns a map with 'token', 'refreshToken' (if stored), 'userId', and 'userName' keys, or null if not found
+  ///
   /// @param identifier The user's email or phone number
   Future<Map<String, String>?> getStoredCredentialsForIdentifier(String identifier) async {
     try {
       if (identifier.trim().isEmpty) {
         return null;
       }
-      
-      final sanitized = _sanitizeIdentifier(identifier);
-      
+
       // Check if biometric is enabled for this identifier
       final isEnabled = await isEnabledForIdentifier(identifier);
       if (!isEnabled) {
         return null;
       }
-      
+
       final tokenKey = _getTokenKey(identifier);
+      final refreshTokenKey = _getRefreshTokenKey(identifier);
       final userIdKey = _getUserIdKey(identifier);
       final userNameKey = _getUserNameKey(identifier);
-      
+
       // Retrieve all credentials
       final token = await _secureStorage.read(key: tokenKey);
+      final refreshToken = await _secureStorage.read(key: refreshTokenKey);
       final userId = await _secureStorage.read(key: userIdKey);
       final userName = await _secureStorage.read(key: userNameKey);
-      
+
       if (token == null || token.isEmpty) {
         return null;
       }
-      
-      
+
       return {
         'token': token,
+        if (refreshToken != null && refreshToken.isNotEmpty) 'refreshToken': refreshToken,
         if (userId != null && userId.isNotEmpty) 'userId': userId,
         if (userName != null && userName.isNotEmpty) 'userName': userName,
       };
@@ -384,12 +394,12 @@ class BiometricService {
       if (identifier.trim().isEmpty) {
         return;
       }
-      
+
       final tokenKey = _getTokenKey(identifier);
-      final sanitized = _sanitizeIdentifier(identifier);
-      
+      final refreshTokenKey = _getRefreshTokenKey(identifier);
+
       await _secureStorage.delete(key: tokenKey);
-      
+      await _secureStorage.delete(key: refreshTokenKey);
     } catch (e) {
     }
   }
@@ -401,29 +411,30 @@ class BiometricService {
       if (identifier.trim().isEmpty) {
         return;
       }
-      
+
       final tokenKey = _getTokenKey(identifier);
+      final refreshTokenKey = _getRefreshTokenKey(identifier);
       final enabledKey = _getEnabledKey(identifier);
       final userIdKey = _getUserIdKey(identifier);
       final userNameKey = _getUserNameKey(identifier);
-      final sanitized = _sanitizeIdentifier(identifier);
-      
+
       await _secureStorage.delete(key: tokenKey);
+      await _secureStorage.delete(key: refreshTokenKey);
       await _secureStorage.delete(key: enabledKey);
       await _secureStorage.delete(key: userIdKey);
       await _secureStorage.delete(key: userNameKey);
-      
     } catch (e) {
     }
   }
-  
+
   /// Delete ALL biometric data for all identifiers
   /// Use this for account deletion or complete reset
   Future<void> clearAllBiometricData() async {
     try {
       final allKeys = await _secureStorage.readAll();
       final biometricKeys = allKeys.keys.where(
-        (key) => key.startsWith(_tokenKeyPrefix) || 
+        (key) => key.startsWith(_tokenKeyPrefix) ||
+                 key.startsWith(_refreshTokenKeyPrefix) ||
                  key.startsWith(_enabledKeyPrefix) ||
                  key.startsWith(_userIdKeyPrefix) ||
                  key.startsWith(_userNameKeyPrefix),

@@ -151,6 +151,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                           if (value == null || value.isEmpty) {
                             return localization.translate('profile.newPasswordRequired');
                           }
+                          if (value == _currentPasswordController.text) {
+                            return localization.translate('profile.newPasswordSameAsCurrent');
+                          }
                           if (value.length < 6) {
                             return localization.translate('profile.passwordMinLength');
                           }

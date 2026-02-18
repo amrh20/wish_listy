@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -69,8 +71,10 @@ class EventTypeSelectionWidget extends StatelessWidget {
             builder: (context, constraints) {
               final itemWidth =
                   (constraints.maxWidth - 18) / 4; // 18 = 6*3 (spacing)
-              final itemHeight = itemWidth * 1.1; // Slightly taller than wide
-              final gridHeight = (itemHeight * 2) + 6; // 2 rows + spacing
+              // Use minimum height so content doesn't overflow on narrow screens (< 340px)
+              final minCellHeight = 54.0;
+              final itemHeight = math.max(itemWidth * 1.1, minCellHeight);
+              final gridHeight = (itemHeight * 2) + 6 + 4; // 2 rows + spacing + buffer
 
               return SizedBox(
                 height: gridHeight,

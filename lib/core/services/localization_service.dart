@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,12 +30,20 @@ class LocalizationService extends ChangeNotifier {
     await _loadTranslations();
   }
 
-  // Load saved language from SharedPreferences
+  // Load saved language: prefer saved preference, else device system language (first launch), else fallback to en.
   Future<void> _loadSavedLanguage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _currentLanguage = prefs.getString(_languageKey) ?? _defaultLanguage;
-      // Update AppStyles cache
+      final saved = prefs.getString(_languageKey);
+
+      if (saved != null && saved.isNotEmpty && isLanguageSupported(saved)) {
+        _currentLanguage = saved;
+      } else {
+        // First launch or no valid saved preference: use device system language
+        final systemCode = ui.PlatformDispatcher.instance.locale.languageCode;
+        _currentLanguage = isLanguageSupported(systemCode) ? systemCode : _defaultLanguage;
+      }
+
       AppStyles.updateLanguageCache(_currentLanguage);
     } catch (e) {
       _currentLanguage = _defaultLanguage;

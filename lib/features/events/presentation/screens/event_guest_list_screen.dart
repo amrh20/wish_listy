@@ -282,17 +282,6 @@ class _EventGuestListScreenState extends State<EventGuestListScreen>
               ],
             ),
           ),
-
-          // Message Button
-          IconButton(
-            onPressed: () => _handleMessageFriend(friend),
-            icon: Icon(
-              Icons.message_outlined,
-              color: AppColors.primary,
-              size: 24,
-            ),
-            tooltip: 'Message',
-          ),
         ],
       ),
     );
@@ -423,18 +412,5 @@ class _EventGuestListScreenState extends State<EventGuestListScreen>
     }
   }
 
-  Future<void> _handleMessageFriend(InvitedFriend friend) async {
-    // TODO: Implement messaging functionality
-    // For now, we can show a snackbar or navigate to a messaging screen
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Messaging ${friend.fullName ?? friend.username ?? 'friend'}...'),
-          backgroundColor: AppColors.primary,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
-  }
 }
 

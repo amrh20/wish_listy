@@ -772,68 +772,80 @@ class _AddItemScreenState extends State<AddItemScreen>
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
               Icon(Icons.flag_outlined, color: AppColors.secondary, size: 20),
               const SizedBox(width: 8),
-              Text(
-                localization.translate('wishlists.selectPriority'),
-                style: AppStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Text(
+                  _priorityLabelOrFallback(localization, 'wishlists.selectPriority', 'How much do you want this?'),
+                  style: AppStyles.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            children: _priorities.map((priority) {
+          Column(
+            children: _priorities.asMap().entries.map((entry) {
+              final index = entry.key;
+              final priority = entry.value;
               final isSelected = _selectedPriority == priority;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedPriority = priority;
-                    });
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? _getPriorityColor(priority).withOpacity(0.1)
-                          : AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
+              final accentColor = _getPriorityColor(priority);
+              return Padding(
+                padding: EdgeInsets.only(bottom: index < _priorities.length - 1 ? 8 : 0),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        _selectedPriority = priority;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      decoration: BoxDecoration(
                         color: isSelected
-                            ? _getPriorityColor(priority)
-                            : AppColors.textTertiary.withOpacity(0.3),
-                        width: isSelected ? 2 : 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          _getPriorityIcon(priority),
+                            ? accentColor.withOpacity(0.08)
+                            : AppColors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
                           color: isSelected
-                              ? _getPriorityColor(priority)
-                              : AppColors.textTertiary,
-                          size: 20,
+                              ? accentColor
+                              : AppColors.textTertiary.withOpacity(0.3),
+                          width: isSelected ? 2 : 1,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _getPriorityDisplayName(priority, localization),
-                          style: AppStyles.caption.copyWith(
-                            color: isSelected
-                                ? _getPriorityColor(priority)
-                                : AppColors.textTertiary,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _getPriorityIcon(priority),
+                            color: isSelected ? accentColor : AppColors.textTertiary,
+                            size: 22,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _getPriorityDisplayName(priority, localization),
+                              style: AppStyles.bodyMedium.copyWith(
+                                color: isSelected ? accentColor : AppColors.textPrimary,
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                          if (isSelected)
+                            Icon(
+                              Icons.check_circle_rounded,
+                              color: accentColor,
+                              size: 24,
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -1150,19 +1162,24 @@ class _AddItemScreenState extends State<AddItemScreen>
     }
   }
 
+  String _priorityLabelOrFallback(LocalizationService loc, String key, String fallback) {
+    final value = loc.translate(key);
+    return value == key ? fallback : value;
+  }
+
   String _getPriorityDisplayName(
     String priority,
     LocalizationService localization,
   ) {
     switch (priority) {
       case 'low':
-        return localization.translate('wishlists.low');
+        return _priorityLabelOrFallback(localization, 'wishlists.low', 'If possible 🤷‍♂️');
       case 'medium':
-        return localization.translate('wishlists.medium');
+        return _priorityLabelOrFallback(localization, 'wishlists.medium', 'Would be nice 😊');
       case 'high':
-        return localization.translate('wishlists.high');
+        return _priorityLabelOrFallback(localization, 'wishlists.high', 'Must Have! 😍');
       case 'urgent':
-        return localization.translate('wishlists.urgent');
+        return _priorityLabelOrFallback(localization, 'wishlists.urgent', 'Must Have! 😍');
       default:
         return priority;
     }

@@ -407,34 +407,38 @@ class EventsScreenState extends State<EventsScreen>
       _ => Icons.event_busy_rounded,
     };
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.06),
-              shape: BoxShape.circle,
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.06),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 30,
+                color: AppColors.textTertiary,
+              ),
             ),
-            child: Icon(
-              icon,
-              size: 30,
-              color: AppColors.textTertiary,
+            const SizedBox(height: 14),
+            Text(
+              title,
+              style: AppStyles.bodyLarge.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            title,
-            style: AppStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

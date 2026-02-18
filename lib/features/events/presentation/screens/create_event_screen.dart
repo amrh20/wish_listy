@@ -39,6 +39,27 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   bool _isLoading = false;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
+
+  /// Default date/time for new events (today at end of day). If that is already in the past, use tomorrow. Edit mode overwrites via _populateFormFromEvent.
+  static DateTime get _defaultDate {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  static TimeOfDay get _defaultTime => const TimeOfDay(hour: 23, minute: 59);
+
+  /// Applies default date/time, ensuring the combined datetime is not in the past.
+  void _applyDefaultDateAndTime() {
+    final today = _defaultDate;
+    final endOfDay = DateTime(today.year, today.month, today.day, 23, 59);
+    if (endOfDay.isBefore(DateTime.now())) {
+      _selectedDate = today.add(const Duration(days: 1));
+      _selectedTime = _defaultTime;
+    } else {
+      _selectedDate = today;
+      _selectedTime = _defaultTime;
+    }
+  }
   String _selectedEventType = 'birthday';
   String? _wishlistOption = 'none'; // 'link', 'none' (removed 'create' option)
   String? _linkedWishlistId;
@@ -123,6 +144,8 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   @override
   void initState() {
     super.initState();
+    // Default date/time for new events (today at end of day). Edit mode overwrites in _handleRouteArguments.
+    _applyDefaultDateAndTime();
     _initializeAnimations();
     _startAnimations();
     _handleRouteArguments();

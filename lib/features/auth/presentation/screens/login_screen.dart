@@ -294,9 +294,9 @@ class _LoginScreenState extends State<LoginScreen>
 
       if (credentials != null && credentials['token'] != null && mounted) {
         final token = credentials['token']!;
+        final refreshToken = credentials['refreshToken'];
         final userId = credentials['userId'];
         final userName = credentials['userName'];
-        
 
         // Token retrieved successfully, proceed with login
         final authService = Provider.of<AuthRepository>(context, listen: false);
@@ -305,10 +305,13 @@ class _LoginScreenState extends State<LoginScreen>
         // Set token in API service
         apiService.setAuthToken(token);
 
-        // Populate SharedPreferences with retrieved credentials
+        // Populate SharedPreferences with BOTH access and refresh tokens so 401 interceptor can refresh
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('is_logged_in', true);
         await prefs.setString('auth_token', token);
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          await prefs.setString('refresh_token', refreshToken);
+        }
         
         // Use stored userId/userName if available, otherwise try SharedPreferences
         final finalUserId = userId ?? prefs.getString('user_id');
@@ -1950,17 +1953,19 @@ class _LoginScreenState extends State<LoginScreen>
                               return;
                             }
 
-                            // Get user ID and Name from SharedPreferences if not provided
+                            // Get user ID, Name, and refresh token from SharedPreferences if not provided
                             final prefs = await SharedPreferences.getInstance();
                             final finalUserId = userId ?? prefs.getString('user_id');
                             final finalUserName = userName ?? prefs.getString('user_name');
+                            final refreshToken = prefs.getString('refresh_token');
 
-                            // Save token and user data to secure storage with THIS account's identifier
-                            // This creates a per-account biometric profile
+                            // Save access token, refresh token, and user data to secure storage with THIS account's identifier
+                            // This creates a per-account biometric profile; refresh token is needed for 401 interceptor
                             final success = await biometricService
                                 .saveTokenSecurely(
                               token,
                               identifier: identifier,
+                              refreshToken: refreshToken,
                               userId: finalUserId,
                               userName: finalUserName,
                             );
