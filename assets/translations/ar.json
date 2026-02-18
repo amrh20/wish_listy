@@ -61,6 +61,15 @@
     "selectLanguage": "اختار اللغة",
     "legalInformation": "المعلومات القانونية"
   },
+  "app_update": {
+    "forceTitle": "يُطلب تحديث التطبيق",
+    "forceMessage": "نسخة جديدة من WishListy مطلوبة للمتابعة.",
+    "flexibleTitle": "تحديث متاح",
+    "flexibleMessage": "نسخة جديدة من WishListy متاحة مع تحسينات.",
+    "updateNow": "حدّث الآن",
+    "update": "حدّث",
+    "later": "لاحقاً"
+  },
   "navigation": {
     "home": "الرئيسية",
     "wishlist": "الأمنيات",
