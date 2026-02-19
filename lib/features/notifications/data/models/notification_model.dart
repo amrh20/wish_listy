@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:wish_listy/core/services/localization_service.dart';
+
 class AppNotification {
   final String id;
   final String userId;
@@ -431,6 +433,64 @@ extension NotificationTypeExtension on NotificationType {
         return '🔔';
       case NotificationType.general:
         return '🔔';
+    }
+  }
+}
+
+/// Extension to get localized notification titles based on [NotificationType].
+/// Do not use the backend title for display; use this instead.
+extension AppNotificationLocalization on AppNotification {
+  /// Returns a localized title for this notification based on [type].
+  /// Uses [LocalizationService] for translations. Falls back to backend title if key is missing.
+  String getLocalizedTitle(LocalizationService localization) {
+    // Distinguish item_received and item_not_received when type is itemPurchased
+    if (type == NotificationType.itemPurchased) {
+      final dataType = (data?['type'] ?? data?['notificationType'])
+          ?.toString()
+          .toLowerCase();
+      if (dataType == 'item_received') {
+        return localization.translate('notifications.item_received');
+      }
+      if (dataType == 'item_not_received') {
+        return localization.translate('notifications.item_not_received');
+      }
+    }
+
+    final key = _typeToTranslationKey(type);
+    final translated = localization.translate(key);
+    return translated != key ? translated : title;
+  }
+
+  static String _typeToTranslationKey(NotificationType type) {
+    switch (type) {
+      case NotificationType.friendRequest:
+        return 'notifications.friend_request';
+      case NotificationType.friendRequestAccepted:
+        return 'notifications.friend_request_accepted';
+      case NotificationType.friendRequestRejected:
+        return 'notifications.friend_request_rejected';
+      case NotificationType.eventInvitation:
+        return 'notifications.event_invite';
+      case NotificationType.eventReminder:
+        return 'notifications.event_reminder';
+      case NotificationType.eventUpdate:
+        return 'notifications.event_update';
+      case NotificationType.eventResponse:
+        return 'notifications.event_response';
+      case NotificationType.itemPurchased:
+        return 'notifications.item_purchased';
+      case NotificationType.itemReserved:
+        return 'notifications.item_reserved';
+      case NotificationType.itemUnreserved:
+        return 'notifications.item_unreserved';
+      case NotificationType.wishlistShared:
+        return 'notifications.wishlist_shared';
+      case NotificationType.reservationExpired:
+        return 'notifications.reservation_expired';
+      case NotificationType.reservationReminder:
+        return 'notifications.reservation_reminder';
+      case NotificationType.general:
+        return 'notifications.general';
     }
   }
 }

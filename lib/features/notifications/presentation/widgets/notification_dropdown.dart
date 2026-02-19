@@ -741,45 +741,13 @@ class _NotificationItem extends StatelessWidget {
       );
     }
     
-    // Item reserved: use translated title and message
-    if (notification.type == NotificationType.itemReserved) {
-      final title = localization.translate('notifications.itemReservedTitle') ?? notification.title;
-      final message = localization.translate('notifications.someoneReservedGiftForYou') ?? notification.message;
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: AppStyles.bodySmall.copyWith(
-              fontWeight: FontWeight.w600,
-              color: _getTitleColor(notification.type, data: notification.data),
-              fontFamily: 'Alexandria',
-              fontSize: 13,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            message,
-            style: AppStyles.caption.copyWith(
-              color: AppColors.textSecondary,
-              fontFamily: 'Alexandria',
-              fontSize: 12,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      );
-    }
-    
-    // Fallback: show title and message
+    // Show localized title and backend message for all types
+    final localizedTitle = notification.getLocalizedTitle(localization);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          notification.title,
+          localizedTitle,
           style: AppStyles.bodySmall.copyWith(
             fontWeight: FontWeight.w600,
             color: _getTitleColor(notification.type, data: notification.data),

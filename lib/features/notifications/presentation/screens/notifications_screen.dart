@@ -303,12 +303,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     return Builder(
       builder: (context) {
         final localization = Provider.of<LocalizationService>(context, listen: false);
-        final displayTitle = notification.type == NotificationType.itemReserved
-            ? (localization.translate('notifications.itemReservedTitle') ?? notification.title)
-            : notification.title;
-        final displayMessage = notification.type == NotificationType.itemReserved
-            ? (localization.translate('notifications.someoneReservedGiftForYou') ?? notification.message)
-            : notification.message;
+        final displayTitle = notification.getLocalizedTitle(localization);
+        final displayMessage = notification.message;
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
