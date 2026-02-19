@@ -53,6 +53,8 @@ class _LoginScreenState extends State<LoginScreen>
   _lastCheckedIdentifier; // Track last identifier to prevent duplicate auto-triggers
   bool _isPhoneMode = false;
   bool _hasManuallySelectedCountry = false;
+  bool _usernameHasText = false;
+  String? _usernameErrorText;
   late Country _selectedCountry;
 
   @override
@@ -64,6 +66,7 @@ class _LoginScreenState extends State<LoginScreen>
     // Add listener to email field for dynamic biometric icon
     _usernameController.addListener(_onIdentifierChanged);
     _usernameController.addListener(_detectInputMode);
+    _usernameController.addListener(_onUsernameTextChangedForClearButton);
     _selectedCountry = Country.parse('EG');
 
     // Use addPostFrameCallback to ensure widget is fully built before checking biometrics
@@ -97,6 +100,17 @@ class _LoginScreenState extends State<LoginScreen>
     // Check if biometric is available and enabled for this specific identifier asynchronously
     if (_isBiometricAvailable) {
       _checkBiometricForIdentifier(identifier);
+    }
+  }
+
+  /// Rebuilds when username text becomes empty/non-empty so the Clear button
+  /// visibility updates.
+  void _onUsernameTextChangedForClearButton() {
+    if (!mounted) return;
+    final hasText = _usernameController.text.isNotEmpty;
+    if (hasText != _usernameHasText) {
+      _usernameHasText = hasText;
+      setState(() {});
     }
   }
 
@@ -474,7 +488,9 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _animationController.dispose();
     _staggerAnimationController.dispose();
+    _usernameController.removeListener(_onIdentifierChanged);
     _usernameController.removeListener(_detectInputMode);
+    _usernameController.removeListener(_onUsernameTextChangedForClearButton);
     _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -777,7 +793,10 @@ class _LoginScreenState extends State<LoginScreen>
                   // Content
                   SafeArea(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 24,
+                      ),
                       child: AnimatedBuilder(
                         animation: _animationController,
                         builder: (context, child) {
@@ -1009,7 +1028,7 @@ class _LoginScreenState extends State<LoginScreen>
                                         ),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 24,
+                                            horizontal: 16,
                                             vertical: 32,
                                           ),
                                           decoration: BoxDecoration(
@@ -1537,6 +1556,9 @@ class _LoginScreenState extends State<LoginScreen>
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
+    void Function(String)? onChanged,
+    void Function(String?)? onErrorChanged,
+    bool renderErrorExternally = false,
   }) {
     return _GlassInputWrapper(
       controller: controller,
@@ -1547,28 +1569,54 @@ class _LoginScreenState extends State<LoginScreen>
       obscureText: obscureText,
       keyboardType: keyboardType,
       validator: validator,
+      onChanged: onChanged,
+      onErrorChanged: onErrorChanged,
+      renderErrorExternally: renderErrorExternally,
+    );
+  }
+
+  Widget _buildErrorRow(String message) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.error_outline, size: 16, color: AppColors.error),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              message,
+              style: AppStyles.caption.copyWith(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildUsernameField(LocalizationService localization) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Country Code Picker - animated show/hide
-          AnimatedSize(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
-          child: _isPhoneMode
-              ? Padding(
-                  padding: const EdgeInsetsDirectional.only(end: 12),
-                  child: _buildCountryCodeButton(),
-                )
-              : const SizedBox.shrink(),
-        ),
-        // Username Text Field
-        Expanded(
-          child: _buildGlassInputField(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Country Code Picker - animated show/hide
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                child: _isPhoneMode
+                    ? Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 12),
+                        child: _buildCountryCodeButton(),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              // Username Text Field
+              Expanded(
+                child: _buildGlassInputField(
             controller: _usernameController,
             label: localization.translate('auth.emailOrPhone'),
             hint: _isPhoneMode
@@ -1578,6 +1626,31 @@ class _LoginScreenState extends State<LoginScreen>
                 _isPhoneMode ? TextInputType.phone : TextInputType.text,
             prefixIcon:
                 _isPhoneMode ? Icons.phone_outlined : Icons.person_outline,
+            suffixIcon: _usernameHasText
+                ? IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _usernameController.clear();
+                        _usernameHasText = false;
+                        _isPhoneMode = false;
+                        _hasManuallySelectedCountry = false;
+                      });
+                    },
+                    icon: Icon(
+                      Icons.clear,
+                      size: 20,
+                      color: AppColors.textTertiary,
+                    ),
+                  )
+                : null,
+            onChanged: (value) {
+              if (value?.isEmpty ?? true) {
+                setState(() {
+                  _isPhoneMode = false;
+                  _hasManuallySelectedCountry = false;
+                });
+              }
+            },
             validator: (value) {
               if (value?.isEmpty ?? true) {
                 return localization.translate('auth.pleaseEnterEmail');
@@ -1598,10 +1671,17 @@ class _LoginScreenState extends State<LoginScreen>
               }
               return null;
             },
+          onErrorChanged: (error) {
+            setState(() => _usernameErrorText = error);
+          },
+          renderErrorExternally: true,
+        ),
+              ),
+            ],
           ),
         ),
-        ],
-      ),
+        if (_usernameErrorText != null) _buildErrorRow(_usernameErrorText!),
+      ],
     );
   }
 
@@ -2039,6 +2119,9 @@ class _GlassInputWrapper extends StatefulWidget {
   final bool obscureText;
   final TextInputType keyboardType;
   final String? Function(String?)? validator;
+  final void Function(String)? onChanged;
+  final void Function(String?)? onErrorChanged;
+  final bool renderErrorExternally;
 
   const _GlassInputWrapper({
     required this.controller,
@@ -2049,6 +2132,9 @@ class _GlassInputWrapper extends StatefulWidget {
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
     this.validator,
+    this.onChanged,
+    this.onErrorChanged,
+    this.renderErrorExternally = false,
   });
 
   @override
@@ -2060,29 +2146,6 @@ class _GlassInputWrapperState extends State<_GlassInputWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: _isFocused
-            ? Colors.white.withOpacity(0.9)
-            : Colors.white.withOpacity(0.7),
-        boxShadow: [
-          BoxShadow(
-            color: _isFocused
-                ? AppColors.primary.withOpacity(0.15)
-                : Colors.black.withOpacity(0.05),
-            offset: const Offset(0, 4),
-            blurRadius: _isFocused ? 20 : 10,
-            spreadRadius: 0,
-          ),
-        ],
-      ),
-      child: _buildTextField(),
-    );
-  }
-
-  Widget _buildTextField() {
     return Focus(
       onFocusChange: (hasFocus) {
         setState(() {
@@ -2098,6 +2161,40 @@ class _GlassInputWrapperState extends State<_GlassInputWrapper> {
         obscureText: widget.obscureText,
         keyboardType: widget.keyboardType,
         validator: widget.validator,
+        onChanged: widget.onChanged,
+        onErrorChanged: widget.onErrorChanged,
+        layoutBuilder: (inputChild, errorChild) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: _isFocused
+                      ? Colors.white.withOpacity(0.9)
+                      : Colors.white.withOpacity(0.7),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _isFocused
+                          ? AppColors.primary.withOpacity(0.15)
+                          : Colors.black.withOpacity(0.05),
+                      offset: const Offset(0, 4),
+                      blurRadius: _isFocused ? 20 : 10,
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+                child: inputChild,
+              ),
+              if (errorChild != null && !widget.renderErrorExternally) ...[
+                const SizedBox(height: 8),
+                errorChild,
+              ],
+            ],
+          );
+        },
       ),
     );
   }

@@ -23,6 +23,12 @@ class CustomTextField extends StatefulWidget {
   final String? errorText;
   final String? helperText;
   final bool isRequired;
+  /// When provided, allows custom layout (e.g. error outside input container).
+  /// [inputChild] = the input field widget, [errorChild] = error row or null.
+  final Widget Function(Widget inputChild, Widget? errorChild)? layoutBuilder;
+  /// Called when the error text changes (e.g. after validation). Use to render
+  /// error outside the field (e.g. below a Row of inputs).
+  final void Function(String?)? onErrorChanged;
 
   const CustomTextField({
     super.key,
@@ -45,6 +51,8 @@ class CustomTextField extends StatefulWidget {
     this.errorText,
     this.helperText,
     this.isRequired = false,
+    this.layoutBuilder,
+    this.onErrorChanged,
   });
 
   @override
@@ -94,11 +102,12 @@ class _CustomTextFieldState extends State<CustomTextField>
       }
     }
 
-    // Clear error when user starts typing
-    if (_errorText != null && hasText) {
+    // Clear error when user types or clears
+    if (_errorText != null && (hasText || !hasText)) {
       setState(() {
         _errorText = null;
       });
+      widget.onErrorChanged?.call(null);
     }
   }
 
@@ -125,6 +134,7 @@ class _CustomTextFieldState extends State<CustomTextField>
       setState(() {
         _errorText = error;
       });
+      widget.onErrorChanged?.call(error);
     }
   }
 
@@ -139,8 +149,33 @@ class _CustomTextFieldState extends State<CustomTextField>
   Widget build(BuildContext context) {
     final displayError = widget.errorText ?? _errorText;
 
-    return Column(
+    final errorChild = (displayError != null || widget.helperText != null)
+        ? Padding(
+            padding: const EdgeInsets.only(top: 8, left: 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (displayError != null)
+                  Icon(Icons.error_outline, size: 16, color: AppColors.error),
+                if (displayError != null) const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    displayError ?? widget.helperText!,
+                    style: AppStyles.caption.copyWith(
+                      color: displayError != null
+                          ? AppColors.error
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        : null;
+
+    final inputChild = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         // Field Container with white background and shadow
         AnimatedBuilder(
@@ -283,29 +318,18 @@ class _CustomTextFieldState extends State<CustomTextField>
             );
           },
         ),
+      ],
+    );
 
-        // Error and Helper Text
-        if (displayError != null || widget.helperText != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8, left: 12),
-            child: Row(
-              children: [
-                if (displayError != null)
-                  Icon(Icons.error_outline, size: 16, color: AppColors.error),
-                if (displayError != null) const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    displayError ?? widget.helperText!,
-                    style: AppStyles.caption.copyWith(
-                      color: displayError != null
-                          ? AppColors.error
-                          : AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+    if (widget.layoutBuilder != null) {
+      return widget.layoutBuilder!(inputChild, errorChild);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        inputChild,
+        if (errorChild != null) errorChild,
       ],
     );
   }
