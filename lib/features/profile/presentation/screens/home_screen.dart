@@ -229,7 +229,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                                   style: AppStyles.headingLarge.copyWith(
                                     color: AppColors.textPrimary,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 20,
+                                    fontSize: MediaQuery.of(context).size.width < 360 ? 18 : 20,
                                   ),
                                 ),
                               ],

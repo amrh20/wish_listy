@@ -316,14 +316,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 opacity: _fadeAnimations[index],
                 child: SlideTransition(
                   position: _slideAnimations[index],
-                  child: Text(
-                    slide.title,
-                    style: AppStyles.headingLarge.copyWith(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                  child: Builder(
+                    builder: (ctx) => Text(
+                      slide.title,
+                      style: AppStyles.headingLarge.copyWith(
+                        fontSize: MediaQuery.of(ctx).size.width < 360 ? 24 : 32,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 ),
               );

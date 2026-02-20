@@ -159,7 +159,7 @@ class UnifiedPageHeader extends StatelessWidget {
                             style: titleStyle ?? AppStyles.headingLarge.copyWith(
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.bold,
-                              fontSize: 24,
+                              fontSize: MediaQuery.of(context).size.width < 360 ? 20 : 24,
                             ),
                           ),
                         ),

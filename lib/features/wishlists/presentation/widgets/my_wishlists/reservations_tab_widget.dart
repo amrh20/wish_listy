@@ -92,7 +92,14 @@ class ReservationsTabWidget extends StatelessWidget {
                 )
               : ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 16,
+                    bottom: 16 +
+                        MediaQuery.of(context).padding.bottom +
+                        100, // Extra space for bottom nav bar
+                  ),
                   itemCount: reservations.length,
                   itemBuilder: (context, index) {
                     final item = reservations[index];

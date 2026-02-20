@@ -1443,7 +1443,7 @@ class _AddItemScreenState extends State<AddItemScreen>
               extraInfo['storeLocation'] = storeLocation;
             if (notes != null && notes.isNotEmpty) extraInfo['notes'] = notes;
 
-            // Append extra info to description
+          // Append extra info to description
             if (finalDescription == null || finalDescription.isEmpty) {
               finalDescription = extraInfo.entries
                   .where((e) => e.value != null && e.value!.isNotEmpty)

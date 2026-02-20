@@ -793,8 +793,8 @@ class _LoginScreenState extends State<LoginScreen>
                   // Content
                   SafeArea(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: MediaQuery.of(context).size.width < 360 ? 5 : 16,
                         vertical: 24,
                       ),
                       child: AnimatedBuilder(
@@ -988,7 +988,7 @@ class _LoginScreenState extends State<LoginScreen>
                                               ),
                                               style: AppStyles.headingLarge
                                                   .copyWith(
-                                                    fontSize: 32,
+                                                    fontSize: MediaQuery.of(context).size.width < 360 ? 24 : 32,
                                                     fontWeight: FontWeight.w800,
                                                     letterSpacing: -0.5,
                                                     color: Colors.white,
@@ -1027,8 +1027,8 @@ class _LoginScreenState extends State<LoginScreen>
                                           sigmaY: 15,
                                         ),
                                         child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: MediaQuery.of(context).size.width < 360 ? 12 : 16,
                                             vertical: 32,
                                           ),
                                           decoration: BoxDecoration(

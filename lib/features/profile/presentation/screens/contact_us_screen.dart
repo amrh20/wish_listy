@@ -86,6 +86,9 @@ class ContactUsScreen extends StatelessWidget {
 
                         // Email Card
                         _buildEmailCard(localization),
+                        const SizedBox(height: 24),
+                        // Facebook Card
+                        _buildFacebookCard(context, localization),
                         const SizedBox(height: 60),
                       ],
                     ),
@@ -159,6 +162,92 @@ class ContactUsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Build Facebook Card
+  Widget _buildFacebookCard(BuildContext context, LocalizationService localization) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      elevation: 2,
+      child: InkWell(
+        onTap: () => _openFacebookPage(context),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1877F2).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.facebook_rounded,
+                  color: const Color(0xFF1877F2),
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      localization.translate('profile.followUsOnFacebook'),
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Facebook',
+                      style: AppStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: AppColors.textTertiary,
+                size: 18,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Open Facebook page
+  static Future<void> _openFacebookPage(BuildContext context) async {
+    final uri = Uri.parse('https://www.facebook.com/share/1CC3SQ3a7w/');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              Provider.of<LocalizationService>(context, listen: false)
+                  .translate('profile.couldNotLaunchUrl'),
+            ),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
   }
 
   /// Open email client to send email (works on mobile and desktop).

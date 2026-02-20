@@ -279,7 +279,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                                           ),
                                           const SizedBox(height: 24),
                                           PrimaryGradientButton(
-                                            text: 'Retry',
+                                            text: localization.translate('wishlists.retry'),
                                             icon: Icons.refresh,
                                             onPressed: _loadWishlists,
                                           ),
@@ -494,9 +494,12 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   void _showDeleteConfirmation(WishlistSummary wishlist) {
     final localization = Provider.of<LocalizationService>(context, listen: false);
     final itemCount = wishlist.itemCount;
+    final itemWord = itemCount == 1
+        ? localization.translate('wishlists.item')
+        : localization.translate('wishlists.items');
     final itemCountText = itemCount > 0
-        ? 'All $itemCount ${itemCount == 1 ? 'item' : 'items'} inside this wishlist will also be deleted permanently.'
-        : 'All items inside this wishlist will also be deleted permanently.';
+        ? localization.translate('wishlists.deleteWishlistItemsWarning', args: {'count': itemCount.toString(), 'items': itemWord})
+        : localization.translate('wishlists.deleteWishlistItemsWarningNoCount');
 
     showDialog(
       context: context,
@@ -638,6 +641,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
   /// Load wishlists from local storage for guest users
   Future<void> _loadGuestWishlists({bool forceShowSkeleton = false}) async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     // Smart Loading: Only show skeleton if data doesn't exist yet
     final hasExistingData = _personalWishlists.isNotEmpty;
     if (!hasExistingData || forceShowSkeleton) {
@@ -726,7 +730,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     } catch (e) {
       if (mounted) {
       setState(() {
-        _errorMessage = 'Failed to load wishlists';
+        _errorMessage = localization.translate('wishlists.failedToLoadWishlists');
         _isLoading = false;
       });
       }
@@ -761,6 +765,9 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
       }
     }
 
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final unnamedFallback = localization.translate('wishlists.unnamedWishlist');
+
     try {
       // Call API to get wishlists
 
@@ -771,7 +778,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
       for (final wishlistData in wishlistsData) {
 
-        final wishlist = _convertToWishlistSummary(wishlistData);
+        final wishlist = _convertToWishlistSummary(wishlistData, unnamedFallback: unnamedFallback);
 
         // Only add personal wishlists (exclude event wishlists)
         if (wishlist.eventName == null && wishlistData['eventId'] == null) {
@@ -863,7 +870,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     } catch (e) {
       if (mounted) {
       setState(() {
-        _errorMessage = 'Failed to load wishlists. Please try again.';
+        _errorMessage = localization.translate('wishlists.failedToLoadWishlist');
         _isLoading = false;
       });
       }
@@ -877,7 +884,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'An unexpected error occurred. Please try again.',
+                    localization.translate('wishlists.unexpectedErrorOccurred'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
@@ -1051,7 +1058,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
   }
 
   /// Convert API response data to WishlistSummary
-  WishlistSummary _convertToWishlistSummary(Map<String, dynamic> data) {
+  WishlistSummary _convertToWishlistSummary(Map<String, dynamic> data, {String? unnamedFallback}) {
     // Parse privacy
     WishlistPrivacy privacy = WishlistPrivacy.public;
     final privacyStr = data['privacy']?.toString().toLowerCase() ?? 'public';
@@ -1142,7 +1149,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
     return WishlistSummary(
       id: data['id']?.toString() ?? data['_id']?.toString() ?? '',
-      name: data['name']?.toString() ?? 'Unnamed Wishlist',
+      name: data['name']?.toString() ?? (unnamedFallback ?? 'Unnamed Wishlist'),
       description: data['description']?.toString(),
       itemCount: itemCount,
       purchasedCount: purchasedCount,

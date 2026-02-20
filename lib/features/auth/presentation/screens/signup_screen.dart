@@ -43,6 +43,7 @@ class _SignupScreenState extends State<SignupScreen>
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isAgreed = false;
+  String? _signupErrorText;
   bool _isPhoneMode = false;
   bool _hasManuallySelectedCountry = false;
   late Country _selectedCountry;
@@ -695,7 +696,10 @@ class _SignupScreenState extends State<SignupScreen>
                   // Content
                   SafeArea(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: MediaQuery.of(context).size.width < 360 ? 5 : 16,
+                        vertical: 24,
+                      ),
                       child: AnimatedBuilder(
                         animation: _animationController,
                         builder: (context, child) {
@@ -886,7 +890,7 @@ class _SignupScreenState extends State<SignupScreen>
                                             localization.translate('auth.createAccount'),
                                             style: AppStyles.headingLarge
                                                 .copyWith(
-                                                  fontSize: 30,
+                                                  fontSize: MediaQuery.of(context).size.width < 360 ? 22 : 30,
                                                   fontWeight: FontWeight.w800,
                                                   letterSpacing: -0.5,
                                                   color: Colors.white,
@@ -922,8 +926,8 @@ class _SignupScreenState extends State<SignupScreen>
                                           sigmaY: 15,
                                         ),
                                         child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 24,
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: MediaQuery.of(context).size.width < 360 ? 12 : 16,
                                             vertical: 32,
                                           ),
                                           decoration: BoxDecoration(
@@ -963,6 +967,7 @@ class _SignupScreenState extends State<SignupScreen>
                                                       TextInputType.name,
                                                   prefixIcon:
                                                       Icons.person_outline,
+                                                  renderErrorExternally: true,
                                                   validator: (value) {
                                                     if (value?.isEmpty ??
                                                         true) {
@@ -978,8 +983,8 @@ class _SignupScreenState extends State<SignupScreen>
 
                                                 const SizedBox(height: 20),
 
-                                                // Email or Phone Field (Smart Hybrid Input)
-                                                _buildUsernameField(localization),
+                                                // Email or Phone Field (Smart Hybrid Input) - error shows under this row
+                                                _buildUsernameField(localization, renderErrorExternally: false),
 
                                                 const SizedBox(height: 20),
 
@@ -996,6 +1001,7 @@ class _SignupScreenState extends State<SignupScreen>
                                                   obscureText: _obscurePassword,
                                                   prefixIcon:
                                                       Icons.lock_outlined,
+                                                  renderErrorExternally: true,
                                                   suffixIcon: IconButton(
                                                     onPressed: () {
                                                       setState(() {
@@ -1042,6 +1048,7 @@ class _SignupScreenState extends State<SignupScreen>
                                                       _obscureConfirmPassword,
                                                   prefixIcon:
                                                       Icons.lock_outlined,
+                                                  renderErrorExternally: true,
                                                   suffixIcon: IconButton(
                                                     onPressed: () {
                                                       setState(() {
@@ -1074,41 +1081,14 @@ class _SignupScreenState extends State<SignupScreen>
                                                   },
                                                 ),
 
-                                                // Real-time password mismatch error message
-                                                if (!_doPasswordsMatch &&
-                                                    _confirmPasswordController
-                                                        .text.isNotEmpty &&
-                                                    _passwordController
-                                                        .text.isNotEmpty)
-                                                  Padding(
-                                                    padding: const EdgeInsets.only(
-                                                      top: 8.0,
-                                                      left: 16.0,
-                                                    ),
-                                                    child: Row(
-                                                      children: [
-                                                        Icon(
-                                                          Icons.error_outline,
-                                                          size: 16,
-                                                          color: AppColors.error,
-                                                        ),
-                                                        const SizedBox(width: 6),
-                                                        Expanded(
-                                                          child: Text(
-                                                            localization.translate(
-                                                                    'validation.passwordsDoNotMatch') ??
-                                                                'Passwords do not match',
-                                                            style: AppStyles
-                                                                .bodySmall
-                                                                .copyWith(
-                                                              color:
-                                                                  AppColors.error,
-                                                              fontSize: 12,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
+                                                // Single error row below all inputs
+                                                if (_signupErrorText != null ||
+                                                    (!_doPasswordsMatch &&
+                                                        _confirmPasswordController.text.isNotEmpty &&
+                                                        _passwordController.text.isNotEmpty))
+                                                  _buildErrorRow(
+                                                    _signupErrorText ??
+                                                        (localization.translate('validation.passwordsDoNotMatch') ?? 'Passwords do not match'),
                                                   ),
 
                                                 const SizedBox(height: 24),
@@ -1317,6 +1297,7 @@ class _SignupScreenState extends State<SignupScreen>
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
+    bool renderErrorExternally = false,
   }) {
     return _GlassInputWrapper(
       controller: controller,
@@ -1327,10 +1308,31 @@ class _SignupScreenState extends State<SignupScreen>
       obscureText: obscureText,
       keyboardType: keyboardType,
       validator: validator,
+      renderErrorExternally: renderErrorExternally,
+      onErrorChanged: renderErrorExternally ? (e) => setState(() => _signupErrorText = e) : null,
     );
   }
 
-  Widget _buildUsernameField(LocalizationService localization) {
+  Widget _buildErrorRow(String message) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.error_outline, size: 16, color: AppColors.error),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              message,
+              style: AppStyles.caption.copyWith(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUsernameField(LocalizationService localization, {bool renderErrorExternally = false}) {
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1358,6 +1360,7 @@ class _SignupScreenState extends State<SignupScreen>
                 _isPhoneMode ? TextInputType.phone : TextInputType.text,
             prefixIcon:
                 _isPhoneMode ? Icons.phone_outlined : Icons.person_outline,
+            renderErrorExternally: renderErrorExternally,
             validator: (value) {
               if (value?.isEmpty ?? true) {
                 return localization.translate('auth.pleaseEnterEmail');
@@ -1663,6 +1666,8 @@ class _GlassInputWrapper extends StatefulWidget {
   final bool obscureText;
   final TextInputType keyboardType;
   final String? Function(String?)? validator;
+  final bool renderErrorExternally;
+  final void Function(String?)? onErrorChanged;
 
   const _GlassInputWrapper({
     required this.controller,
@@ -1673,6 +1678,8 @@ class _GlassInputWrapper extends StatefulWidget {
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
     this.validator,
+    this.renderErrorExternally = false,
+    this.onErrorChanged,
   });
 
   @override
@@ -1722,6 +1729,37 @@ class _GlassInputWrapperState extends State<_GlassInputWrapper> {
         obscureText: widget.obscureText,
         keyboardType: widget.keyboardType,
         validator: widget.validator,
+        onErrorChanged: widget.onErrorChanged,
+        layoutBuilder: widget.renderErrorExternally
+            ? (inputChild, errorChild) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: _isFocused
+                            ? Colors.white.withOpacity(0.9)
+                            : Colors.white.withOpacity(0.7),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _isFocused
+                                ? AppColors.primary.withOpacity(0.15)
+                                : Colors.black.withOpacity(0.05),
+                            offset: const Offset(0, 4),
+                            blurRadius: _isFocused ? 20 : 10,
+                            spreadRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: inputChild,
+                    ),
+                  ],
+                );
+              }
+            : null,
       ),
     );
   }
