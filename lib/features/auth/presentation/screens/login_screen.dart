@@ -1622,8 +1622,7 @@ class _LoginScreenState extends State<LoginScreen>
             hint: _isPhoneMode
                 ? '1XXXXXXXXX'
                 : localization.translate('auth.emailOrPhone'),
-            keyboardType:
-                _isPhoneMode ? TextInputType.phone : TextInputType.text,
+            keyboardType: TextInputType.emailAddress,
             prefixIcon:
                 _isPhoneMode ? Icons.phone_outlined : Icons.person_outline,
             suffixIcon: _usernameHasText

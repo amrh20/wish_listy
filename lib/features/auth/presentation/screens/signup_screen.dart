@@ -871,14 +871,18 @@ class _SignupScreenState extends State<SignupScreen>
 
                                   const SizedBox(height: 40),
 
-                                  // Header
+                                  // Header - same horizontal alignment as form
                                   FadeTransition(
                                     opacity: _welcomeFade,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        ShaderMask(
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: MediaQuery.of(context).size.width < 360 ? 12 : 16,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          ShaderMask(
                                           shaderCallback: (bounds) =>
                                               LinearGradient(
                                                 colors: [
@@ -909,7 +913,8 @@ class _SignupScreenState extends State<SignupScreen>
                                             ),
                                           ),
                                         ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
 
@@ -1129,10 +1134,14 @@ class _SignupScreenState extends State<SignupScreen>
 
                                   const SizedBox(height: 32),
 
-                                  // Sign In Link
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
+                                  // Sign In Link - same horizontal alignment as form
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: MediaQuery.of(context).size.width < 360 ? 12 : 16,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
                                       Text(
                                         localization.translate('auth.alreadyHaveAccount'),
                                         style: AppStyles.bodyMedium.copyWith(
@@ -1173,6 +1182,7 @@ class _SignupScreenState extends State<SignupScreen>
                                       ),
                                     ],
                                   ),
+                                ),
                                 ],
                               ),
                             ),

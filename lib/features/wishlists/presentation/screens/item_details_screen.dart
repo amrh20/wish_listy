@@ -1518,7 +1518,67 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
 
   // NOTE: _formatDate already exists above (yyyy-mm-dd). Keep one implementation only.
 
-  // Action Handlers
+  /// Show confirmation dialog before marking item as received
+  void _showMarkAsReceivedConfirmation(WishlistItem item) {
+    final loc = Provider.of<LocalizationService>(context, listen: false);
+    ConfirmationDialog.show(
+      context: context,
+      isSuccess: true,
+      title: loc.translate('ui.markAsReceivedQuestion') ?? 'Mark as Received?',
+      message: loc.translate('ui.markAsReceivedContent') ??
+          'This will mark the item as purchased and received. Are you sure you got this gift?',
+      primaryActionLabel: loc.translate('details.markAsReceived') ?? 'Mark as Received',
+      onPrimaryAction: () => _performMarkAsReceived(item),
+      secondaryActionLabel: loc.translate('common.cancel'),
+      onSecondaryAction: () {},
+      accentColor: AppColors.success,
+      icon: Icons.check_circle_outline,
+    );
+  }
+
+  /// Calls API to mark item as received, then updates state and shows success.
+  Future<void> _performMarkAsReceived(WishlistItem item) async {
+    Navigator.of(context).pop(); // Close the confirmation dialog
+    try {
+      final isOwner = _isOwner();
+      final isReservedByMe = _isReservedByMe(item);
+
+      if (isOwner) {
+        // Owner: Toggle to received
+        final updatedItemData = await _wishlistRepository.toggleReceivedStatus(
+          itemId: item.id,
+          isReceived: true,
+        );
+        final updatedItem = WishlistItem.fromJson(updatedItemData);
+        if (!mounted) return;
+        setState(() => _currentItem = updatedItem);
+        await _fetchItemDetails();
+      } else if (isReservedByMe) {
+        // Guest who reserved: Mark as purchased
+        final updatedItemData = await _wishlistRepository.markAsPurchased(itemId: item.id);
+        final updatedItem = WishlistItem.fromJson(updatedItemData);
+        if (!mounted) return;
+        setState(() => _currentItem = updatedItem);
+        await _fetchItemDetails();
+      }
+
+      if (!mounted) return;
+      final loc = Provider.of<LocalizationService>(context, listen: false);
+      UnifiedSnackbar.showSuccess(
+        context: context,
+        message: loc.translate('messages.itemMarkedReceived') ?? 'Marked as Received! ✅',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      final loc = Provider.of<LocalizationService>(context, listen: false);
+      UnifiedSnackbar.showError(
+        context: context,
+        message: loc.translate('dialogs.failedToUpdateStatus') ?? 'Failed to update status. Please try again.',
+      );
+    }
+  }
+
+  /// Action Handlers
   Future<void> _toggleReceivedStatus() async {
     final authService = Provider.of<AuthRepository>(context, listen: false);
     if (authService.isGuest) {
@@ -1532,8 +1592,16 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       return;
     }
 
+    final item = _currentItem ?? widget.item;
+    final isReceived = item.isReceived;
+
+    // If currently NOT received, show confirmation before marking as received
+    if (!isReceived) {
+      _showMarkAsReceivedConfirmation(item);
+      return;
+    }
+
     try {
-      final item = _currentItem ?? widget.item;
       final isOwner = _isOwner();
       final isReservedByMe = _isReservedByMe(item);
       
