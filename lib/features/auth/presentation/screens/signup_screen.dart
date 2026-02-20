@@ -44,6 +44,7 @@ class _SignupScreenState extends State<SignupScreen>
   bool _obscureConfirmPassword = true;
   bool _isAgreed = false;
   String? _signupErrorText;
+  String? _usernameErrorText;
   bool _isPhoneMode = false;
   bool _hasManuallySelectedCountry = false;
   late Country _selectedCountry;
@@ -1308,6 +1309,7 @@ class _SignupScreenState extends State<SignupScreen>
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
     bool renderErrorExternally = false,
+    void Function(String?)? onErrorChanged,
   }) {
     return _GlassInputWrapper(
       controller: controller,
@@ -1319,7 +1321,9 @@ class _SignupScreenState extends State<SignupScreen>
       keyboardType: keyboardType,
       validator: validator,
       renderErrorExternally: renderErrorExternally,
-      onErrorChanged: renderErrorExternally ? (e) => setState(() => _signupErrorText = e) : null,
+      onErrorChanged: renderErrorExternally
+          ? (onErrorChanged ?? (e) => setState(() => _signupErrorText = e))
+          : null,
     );
   }
 
@@ -1343,34 +1347,39 @@ class _SignupScreenState extends State<SignupScreen>
   }
 
   Widget _buildUsernameField(LocalizationService localization, {bool renderErrorExternally = false}) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Country Code Picker - animated show/hide
-          AnimatedSize(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
-          child: _isPhoneMode
-              ? Padding(
-                  padding: const EdgeInsetsDirectional.only(end: 12),
-                  child: _buildCountryCodeButton(),
-                )
-              : const SizedBox.shrink(),
-        ),
-        // Username Text Field
-        Expanded(
-          child: _buildGlassInputField(
-            controller: _usernameController,
-            label: localization.translate('auth.emailOrPhone'),
-            hint: _isPhoneMode
-                ? '1XXXXXXXXX'
-                : localization.translate('auth.emailOrPhone'),
-            keyboardType:
-                _isPhoneMode ? TextInputType.phone : TextInputType.text,
-            prefixIcon:
-                _isPhoneMode ? Icons.phone_outlined : Icons.person_outline,
-            renderErrorExternally: renderErrorExternally,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Country Code Picker - animated show/hide
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                child: _isPhoneMode
+                    ? Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 12),
+                        child: _buildCountryCodeButton(),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              // Username Text Field
+              Expanded(
+                child: _buildGlassInputField(
+                  controller: _usernameController,
+                  label: localization.translate('auth.emailOrPhone'),
+                  hint: _isPhoneMode
+                      ? '1XXXXXXXXX'
+                      : localization.translate('auth.emailOrPhone'),
+                  keyboardType:
+                      _isPhoneMode ? TextInputType.phone : TextInputType.text,
+                  prefixIcon:
+                      _isPhoneMode ? Icons.phone_outlined : Icons.person_outline,
+                  renderErrorExternally: true,
+                  onErrorChanged: (e) => setState(() => _usernameErrorText = e),
             validator: (value) {
               if (value?.isEmpty ?? true) {
                 return localization.translate('auth.pleaseEnterEmail');
@@ -1393,8 +1402,11 @@ class _SignupScreenState extends State<SignupScreen>
             },
           ),
         ),
-        ],
-      ),
+            ],
+          ),
+        ),
+        if (_usernameErrorText != null) _buildErrorRow(_usernameErrorText!),
+      ],
     );
   }
 
