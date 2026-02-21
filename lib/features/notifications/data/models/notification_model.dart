@@ -443,6 +443,11 @@ extension AppNotificationLocalization on AppNotification {
   /// Returns a localized title for this notification based on [type].
   /// Uses [LocalizationService] for translations. Falls back to backend title if key is missing.
   String getLocalizedTitle(LocalizationService localization) {
+    // Handle event_reminder
+    if (type == NotificationType.eventReminder) {
+      return localization.isRTL ? "تذكير بحدث" : "Event Reminder";
+    }
+
     // Distinguish item_received and item_not_received when type is itemPurchased
     if (type == NotificationType.itemPurchased) {
       final dataType = (data?['type'] ?? data?['notificationType'])

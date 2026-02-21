@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'event_type_selection_widget.dart';
 
 /// Widget for event preview
@@ -26,6 +28,7 @@ class EventPreviewWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -48,7 +51,7 @@ class EventPreviewWidget extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'Event Preview',
+                localization.translate('events.eventPreview'),
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -96,7 +99,9 @@ class EventPreviewWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        eventName.isEmpty ? 'Your Event Name' : eventName,
+                        eventName.isEmpty
+                            ? localization.translate('events.yourEventName')
+                            : eventName,
                         style: AppStyles.bodyLarge.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -111,7 +116,7 @@ class EventPreviewWidget extends StatelessWidget {
                         ),
                       ] else ...[
                         Text(
-                          'Date & Time TBD',
+                          localization.translate('events.dateTimeTbd'),
                           style: AppStyles.bodySmall.copyWith(
                             color: AppColors.textTertiary,
                           ),

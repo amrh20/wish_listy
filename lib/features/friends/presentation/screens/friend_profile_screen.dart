@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -2685,20 +2686,10 @@ class _EventTicketCard extends StatelessWidget {
     required this.onTap,
   });
 
-  static const _months = [
-    'JAN',
-    'FEB',
-    'MAR',
-    'APR',
-    'MAY',
-    'JUN',
-    'JUL',
-    'AUG',
-    'SEP',
-    'OCT',
-    'NOV',
-    'DEC',
-  ];
+  String _getMonthAbbrev(DateTime date) {
+    final locale = localization.currentLanguage == 'ar' ? 'ar' : 'en';
+    return DateFormat('MMM', locale).format(date).toUpperCase();
+  }
 
   ({IconData icon, Color color, Color textColor, String label})
       _getEventTypeStyle(String? type) {
@@ -2732,6 +2723,57 @@ class _EventTicketCard extends StatelessWidget {
           textColor: Colors.orange.shade700,
           label: localization.translate('events.meeting'),
         );
+      case 'wedding':
+        return (
+          icon: Icons.diamond_outlined,
+          color: Colors.purple.shade100,
+          textColor: Colors.purple.shade700,
+          label: localization.translate('events.wedding'),
+        );
+      case 'babyshower':
+      case 'baby_shower':
+        return (
+          icon: Icons.child_care,
+          color: Colors.pink.shade100,
+          textColor: Colors.pink.shade700,
+          label: localization.translate('events.babyShower'),
+        );
+      case 'housewarming':
+      case 'house_warming':
+        return (
+          icon: Icons.home_outlined,
+          color: Colors.green.shade100,
+          textColor: Colors.green.shade700,
+          label: localization.translate('events.housewarming'),
+        );
+      case 'holiday':
+        return (
+          icon: Icons.celebration_outlined,
+          color: Colors.amber.shade100,
+          textColor: Colors.amber.shade800,
+          label: localization.translate('events.holiday'),
+        );
+      case 'vacation':
+        return (
+          icon: Icons.beach_access_outlined,
+          color: Colors.cyan.shade100,
+          textColor: Colors.cyan.shade700,
+          label: localization.translate('events.vacation'),
+        );
+      case 'retirement':
+        return (
+          icon: Icons.work_off_outlined,
+          color: Colors.grey.shade200,
+          textColor: Colors.grey.shade800,
+          label: localization.translate('events.retirement'),
+        );
+      case 'promotion':
+        return (
+          icon: Icons.trending_up_outlined,
+          color: Colors.teal.shade100,
+          textColor: Colors.teal.shade700,
+          label: localization.translate('events.promotion'),
+        );
       default:
         return (
           icon: Icons.event,
@@ -2749,32 +2791,32 @@ class _EventTicketCard extends StatelessWidget {
         return (
           icon: Icons.check_circle,
           color: Colors.green.shade600,
-          label: 'Accepted',
+          label: localization.translate('events.accepted'),
         );
       case InvitationStatus.declined:
         return (
           icon: Icons.cancel,
           color: Colors.red.shade600,
-          label: 'Declined',
+          label: localization.translate('events.declined'),
         );
       case InvitationStatus.maybe:
         return (
           icon: Icons.help_outline,
           color: Colors.orange.shade600,
-          label: 'Maybe',
+          label: localization.translate('events.maybe'),
         );
       case InvitationStatus.pending:
         return (
           icon: Icons.schedule,
           color: Colors.blue.shade600,
-          label: 'Pending',
+          label: localization.translate('events.pending'),
         );
       case InvitationStatus.unknown:
       default:
         return (
           icon: Icons.info_outline,
           color: Colors.grey.shade600,
-          label: 'Unknown',
+          label: localization.translate('events.unknown') ?? 'Unknown',
         );
     }
   }
@@ -2783,7 +2825,7 @@ class _EventTicketCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final date = event.date;
     final month = (date != null && date.month >= 1 && date.month <= 12)
-        ? _months[date.month - 1]
+        ? _getMonthAbbrev(date)
         : '--';
     final day = date != null ? date.day.toString() : '--';
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -205,22 +206,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     }
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  String _formatDate(DateTime date, String locale) {
+    final localeStr = locale == 'ar' ? 'ar' : 'en_US';
+    return DateFormat.yMMMd(localeStr).format(date);
   }
 
   String _formatTime(String? time) {
@@ -393,7 +381,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           shape: const CircleBorder(),
         ),
       ),
-      actions: _event?.isCreator == true ? [_buildMoreOptionsMenu()] : [],
+      actions: _event?.isCreator == true ? [_buildMoreOptionsMenu(localization)] : [],
       flexibleSpace: FlexibleSpaceBar(
         background: Container(
           decoration: BoxDecoration(
@@ -580,7 +568,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           const SizedBox(height: 16),
           
           // Combined Date & Location Row (Compact)
-          _buildCompactInfoRow(),
+          _buildCompactInfoRow(localization),
 
           // Divider (only if About section exists)
           if (hasDescription) const Divider(height: 30),
@@ -647,7 +635,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   /// Builds compact info row combining Date and Location
-  Widget _buildCompactInfoRow() {
+  Widget _buildCompactInfoRow(LocalizationService localization) {
     return Column(
       children: [
         // Date & Time Row
@@ -661,7 +649,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                '${_formatDate(_event!.date)}${_event!.time != null && _event!.time!.isNotEmpty ? ' • ${_formatTime(_event!.time)}' : ''}',
+                '${_formatDate(_event!.date, localization.currentLanguage)}${_event!.time != null && _event!.time!.isNotEmpty ? ' • ${_formatTime(_event!.time)}' : ''}',
                 style: AppStyles.bodyMedium.copyWith(
                   fontWeight: FontWeight.w600,
                   color: AppColors.textPrimary,
@@ -1007,7 +995,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   }
 
   /// Builds the More Options Menu (PopupMenuButton)
-  Widget _buildMoreOptionsMenu() {
+  Widget _buildMoreOptionsMenu(LocalizationService localization) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert, color: Colors.white),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1033,7 +1021,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Edit Event',
+                    localization.translate('events.editEvent'),
                     style: AppStyles.bodyMedium.copyWith(
                       color: AppColors.textPrimary,
                     ),
@@ -1057,7 +1045,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Share Event',
+                  localization.translate('events.shareEvent'),
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.textPrimary,
                   ),
@@ -1078,7 +1066,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   Icon(Icons.delete_outline, color: AppColors.error, size: 20),
                   const SizedBox(width: 12),
                   Text(
-                    'Delete Event',
+                    localization.translate('events.deleteEvent'),
                     style: AppStyles.bodyMedium.copyWith(
                       color: AppColors.error,
                       fontWeight: FontWeight.w600,

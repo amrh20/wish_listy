@@ -344,12 +344,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                       onBackPressed: () => Navigator.pop(context),
                       onHelpPressed: _showHelpDialog,
                       title: _isEditMode
-                          ? (localization.translate('events.editEventTitle') !=
-                                    'events.editEventTitle'
-                                ? localization.translate(
-                                    'events.editEventTitle',
-                                  )
-                                : 'Edit Event')
+                          ? localization.translate('events.editEventTitle')
                           : null,
                     ),
 
@@ -612,13 +607,8 @@ class _CreateEventScreenState extends State<CreateEventScreen>
                                             _getSelectedEventTypeColor(localization),
                                         buttonText: _isEditMode
                                             ? localization.translate(
-                                                        'events.updateEvent',
-                                                      ) !=
-                                                      'events.updateEvent'
-                                                  ? localization.translate(
-                                                      'events.updateEvent',
-                                                    )
-                                                  : 'Update Event'
+                                                'events.updateEvent',
+                                              )
                                             : null,
                                       ),
                                     ],
@@ -1300,17 +1290,18 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   }
 
   void _showHelpDialog() {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Creating Events'),
+        title: Text(localization.translate('dialogs.creatingEvents')),
         content: Text(
-          'Events help you plan celebrations and share wishlists with friends. Once created, you can invite friends and they\'ll be able to see your event wishlist.',
+          localization.translate('dialogs.creatingEventsDescription'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Got it'),
+            child: Text(localization.translate('dialogs.gotIt')),
           ),
         ],
       ),
