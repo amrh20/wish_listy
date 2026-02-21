@@ -13,8 +13,9 @@ import 'package:wish_listy/features/auth/presentation/cubit/auth_state.dart';
 
 class NewPasswordScreen extends StatefulWidget {
   final String? identifier; // Username/phone from forgot password screen
+  final String? countryCode; // Country code for phone flow (e.g. '+20')
 
-  const NewPasswordScreen({super.key, this.identifier});
+  const NewPasswordScreen({super.key, this.identifier, this.countryCode});
 
   @override
   _NewPasswordScreenState createState() => _NewPasswordScreenState();
@@ -43,6 +44,18 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
     final args = ModalRoute.of(context)?.settings.arguments;
     if (args is Map && args['identifier'] != null) {
       return args['identifier'] as String;
+    }
+    return null;
+  }
+
+  String? get _countryCode {
+    if (widget.countryCode != null && widget.countryCode!.isNotEmpty) {
+      return widget.countryCode;
+    }
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map && args['countryCode'] != null) {
+      final code = args['countryCode'] as String?;
+      return (code != null && code.isNotEmpty) ? code : null;
     }
     return null;
   }
@@ -144,6 +157,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen>
       identifier: _identifier!,
       otp: otp,
       newPassword: newPassword,
+      countryCode: _countryCode,
     );
   }
 

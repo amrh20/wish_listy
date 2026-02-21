@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'package:country_picker/country_picker.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
@@ -37,12 +38,34 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
   bool _emailLinked = false;
   bool _accountChecked = false;
   String? _identifier; // Store the identifier for reset request
+  late Country _selectedCountry;
+  bool _isPhoneMode = false;
+  String? _countryCodeForReset; // Store for requestReset and navigation to NewPasswordScreen
 
   @override
   void initState() {
     super.initState();
+    _selectedCountry = Country.parse('EG');
+    _identifierController.addListener(_detectIdentifierMode);
     _initializeAnimations();
     _startAnimations();
+  }
+
+  void _detectIdentifierMode() {
+    if (!mounted) return;
+    final text = _identifierController.text;
+    final hasAt = text.contains('@');
+    final shouldBePhoneMode = text.isNotEmpty && !hasAt;
+    if (shouldBePhoneMode != _isPhoneMode) {
+      setState(() {
+        _isPhoneMode = shouldBePhoneMode;
+        _countryCodeForReset = shouldBePhoneMode ? '+${_selectedCountry.phoneCode}' : null;
+      });
+    } else if (shouldBePhoneMode) {
+      _countryCodeForReset = '+${_selectedCountry.phoneCode}';
+    } else {
+      _countryCodeForReset = null;
+    }
   }
 
   void _initializeAnimations() {
@@ -82,11 +105,75 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
   @override
   void dispose() {
+    _identifierController.removeListener(_detectIdentifierMode);
     _animationController.dispose();
     _successController.dispose();
     _identifierController.dispose();
     _emailController.dispose();
     super.dispose();
+  }
+
+  void _openCountryPicker() {
+    showCountryPicker(
+      context: context,
+      favorite: ['EG', 'SA', 'AE', 'US', 'GB'],
+      showPhoneCode: true,
+      onSelect: (Country country) {
+        setState(() {
+          _selectedCountry = country;
+          _countryCodeForReset = _isPhoneMode ? '+${country.phoneCode}' : null;
+        });
+      },
+    );
+  }
+
+  Widget _buildCountryCodeButton() {
+    return GestureDetector(
+      onTap: _openCountryPicker,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              offset: const Offset(0, 2),
+              blurRadius: 4,
+              spreadRadius: 0,
+            ),
+          ],
+          border: Border.all(
+            color: AppColors.border.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _selectedCountry.flagEmoji,
+              style: const TextStyle(fontSize: 22),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '+${_selectedCountry.phoneCode}',
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 2),
+            Icon(
+              Icons.keyboard_arrow_down,
+              size: 18,
+              color: AppColors.textSecondary,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _handleCheckAccount(BuildContext context, AuthCubit cubit) async {
@@ -133,6 +220,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     }
 
     _identifier = identifier;
+    _countryCodeForReset = _isPhoneMode ? '+${_selectedCountry.phoneCode}' : null;
 
     // Step 3: Verify cubit is not null (already passed as parameter)
     if (cubit == null) {
@@ -151,7 +239,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
     // Step 4: Call checkAccount
     try {
-      cubit.checkAccount(identifier);
+      cubit.checkAccount(identifier, countryCode: _countryCodeForReset);
     } catch (e, stackTrace) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -182,10 +270,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     // BlocListener will handle those error states and show appropriate messages
     if (_emailLinked && _linkedEmail != null) {
       // Account has email, just request reset
-      cubit.requestReset(_identifier!);
+      cubit.requestReset(_identifier!, countryCode: _countryCodeForReset);
     } else {
       // Need to bind email first
-      cubit.requestReset(_identifier!, newEmail: email);
+      cubit.requestReset(_identifier!, newEmail: email, countryCode: _countryCodeForReset);
     }
   }
 
@@ -195,7 +283,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     }
     try {
       final cubit = context.read<AuthCubit>();
-      await cubit.requestReset(_identifier!);
+      await cubit.requestReset(_identifier!, countryCode: _countryCodeForReset);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -279,7 +367,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               Navigator.pushNamed(
                 context,
                 AppRoutes.resetPassword,
-                arguments: {'identifier': _identifier!},
+                arguments: {
+                  'identifier': _identifier!,
+                  'countryCode': _countryCodeForReset,
+                },
               );
             } else {
               setState(() {
@@ -449,19 +540,41 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CustomTextField(
-                    controller: _identifierController,
-                    label: localization.translate('auth.phoneOrEmail'),
-                    hint: localization.translate('auth.enterPhoneOrEmail'),
-                    keyboardType: TextInputType.text,
-                    prefixIcon: Icons.person_outline,
-                    isRequired: true,
-                    validator: (value) {
-                      if (value?.isEmpty ?? true) {
-                        return localization.translate('auth.phoneOrEmailRequired');
-                      }
-                      return null;
-                    },
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOut,
+                          child: _isPhoneMode
+                              ? Padding(
+                                  padding: const EdgeInsetsDirectional.only(end: 12),
+                                  child: _buildCountryCodeButton(),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                        Expanded(
+                          child: CustomTextField(
+                            controller: _identifierController,
+                            label: localization.translate('auth.phoneOrEmail'),
+                            hint: _isPhoneMode
+                                ? '1XXXXXXXXX'
+                                : localization.translate('auth.enterPhoneOrEmail'),
+                            keyboardType: TextInputType.text,
+                            prefixIcon:
+                                _isPhoneMode ? Icons.phone_outlined : Icons.person_outline,
+                            isRequired: true,
+                            validator: (value) {
+                              if (value?.isEmpty ?? true) {
+                                return localization.translate('auth.phoneOrEmailRequired');
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Padding(

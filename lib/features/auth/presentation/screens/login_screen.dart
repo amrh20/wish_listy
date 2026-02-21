@@ -519,6 +519,7 @@ class _LoginScreenState extends State<LoginScreen>
         _getFormattedUsername(),
         _passwordController.text.trim(),
         fcmToken: fcmToken,
+        countryCode: _isPhoneMode ? '+${_selectedCountry.phoneCode}' : null,
       );
 
       if (success && mounted) {
@@ -666,9 +667,11 @@ class _LoginScreenState extends State<LoginScreen>
       setState(() => _isLoading = true);
     }
 
+    final countryCode = isPhone ? '+${_selectedCountry.phoneCode}' : null;
+
     try {
       // Send new OTP via backend API (works for both phone and email)
-      await authRepository.resendOtp(username);
+      await authRepository.resendOtp(username, countryCode: countryCode);
 
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -682,6 +685,7 @@ class _LoginScreenState extends State<LoginScreen>
             'username': username,
             'isPhone': isPhone,
             'userId': userId,
+            'countryCode': countryCode,
           },
         );
       }
@@ -699,6 +703,7 @@ class _LoginScreenState extends State<LoginScreen>
             'username': username,
             'isPhone': isPhone,
             'userId': userId,
+            'countryCode': countryCode,
           },
         );
       }

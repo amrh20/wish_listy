@@ -322,11 +322,15 @@ class AppRoutes {
     } else if (settings.name == resetPassword) {
       final args = settings.arguments as Map<String, dynamic>?;
       final identifier = args?['identifier'] as String?;
+      final countryCode = args?['countryCode'] as String?;
       if (identifier != null && identifier.isNotEmpty) {
         return MaterialPageRoute(
           builder: (context) => BlocProvider<AuthCubit>(
             create: (context) => AuthCubit(),
-            child: NewPasswordScreen(identifier: identifier),
+            child: NewPasswordScreen(
+              identifier: identifier,
+              countryCode: countryCode,
+            ),
           ),
         );
       }
@@ -339,9 +343,7 @@ class AppRoutes {
       );
       } else if (settings.name == verification) {
         final args = settings.arguments as Map<String, dynamic>?;
-        
-        // Debug: Log route arguments for verification screen
-        
+
         return MaterialPageRoute(
           builder: (context) => BlocProvider<AuthCubit>(
             create: (context) => AuthCubit(repository: context.read<AuthRepository>()),
@@ -350,6 +352,7 @@ class AppRoutes {
               isPhone: args?['isPhone'] ?? false,
               verificationId: args?['verificationId'] as String?,
               userId: args?['userId'] as String?,
+              countryCode: args?['countryCode'] as String?,
             ),
           ),
         );

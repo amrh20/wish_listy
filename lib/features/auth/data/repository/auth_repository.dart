@@ -129,6 +129,7 @@ class AuthRepository extends ChangeNotifier {
     required String username, // email or phone
     required String fullName,
     required String password,
+    String? countryCode, // e.g. '+20' for phone-based registration
   }) async {
     try {
       // Prepare registration data according to API format
@@ -136,6 +137,7 @@ class AuthRepository extends ChangeNotifier {
         'username': username,
         'fullName': fullName,
         'password': password,
+        if (countryCode != null && countryCode.isNotEmpty) 'country_code': countryCode,
       };
 
       // Make API call to register endpoint
@@ -166,6 +168,7 @@ class AuthRepository extends ChangeNotifier {
     required String username, // username can be email or phone
     required String password,
     String? fcmToken, // Optional FCM token for push notifications
+    String? countryCode, // e.g. '+20' for phone-based login
   }) async {
     // ApiException will be thrown by ApiService interceptor if there's an error
     // No need to catch and rethrow - let ApiException propagate naturally
@@ -173,6 +176,7 @@ class AuthRepository extends ChangeNotifier {
       'username': username,
       'password': password,
       if (fcmToken != null) 'fcmToken': fcmToken,
+      if (countryCode != null && countryCode.isNotEmpty) 'country_code': countryCode,
     };
     final response = await _apiService.post('/auth/login', data: loginData);
     return response;
@@ -183,6 +187,7 @@ class AuthRepository extends ChangeNotifier {
     String username,
     String password, {
     String? fcmToken,
+    String? countryCode, // e.g. '+20' for phone-based login
   }) async {
     try {
       // Call the API to login
@@ -190,6 +195,7 @@ class AuthRepository extends ChangeNotifier {
         username: username,
         password: password,
         fcmToken: fcmToken,
+        countryCode: countryCode,
       );
 
       // Check if user exists but is unverified
@@ -744,12 +750,18 @@ class AuthRepository extends ChangeNotifier {
 
   /// Check if account exists and has linked email
   /// Returns: {"success": true, "email": "..."} or {"success": true, "email_linked": false} or {"success": false, "message": "..."}
-  Future<Map<String, dynamic>> checkAccount(String username) async {
+  Future<Map<String, dynamic>> checkAccount(
+    String username, {
+    String? countryCode, // e.g. '+20' for phone-based check
+  }) async {
     try {
-
+      final data = <String, dynamic>{'username': username};
+      if (countryCode != null && countryCode.isNotEmpty) {
+        data['country_code'] = countryCode;
+      }
       final response = await _apiService.post(
         '/auth/check-account',
-        data: {'username': username},
+        data: data,
       );
 
       return response;
@@ -763,15 +775,20 @@ class AuthRepository extends ChangeNotifier {
   /// Request password reset link
   /// [identifier] can be email or phone
   /// [newEmail] is optional - used when account doesn't have linked email
+  /// [countryCode] e.g. '+20' for phone-based reset
   /// Returns response or throws ApiException with requiresEmail flag in data
   Future<Map<String, dynamic>> requestReset(
     String identifier, {
     String? newEmail,
+    String? countryCode,
   }) async {
     try {
       final data = <String, dynamic>{'identifier': identifier};
       if (newEmail != null && newEmail.isNotEmpty) {
         data['newEmail'] = newEmail;
+      }
+      if (countryCode != null && countryCode.isNotEmpty) {
+        data['country_code'] = countryCode;
       }
 
       final response = await _apiService.post(
@@ -797,19 +814,25 @@ class AuthRepository extends ChangeNotifier {
   /// [identifier] is the username/phone used in request-reset
   /// [otp] is the 6-digit OTP code
   /// [newPassword] is the new password
+  /// [countryCode] e.g. '+20' for phone-based reset
   Future<Map<String, dynamic>> resetPassword({
     required String identifier,
     required String otp,
     required String newPassword,
+    String? countryCode,
   }) async {
     try {
+      final data = <String, dynamic>{
+        'identifier': identifier,
+        'otp': otp,
+        'newPassword': newPassword,
+      };
+      if (countryCode != null && countryCode.isNotEmpty) {
+        data['country_code'] = countryCode;
+      }
       final response = await _apiService.patch(
         '/auth/reset-password',
-        data: {
-          'identifier': identifier,
-          'otp': otp,
-          'newPassword': newPassword,
-        },
+        data: data,
       );
       return response;
     } on ApiException {
@@ -1375,16 +1398,20 @@ class AuthRepository extends ChangeNotifier {
 
   /// Resend OTP (email or phone).
   /// Calls POST /api/auth/resend-otp with username (email or phone) in the body.
+  /// [countryCode] e.g. '+20' for phone-based resend
   /// Returns the success message from the response, or throws on failure.
-  Future<String> resendOtp(String username) async {
+  Future<String> resendOtp(String username, {String? countryCode}) async {
     try {
       if (username.trim().isEmpty) {
         throw ApiException('Username (email or phone) is required');
       }
-
+      final data = <String, dynamic>{'username': username.trim()};
+      if (countryCode != null && countryCode.isNotEmpty) {
+        data['country_code'] = countryCode;
+      }
       final response = await _apiService.post(
         '/auth/resend-otp',
-        data: {'username': username.trim()},
+        data: data,
       );
 
       final message = response['message']?.toString() ??

@@ -274,6 +274,7 @@ class _SignupScreenState extends State<SignupScreen>
         fullName: _fullNameController.text.trim(),
         username: username,
         password: _passwordController.text,
+        countryCode: isPhone ? '+${_selectedCountry.phoneCode}' : null,
       );
 
       // Check if user already exists but is unverified
@@ -301,7 +302,12 @@ class _SignupScreenState extends State<SignupScreen>
           }
           
           // Phone: Trigger Firebase Phone Auth to send new SMS
-          await _handlePhoneVerification(authRepository, sanitizedPhone, userId: userId);
+          await _handlePhoneVerification(
+            authRepository,
+            sanitizedPhone,
+            userId: userId,
+            countryCode: '+${_selectedCountry.phoneCode}',
+          );
         } else {
           // Email: Navigate directly to verification screen
           await Future.delayed(const Duration(milliseconds: 500));
@@ -342,7 +348,12 @@ class _SignupScreenState extends State<SignupScreen>
           }
           
           // Phone registration: trigger Firebase Phone Auth to send SMS
-          await _handlePhoneVerification(authRepository, sanitizedPhone, userId: userId);
+          await _handlePhoneVerification(
+            authRepository,
+            sanitizedPhone,
+            userId: userId,
+            countryCode: '+${_selectedCountry.phoneCode}',
+          );
         } else {
           // Email registration: navigate directly to verification screen
           if (mounted) {
@@ -395,7 +406,12 @@ class _SignupScreenState extends State<SignupScreen>
           }
           
           // Phone: Automatically trigger Firebase Phone Auth to send SMS
-          await _handlePhoneVerification(authRepository, sanitizedPhone, userId: userId);
+          await _handlePhoneVerification(
+            authRepository,
+            sanitizedPhone,
+            userId: userId,
+            countryCode: '+${_selectedCountry.phoneCode}',
+          );
         } else {
           // Email: Navigate directly to verification screen
           await Future.delayed(const Duration(milliseconds: 500));
@@ -438,6 +454,7 @@ class _SignupScreenState extends State<SignupScreen>
     AuthRepository authRepository,
     String phoneNumber, {
     String? userId,
+    String? countryCode,
   }) async {
     if (!mounted) return;
 
@@ -472,7 +489,8 @@ class _SignupScreenState extends State<SignupScreen>
                 'username': phoneNumber, // E.164 format: +201064448681
                 'isPhone': true,
                 'verificationId': verificationId, // Persist verificationId
-                'userId': userId, // Ensure userId is passed
+                'userId': userId,
+                'countryCode': countryCode,
               },
             );
           }
@@ -527,6 +545,7 @@ class _SignupScreenState extends State<SignupScreen>
                   'isPhone': true,
                   'verificationId': verificationId,
                   'userId': userId,
+                  'countryCode': countryCode,
                 },
               );
             }

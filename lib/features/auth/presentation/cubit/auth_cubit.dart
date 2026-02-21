@@ -54,11 +54,14 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> checkAccount(String identifier) async {
+  Future<void> checkAccount(String identifier, {String? countryCode}) async {
     try {
       emit(AuthLoading());
 
-      final response = await _repository.checkAccount(identifier);
+      final response = await _repository.checkAccount(
+        identifier,
+        countryCode: countryCode,
+      );
 
       
       if (response['success'] == true) {
@@ -93,13 +96,18 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  Future<void> requestReset(String identifier, {String? newEmail}) async {
+  Future<void> requestReset(
+    String identifier, {
+    String? newEmail,
+    String? countryCode,
+  }) async {
     try {
       emit(AuthLoading());
 
       final response = await _repository.requestReset(
         identifier,
         newEmail: newEmail,
+        countryCode: countryCode,
       );
 
       // Check if requiresEmail flag is set (from 400 error)
@@ -137,6 +145,7 @@ class AuthCubit extends Cubit<AuthState> {
     required String identifier,
     required String otp,
     required String newPassword,
+    String? countryCode,
   }) async {
     try {
       emit(AuthLoading());
@@ -145,6 +154,7 @@ class AuthCubit extends Cubit<AuthState> {
         identifier: identifier,
         otp: otp,
         newPassword: newPassword,
+        countryCode: countryCode,
       );
 
       if (response['success'] == true) {
@@ -208,8 +218,8 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   /// Resend OTP (email or phone). Calls repository; exceptions propagate to caller.
-  Future<void> resendOtp(String username) async {
-    await _repository.resendOtp(username);
+  Future<void> resendOtp(String username, {String? countryCode}) async {
+    await _repository.resendOtp(username, countryCode: countryCode);
   }
 }
 

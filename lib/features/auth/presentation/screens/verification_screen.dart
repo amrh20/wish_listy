@@ -21,6 +21,7 @@ class VerificationScreen extends StatefulWidget {
   final bool isPhone;
   final String? verificationId; // Required for phone verification
   final String? userId; // User ID from registration/login response
+  final String? countryCode; // Country code for phone flow (e.g. '+20') - used by resendOtp
 
   const VerificationScreen({
     super.key,
@@ -28,6 +29,7 @@ class VerificationScreen extends StatefulWidget {
     required this.isPhone,
     this.verificationId,
     this.userId,
+    this.countryCode,
   });
 
   @override
@@ -629,7 +631,10 @@ class _VerificationScreenState extends State<VerificationScreen>
 
     try {
       final authCubit = context.read<AuthCubit>();
-      await authCubit.resendOtp(widget.username);
+      await authCubit.resendOtp(
+        widget.username,
+        countryCode: widget.isPhone ? widget.countryCode : null,
+      );
 
       if (!mounted) return;
       setState(() => _isLoading = false);
