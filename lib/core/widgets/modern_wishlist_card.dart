@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
+import 'package:wish_listy/features/wishlists/presentation/widgets/form/wishlist_form_helpers.dart';
 import 'package:wish_listy/features/wishlists/presentation/widgets/index.dart';
 
 /// Helper class for category visual styling
@@ -89,13 +90,12 @@ _CategoryVisual _getCategoryVisual(String? categoryRaw) {
   }
 }
 
-/// Format category label
-String _formatCategoryLabel(String? categoryRaw) {
-  final category = (categoryRaw ?? 'Other').trim();
-  if (category.isEmpty) return 'Other';
-  if (category.toLowerCase() == 'general') return 'Other';
-  // Capitalize first letter
-  return category[0].toUpperCase() + category.substring(1);
+/// Format category label (translated)
+String _formatCategoryLabel(String? categoryRaw, LocalizationService localization) {
+  final category = (categoryRaw ?? 'other').trim().toLowerCase();
+  if (category.isEmpty) return localization.translate('events.other') ?? 'Other';
+  if (category == 'general') return localization.translate('events.other') ?? 'Other';
+  return WishlistFormHelpers.getCategoryDisplayName(category, localization);
 }
 
 /// Modern 2025 wishlist card - Clean, minimal, and trendy
@@ -147,9 +147,10 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
     with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final categoryVisual = _getCategoryVisual(widget.category);
     final categoryColor = categoryVisual.foregroundColor;
-    final categoryName = _formatCategoryLabel(widget.category);
+    final categoryName = _formatCategoryLabel(widget.category, localization);
     final hasItems = widget.totalItems > 0;
     final hasDescription =
         widget.description != null && widget.description!.trim().isNotEmpty;

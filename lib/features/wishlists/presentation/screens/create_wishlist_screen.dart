@@ -945,7 +945,7 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '(Optional)',
+                  '(${localization.translate('common.optional') ?? 'Optional'})',
                   style: AppStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                     fontStyle: FontStyle.italic,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
@@ -901,28 +902,16 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   }
 
   String _formatDate(DateTime date) {
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+    final locale = Provider.of<LocalizationService>(context, listen: false).currentLanguage;
+    final localeStr = locale == 'ar' ? 'ar' : 'en_US';
+    return DateFormat.yMMMd(localeStr).format(date);
   }
 
   String _formatTime(TimeOfDay time) {
-    final hour = time.hourOfPeriod;
-    final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
-    return '${hour == 0 ? 12 : hour}:$minute $period';
+    final locale = Provider.of<LocalizationService>(context, listen: false).currentLanguage;
+    final localeStr = locale == 'ar' ? 'ar' : 'en_US';
+    final dt = DateTime(2000, 1, 1, time.hour, time.minute);
+    return DateFormat.jm(localeStr).format(dt);
   }
 
   // Action Handlers

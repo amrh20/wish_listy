@@ -4,6 +4,7 @@ import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
+import 'package:wish_listy/features/wishlists/presentation/widgets/form/wishlist_form_helpers.dart';
 import 'package:wish_listy/features/wishlists/presentation/widgets/shared/wishlist_summary.dart';
 
 class _CategoryVisual {
@@ -88,12 +89,11 @@ _CategoryVisual _getCategoryVisual(String? categoryRaw) {
   }
 }
 
-String _formatCategoryLabel(String? categoryRaw) {
-  final category = (categoryRaw ?? 'Other').trim();
-  if (category.isEmpty) return 'Other';
-  if (category.toLowerCase() == 'general') return 'Other';
-  // Capitalize first letter, keep rest as-is for now.
-  return category[0].toUpperCase() + category.substring(1);
+String _formatCategoryLabel(String? categoryRaw, LocalizationService localization) {
+  final category = (categoryRaw ?? 'other').trim().toLowerCase();
+  if (category.isEmpty) return localization.translate('events.other') ?? 'Other';
+  if (category == 'general') return localization.translate('events.other') ?? 'Other';
+  return WishlistFormHelpers.getCategoryDisplayName(category, localization);
 }
 
 class GuestWishlistCardWidget extends StatelessWidget {
@@ -112,14 +112,14 @@ class GuestWishlistCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final categoryVisual = _getCategoryVisual(wishlist.category);
-    final categoryName = _formatCategoryLabel(wishlist.category);
+    final categoryName = _formatCategoryLabel(wishlist.category, localization);
     final hasItems = wishlist.itemCount > 0;
     final description = wishlist.description?.trim();
     final hasDescription = description != null && description.isNotEmpty;
 
     final categoryColor = categoryVisual.foregroundColor;
-    final localization = Provider.of<LocalizationService>(context, listen: false);
     final wishesText = '• ${wishlist.itemCount} ${wishlist.itemCount == 1 ? localization.translate('cards.wish') : localization.translate('cards.wishes')}';
 
     return Container(

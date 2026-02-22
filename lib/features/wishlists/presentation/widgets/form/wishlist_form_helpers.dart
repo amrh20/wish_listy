@@ -49,12 +49,15 @@ class WishlistFormHelpers {
     }
   }
 
-  /// Get category display name based on category type
+  /// Get category display name based on category type.
+  /// Normalizes input (lowercase, handles babyshower/baby_shower variants) so
+  /// API-returned values are always translated regardless of casing.
   static String getCategoryDisplayName(
     String category,
     LocalizationService localization,
   ) {
-    switch (category) {
+    final normalized = category.trim().toLowerCase().replaceAll('_', '');
+    switch (normalized) {
       case 'general':
         return localization.translate('common.general');
       case 'birthday':
@@ -67,11 +70,14 @@ class WishlistFormHelpers {
         return localization.translate('events.anniversary');
       case 'holiday':
         return localization.translate('common.holiday');
-      case 'babyShower':
+      case 'christmas':
+        return localization.translate('events.christmas');
+      case 'babyshower':
         return localization.translate('events.babyShower');
       case 'housewarming':
         return localization.translate('events.housewarming');
       case 'custom':
+      case 'other':
         return localization.translate('events.other');
       default:
         return category;

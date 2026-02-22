@@ -109,7 +109,7 @@ class EventPreviewWidget extends StatelessWidget {
                       const SizedBox(height: 4),
                       if (selectedDate != null) ...[
                         Text(
-                          '${formatDate(selectedDate!)}${selectedTime != null ? ' at ${formatTime(selectedTime!)}' : ''}',
+                          '${formatDate(selectedDate!)}${selectedTime != null ? '${localization.translate('events.dateTimeConnector') ?? ' at '}${formatTime(selectedTime!)}' : ''}',
                           style: AppStyles.bodySmall.copyWith(
                             color: AppColors.textSecondary,
                           ),

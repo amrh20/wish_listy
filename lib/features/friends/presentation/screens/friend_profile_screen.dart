@@ -16,6 +16,7 @@ import 'package:wish_listy/features/friends/data/models/friend_wishlist_model.da
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/presentation/widgets/stacked_mutual_friends_widget.dart';
 import 'package:wish_listy/features/friends/presentation/controllers/friend_profile_controller.dart';
+import 'package:wish_listy/features/wishlists/presentation/widgets/form/wishlist_form_helpers.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
 
@@ -1550,7 +1551,7 @@ class _BodyContent extends StatefulWidget {
 class _BodyContentState extends State<_BodyContent> {
   int _selectedMainTab = 0; // 0 = wishlists, 1 = events
   String _selectedFilter = 'upcoming'; // 'upcoming' or 'past'
-  String _selectedCategory = 'All'; // Wishlist category filter
+  String _selectedCategory = 'all'; // Wishlist category filter
 
   Widget _buildEmptyState({
     required IconData icon,
@@ -1956,7 +1957,7 @@ class _BodyContentState extends State<_BodyContent> {
                   _selectedMainTab = index;
                   // Reset filters when switching tabs
                   if (index == 0) {
-                    _selectedCategory = 'All';
+                    _selectedCategory = 'all';
                   } else {
                     _selectedFilter = 'upcoming';
                   }
@@ -1992,30 +1993,23 @@ class _BodyContentState extends State<_BodyContent> {
         );
       }
 
-      // Extract unique categories from wishlists
-      final Set<String> uniqueCategories = {};
+      // Extract unique categories from wishlists (use raw lowercase for filtering)
+      final Set<String> uniqueCategoriesRaw = {};
       for (final wishlist in allWishlists) {
         if (wishlist.category != null && wishlist.category!.trim().isNotEmpty) {
-          // Capitalize category name for display
-          final categoryName = wishlist.category!.trim();
-          final capitalized =
-              categoryName[0].toUpperCase() + categoryName.substring(1);
-          uniqueCategories.add(capitalized);
+          uniqueCategoriesRaw.add(wishlist.category!.trim().toLowerCase());
         }
       }
 
-      // Build category filter options: ['All', ...uniqueCategories] (sorted)
-      final categoryOptions = ['All', ...uniqueCategories.toList()..sort()];
+      // Build category filter options: ['all', ...uniqueCategoriesRaw] (sorted)
+      final categoryOptions = ['all', ...uniqueCategoriesRaw.toList()..sort()];
 
       // Filter wishlists based on selected category
-      final filteredWishlists = _selectedCategory == 'All'
+      final filteredWishlists = _selectedCategory == 'all'
           ? allWishlists
           : allWishlists.where((w) {
               if (w.category == null || w.category!.trim().isEmpty) return false;
-              final categoryName = w.category!.trim();
-              final capitalized =
-                  categoryName[0].toUpperCase() + categoryName.substring(1);
-              return capitalized == _selectedCategory;
+              return w.category!.trim().toLowerCase() == _selectedCategory;
             }).toList();
 
       return Column(
@@ -2023,7 +2017,7 @@ class _BodyContentState extends State<_BodyContent> {
         children: [
           // Category Filter Chips (only show if there are categories)
           // Aligned with parent tabs by matching padding (parent has 16 + UnifiedTabBar margin 20 = 36)
-          if (uniqueCategories.isNotEmpty) ...[
+          if (uniqueCategoriesRaw.isNotEmpty) ...[
             Padding(
               padding: const EdgeInsets.only(left: 20), // Match UnifiedTabBar horizontal margin
               child: SizedBox(
@@ -2033,10 +2027,13 @@ class _BodyContentState extends State<_BodyContent> {
                   child: Row(
                     children: categoryOptions.map((category) {
                       final isSelected = category == _selectedCategory;
+                      final label = category == 'all'
+                          ? (localization.translate('common.all') ?? 'All')
+                          : WishlistFormHelpers.getCategoryDisplayName(category, localization);
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ChoiceChip(
-                          label: Text(category),
+                          label: Text(label),
                           selected: isSelected,
                           onSelected: (selected) {
                             if (selected) {
@@ -2257,11 +2254,14 @@ class _WishlistGridCard extends StatelessWidget {
     final hasDescription = wishlist.description != null &&
         wishlist.description!.trim().isNotEmpty;
 
-    // Format category name
-    String categoryName = (wishlist.category ?? 'Other').trim();
-    if (categoryName.isEmpty) categoryName = 'Other';
-    if (categoryName.toLowerCase() == 'general') categoryName = 'Other';
-    categoryName = categoryName[0].toUpperCase() + categoryName.substring(1);
+    // Format category name (translated)
+    final rawCategory = (wishlist.category ?? 'other').trim().toLowerCase();
+    final categoryName = rawCategory.isEmpty || rawCategory == 'general'
+        ? (Provider.of<LocalizationService>(context, listen: false).translate('events.other') ?? 'Other')
+        : WishlistFormHelpers.getCategoryDisplayName(
+            rawCategory,
+            Provider.of<LocalizationService>(context, listen: false),
+          );
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -2420,15 +2420,29 @@ class _WishlistGridCard extends StatelessWidget {
                                   final diff = now.difference(wishlist.createdAt!);
                                   final String timeAgo;
                                   if (diff.inDays > 365) {
-                                    timeAgo = '${(diff.inDays / 365).floor()}y';
+                                    final years = (diff.inDays / 365).floor();
+                                    timeAgo = years == 1
+                                        ? (localization.translate('activity.oneYearAgo') ?? '1 year ago')
+                                        : (localization.translate('activity.yearsAgo', args: {'count': years}) ?? '${years} years ago');
                                   } else if (diff.inDays > 30) {
-                                    timeAgo = '${(diff.inDays / 30).floor()}mo';
+                                    final months = (diff.inDays / 30).floor();
+                                    timeAgo = months == 1
+                                        ? (localization.translate('activity.oneMonthAgo') ?? '1 month ago')
+                                        : (localization.translate('activity.monthsAgo', args: {'count': months}) ?? '${months} months ago');
                                   } else if (diff.inDays > 0) {
-                                    timeAgo = '${diff.inDays}d';
+                                    timeAgo = diff.inDays == 1
+                                        ? (localization.translate('activity.oneDayAgo') ?? '1 day ago')
+                                        : (localization.translate('activity.daysAgo', args: {'count': diff.inDays}) ?? '${diff.inDays} days ago');
                                   } else if (diff.inHours > 0) {
-                                    timeAgo = '${diff.inHours}h';
+                                    timeAgo = diff.inHours == 1
+                                        ? (localization.translate('activity.oneHourAgo') ?? '1 hour ago')
+                                        : (localization.translate('activity.hoursAgo', args: {'count': diff.inHours}) ?? '${diff.inHours} hours ago');
+                                  } else if (diff.inMinutes > 0) {
+                                    timeAgo = diff.inMinutes == 1
+                                        ? (localization.translate('activity.oneMinuteAgo') ?? '1 minute ago')
+                                        : (localization.translate('activity.minutesAgo', args: {'count': diff.inMinutes}) ?? '${diff.inMinutes} minutes ago');
                                   } else {
-                                    timeAgo = 'now';
+                                    timeAgo = localization.translate('activity.justNow') ?? 'Just now';
                                   }
                                   return Row(
                                     mainAxisSize: MainAxisSize.min,

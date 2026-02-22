@@ -1403,7 +1403,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'Purchased',
+                                Provider.of<LocalizationService>(context, listen: false).translate('ui.purchasedWithCheck') ?? 'Purchased',
                                 style: AppStyles.caption.copyWith(
                                   color: AppColors.success,
                                   fontWeight: FontWeight.w600,
