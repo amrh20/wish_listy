@@ -1751,7 +1751,7 @@
     "undoReceivedQuestion": "إلغاء حالة الاستلام؟",
     "markAsReceivedQuestion": "تحديد كمستلمة؟",
     "undoReceivedContent": "كده الأمنية هترجع تاني لحالة النشطة.",
-    "markAsReceivedContent": "كده الأمنية هتتسجّل كمُشتراة ومستلمة. متأكد إنك استلمتها؟",
+    "markAsReceivedContent": "استلمت الهدية دي؟ الخطوة دي هتخلي أمنيتك مكتملة.",
     "markedAsGifted": "استلمتها"
   },
   "guest": {

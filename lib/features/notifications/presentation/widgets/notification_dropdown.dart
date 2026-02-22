@@ -227,12 +227,12 @@ class NotificationDropdown extends StatelessWidget {
   }
 
   Widget _buildLoadingState(BuildContext context) {
-    // Use shimmer state for better UX
-    return _buildShimmerState(context);
+    return _buildLoadingDropdown(context);
   }
 
-  /// Build shimmer loading state (skeleton screen)
-  Widget _buildShimmerState(BuildContext context) {
+  /// Build loading state with centered CircularProgressIndicator.
+  /// Keeps the same structure and minimum height as the loaded state.
+  Widget _buildLoadingDropdown(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context, listen: false);
 
     final screenWidth = MediaQuery.of(context).size.width;
@@ -262,7 +262,7 @@ class NotificationDropdown extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header
+          // Header (same as main state)
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -285,13 +285,16 @@ class NotificationDropdown extends StatelessWidget {
               ],
             ),
           ),
-          // Shimmer loading items
+          // Centered loading indicator (maintains minimum content area height)
           Flexible(
-            child: ListView(
-              shrinkWrap: true,
-              physics: const ClampingScrollPhysics(), // Prevent over-scroll glitches
-              padding: const EdgeInsets.all(16),
-              children: List.generate(3, (index) => _buildShimmerItem()),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 120),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              ),
             ),
           ),
           // View All Button (same as main state for stable layout)
@@ -328,11 +331,6 @@ class NotificationDropdown extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  /// Build individual shimmer item (skeleton for notification) with animation
-  Widget _buildShimmerItem() {
-    return _ShimmerItem();
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -1225,105 +1223,3 @@ class _NotificationItem extends StatelessWidget {
   }
 
 }
-
-/// Animated shimmer item for loading state
-class _ShimmerItem extends StatefulWidget {
-  const _ShimmerItem();
-
-  @override
-  State<_ShimmerItem> createState() => _ShimmerItemState();
-}
-
-class _ShimmerItemState extends State<_ShimmerItem>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat();
-    _animation = Tween<double>(begin: 0.3, end: 0.7).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceVariant.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Avatar shimmer with animation
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200.withOpacity(_animation.value),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              const SizedBox(width: 12),
-              // Text shimmer with animation
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title shimmer
-                    Container(
-                      height: 14,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200.withOpacity(_animation.value),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Message shimmer
-                    Container(
-                      height: 12,
-                      width: 200,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200.withOpacity(_animation.value),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    // Time shimmer
-                    Container(
-                      height: 10,
-                      width: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200.withOpacity(_animation.value),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-

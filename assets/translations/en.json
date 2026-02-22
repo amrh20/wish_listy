@@ -1751,7 +1751,7 @@
     "undoReceivedQuestion": "Undo Received?",
     "markAsReceivedQuestion": "Mark Received?",
     "undoReceivedContent": "Return wish to active state?",
-    "markAsReceivedContent": "Got it? This will mark the wish fulfilled.",
+    "markAsReceivedContent": "Did you get this? This will mark your wish as completed",
     "markedAsGifted": "Received"
   },
   "guest": {
