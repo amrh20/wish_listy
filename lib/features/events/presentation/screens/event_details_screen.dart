@@ -158,6 +158,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
     await _loadEventDetails();
   }
 
+  /// Refresh event details without showing full-screen loader (for background updates)
+  Future<void> _loadEventDetailsSilent() async {
+    try {
+      final event = await _eventRepository.getEventById(widget.eventId);
+      if (!mounted) return;
+      setState(() {
+        _event = event;
+      });
+    } catch (_) {
+      // Silently ignore - keep current data
+    }
+  }
+
   Color _getEventTypeColor(EventType type) {
     switch (type) {
       case EventType.birthday:
@@ -1060,7 +1073,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           items.add(const PopupMenuDivider());
           items.add(
             PopupMenuItem<String>(
-              value: 'delete_event',
+            value: 'delete_event',
               child: Row(
                 children: [
                   Icon(Icons.delete_outline, color: AppColors.error, size: 20),
@@ -1994,37 +2007,63 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         onInvite: (List<String> friendIds) async {
           // Close bottom sheet first
           Navigator.pop(context);
-          
-          // Show loading indicator
+
           if (!mounted) return;
-          
+
+          // Capture messenger and localization before async work
+          final scaffoldMessenger = ScaffoldMessenger.of(context);
+          final localization = Provider.of<LocalizationService>(context, listen: false);
+
+          // Show loading snackbar
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(localization.translate('events.updatingInvitations')),
+                ],
+              ),
+              backgroundColor: AppColors.primary,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 30),
+              dismissDirection: DismissDirection.none,
+            ),
+          );
+
           try {
             // Call PATCH API to update invited friends
             await _updateInvitedFriends(friendIds);
-            
-            // Refresh event details to get updated data
-            await _loadEventDetails();
-            
-            // Show success toast
-            if (mounted) {
-              final localization = Provider.of<LocalizationService>(context, listen: false);
-              TopOverlayToast.showSuccess(
-                context,
-                localization.translate('events.invitationsUpdatedSuccessfully') != 'events.invitationsUpdatedSuccessfully'
-                    ? localization.translate('events.invitationsUpdatedSuccessfully')
-                    : 'Invitations updated successfully',
-                duration: const Duration(seconds: 2),
-              );
-            }
+
+            // Refresh event details silently (no full-screen loader)
+            await _loadEventDetailsSilent();
+
+            if (!mounted) return;
+
+            // Remove loading snackbar immediately, then show success toast
+            scaffoldMessenger.removeCurrentSnackBar();
+            TopOverlayToast.showSuccess(
+              context,
+              localization.translate('events.invitationsUpdatedSuccessfully') != 'events.invitationsUpdatedSuccessfully'
+                  ? localization.translate('events.invitationsUpdatedSuccessfully')
+                  : 'Invitations updated successfully',
+              duration: const Duration(seconds: 2),
+            );
           } catch (e) {
-            // Show error toast
-            if (mounted) {
-              TopOverlayToast.showError(
-                context,
-                e.toString().replaceAll('Exception: ', ''),
-                duration: const Duration(seconds: 3),
-          );
-            }
+            if (!mounted) return;
+            scaffoldMessenger.removeCurrentSnackBar();
+            TopOverlayToast.showError(
+              context,
+              e.toString().replaceAll('Exception: ', ''),
+              duration: const Duration(seconds: 3),
+            );
           }
         },
       ),

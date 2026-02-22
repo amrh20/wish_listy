@@ -669,12 +669,15 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         
         // ==========================================
         // GIFTS & WISHLISTS - Navigate to Item Details
-        // Types: item_reserved, item_unreserved, item_purchased, item_received, reservation_reminder
+        // Types: item_reserved, item_unreserved, item_purchased, item_received,
+        // reservation_reminder, reservation_cancelled, reservation_expired
         // ==========================================
         case NotificationType.itemReserved:
         case NotificationType.itemUnreserved:
         case NotificationType.itemPurchased:
         case NotificationType.reservationReminder:
+        case NotificationType.reservationExpired:
+        case NotificationType.reservationCancelled:
           final itemId = extractItemId();
           final wishlistId = extractWishlistId();
           

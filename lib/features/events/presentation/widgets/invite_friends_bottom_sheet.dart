@@ -62,6 +62,15 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
     return status != null && status != InvitationStatus.pending;
   }
 
+  /// Count of selected friends that are displayable (excludes responded).
+  /// Used for "X Selected" and "Invite X Friends" when in invite-more mode.
+  int get _displayableSelectedCount {
+    if (widget.friendStatuses == null) return _selectedFriendIds.length;
+    return _selectedFriendIds
+        .where((id) => !_hasResponded(id))
+        .length;
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -157,15 +166,46 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
     await _loadFriends();
   }
 
-  /// Filter friends based on search query
+  /// Get list of friends that can be shown in the list.
+  /// When friendStatuses is provided (e.g. "Invite More" from event details),
+  /// exclude friends who have already responded (accepted, declined, maybe).
+  /// Only show: friends not yet invited, or invited but still pending.
+  List<Friend> _getDisplayableFriends(List<Friend> friends) {
+    if (widget.friendStatuses == null) return friends;
+    return friends.where((friend) => !_hasResponded(friend.id)).toList();
+  }
+
+  /// Whether friend was already invited (in invite-more mode)
+  bool _wasInvited(String friendId) {
+    return widget.initiallySelectedIds.contains(friendId);
+  }
+
+  /// Sort displayable friends: not invited first, then invited pending
+  List<Friend> _sortDisplayableFriends(List<Friend> friends) {
+    if (widget.friendStatuses == null) return friends;
+    final sorted = List<Friend>.from(friends);
+    sorted.sort((a, b) {
+      final aInvited = _wasInvited(a.id);
+      final bInvited = _wasInvited(b.id);
+      if (!aInvited && bInvited) return -1; // a first
+      if (aInvited && !bInvited) return 1;  // b first
+      return 0;
+    });
+    return sorted;
+  }
+
+  /// Filter friends based on search query and exclusion of responded friends
   /// Searches by name, username, email, or phone
   void _filterFriends() {
     final query = _searchController.text.toLowerCase().trim();
+    final displayableFriends = _getDisplayableFriends(_allFriends);
+
     setState(() {
+      List<Friend> filtered;
       if (query.isEmpty) {
-        _filteredFriends = List.from(_allFriends);
+        filtered = List.from(displayableFriends);
       } else {
-        _filteredFriends = _allFriends
+        filtered = displayableFriends
             .where((friend) {
               // Search by full name
               if (friend.fullName.toLowerCase().contains(query)) {
@@ -187,6 +227,7 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
             })
             .toList();
       }
+      _filteredFriends = _sortDisplayableFriends(filtered);
     });
   }
 
@@ -204,19 +245,26 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
     });
   }
 
-  /// Toggle select all friends
+  /// Toggle select all friends (only among displayable friends - excludes those who already responded)
   void _toggleSelectAll() {
-    setState(() {
-      final allSelected = _allFriends.every(
-        (friend) => _selectedFriendIds.contains(friend.id),
-      );
+    final displayableFriends = _getDisplayableFriends(_allFriends);
 
-      if (allSelected) {
-        // Deselect all
-        _selectedFriendIds.clear();
+    setState(() {
+      final allDisplayableSelected = displayableFriends.isNotEmpty &&
+          displayableFriends.every(
+            (friend) => _selectedFriendIds.contains(friend.id),
+          );
+
+      if (allDisplayableSelected) {
+        // Deselect all displayable (keep responded friends in selection - they stay invited)
+        for (final friend in displayableFriends) {
+          _selectedFriendIds.remove(friend.id);
+        }
       } else {
-        // Select all loaded friends
-        _selectedFriendIds = _allFriends.map((friend) => friend.id).toSet();
+        // Select all displayable friends
+        for (final friend in displayableFriends) {
+          _selectedFriendIds.add(friend.id);
+        }
       }
     });
   }
@@ -325,57 +373,60 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
                 ),
                 GestureDetector(
                   onTap: _toggleSelectAll,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _allFriends.isNotEmpty &&
-                              _allFriends.every((friend) =>
-                                  _selectedFriendIds.contains(friend.id))
-                          ? AppColors.primary
-                          : AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppColors.primary,
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _allFriends.isNotEmpty &&
-                                  _allFriends.every((friend) =>
-                                      _selectedFriendIds.contains(friend.id))
-                              ? Icons.check
-                              : Icons.add,
-                          size: 16,
-                          color: _allFriends.isNotEmpty &&
-                                  _allFriends.every((friend) =>
-                                      _selectedFriendIds.contains(friend.id))
-                              ? Colors.white
-                              : AppColors.primary,
+                  child: Builder(
+                    builder: (context) {
+                      final displayableFriends =
+                          _getDisplayableFriends(_allFriends);
+                      final allDisplayableSelected = displayableFriends
+                              .isNotEmpty &&
+                          displayableFriends.every((friend) =>
+                              _selectedFriendIds.contains(friend.id));
+
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _allFriends.isNotEmpty &&
-                                  _allFriends.every((friend) =>
-                                      _selectedFriendIds.contains(friend.id))
-                              ? localization.translate('events.deselectAll')
-                              : localization.translate('events.selectAll'),
-                          style: AppStyles.bodySmall.copyWith(
-                            color: _allFriends.isNotEmpty &&
-                                    _allFriends.every((friend) =>
-                                        _selectedFriendIds.contains(friend.id))
-                                ? Colors.white
-                                : AppColors.primary,
-                            fontWeight: FontWeight.w600,
+                        decoration: BoxDecoration(
+                          color: allDisplayableSelected
+                              ? AppColors.primary
+                              : AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.primary,
+                            width: 1,
                           ),
                         ),
-                      ],
-                    ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              allDisplayableSelected
+                                  ? Icons.check
+                                  : Icons.add,
+                              size: 16,
+                              color: allDisplayableSelected
+                                  ? Colors.white
+                                  : AppColors.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              allDisplayableSelected
+                                  ? localization
+                                      .translate('events.deselectAll')
+                                  : localization
+                                      .translate('events.selectAll'),
+                              style: AppStyles.bodySmall.copyWith(
+                                color: allDisplayableSelected
+                                    ? Colors.white
+                                    : AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -384,12 +435,12 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
 
           const SizedBox(height: 8),
 
-          // Selected Count
-          if (_selectedFriendIds.isNotEmpty)
+          // Selected Count (shows displayable selected only when filtering responded friends)
+          if (_displayableSelectedCount > 0)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                '${_selectedFriendIds.length} ${localization.translate('events.selected')}',
+                '$_displayableSelectedCount ${localization.translate('events.selected')}',
                 style: AppStyles.bodySmall.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
@@ -445,7 +496,7 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
                   child: Text(
                     _selectedFriendIds.isEmpty
                         ? 'Select Friends'
-                        : 'Invite ${_selectedFriendIds.length} Friend${_selectedFriendIds.length > 1 ? 's' : ''}',
+                        : 'Invite $_displayableSelectedCount Friend${_displayableSelectedCount > 1 ? 's' : ''}',
                     style: AppStyles.bodyMedium.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -518,6 +569,12 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
 
     // Empty state
     if (_filteredFriends.isEmpty && !_isLoadingFriends) {
+      final displayableFriends = _getDisplayableFriends(_allFriends);
+      final allResponded = widget.friendStatuses != null &&
+          _allFriends.isNotEmpty &&
+          displayableFriends.isEmpty &&
+          _searchController.text.isEmpty;
+
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -532,11 +589,18 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
             const SizedBox(height: 16),
             Text(
               _searchController.text.isNotEmpty
-                  ? 'No friends found'
-                  : 'No friends available',
+                  ? localization.translate('friends.noFriendsFound') ??
+                      'No friends found'
+                  : allResponded
+                      ? localization.translate(
+                              'events.allFriendsRespondedToEvent') ??
+                          'All your friends have already responded to this event'
+                      : localization.translate('friends.noFriends') ??
+                          'No friends available',
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -572,6 +636,7 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
     final localization = Provider.of<LocalizationService>(context, listen: false);
     final hasResponded = _hasResponded(friend.id);
     final status = widget.friendStatuses?[friend.id];
+    final wasInvited = _wasInvited(friend.id);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -640,6 +705,43 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
                             '@${friend.username}',
                             style: AppStyles.bodySmall.copyWith(
                               color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        if (wasInvited && !hasResponded && widget.friendStatuses != null) ...[
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.primary.withOpacity(0.4),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.send_outlined,
+                                  size: 12,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  localization.translate('events.invitationSent') ??
+                                      'Invitation Sent',
+                                  style: AppStyles.caption.copyWith(
+                                    color: AppColors.primary,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],

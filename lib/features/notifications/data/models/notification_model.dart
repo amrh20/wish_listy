@@ -135,6 +135,10 @@ class AppNotification {
         case 'reservation_expired':
           type = NotificationType.reservationExpired;
           break;
+        case 'reservation_cancelled':
+        case 'reservation_canceled':
+          type = NotificationType.reservationCancelled;
+          break;
         case 'reservation_reminder':
           type = NotificationType.reservationReminder;
           break;
@@ -180,7 +184,9 @@ class AppNotification {
           json['data']?['relatedId'] ??
           json['data']?['related_id'] ??
           json['eventId'] ??
-          json['itemId'],
+          json['itemId'] ??
+          json['data']?['itemId'] ??
+          json['data']?['item_id'],
     );
 
     String? relatedWishlistId = _safeToString(
@@ -188,7 +194,9 @@ class AppNotification {
           json['related_wishlist_id'] ??
           json['data']?['relatedWishlistId'] ??
           json['data']?['related_wishlist_id'] ??
-          json['wishlistId'],
+          json['wishlistId'] ??
+          json['data']?['wishlistId'] ??
+          json['data']?['wishlist_id'],
     );
 
     // Prepare data map, handling relatedUser parsing and cleaning bonus fields
@@ -365,6 +373,7 @@ enum NotificationType {
   itemUnreserved,
   wishlistShared,
   reservationExpired,
+  reservationCancelled,
   reservationReminder,
   general,
 }
@@ -396,6 +405,8 @@ extension NotificationTypeExtension on NotificationType {
         return 'Wishlist Shared';
       case NotificationType.reservationExpired:
         return 'Reservation Expired';
+      case NotificationType.reservationCancelled:
+        return 'Reservation Cancelled';
       case NotificationType.reservationReminder:
         return 'Reservation Reminder';
       case NotificationType.general:
@@ -429,6 +440,8 @@ extension NotificationTypeExtension on NotificationType {
         return '💝';
       case NotificationType.reservationExpired:
         return '⏱️';
+      case NotificationType.reservationCancelled:
+        return '❌';
       case NotificationType.reservationReminder:
         return '🔔';
       case NotificationType.general:
@@ -492,6 +505,8 @@ extension AppNotificationLocalization on AppNotification {
         return 'notifications.wishlist_shared';
       case NotificationType.reservationExpired:
         return 'notifications.reservation_expired';
+      case NotificationType.reservationCancelled:
+        return 'notifications.reservation_cancelled';
       case NotificationType.reservationReminder:
         return 'notifications.reservation_reminder';
       case NotificationType.general:

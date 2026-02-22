@@ -1215,6 +1215,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       case NotificationType.wishlistShared:
         return AppColors.primary;
       case NotificationType.reservationExpired:
+      case NotificationType.reservationCancelled:
         return Colors.grey;
       case NotificationType.reservationReminder:
         return Colors.amber;
@@ -1262,6 +1263,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       case NotificationType.wishlistShared:
         return Icons.share_outlined;
       case NotificationType.reservationExpired:
+      case NotificationType.reservationCancelled:
         return Icons.event_busy;
       case NotificationType.reservationReminder:
         return Icons.schedule;

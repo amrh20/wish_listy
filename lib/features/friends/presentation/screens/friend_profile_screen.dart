@@ -793,11 +793,40 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
 
     if (shouldRemove != true || !mounted) return;
 
+    // Show loading snackbar
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(localization.translate('friends.removingFriend')),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 30),
+          dismissDirection: DismissDirection.none,
+        ),
+      );
+    }
+
     try {
       final friendsRepository = FriendsRepository();
       await friendsRepository.removeFriend(friendId: widget.friendId);
 
       if (!mounted) return;
+
+      // Hide loading snackbar
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
@@ -829,6 +858,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       }
     } on ApiException catch (e) {
       if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -847,6 +877,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
