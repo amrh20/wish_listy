@@ -36,6 +36,7 @@ class FcmService {
 
   bool _isInitialized = false;
   bool _permissionDialogShownInSession = false;
+  NotificationsCubit? _notificationsCubit;
 
   /// Initialize FCM integration.
   ///
@@ -51,6 +52,7 @@ class FcmService {
       return;
     }
     _isInitialized = true;
+    _notificationsCubit = notificationsCubit;
 
     // iOS: avoid system heads-up banners while app is in foreground.
     // We rely on Socket.io for real-time in-app notifications instead.
@@ -98,9 +100,10 @@ class FcmService {
     // Foreground messages:
     // We intentionally do NOT show a system notification here to avoid
     // duplicates with Socket.io. Socket.io remains the primary real-time
-    // channel while the app is in the foreground.
+    // channel while the app is in the foreground. However, we still
+    // refresh the unread count so the badge updates if the socket fails.
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      // No UI shown here by design to avoid duplicates with Socket.io.
+      _notificationsCubit?.getUnreadCount();
     });
 
     // Handle notification taps when app is in background.

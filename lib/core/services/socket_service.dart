@@ -19,6 +19,7 @@ class SocketService {
   bool _isConnected = false;
   bool _isConnecting = false;
   final List<Function(Map<String, dynamic>)> _notificationListeners = [];
+  final List<void Function()> _onConnectListeners = [];
 
   /// Get socket server URL based on platform
   /// Important: Use same base URL as API service for consistency
@@ -106,10 +107,21 @@ class SocketService {
       _socket!.onConnect((_) {
         _isConnected = true;
         _isConnecting = false;
-        
+
         // Re-setup notification listeners after reconnection
         // This ensures listeners are active even after socket reconnects
         _setupNotificationListeners();
+
+        // Notify listeners (e.g. NotificationsCubit) to sync badge with backend
+        for (final callback in _onConnectListeners) {
+          try {
+            callback();
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint('SocketService onConnect callback error: $e');
+            }
+          }
+        }
       });
 
       _socket!.onDisconnect((reason) {
@@ -319,6 +331,24 @@ class SocketService {
   /// Remove notification listener
   void removeNotificationListener(Function(Map<String, dynamic>) listener) {
     _notificationListeners.remove(listener);
+  }
+
+  /// Add a callback to be invoked when the socket connects or reconnects.
+  /// Use this to sync UI (e.g. badge count) with the backend after a network drop.
+  /// If already connected, the callback is invoked immediately.
+  void addOnConnectListener(void Function() callback) {
+    if (!_onConnectListeners.contains(callback)) {
+      _onConnectListeners.add(callback);
+    }
+    if (_isConnected) {
+      try {
+        callback();
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('SocketService addOnConnectListener immediate callback error: $e');
+        }
+      }
+    }
   }
 
   /// Notify all listeners about new notification

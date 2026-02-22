@@ -20,6 +20,7 @@ import 'package:wish_listy/features/events/presentation/screens/events_screen.da
 import 'package:wish_listy/features/friends/presentation/screens/friends_screen.dart';
 import 'profile_screen.dart' show ProfileScreen, ProfileScreenState;
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/services/socket_service.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -37,7 +38,7 @@ class MainNavigation extends StatefulWidget {
 }
 
 class _MainNavigationState extends State<MainNavigation>
-    with TickerProviderStateMixin, RouteAware {
+    with TickerProviderStateMixin, RouteAware, WidgetsBindingObserver {
   int _currentIndex = 0;
   /// When user opened Friends tab from another tab (e.g. "Browse Friends" from Wishlists),
   /// back button should return to this tab index instead of exiting the app.
@@ -54,6 +55,7 @@ class _MainNavigationState extends State<MainNavigation>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeFabAnimation();
     
     // Fetch notifications unread count if user is authenticated
@@ -95,9 +97,37 @@ class _MainNavigationState extends State<MainNavigation>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     appRouteObserver.unsubscribe(this);
     _fabAnimationController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed && mounted) {
+      _onAppResumed();
+    }
+  }
+
+  /// Called when app returns from background. Reconnect socket if needed and refresh badge.
+  void _onAppResumed() {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest) return;
+
+    // Reconnect socket if it was disconnected (e.g. after network drop)
+    final socketService = SocketService();
+    if (!socketService.isConnected) {
+      socketService.connect();
+    }
+
+    // Refresh notification badge to ensure it reflects backend state
+    try {
+      context.read<NotificationsCubit>().getUnreadCount();
+    } catch (e) {
+      // Cubit may not be available if context is invalid
+    }
   }
 
   @override

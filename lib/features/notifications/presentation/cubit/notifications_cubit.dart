@@ -102,6 +102,9 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     
     // Add the listener
     _socketService.addNotificationListener(_handleSocketNotification);
+
+    // Sync badge with backend when socket connects or reconnects
+    _socketService.addOnConnectListener(_onSocketConnect);
     
     // Get status after adding listener
     final statusAfter = _socketService.getConnectionStatus();
@@ -110,6 +113,10 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     if (statusAfter['listenersCount'] == 0) {
     } else {
     }
+  }
+
+  void _onSocketConnect() {
+    getUnreadCount();
   }
 
   /// Handle notification from Socket.IO
@@ -366,6 +373,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
   /// Update unread count from socket or other source (e.g. unread_count_update event).
   /// Use this when the backend pushes a new count; for API-based refresh use getUnreadCount().
+  /// Never drops the update: even when loading, emits state with correct unreadCount for badge.
   void updateUnreadCount(int unreadCount) {
     if (state is NotificationsLoaded) {
       final currentState = state as NotificationsLoaded;
@@ -373,7 +381,8 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         unreadCount: unreadCount,
         isNewNotification: false,
       ));
-    } else if (state is! NotificationsLoading) {
+    } else {
+      // Include NotificationsLoading: emit minimal loaded state so badge is correct
       emit(NotificationsLoaded(
         notifications: [],
         unreadCount: unreadCount,
