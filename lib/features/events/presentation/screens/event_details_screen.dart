@@ -1112,6 +1112,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
 
   /// Shows delete confirmation dialog
   Future<void> _showDeleteConfirmationDialog() async {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -1121,14 +1122,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           ),
           backgroundColor: AppColors.surface,
           title: Text(
-            'Delete Event',
+            localization.translate('events.deleteEvent') ?? 'Delete Event',
             style: AppStyles.headingSmall.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.bold,
             ),
           ),
           content: Text(
-            'Are you sure you want to delete "${_event!.name}"? This action cannot be undone.',
+            localization.translate('dialogs.deleteEventMessageWithName', args: {'eventName': _event!.name}),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -1137,7 +1138,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             TextButton(
               onPressed: () => Navigator.pop(context, false),
               child: Text(
-                'Cancel',
+                localization.translate('dialogs.cancel') ?? 'Cancel',
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -1146,7 +1147,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: Text(
-                'Delete',
+                localization.translate('dialogs.delete') ?? 'Delete',
                 style: AppStyles.bodyMedium.copyWith(
                   color: AppColors.error,
                   fontWeight: FontWeight.w600,
@@ -1181,7 +1182,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Deleting Event',
+                      Provider.of<LocalizationService>(context, listen: false).translate('dialogs.deletingEvent') ?? 'Deleting event...',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -1260,7 +1261,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Your Response',
+              Provider.of<LocalizationService>(context, listen: false).translate('dialogs.yourResponse') ?? 'Your Response',
               style: AppStyles.headingSmall.copyWith(
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,

@@ -1309,7 +1309,10 @@
     "purchased": "تم الشراء",
     "reserved": "محجوز",
     "available": "متاح",
-    "wishlist": "الأمنيات"
+    "wishlist": "الأمنيات",
+    "deleteItem": "امسح الأمنية",
+    "failedToLoadItemDetails": "فشل تحميل تفاصيل الأمنية. يرجى المحاولة مرة أخرى.",
+    "failedToDeleteItem": "فشل حذف الأمنية"
   },
   "notifications": {
     "permissionTitle": "خليك متابع كل أمنية! 🎁",
@@ -1550,6 +1553,7 @@
     "failedToUpdateResponse": "فشل تحديث الرد",
     "eventDeletedSuccessfully": "تم حذف الفعالية بنجاح",
     "failedToDeleteEvent": "فشل حذف الفعالية",
+    "deleteEventMessageWithName": "هل أنت متأكد من حذف \"{eventName}\"؟ هذا الإجراء لا يمكن التراجع عنه.",
     "wishlistUnlinkedSuccessfully": "تم إلغاء ربط قائمة الأمنيات بنجاح",
     "failedToUnlinkWishlist": "فشل إلغاء ربط قائمة الأمنيات",
     "wishlistLinkedSuccessfully": "تم ربط قائمة الأمنيات بنجاح",
@@ -1578,6 +1582,7 @@
     "itemMarkedAsPurchased": "تمام! اتعلمت إنها اتشرت 🎁",
     "markedAsReceived": "تم تمييزه كمستلم! ✅",
     "markedAsNotReceived": "تم تمييزه كغير مستلم",
+    "itemDeletedSuccessfullyWithName": "تم حذف {itemName} بنجاح",
     "areYouSureDeleteItemFull": "هل أنت متأكد من حذف \"{itemName}\"؟ هذا الإجراء لا يمكن التراجع عنه.",
     "pleaseLoginToReserve": "سجّل دخولك عشان تحجز الهدايا",
     "failedToUpdateReservation": "فشل تحديث الحجز",

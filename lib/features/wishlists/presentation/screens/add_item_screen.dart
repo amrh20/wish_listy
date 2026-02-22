@@ -1853,7 +1853,7 @@ class _AddItemScreenState extends State<AddItemScreen>
             'wishlistName': wishlistName,
           },
         ),
-        primaryActionLabel: 'Done',
+        primaryActionLabel:  localization.translate('app.done'),
         onPrimaryAction: () {
           Navigator.of(context).pop();
         },
@@ -1878,7 +1878,7 @@ class _AddItemScreenState extends State<AddItemScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Wish added successfully',
+                    localization.translate('wishlists.wishAdded'),
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,

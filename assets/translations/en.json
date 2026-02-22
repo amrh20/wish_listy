@@ -1326,7 +1326,10 @@
     "purchased": "Purchased",
     "reserved": "Reserved",
     "available": "Available",
-    "wishlist": "Wishlist"
+    "wishlist": "Wishlist",
+    "deleteItem": "Delete Item",
+    "failedToLoadItemDetails": "Failed to load item details. Please try again.",
+    "failedToDeleteItem": "Failed to delete item"
   },
   "notifications": {
     "permissionTitle": "Don't miss a wish! 🎁",
@@ -1567,6 +1570,7 @@
     "failedToUpdateResponse": "Failed to update response",
     "eventDeletedSuccessfully": "Event deleted successfully",
     "failedToDeleteEvent": "Failed to delete event",
+    "deleteEventMessageWithName": "Are you sure you want to delete \"{eventName}\"? This action cannot be undone.",
     "wishlistUnlinkedSuccessfully": "Wishlist unlinked successfully",
     "failedToUnlinkWishlist": "Failed to unlink wishlist",
     "wishlistLinkedSuccessfully": "Wishlist linked successfully",
@@ -1595,6 +1599,7 @@
     "itemMarkedAsPurchased": "Item marked as purchased! 🎁",
     "markedAsReceived": "Marked as Received! ✅",
     "markedAsNotReceived": "Marked as Not Received",
+    "itemDeletedSuccessfullyWithName": "{itemName} deleted successfully",
     "areYouSureDeleteItemFull": "Are you sure you want to delete \"{itemName}\"? This action cannot be undo.",
     "pleaseLoginToReserve": "Please login to reserve wishes",
     "failedToUpdateReservation": "Failed to update reservation",

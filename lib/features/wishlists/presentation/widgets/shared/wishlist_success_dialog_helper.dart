@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
@@ -9,12 +10,13 @@ import 'package:wish_listy/features/profile/presentation/screens/main_navigation
 class WishlistSuccessDialogHelper {
   /// Show success dialog for editing mode
   static void showEditSuccessDialog(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     ConfirmationDialog.show(
       context: context,
       isSuccess: true,
-      title: 'Wishlist Updated!',
-      message: 'Your wishlist has been updated successfully.',
-      primaryActionLabel: 'Done',
+      title: localization.translate('wishlists.wishlistUpdatedTitle'),
+      message: localization.translate('wishlists.wishlistUpdatedMessage'),
+      primaryActionLabel: localization.translate('app.done'),
       onPrimaryAction: () {
         Navigator.of(context).pop(true);
       },
@@ -36,7 +38,7 @@ class WishlistSuccessDialogHelper {
       message: localization.translate('wishlists.wishlistCreatedMessage'),
       primaryActionLabel: localization.translate('wishlists.viewDetails') ?? 
                           localization.translate('wishlists.viewwishlist') ?? 
-                          'View Details',
+                          localization.translate('app.viewDetails'),
       onPrimaryAction: () {
         // Close dialog and create wishlist screen
         Navigator.of(context).pop(); // Close dialog

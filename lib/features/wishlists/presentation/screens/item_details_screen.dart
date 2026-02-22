@@ -235,7 +235,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         setState(() {
           _errorMessage = e.toString().contains('Exception')
               ? e.toString().replaceFirst('Exception: ', '')
-              : 'Failed to load item details. Please try again.';
+              : Provider.of<LocalizationService>(context, listen: false).translate('details.failedToLoadItemDetails');
           _isLoading = false;
         });
       }
@@ -1419,8 +1419,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   if (isReservedForOwner) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text(
-                          'You cannot edit or delete this item because a friend has already reserved it for you! 🎁',
+                        content: Text(
+                          Provider.of<LocalizationService>(context, listen: false).translate('details.cannotEditDeleteReserved'),
                         ),
                         backgroundColor: AppColors.primary,
                         behavior: SnackBarBehavior.floating,
@@ -1647,8 +1647,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   const SizedBox(width: 8),
                   Text(
                     updatedItem.isReceived
-                        ? 'Marked as Received! ✅'
-                        : 'Marked as Not Received',
+                        ? Provider.of<LocalizationService>(context, listen: false).translate('dialogs.markedAsReceived')
+                        : Provider.of<LocalizationService>(context, listen: false).translate('dialogs.markedAsNotReceived'),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -1706,7 +1706,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Item marked as purchased! 🎁',
+                    Provider.of<LocalizationService>(context, listen: false).translate('dialogs.itemMarkedAsPurchased'),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -1756,8 +1756,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       // Show snackbar instead of editing
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-            'You cannot edit or delete this item because a friend has already reserved it for you! 🎁',
+          content: Text(
+            Provider.of<LocalizationService>(context, listen: false).translate('details.cannotEditDeleteReserved'),
           ),
           backgroundColor: AppColors.primary,
           behavior: SnackBarBehavior.floating,
@@ -1862,8 +1862,8 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       // Show snackbar instead of showing delete dialog
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
-            'You cannot edit or delete this item because a friend has already reserved it for you! 🎁',
+          content: Text(
+            Provider.of<LocalizationService>(context, listen: false).translate('details.cannotEditDeleteReserved'),
           ),
           backgroundColor: AppColors.primary,
           behavior: SnackBarBehavior.floating,
@@ -1900,7 +1900,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           ],
         ),
         content: Text(
-          'Are you sure you want to delete "${item.name}"? This action cannot be undone.',
+          localization.translate('dialogs.areYouSureDeleteItemFull', args: {'itemName': item.name}),
           style: AppStyles.bodyMedium.copyWith(
             color: AppColors.textSecondary,
           ),
@@ -1909,7 +1909,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Cancel',
+              localization.translate('dialogs.cancel'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -1992,7 +1992,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${item.name} deleted successfully',
+                    Provider.of<LocalizationService>(context, listen: false).translate('dialogs.itemDeletedSuccessfullyWithName', args: {'itemName': item.name}),
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
@@ -2027,7 +2027,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Failed to delete item: ${e.message}',
+                    '${Provider.of<LocalizationService>(context, listen: false).translate('details.failedToDeleteItem')}: ${e.message}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
@@ -2062,7 +2062,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Failed to delete item: ${e.toString()}',
+                    '${Provider.of<LocalizationService>(context, listen: false).translate('details.failedToDeleteItem')}: ${e.toString()}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w500,
