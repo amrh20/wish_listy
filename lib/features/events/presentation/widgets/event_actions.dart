@@ -28,7 +28,7 @@ class EventActions extends StatelessWidget {
 
     if (isPast) {
       return CustomButton(
-        text: 'View Event Details',
+        text: localization.translate('events.viewEventDetails'),
         onPressed: onViewDetails,
         variant: ButtonVariant.outline,
         customColor: AppColors.textTertiary,
@@ -64,7 +64,7 @@ class EventActions extends StatelessWidget {
           // Guest buttons
           Expanded(
             child: CustomButton(
-              text: 'View Details',
+              text: localization.translate('events.viewDetails'),
               onPressed: onViewDetails,
               variant: ButtonVariant.outline,
               customColor: _getEventTypeColor(event.type),

@@ -34,14 +34,18 @@ class CreateEventHeaderWidget extends StatelessWidget {
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          IconButton(
-            onPressed: onBackPressed,
-            icon: const Icon(Icons.arrow_back_ios, size: 18),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white,
-              padding: const EdgeInsets.all(8),
-              shape: const CircleBorder(),
+          Center(
+            child: IconButton(
+              onPressed: onBackPressed,
+              icon: const Icon(Icons.arrow_back_ios, size: 18),
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white,
+                padding: const EdgeInsets.all(8),
+                shape: const CircleBorder(),
+                alignment: Alignment.center,
+              ),
             ),
           ),
           const SizedBox(width: 16),

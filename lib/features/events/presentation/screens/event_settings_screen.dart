@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/animated_background.dart';
 import 'package:wish_listy/features/events/data/models/event_model.dart';
@@ -177,7 +179,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Event Settings',
+                  Provider.of<LocalizationService>(context, listen: false).translate('events.eventSettings'),
                   style: AppStyles.headingSmall.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -206,6 +208,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
   }
 
   Widget _buildPrivacySettings() {
+    final t = Provider.of<LocalizationService>(context, listen: false);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -225,7 +228,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               ),
               const SizedBox(width: 8),
               Text(
-                'Privacy Settings',
+                t.translate('events.privacySettings'),
                 style: AppStyles.bodyLarge.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -238,8 +241,8 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
           // Public/Private Toggle
           _buildSettingRow(
             icon: Icons.public,
-            title: 'Public Event',
-            subtitle: 'Anyone can see and join this event',
+            title: t.translate('events.publicEvent'),
+            subtitle: t.translate('events.publicEventSubtitle'),
             trailing: Switch(
               value: _isPublic,
               onChanged: (value) {
@@ -256,8 +259,8 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
           // Allow Guests to Invite
           _buildSettingRow(
             icon: Icons.person_add_outlined,
-            title: 'Allow Guests to Invite',
-            subtitle: 'Guests can invite other people',
+            title: t.translate('events.allowGuestsToInvite'),
+            subtitle: t.translate('events.allowGuestsToInviteSubtitle'),
             trailing: Switch(
               value: _allowGuestsToInvite,
               onChanged: (value) {
@@ -274,8 +277,8 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
           // Show Guest List
           _buildSettingRow(
             icon: Icons.people_outline,
-            title: 'Show Guest List',
-            subtitle: 'Guests can see who else is attending',
+            title: t.translate('events.showGuestList'),
+            subtitle: t.translate('events.showGuestListSubtitle'),
             trailing: Switch(
               value: _showGuestList,
               onChanged: (value) {
@@ -292,8 +295,8 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
           // Allow Comments
           _buildSettingRow(
             icon: Icons.chat_bubble_outline,
-            title: 'Allow Comments',
-            subtitle: 'Guests can leave comments on the event',
+            title: t.translate('events.allowComments'),
+            subtitle: t.translate('events.allowCommentsSubtitle'),
             trailing: Switch(
               value: _allowComments,
               onChanged: (value) {
@@ -310,6 +313,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
   }
 
   Widget _buildNotificationSettings() {
+    final t = Provider.of<LocalizationService>(context, listen: false);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -329,7 +333,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               ),
               const SizedBox(width: 8),
               Text(
-                'Notification Settings',
+                t.translate('events.notificationSettingsSection'),
                 style: AppStyles.bodyLarge.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -342,8 +346,8 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
           // Notify on RSVP
           _buildSettingRow(
             icon: Icons.check_circle_outline,
-            title: 'RSVP Notifications',
-            subtitle: 'Get notified when guests respond',
+            title: t.translate('events.rsvpNotifications'),
+            subtitle: t.translate('events.rsvpNotificationsSubtitle'),
             trailing: Switch(
               value: _notifyOnRSVP,
               onChanged: (value) {
@@ -360,8 +364,8 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
           // Notify on Wishlist Update
           _buildSettingRow(
             icon: Icons.card_giftcard_outlined,
-            title: 'Wishlist Updates',
-            subtitle: 'Get notified when wishlist changes',
+            title: t.translate('events.wishlistUpdatesEvent'),
+            subtitle: t.translate('events.wishlistUpdatesEventSubtitle'),
             trailing: Switch(
               value: _notifyOnWishlistUpdate,
               onChanged: (value) {
@@ -378,8 +382,8 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
           // Notify on Event Update
           _buildSettingRow(
             icon: Icons.event_outlined,
-            title: 'Event Updates',
-            subtitle: 'Get notified about event changes',
+            title: t.translate('events.eventUpdates'),
+            subtitle: t.translate('events.eventUpdatesSubtitle'),
             trailing: Switch(
               value: _notifyOnEventUpdate,
               onChanged: (value) {
@@ -396,6 +400,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
   }
 
   Widget _buildReminderSettings() {
+    final t = Provider.of<LocalizationService>(context, listen: false);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -411,7 +416,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               Icon(Icons.schedule_outlined, color: AppColors.warning, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Reminder Settings',
+                t.translate('events.reminderSettings'),
                 style: AppStyles.bodyLarge.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -424,8 +429,8 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
           // Enable Reminders
           _buildSettingRow(
             icon: Icons.alarm_outlined,
-            title: 'Enable Reminders',
-            subtitle: 'Send reminders to guests before the event',
+            title: t.translate('events.enableReminders'),
+            subtitle: t.translate('events.enableRemindersSubtitle'),
             trailing: Switch(
               value: _reminderEnabled,
               onChanged: (value) {
@@ -443,9 +448,8 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
             // Reminder Days
             _buildSettingRow(
               icon: Icons.calendar_today_outlined,
-              title: 'Reminder Timing',
-              subtitle:
-                  'Send reminder $_reminderDays day${_reminderDays == 1 ? '' : 's'} before',
+              title: t.translate('events.reminderTiming'),
+              subtitle: t.translate('events.reminderTimingSubtitle').replaceAll('{days}', '$_reminderDays'),
               trailing: DropdownButton<int>(
                 value: _reminderDays,
                 onChanged: (value) {
@@ -471,6 +475,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
   }
 
   Widget _buildRegionalSettings() {
+    final t = Provider.of<LocalizationService>(context, listen: false);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -486,7 +491,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               Icon(Icons.language_outlined, color: AppColors.accent, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Regional Settings',
+                t.translate('events.regionalSettings'),
                 style: AppStyles.bodyLarge.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
@@ -499,8 +504,8 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
           // Timezone
           _buildSettingRow(
             icon: Icons.access_time_outlined,
-            title: 'Timezone',
-            subtitle: 'Event timezone: $_timezone',
+            title: t.translate('events.timezone'),
+            subtitle: t.translate('events.timezoneSubtitle').replaceAll('{timezone}', _timezone),
             trailing: DropdownButton<String>(
               value: _timezone,
               onChanged: (value) {
@@ -522,8 +527,8 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
           // Language
           _buildSettingRow(
             icon: Icons.translate_outlined,
-            title: 'Language',
-            subtitle: 'Event language: $_language',
+            title: t.translate('events.language'),
+            subtitle: t.translate('events.languageSubtitle').replaceAll('{language}', _language),
             trailing: DropdownButton<String>(
               value: _language,
               onChanged: (value) {
@@ -593,11 +598,12 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
   }
 
   Widget _buildActionButtons() {
+    final t = Provider.of<LocalizationService>(context, listen: false);
     return Column(
       children: [
         // Save Settings Button
         CustomButton(
-          text: 'Save Settings',
+          text: t.translate('events.saveSettings'),
           onPressed: _saveSettings,
           variant: ButtonVariant.primary,
           customColor: AppColors.secondary,
@@ -608,7 +614,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
 
         // Reset to Default Button
         CustomButton(
-          text: 'Reset to Default',
+          text: t.translate('events.resetToDefault'),
           onPressed: _resetToDefault,
           variant: ButtonVariant.outline,
           customColor: AppColors.textTertiary,
@@ -619,7 +625,7 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
 
         // Export Settings Button
         CustomButton(
-          text: 'Export Settings',
+          text: t.translate('events.exportSettings'),
           onPressed: _exportSettings,
           variant: ButtonVariant.outline,
           customColor: AppColors.info,
@@ -631,27 +637,28 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
 
   // Action Handlers
   void _saveSettings() {
-    // Save settings functionality
+    final t = Provider.of<LocalizationService>(context, listen: false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Settings saved successfully!'),
+        content: Text(t.translate('events.settingsSavedSuccessfully')),
         backgroundColor: AppColors.success,
       ),
     );
   }
 
   void _resetToDefault() {
+    final t = Provider.of<LocalizationService>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Reset Settings'),
+        title: Text(t.translate('events.resetSettings')),
         content: Text(
-          'Are you sure you want to reset all settings to default? This action cannot be undone.',
+          t.translate('events.resetSettingsConfirmMessage'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: Text(t.translate('app.cancel')),
           ),
           TextButton(
             onPressed: () {
@@ -659,13 +666,13 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
               _resetSettings();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Settings reset to default'),
+                  content: Text(t.translate('events.settingsResetToDefault')),
                   backgroundColor: AppColors.info,
                 ),
               );
             },
             style: TextButton.styleFrom(foregroundColor: AppColors.warning),
-            child: Text('Reset'),
+            child: Text(t.translate('events.reset')),
           ),
         ],
       ),
@@ -689,30 +696,26 @@ class _EventSettingsScreenState extends State<EventSettingsScreen>
   }
 
   void _exportSettings() {
-    // Export settings functionality
+    final t = Provider.of<LocalizationService>(context, listen: false);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Settings exported successfully!'),
+        content: Text(t.translate('events.settingsExportedSuccessfully')),
         backgroundColor: AppColors.info,
       ),
     );
   }
 
   void _showHelpDialog() {
+    final t = Provider.of<LocalizationService>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Event Settings Help'),
-        content: Text(
-          '• Privacy Settings: Control who can see and interact with your event\n'
-          '• Notification Settings: Choose what notifications you receive\n'
-          '• Reminder Settings: Set up automatic reminders for guests\n'
-          '• Regional Settings: Configure timezone and language preferences',
-        ),
+        title: Text(t.translate('events.eventSettingsHelp')),
+        content: Text(t.translate('events.eventSettingsHelpContent')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Got it'),
+            child: Text(t.translate('events.gotIt')),
           ),
         ],
       ),

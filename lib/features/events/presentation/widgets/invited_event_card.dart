@@ -139,7 +139,7 @@ class InvitedEventCard extends StatelessWidget {
                     children: [
                       // Bold, clickable creator name
                       TextSpan(
-                        text: event.creatorName ?? 'Someone',
+                        text: event.creatorName ?? localization.translate('activity.someone'),
                         style: AppStyles.bodyMedium.copyWith(
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.w600,

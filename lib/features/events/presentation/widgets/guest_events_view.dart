@@ -51,7 +51,7 @@ class _GuestEventsViewState extends State<GuestEventsView> {
           ),
           const SizedBox(height: 24),
           Text(
-            'No Public Events Yet',
+            widget.localization.translate('guest.events.empty.noPublicEventsYet'),
             style: AppStyles.headingMediumWithContext(context).copyWith(
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -60,7 +60,7 @@ class _GuestEventsViewState extends State<GuestEventsView> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Be the first to create an event! Sign up to organize events and invite friends.',
+            widget.localization.translate('guest.events.empty.beFirstToCreateEventSubtitle'),
             style: AppStyles.bodyMediumWithContext(context).copyWith(
               color: AppColors.textSecondary,
               height: 1.5,
@@ -69,7 +69,7 @@ class _GuestEventsViewState extends State<GuestEventsView> {
           ),
           const SizedBox(height: 32),
           CustomButton(
-            text: 'Sign Up to Create Events',
+            text: widget.localization.translate('guest.events.empty.signUpToCreateEvents'),
             onPressed: () {
               Navigator.pushNamed(context, AppRoutes.signup);
             },
@@ -204,21 +204,17 @@ class _GuestEventsViewState extends State<GuestEventsView> {
               _buildGuestEventStat(
                 icon: Icons.people_outline,
                 value: '${event.acceptedCount}/${event.invitedCount}',
-                label: widget.localization.translate(
-                  'guest.events.card.attendees',
-                ),
+                label: widget.localization.translate('guest.events.card.attendees'),
               ),
               const SizedBox(width: 16),
               _buildGuestEventStat(
                 icon: Icons.card_giftcard,
                 value: '${event.wishlistItemCount}',
-                label: 'Wishes',
+                label: widget.localization.translate('guest.events.card.wishes'),
               ),
               const Spacer(),
               CustomButton(
-                text: widget.localization.translate(
-                  'guest.events.card.viewDetails',
-                ),
+                text: widget.localization.translate('guest.events.card.viewDetails'),
                 onPressed: () => _showGuestEventDetails(event),
                 variant: ButtonVariant.outline,
                 size: ButtonSize.small,
@@ -261,7 +257,7 @@ class _GuestEventsViewState extends State<GuestEventsView> {
   }
 
   void _showGuestEventDetails(EventSummary event) {
-    GuestRestrictionDialog.show(context, 'Event Details');
+    GuestRestrictionDialog.show(context, widget.localization.translate('events.eventDetails'));
   }
 
   Color _getEventTypeColor(EventType type) {

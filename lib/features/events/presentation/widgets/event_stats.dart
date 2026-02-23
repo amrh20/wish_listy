@@ -19,14 +19,14 @@ class EventStats extends StatelessWidget {
       children: [
         _buildEventStat(
           icon: Icons.people_outline,
-          label: 'Invited',
+          label: localization.translate('events.invited'),
           value: '${event.invitedCount}',
           color: AppColors.primary,
         ),
         const SizedBox(width: 20),
         _buildEventStat(
           icon: Icons.check_circle_outline,
-          label: 'Accepted',
+          label: localization.translate('events.acceptedGuests'),
           value: '${event.acceptedCount}',
           color: AppColors.success,
         ),
@@ -35,7 +35,7 @@ class EventStats extends StatelessWidget {
         if (event.wishlistId != null) ...[
           _buildEventStat(
             icon: Icons.card_giftcard_outlined,
-            label: 'Wishlist',
+            label: localization.translate('events.wishlistActions'),
             value: '${event.wishlistItemCount}',
             color: AppColors.secondary,
           ),

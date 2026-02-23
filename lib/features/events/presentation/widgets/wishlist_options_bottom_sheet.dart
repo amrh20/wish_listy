@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 /// Bottom sheet widget for choosing wishlist option (Create New or Link Existing)
 class WishlistOptionsBottomSheet extends StatelessWidget {
@@ -39,14 +41,16 @@ class WishlistOptionsBottomSheet extends StatelessWidget {
 
               // Title
               Text(
-                'Link Wishlist to Event',
+                Provider.of<LocalizationService>(context, listen: false)
+                    .translate('events.linkWishlistToEvent'),
                 style: AppStyles.headingSmall.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Choose how you want to link a wishlist to this event',
+                Provider.of<LocalizationService>(context, listen: false)
+                    .translate('events.linkWishlistToEventSubtitle'),
                 style: AppStyles.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -65,7 +69,8 @@ class WishlistOptionsBottomSheet extends StatelessWidget {
                   },
                   icon: const Icon(Icons.add_circle_outline, size: 24, color: Colors.white),
                   label: Text(
-                    'Create New Wishlist',
+                    Provider.of<LocalizationService>(context, listen: false)
+                        .translate('events.createNewWishlist'),
                     style: AppStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -88,17 +93,15 @@ class WishlistOptionsBottomSheet extends StatelessWidget {
                 width: double.infinity,
                 height: 56,
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    onLinkExisting();
-                  },
+                  onPressed: () => onLinkExisting(),
                   icon: Icon(
                     Icons.link_outlined,
                     size: 24,
                     color: AppColors.primary,
                   ),
                   label: Text(
-                    'Link Existing Wishlist',
+                    Provider.of<LocalizationService>(context, listen: false)
+                        .translate('events.linkExistingWishlistHeader'),
                     style: AppStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,

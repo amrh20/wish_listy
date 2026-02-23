@@ -425,13 +425,15 @@ class ItemActionBarWidget extends StatelessWidget {
   }
 
   /// Build "Mark as Received" button for owner view.
-  /// When item is purchased but not received, show a subtle "I didn't get this yet" link.
+  /// State 3: When item is purchased but not received, show both primary (Mark as Received)
+  /// and secondary (Not yet) buttons side by side. "Not yet" triggers onMarkAsNotReceived
+  /// which calls the API to mark item as not received (reverts to available).
   Widget _buildOwnerMarkReceivedBar(
     BuildContext context,
     LocalizationService localization, [
     bool isPurchased = false,
   ]) {
-    final showNotReceivedLink =
+    final showNotReceivedButton =
         isPurchased && !item.isReceived && onMarkAsNotReceived != null;
 
     return Container(
@@ -444,60 +446,100 @@ class ItemActionBarWidget extends StatelessWidget {
       color: _getBarSurfaceColor(context),
       child: SafeArea(
         top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (onMarkReceived != null)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: onMarkReceived,
-                  icon: const Icon(
-                    Icons.check_circle_outline,
-                    size: 16,
-                    color: Colors.white,
-                  ),
-                  label: Text(
-                    localization.translate('details.markReceived'),
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+        child: showNotReceivedButton
+            ? Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: onMarkReceived,
+                      icon: const Icon(
+                        Icons.check_circle_outline,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                      label: Text(
+                        localization.translate('details.markReceived') ??
+                            'I got it ✨',
+                        style: AppStyles.bodyMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
                     ),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: onMarkAsNotReceived,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.textSecondary,
+                        side: BorderSide(color: AppColors.textSecondary.withOpacity(0.5)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        localization.translate('details.notReceivedYetButton') ??
+                            'Not yet',
+                        style: AppStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
-                    elevation: 0,
                   ),
-                ),
-              ),
-            if (showNotReceivedLink) ...[
-              const SizedBox(height: 12),
-              TextButton(
-                onPressed: onMarkAsNotReceived,
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.textSecondary,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  localization.translate('details.notReceivedYetButton') ??
-                      'I didn\'t get this yet',
-                  style: AppStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                    decoration: TextDecoration.underline,
-                    decorationColor: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
+                ],
+              )
+            : (onMarkReceived != null
+                ? SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: onMarkReceived,
+                      icon: const Icon(
+                        Icons.check_circle_outline,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                      label: Text(
+                        localization.translate('details.markReceived') ??
+                            'I got it ✨',
+                        style: AppStyles.bodyMedium.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  )
+                : const SizedBox.shrink()),
       ),
     );
   }

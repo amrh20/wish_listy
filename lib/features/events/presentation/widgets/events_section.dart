@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/events/data/models/event.dart';
-import 'package:wish_listy/core/utils/app_routes.dart'; // Added import
+import 'package:wish_listy/core/utils/app_routes.dart';
 
 class EventsSection extends StatefulWidget {
   final List<Event> events;
@@ -55,7 +57,7 @@ class _EventsSectionState extends State<EventsSection>
     return Column(
       children: [
         if (widget.events.isEmpty)
-          _buildEmptyState()
+          _buildEmptyState(context)
         else
           SizedBox(
             height: 160, // Increased height to prevent overflow
@@ -73,7 +75,8 @@ class _EventsSectionState extends State<EventsSection>
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
+    final t = Provider.of<LocalizationService>(context, listen: false);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Column(
@@ -86,7 +89,7 @@ class _EventsSectionState extends State<EventsSection>
           ),
           const SizedBox(height: 10),
           Text(
-            'No upcoming events yet!',
+            t.translate('events.noUpcomingEvents'),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textTertiary,
             ),

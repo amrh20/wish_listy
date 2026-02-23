@@ -148,7 +148,8 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Failed to load friends. Please try again.';
+        _errorMessage = Provider.of<LocalizationService>(context, listen: false)
+            .translate('events.failedToLoadFriendsTryAgain');
         _isLoadingFriends = false;
         _isLoadingMoreFriends = false;
       });
@@ -495,8 +496,10 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
                   ),
                   child: Text(
                     _selectedFriendIds.isEmpty
-                        ? 'Select Friends'
-                        : 'Invite $_displayableSelectedCount Friend${_displayableSelectedCount > 1 ? 's' : ''}',
+                        ? localization.translate('events.selectFriends')
+                        : localization
+                            .translate('events.inviteFriendsCount')
+                            .replaceAll('{count}', '$_displayableSelectedCount'),
                     style: AppStyles.bodyMedium.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -522,7 +525,7 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
             const CircularProgressIndicator(),
             const SizedBox(height: 16),
             Text(
-              'Loading friends...',
+              localization.translate('events.loadingFriends'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -559,7 +562,7 @@ class _InviteFriendsBottomSheetState extends State<InviteFriendsBottomSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                 ),
-                child: const Text('Retry'),
+                child: Text(localization.translate('app.retry')),
               ),
             ],
           ),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -140,7 +141,6 @@ class EventsScreenState extends State<EventsScreen>
     }
 
     try {
-
       final events = await _eventRepository.getEvents();
 
       if (!mounted) return;
@@ -149,24 +149,30 @@ class EventsScreenState extends State<EventsScreen>
       final authService = Provider.of<AuthRepository>(context, listen: false);
       final currentUserId = authService.userId;
 
-      // Convert Event objects to EventSummary
+      // Convert Event objects to EventSummary (defensive parsing to avoid white screen)
       final myEventsList = <EventSummary>[];
       final invitedEventsList = <EventSummary>[];
 
       for (final event in events) {
-        // Use fromEvent factory with currentUserId to determine isCreatedByMe
-        final summary = EventSummary.fromEvent(
-          event,
-          currentUserId: currentUserId,
-        );
-
-        if (summary.isCreatedByMe) {
-          myEventsList.add(summary);
-        } else {
-          invitedEventsList.add(summary);
+        try {
+          final summary = EventSummary.fromEvent(
+            event,
+            currentUserId: currentUserId,
+          );
+          if (summary.isCreatedByMe) {
+            myEventsList.add(summary);
+          } else {
+            invitedEventsList.add(summary);
+          }
+        } catch (e, stack) {
+          debugPrint(
+            '[EventsScreen._loadEvents] Failed to parse event ${event.id}: $e\n$stack',
+          );
+          // Skip malformed events; continue with others
         }
       }
 
+      if (!mounted) return;
       setState(() {
         _myEvents = myEventsList;
         _invitedEvents = invitedEventsList;
@@ -178,6 +184,7 @@ class EventsScreenState extends State<EventsScreen>
 
       _applyFilters();
     } on ApiException catch (e) {
+      debugPrint('[EventsScreen._loadEvents] ApiException: ${e.message}');
       if (!mounted) return;
       setState(() {
         _errorMessage = e.message;
@@ -187,8 +194,8 @@ class EventsScreenState extends State<EventsScreen>
         _publicEvents = [];
       });
       _applyFilters();
-
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('[EventsScreen._loadEvents] Unexpected error: $e\n$stack');
       if (!mounted) return;
       setState(() {
         _errorMessage = 'Failed to load events. Please try again.';
@@ -198,7 +205,6 @@ class EventsScreenState extends State<EventsScreen>
         _publicEvents = [];
       });
       _applyFilters();
-
     }
   }
 
@@ -843,11 +849,40 @@ class EventsScreenState extends State<EventsScreen>
     }
   }
 
-  void _addWishlistToEvent(
+  Future<void> _addWishlistToEvent(
     EventSummary event,
     LocalizationService localization,
-  ) {
-    EventModals.showAddWishlistToEventModal(context, event, localization);
+  ) async {
+    final result = await EventModals.showAddWishlistToEventModal(
+      context,
+      event,
+      localization,
+      onWishlistLinked: () {
+        if (mounted) _loadEvents();
+      },
+    );
+    if (!mounted) return;
+    if (result == 'LINK_EXISTING') {
+      final linked = await EventModals.showLinkExistingWishlistModal(
+        context,
+        event,
+        localization,
+      );
+      if (!mounted) return;
+      if (linked == true) {
+        _loadEvents();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              localization.translate('dialogs.wishlistLinkedSuccessfully') ??
+                  'Wishlist linked successfully',
+            ),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   List<Map<String, dynamic>> _getAssociatedWishlists(EventSummary event) {

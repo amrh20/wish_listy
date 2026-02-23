@@ -1103,7 +1103,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
       return;
     }
 
-    // Validate that date and time are not in the past
+    // Validate that the combined date AND time are in the future (not date only)
     final now = DateTime.now();
     final selectedDateTime = DateTime(
       _selectedDate!.year,
@@ -1112,8 +1112,7 @@ class _CreateEventScreenState extends State<CreateEventScreen>
       _selectedTime!.hour,
       _selectedTime!.minute,
     );
-    
-    if (selectedDateTime.isBefore(now)) {
+    if (selectedDateTime.isBefore(now) || selectedDateTime.isAtSameMomentAs(now)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -1190,6 +1189,17 @@ class _CreateEventScreenState extends State<CreateEventScreen>
       final eventTime = _formatTimeForAPI();
       if (eventDate.isEmpty || eventTime.isEmpty) {
         throw Exception('Invalid date/time combination');
+      }
+      // Re-validate combined date+time is in the future before calling API
+      final combined = DateTime(
+        _selectedDate!.year,
+        _selectedDate!.month,
+        _selectedDate!.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      );
+      if (!combined.isAfter(DateTime.now())) {
+        throw Exception('Event date and time must be in the future');
       }
 
       // Determine meeting link

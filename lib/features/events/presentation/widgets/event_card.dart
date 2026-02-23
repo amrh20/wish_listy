@@ -303,7 +303,7 @@ class EventCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      event.wishlistName ?? 'Wishlist Created',
+                      event.wishlistName ?? localization.translate('events.wishlistCreatedLabel'),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,

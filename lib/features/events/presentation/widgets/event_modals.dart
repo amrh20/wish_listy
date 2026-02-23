@@ -155,7 +155,10 @@ class EventModals {
                     children: [
                       const SizedBox(height: 4),
                       Text(
-                        '${wishlist['totalItems']} items • ${wishlist['purchasedItems']} purchased',
+                        localization
+                            .translate('events.wishlistItemsCountSubtitle')
+                            .replaceAll('{total}', '${wishlist['totalItems'] ?? 0}')
+                            .replaceAll('{purchased}', '${wishlist['purchasedItems'] ?? 0}'),
                         style: AppStyles.bodySmall.copyWith(
                           color: AppColors.textSecondary,
                         ),
@@ -170,7 +173,7 @@ class EventModals {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            _getPrivacyLabel(wishlist['privacy']),
+                            _getPrivacyLabel(wishlist['privacy'], localization),
                             style: AppStyles.caption.copyWith(
                               color: AppColors.textTertiary,
                             ),
@@ -195,19 +198,22 @@ class EventModals {
     );
   }
 
-  static void showAddWishlistToEventModal(
-    BuildContext context,
+  /// Return type: null = dismissed/create-new, 'LINK_EXISTING' = user chose link existing.
+  /// Caller must await and react: if result == 'LINK_EXISTING', open second sheet.
+  static Future<dynamic> showAddWishlistToEventModal(
+    BuildContext screenContext,
     EventSummary event,
-    LocalizationService localization,
-  ) {
-    showModalBottomSheet(
-      context: context,
+    LocalizationService localization, {
+    VoidCallback? onWishlistLinked,
+  }) {
+    return showModalBottomSheet<dynamic>(
+      context: screenContext,
       backgroundColor: Colors.transparent,
-      builder: (context) => WishlistOptionsBottomSheet(
+      builder: (sheetContext) => WishlistOptionsBottomSheet(
         onCreateNew: () {
-          Navigator.pop(context);
+          Navigator.pop(sheetContext);
           Navigator.pushNamed(
-            context,
+            screenContext,
             AppRoutes.createWishlist,
             arguments: {
               'eventId': event.id,
@@ -215,81 +221,67 @@ class EventModals {
               'previousRoute': AppRoutes.events,
             },
           ).then((result) {
-            // Refresh events list if wishlist was created and linked
-            if (result == true && context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Wishlist created and linked successfully'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
+            if (result == true && screenContext.mounted) {
+              onWishlistLinked?.call();
+              if (screenContext.mounted) {
+                ScaffoldMessenger.of(screenContext).showSnackBar(
+                  SnackBar(
+                    content: Text(localization.translate('events.wishlistCreatedAndLinkedSuccess')),
+                    backgroundColor: AppColors.success,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
             }
           });
         },
-        onLinkExisting: () {
-          Navigator.pop(context);
-          _showLinkExistingWishlistModal(
-            context,
-            event,
-            localization,
-          );
-        },
+        onLinkExisting: () => Navigator.pop(sheetContext, 'LINK_EXISTING'),
       ),
     );
   }
 
-  static void _showLinkExistingWishlistModal(
-    BuildContext context,
+  /// Caller awaits; returns true on success, false on error, null if dismissed.
+  static Future<bool?> showLinkExistingWishlistModal(
+    BuildContext screenContext,
     EventSummary event,
     LocalizationService localization,
-  ) {
+  ) async {
     final eventRepository = EventRepository();
-    
-    showModalBottomSheet(
-      context: context,
+
+    final result = await showModalBottomSheet<bool>(
+      context: screenContext,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (bottomSheetContext) => LinkWishlistBottomSheet(
         eventId: event.id,
         onLink: (wishlistId) async {
           try {
-            // Link wishlist to event
             await eventRepository.linkWishlistToEvent(
               eventId: event.id,
               wishlistId: wishlistId,
             );
-
-            // Use the bottom sheet context to close it
             if (!bottomSheetContext.mounted) return;
-            Navigator.pop(bottomSheetContext);
-
-            // Use the original context for showing snackbar (events screen context)
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(localization.translate('dialogs.wishlistLinkedSuccessfully') ?? 'Wishlist linked successfully'),
-                backgroundColor: AppColors.success,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            Navigator.pop(bottomSheetContext, true);
           } catch (e) {
-            // Use the bottom sheet context to close it
             if (!bottomSheetContext.mounted) return;
-            Navigator.pop(bottomSheetContext);
-
-            // Use the original context for showing snackbar (events screen context)
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${localization.translate('dialogs.failedToLinkWishlist') ?? 'Failed to link wishlist'}: ${e.toString()}'),
-                backgroundColor: AppColors.error,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            Navigator.pop(bottomSheetContext, false);
+            if (screenContext.mounted) {
+              ScaffoldMessenger.of(screenContext).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${localization.translate('dialogs.failedToLinkWishlist') ?? 'Failed to link wishlist'}: ${e.toString()}',
+                  ),
+                  backgroundColor: AppColors.error,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
           }
         },
       ),
     );
+
+    return result;
   }
 
   static Color _getEventTypeColor(EventType type) {
@@ -326,14 +318,14 @@ class EventModals {
     }
   }
 
-  static String _getPrivacyLabel(String privacy) {
+  static String _getPrivacyLabel(String privacy, LocalizationService localization) {
     switch (privacy) {
       case 'public':
-        return 'Public';
+        return localization.translate('profile.public');
       case 'private':
-        return 'Private';
+        return localization.translate('profile.private');
       case 'friends':
-        return 'Friends Only';
+        return localization.translate('profile.friendsOnly');
       default:
         return privacy;
     }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 
 /// Compact horizontal tile widget for displaying a wishlist linked to an event
 class EventWishlistTile extends StatelessWidget {
@@ -82,7 +84,7 @@ class EventWishlistTile extends StatelessWidget {
                         const SizedBox(height: 4),
                         // Item Count Subtitle
                         Text(
-                          _buildSubtitleText(),
+                          _buildSubtitleText(context),
                           style: AppStyles.bodySmall.copyWith(
                             color: AppColors.textSecondary,
                           ),
@@ -109,7 +111,7 @@ class EventWishlistTile extends StatelessWidget {
                             minWidth: 32,
                             minHeight: 32,
                           ),
-                          tooltip: 'Wishlist options',
+                          tooltip: Provider.of<LocalizationService>(context, listen: false).translate('events.wishlistOptions'),
                         ),
                       if (showUnlinkAction && onUnlink != null)
                         const SizedBox(width: 4),
@@ -130,14 +132,20 @@ class EventWishlistTile extends StatelessWidget {
     );
   }
 
-  String _buildSubtitleText() {
+  String _buildSubtitleText(BuildContext context) {
+    final t = Provider.of<LocalizationService>(context, listen: false);
+    final itemLabel = itemCount == 1
+        ? t.translate('events.itemSingular')
+        : t.translate('events.itemPlural');
     if (reservedCount != null && reservedCount! > 0) {
-      return '$itemCount ${itemCount == 1 ? 'Item' : 'Items'} • $reservedCount Reserved';
+      final reserved = t.translate('events.reserved');
+      return '$itemCount $itemLabel • $reservedCount $reserved';
     }
-    return '$itemCount ${itemCount == 1 ? 'Item' : 'Items'}';
+    return '$itemCount $itemLabel';
   }
 
   void _showUnlinkMenu(BuildContext context) {
+    final t = Provider.of<LocalizationService>(context, listen: false);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -168,14 +176,14 @@ class EventWishlistTile extends StatelessWidget {
                   color: AppColors.error,
                 ),
                 title: Text(
-                  'Unlink Wishlist',
+                  t.translate('events.unlinkWishlistTitle'),
                   style: AppStyles.bodyMedium.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppColors.error,
                   ),
                 ),
                 subtitle: Text(
-                  'Remove this wishlist from the event',
+                  t.translate('events.unlinkWishlistSubtitle'),
                   style: AppStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                   ),

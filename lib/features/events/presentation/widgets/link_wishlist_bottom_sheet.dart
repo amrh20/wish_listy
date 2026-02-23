@@ -66,7 +66,8 @@ class _LinkWishlistBottomSheetState extends State<LinkWishlistBottomSheet> {
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to load wishlists. Please try again.';
+        _errorMessage = Provider.of<LocalizationService>(context, listen: false)
+            .translate('wishlists.failedToLoadWishlistsTryAgain');
         _isLoading = false;
       });
     }
@@ -133,7 +134,8 @@ class _LinkWishlistBottomSheetState extends State<LinkWishlistBottomSheet> {
               children: [
                 Expanded(
                   child: Text(
-                    'Link Existing Wishlist',
+                    Provider.of<LocalizationService>(context, listen: false)
+                        .translate('events.linkExistingWishlistHeader'),
                     style: AppStyles.headingSmall.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -207,7 +209,8 @@ class _LinkWishlistBottomSheetState extends State<LinkWishlistBottomSheet> {
                       ),
                     ),
                     child: Text(
-                      'Link Wishlist',
+                      Provider.of<LocalizationService>(context, listen: false)
+                          .translate('events.linkWishlistButton'),
                       style: AppStyles.bodyMedium.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -244,7 +247,10 @@ class _LinkWishlistBottomSheetState extends State<LinkWishlistBottomSheet> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadWishlists,
-              child: const Text('Retry'),
+              child: Text(
+                Provider.of<LocalizationService>(context, listen: false)
+                    .translate('app.retry'),
+              ),
             ),
           ],
         ),
@@ -260,8 +266,10 @@ class _LinkWishlistBottomSheetState extends State<LinkWishlistBottomSheet> {
             const SizedBox(height: 16),
             Text(
               _searchController.text.isEmpty
-                  ? 'No wishlists available'
-                  : 'No wishlists found',
+                  ? Provider.of<LocalizationService>(context, listen: false)
+                      .translate('wishlists.noWishlistsAvailableForLink')
+                  : Provider.of<LocalizationService>(context, listen: false)
+                      .translate('wishlists.noWishlistsFoundSearch'),
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
@@ -282,18 +290,21 @@ class _LinkWishlistBottomSheetState extends State<LinkWishlistBottomSheet> {
         final itemCount =
             wishlist['itemCount'] ?? wishlist['items']?.length ?? 0;
 
-        return _buildWishlistCard(wishlist, wishlistId, isSelected, itemCount);
+        return _buildWishlistCard(context, wishlist, wishlistId, isSelected, itemCount);
       },
     );
   }
 
   Widget _buildWishlistCard(
+    BuildContext context,
     Map<String, dynamic> wishlist,
     String wishlistId,
     bool isSelected,
     int itemCount,
   ) {
-    final name = wishlist['name']?.toString() ?? 'Unnamed Wishlist';
+    final t = Provider.of<LocalizationService>(context, listen: false);
+    final name = wishlist['name']?.toString() ??
+        t.translate('wishlists.unnamedWishlist');
     final description = wishlist['description']?.toString();
 
     return Container(
@@ -358,7 +369,9 @@ class _LinkWishlistBottomSheetState extends State<LinkWishlistBottomSheet> {
                       ],
                       const SizedBox(height: 4),
                       Text(
-                        '$itemCount item${itemCount != 1 ? 's' : ''}',
+                        itemCount == 1
+                            ? '1 ${t.translate('wishlists.item')}'
+                            : '$itemCount ${t.translate('wishlists.items')}',
                         style: AppStyles.caption.copyWith(
                           color: AppColors.textTertiary,
                         ),

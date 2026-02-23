@@ -734,38 +734,8 @@ class _CreateWishlistScreenState extends State<CreateWishlistScreen>
           );
 
           if (mounted) {
-            // Navigate back to events screen
-            // Use a post-frame callback to ensure navigation is safe
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) return;
-
-              // Pop current screen first
-              if (Navigator.of(context).canPop()) {
-                Navigator.of(context).pop();
-              }
-
-              // Then check if we need to navigate to events screen
-              Future.delayed(const Duration(milliseconds: 100), () {
-                if (!mounted) return;
-
-                final currentRoute = ModalRoute.of(context)?.settings.name;
-                if (currentRoute != AppRoutes.events) {
-                  // Navigate to events screen
-                  Navigator.pushReplacementNamed(context, AppRoutes.events);
-                }
-
-                // Show success message
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text(
-                      'Wishlist created and linked to event successfully',
-                    ),
-                    backgroundColor: AppColors.success,
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-              });
-            });
+            // Pop back to caller (events screen); .then() in modal will call onWishlistLinked for refresh
+            Navigator.of(context).pop(true);
           }
           return;
         } catch (e) {

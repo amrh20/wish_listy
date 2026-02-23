@@ -385,13 +385,16 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       pinned: true,
       backgroundColor: Colors.transparent,
       elevation: 0,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 18),
-        onPressed: () => _handleBackNavigation(),
-        style: IconButton.styleFrom(
-          backgroundColor: Colors.white,
-          padding: const EdgeInsets.all(8),
-          shape: const CircleBorder(),
+      leading: Center(
+        child: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary, size: 18),
+          onPressed: () => _handleBackNavigation(),
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.white,
+            padding: const EdgeInsets.all(8),
+            shape: const CircleBorder(),
+            alignment: Alignment.center,
+          ),
         ),
       ),
       actions: _event?.isCreator == true ? [_buildMoreOptionsMenu(localization)] : [],

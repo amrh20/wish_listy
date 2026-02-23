@@ -183,7 +183,7 @@ class _FilterOptionsState extends State<FilterOptions> {
           'houseWarming',
         ].map((type) {
           return RadioListTile<String?>(
-            title: Text(_getEventTypeLabel(type)),
+            title: Text(_getEventTypeLabel(type, localization)),
             value: type,
             groupValue: _selectedEventType,
             onChanged: (value) {
@@ -212,18 +212,18 @@ class _FilterOptionsState extends State<FilterOptions> {
     }
   }
 
-  String _getEventTypeLabel(String type) {
+  String _getEventTypeLabel(String type, LocalizationService localization) {
     switch (type) {
       case 'birthday':
-        return 'Birthday';
+        return localization.translate('events.birthday');
       case 'wedding':
-        return 'Wedding';
+        return localization.translate('events.wedding');
       case 'anniversary':
-        return 'Anniversary';
+        return localization.translate('events.anniversary');
       case 'graduation':
-        return 'Graduation';
+        return localization.translate('events.graduation');
       case 'houseWarming':
-        return 'Housewarming';
+        return localization.translate('events.housewarming');
       default:
         return type;
     }

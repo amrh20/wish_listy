@@ -139,21 +139,25 @@ class ReservedItemCardWidget extends StatelessWidget {
                         const SizedBox(height: 4),
                         // Thankful message if purchased, otherwise owner row
                         if (isPurchased)
-                          // Thankful message
+                          // Purchased: show different message based on isReceived
                           Row(
                             children: [
                               Icon(
-                                Icons.check_circle,
+                                item.isReceived ? Icons.check_circle : Icons.schedule_rounded,
                                 size: 14,
                                 color: AppColors.success,
                               ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  localization.translate(
-                                    'details.friendReceivedGift',
-                                    args: {'name': ownerName},
-                                  ),
+                                  item.isReceived
+                                      ? (localization.translate(
+                                          'details.friendReceivedGift',
+                                          args: {'name': ownerName},
+                                        ) ?? 'Thanks! $ownerName received your gift 🎉')
+                                      : (localization.translate(
+                                          'details.purchasedAwaitingFriendReceipt',
+                                        ) ?? 'Thanks for purchasing the gift. Waiting for your friend to receive it.'),
                                   style: AppStyles.bodySmall.copyWith(
                                     color: AppColors.success,
                                     fontSize: 12,

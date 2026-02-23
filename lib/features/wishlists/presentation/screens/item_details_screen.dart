@@ -389,15 +389,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                                   ),
                                   const SizedBox(height: 16),
                                   Expanded(
-                                    child: RefreshIndicator(
-                                      onRefresh: _refreshItemDetails,
-                                      color: AppColors.primary,
-                                      child: SingleChildScrollView(
-                                        physics: const AlwaysScrollableScrollPhysics(),
-                                        padding: const EdgeInsets.only(bottom: 24),
-                                        child: _buildSingleContentCard(item),
-                                      ),
-                                    ),
+                                    child: _buildSingleContentCard(item),
                                   ),
                                 ],
                               ),
@@ -407,15 +399,17 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             // user requested to remove the cup entirely from the screen.
           ],
         ),
-      bottomNavigationBar: _shouldShowBottomActionBar(item)
-          ? Material(
-              color: Colors.transparent,
-              elevation: 0.0,
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 12, bottom: 20),
-                  child: ItemActionBarWidget(
+      bottomNavigationBar: _shouldShowTakenMessageBar(item)
+          ? _buildTakenMessageBar(item)
+          : _shouldShowBottomActionBar(item)
+              ? Material(
+                  color: Colors.transparent,
+                  elevation: 0.0,
+                  child: SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 12, bottom: 20),
+                      child: ItemActionBarWidget(
                     item: item,
                     isOwner: _isOwner(),
                     isReservedByMe: _isReservedByMe(item),
@@ -503,74 +497,87 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       ),
       child: Stack(
         clipBehavior: Clip.none,
+        fit: StackFit.expand,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Reserve space below status badge so content doesn't clash
-                const SizedBox(height: 36),
-                if (item.imageUrl != null && item.imageUrl!.trim().isNotEmpty) ...[
-                  _buildItemImageWithOptionalGiftedOverlay(item),
-                  const SizedBox(height: 20),
-                ],
-                if (item.isReceived) ...[
-                  Center(
-                    child: Icon(
-                      Icons.celebration,
-                      color: const Color(0xFF2E7D32),
-                      size: 48,
+          Positioned.fill(
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Reserve space below status badge so content doesn't clash
+                    const SizedBox(height: 36),
+                    if (item.imageUrl != null && item.imageUrl!.trim().isNotEmpty) ...[
+                      _buildItemImageWithOptionalGiftedOverlay(item),
+                      const SizedBox(height: 20),
+                    ],
+                    if (item.isReceived) ...[
+                      Center(
+                        child: Icon(
+                          Icons.celebration,
+                          color: const Color(0xFF2E7D32),
+                          size: 48,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildGiftedMessageCard(context),
+                      const SizedBox(height: 20),
+                    ],
+                    if (item.isPurchasedValue && !item.isReceived) ...[
+                      if (_isOwner()) ...[
+                        _buildOwnerConfirmReceiptMessageCard(context),
+                        const SizedBox(height: 20),
+                      ] else if (_isPurchasedByMe(item)) ...[
+                        _buildPurchasedByMeMessageCard(context),
+                        const SizedBox(height: 20),
+                      ],
+                      // State 2 (someone else bought): no in-content message; only bottom bar
+                    ],
+                    if (item.description != null && item.description!.trim().isNotEmpty) ...[
+                      _buildDescriptionSection(item.description),
+                      const SizedBox(height: 20),
+                    ],
+                    ItemWhereToBuyCardWidget(
+                      url: _getItemUrl(item),
+                      storeName: _getStoreName(),
+                      storeLocation: _getStoreLocation(),
+                      onTap: () => _openStoreUrl(item),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildGiftedMessageCard(context),
-                  const SizedBox(height: 20),
-                ],
-                if (item.isPurchasedValue && !item.isReceived) ...[
-                  _buildPurchasedPendingMessageCard(context),
-                  const SizedBox(height: 20),
-                ],
-                if (item.description != null && item.description!.trim().isNotEmpty) ...[
-                  _buildDescriptionSection(item.description),
-                  const SizedBox(height: 20),
-                ],
-                ItemWhereToBuyCardWidget(
-                  url: _getItemUrl(item),
-                  storeName: _getStoreName(),
-                  storeLocation: _getStoreLocation(),
-                  onTap: () => _openStoreUrl(item),
+                    if (hasWhereToBuy) const SizedBox(height: 20),
+                    if (!hasDescription && !hasWhereToBuy && !_isGiftedOrPurchased(item)) ...[
+                      Text(
+                        Provider.of<LocalizationService>(context, listen: false).translate('details.noSpecificStoreListed') ?? 'No specific store listed. You can find this gift anywhere!',
+                        style: AppStyles.bodyMedium.copyWith(
+                          color: AppColors.textSecondary,
+                          height: 1.5,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    if (_getDisplayPrice(item) != null) ...[
+                      Text(
+                        Provider.of<LocalizationService>(context, listen: false).translate('details.price') ?? 'Price',
+                        style: AppStyles.bodySmall.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _getDisplayPrice(item)!,
+                        style: AppStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_shouldShowBottomActionBar(item) || _shouldShowTakenMessageBar(item)) const SizedBox(height: 80),
+                  ],
                 ),
-                if (hasWhereToBuy) const SizedBox(height: 20),
-                if (!hasDescription && !hasWhereToBuy && !_isGiftedOrPurchased(item)) ...[
-                  Text(
-                    Provider.of<LocalizationService>(context, listen: false).translate('details.noSpecificStoreListed') ?? 'No specific store listed. You can find this gift anywhere!',
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                      height: 1.5,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-                if (_getDisplayPrice(item) != null) ...[
-                  Text(
-                    Provider.of<LocalizationService>(context, listen: false).translate('details.price') ?? 'Price',
-                    style: AppStyles.bodySmall.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _getDisplayPrice(item)!,
-                    style: AppStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                if (_shouldShowBottomActionBar(item)) const SizedBox(height: 80),
-              ],
+              ),
             ),
           ),
           Positioned.directional(
@@ -680,28 +687,18 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     final localization = Provider.of<LocalizationService>(context, listen: false);
     final text = localization.translate('details.giftedMessageCard') ??
         'Someone special has already granted this wish. It\'s no longer available for others.';
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.check_circle_outline, color: const Color(0xFF2E7D32), size: 22),
-          const SizedBox(width: 12),
-          Expanded(
+          const SizedBox(width: 10),
+          Flexible(
             child: Text(
               text,
+              textAlign: TextAlign.center,
               style: AppStyles.bodyMedium.copyWith(
                 color: const Color(0xFF1B5E20),
                 height: 1.45,
@@ -714,34 +711,52 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     );
   }
 
-  /// "Waiting for confirmation" / "On the way" card when purchased but not yet received.
-  Widget _buildPurchasedPendingMessageCard(BuildContext context) {
+  /// State 1: I bought this gift for my friend. Clean message, no background box.
+  Widget _buildPurchasedByMeMessageCard(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context, listen: false);
-    final text = localization.translate('details.purchasedAwaitingConfirmation') ??
-        'This gift has been purchased and is on its way. Waiting for confirmation of receipt.';
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.purchasedLight.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.purchased.withOpacity(0.35), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.purchased.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+    final text = localization.translate('details.purchasedByYouAwaitingConfirmation') ??
+        'You made this wish come true! 🦸‍♂️ You\'ve purchased this gift. Thanks for spreading the joy.';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.volunteer_activism_rounded, color: AppColors.purchased, size: 24),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.purchased,
+                height: 1.45,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  /// State 3: Someone bought this for me (I am the owner). Prompt to confirm receipt. Clean, unboxed.
+  Widget _buildOwnerConfirmReceiptMessageCard(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final text = localization.translate('details.ownerConfirmReceiptMessage') ??
+        'Did you get this? This will mark your wish as completed.';
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.schedule_rounded, color: AppColors.purchased, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
+          Icon(Icons.card_giftcard_rounded, color: AppColors.purchased, size: 24),
+          const SizedBox(width: 10),
+          Flexible(
             child: Text(
               text,
+              textAlign: TextAlign.center,
               style: AppStyles.bodyMedium.copyWith(
                 color: AppColors.purchased,
                 height: 1.45,
@@ -766,6 +781,18 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     }
     
     return authService.userId == _wishlistOwnerId;
+  }
+
+  /// True when the current user is the one who purchased this item (for a friend's wishlist).
+  /// Used to separate State 1 (I bought it) from State 2 (someone else bought it).
+  bool _isPurchasedByMe(WishlistItem item) {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    final currentUserId = authService.userId?.toString();
+    if (currentUserId == null) return false;
+    if (item.isReservedByMe == true) return true;
+    final purchasedByRaw = _rawItemData?['purchasedBy'] ?? _rawItemData?['purchased_by'];
+    final purchasedById = (purchasedByRaw is Map) ? (purchasedByRaw['_id']?.toString() ?? purchasedByRaw['id']?.toString()) : null;
+    return purchasedById != null && purchasedById == currentUserId;
   }
 
   /// Shows confirmation dialog for "I didn't get this yet" (mark as not received).
@@ -817,9 +844,18 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     }
   }
 
+  /// State 2: True when viewing a friend's wishlist and someone else (not me) already purchased/fulfilled the item.
+  /// We show the "Too late! Another friend already granted..." message in the bottom bar; no Reserve/Buy buttons.
+  bool _shouldShowTakenMessageBar(WishlistItem item) {
+    if (_isLoading || _currentItem == null) return false;
+    if (_isOwner()) return false;
+    if (_isPurchasedByMe(item)) return false; // State 1: I bought it — don't show "taken" bar
+    return item.isPurchasedValue || item.isReceived;
+  }
+
   /// Determine if bottom action bar should be shown
   /// Owner: Only show "Mark as Received" if item is Reserved or Purchased (and not received)
-  /// Non-Owner: Show standard guest actions (Reserve, Cancel Reservation, etc.)
+  /// Non-Owner: Show standard guest actions (Reserve, Cancel Reservation, etc.) — but not when item is taken by someone else
   bool _shouldShowBottomActionBar(WishlistItem item) {
     // Hide during loading
     if (_isLoading || _currentItem == null) {
@@ -849,20 +885,41 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
       return false;
     }
 
-    // Non-Owner View Logic
-    // When received (gifted), show bottom bar with celebratory banner
-    if (isReceived) {
-      return true;
-    }
-
-    // Hide if purchased and user is NOT the owner
-    // (purchaser should not see "Undo" action once purchase is confirmed)
-    if (isPurchased && !isOwner) {
+    // Non-Owner View Logic: when item is taken (purchased or received by someone else), we show the "taken" message bar instead
+    if (isReceived || isPurchased) {
       return false;
     }
 
     // Show for available or reserved items (non-owner)
     return true;
+  }
+
+  /// Bottom bar shown when viewing a friend's wishlist and the item is already granted by someone else (no action buttons).
+  Widget _buildTakenMessageBar(WishlistItem item) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final text = localization.translate('details.itemTakenByFriendMessage') ??
+        'Too late! Another friend already granted this wish. 🏃‍♂️💨 You can pick something else to make them smile!';
+    return Material(
+      color: Colors.transparent,
+      elevation: 0,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Center(
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.45,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   IconData _getPriorityIcon(ItemPriority priority) {

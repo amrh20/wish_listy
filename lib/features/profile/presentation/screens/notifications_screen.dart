@@ -46,7 +46,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       builder: (context, localization, child) {
         return Scaffold(
           appBar: AppBar(
-            title: Text('Notifications'),
+            title: Text(localization.translate('notifications.title')),
             backgroundColor: Colors.transparent,
             elevation: 0,
             leading: IconButton(
@@ -105,7 +105,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'General Settings',
+          localization.translate('profile.generalSettings'),
           style: AppStyles.headingSmall.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -127,8 +127,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           child: Column(
             children: [
               _buildSwitchOption(
-                title: 'Push Notifications',
-                subtitle: 'Receive notifications on your device',
+                title: localization.translate('profile.pushNotifications'),
+                subtitle: localization.translate('profile.pushNotificationsSubtitle'),
                 value: _pushNotifications,
                 onChanged: (value) {
                   setState(() {
@@ -138,8 +138,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
               Divider(height: 1, color: AppColors.surfaceVariant),
               _buildSwitchOption(
-                title: 'Email Notifications',
-                subtitle: 'Receive notifications via email',
+                title: localization.translate('profile.emailNotifications'),
+                subtitle: localization.translate('profile.emailNotificationsSubtitle'),
                 value: _emailNotifications,
                 onChanged: (value) {
                   setState(() {
@@ -149,8 +149,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
               Divider(height: 1, color: AppColors.surfaceVariant),
               _buildSwitchOption(
-                title: 'In-App Notifications',
-                subtitle: 'Show notifications within the app',
+                title: localization.translate('profile.inAppNotifications'),
+                subtitle: localization.translate('profile.inAppNotificationsSubtitle'),
                 value: _inAppNotifications,
                 onChanged: (value) {
                   setState(() {
@@ -170,7 +170,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Notification Types',
+          localization.translate('profile.notificationTypes'),
           style: AppStyles.headingSmall.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -192,8 +192,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           child: Column(
             children: [
               _buildSwitchOption(
-                title: 'Friend Requests',
-                subtitle: 'When someone sends you a friend request',
+                title: localization.translate('profile.friendRequests'),
+                subtitle: localization.translate('profile.friendRequestsSubtitle'),
                 value: _friendRequests,
                 onChanged: (value) {
                   setState(() {
@@ -203,8 +203,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
               Divider(height: 1, color: AppColors.surfaceVariant),
               _buildSwitchOption(
-                title: 'Wishlist Updates',
-                subtitle: 'When friends update their wishlists',
+                title: localization.translate('profile.wishlistUpdates'),
+                subtitle: localization.translate('profile.wishlistUpdatesSubtitle'),
                 value: _wishlistUpdates,
                 onChanged: (value) {
                   setState(() {
@@ -214,8 +214,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
               Divider(height: 1, color: AppColors.surfaceVariant),
               _buildSwitchOption(
-                title: 'Event Invitations',
-                subtitle: 'When you\'re invited to events',
+                title: localization.translate('profile.eventInvitations'),
+                subtitle: localization.translate('profile.eventInvitationsSubtitle'),
                 value: _eventInvitations,
                 onChanged: (value) {
                   setState(() {
@@ -225,8 +225,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
               Divider(height: 1, color: AppColors.surfaceVariant),
               _buildSwitchOption(
-                title: 'Gift Notifications',
-                subtitle: 'When someone buys you a gift',
+                title: localization.translate('profile.giftNotifications'),
+                subtitle: localization.translate('profile.giftNotificationsSubtitle'),
                 value: _giftNotifications,
                 onChanged: (value) {
                   setState(() {
@@ -246,7 +246,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Quiet Hours',
+          localization.translate('profile.quietHours'),
           style: AppStyles.headingSmall.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w600,
@@ -268,15 +268,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           child: Column(
             children: [
               _buildActionOption(
-                title: 'Set Quiet Hours',
-                subtitle: 'Choose when to receive notifications',
+                title: localization.translate('profile.setQuietHours'),
+                subtitle: localization.translate('profile.setQuietHoursSubtitle'),
                 icon: Icons.schedule_outlined,
                 onTap: _setQuietHours,
               ),
               Divider(height: 1, color: AppColors.surfaceVariant),
               _buildActionOption(
-                title: 'Do Not Disturb',
-                subtitle: 'Pause all notifications temporarily',
+                title: localization.translate('profile.doNotDisturb'),
+                subtitle: localization.translate('profile.doNotDisturbSubtitle'),
                 icon: Icons.notifications_off_outlined,
                 onTap: _toggleDoNotDisturb,
               ),
@@ -353,7 +353,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return SizedBox(
       width: double.infinity,
       child: CustomButton(
-        text: 'Save Notification Settings',
+        text: localization.translate('profile.saveNotificationSettings'),
         onPressed: _isLoading ? null : _saveNotificationSettings,
         variant: ButtonVariant.primary,
         isLoading: _isLoading,
@@ -362,15 +362,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _setQuietHours() {
+    final t = Provider.of<LocalizationService>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Set Quiet Hours'),
+        title: Text(t.translate('profile.setQuietHoursDialogTitle')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Choose the time period when you don\'t want to receive notifications.',
+              t.translate('profile.setQuietHoursDialogContent'),
               style: AppStyles.bodyMedium,
             ),
             const SizedBox(height: 20),
@@ -380,7 +381,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Start Time', style: AppStyles.bodySmall),
+                      Text(t.translate('profile.startTime'), style: AppStyles.bodySmall),
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -401,7 +402,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('End Time', style: AppStyles.bodySmall),
+                      Text(t.translate('profile.endTime'), style: AppStyles.bodySmall),
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -424,15 +425,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: Text(t.translate('app.cancel')),
           ),
           CustomButton(
-            text: 'Save',
+            text: t.translate('app.save'),
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Quiet hours set successfully!'),
+                  content: Text(t.translate('profile.quietHoursSetSuccess')),
                   backgroundColor: AppColors.success,
                 ),
               );
@@ -447,15 +448,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   void _toggleDoNotDisturb() {
+    final t = Provider.of<LocalizationService>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Do Not Disturb'),
+        title: Text(t.translate('profile.doNotDisturbDialogTitle')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Pause all notifications temporarily. You can resume them anytime.',
+              t.translate('profile.doNotDisturbDialogContent'),
               style: AppStyles.bodyMedium,
             ),
           ],
@@ -463,16 +465,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: Text(t.translate('app.cancel')),
           ),
           CustomButton(
-            text: 'Pause Notifications',
+            text: t.translate('profile.pauseNotifications'),
             onPressed: () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
-                    'Notifications paused. Resume anytime from settings.',
+                    content: Text(
+                    t.translate('profile.notificationsPausedResume'),
                   ),
                   backgroundColor: AppColors.warning,
                 ),
@@ -499,7 +501,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Notification settings updated successfully!'),
+            content: Text(Provider.of<LocalizationService>(context, listen: false).translate('profile.notificationSettingsUpdatedSuccess')),
             backgroundColor: AppColors.success,
           ),
         );
@@ -518,7 +520,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Failed to update notification settings. Please try again.',
+              Provider.of<LocalizationService>(context, listen: false).translate('profile.failedToUpdateNotificationSettings'),
             ),
             backgroundColor: AppColors.error,
           ),
