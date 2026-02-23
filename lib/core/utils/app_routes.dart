@@ -43,6 +43,7 @@ import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/activity_feed_screen.dart';
 import '../../features/profile/presentation/screens/faq_screen.dart';
 import '../../features/profile/presentation/screens/contact_us_screen.dart';
+import '../../features/profile/presentation/screens/shipping_address_screen.dart';
 import '../../features/wishlists/data/models/wishlist_model.dart';
 import '../../features/events/data/models/event_model.dart';
 
@@ -86,6 +87,7 @@ class AppRoutes {
   static const String legalInfo = '/legal-info';
   static const String faq = '/faq';
   static const String contactUs = '/contact-us';
+  static const String shippingAddress = '/shipping-address';
   
   // Deep Link Routes (for Universal/App Links)
   static const String deepLinkWishlist = '/wishlist';
@@ -113,6 +115,7 @@ class AppRoutes {
     editProfile: (context) => EditProfileScreen(),
     faq: (context) => const FaqScreen(),
     contactUs: (context) => const ContactUsScreen(),
+    shippingAddress: (context) => const ShippingAddressScreen(),
   };
 
   // Route Generator for dynamic routes

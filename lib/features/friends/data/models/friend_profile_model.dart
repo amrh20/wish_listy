@@ -191,6 +191,24 @@ class FriendProfileRelationshipModel {
 }
 
 @immutable
+class FriendShippingInfo {
+  final String receiverName;
+  final String phoneNumber;
+  final String fullAddress;
+
+  const FriendShippingInfo({
+    required this.receiverName,
+    required this.phoneNumber,
+    required this.fullAddress,
+  });
+
+  bool get hasValidData =>
+      receiverName.trim().isNotEmpty ||
+      phoneNumber.trim().isNotEmpty ||
+      fullAddress.trim().isNotEmpty;
+}
+
+@immutable
 class FriendProfileModel {
   final FriendProfileUserModel user;
   final FriendProfileCountsModel counts;
@@ -198,6 +216,7 @@ class FriendProfileModel {
   final FriendProfileRelationshipModel? relationship;
   final bool isBlockedByMe;
   final MutualFriendsData? mutualFriendsData;
+  final FriendShippingInfo? shippingInfo;
 
   const FriendProfileModel({
     required this.user,
@@ -206,6 +225,7 @@ class FriendProfileModel {
     this.relationship,
     this.isBlockedByMe = false,
     this.mutualFriendsData,
+    this.shippingInfo,
   });
 
   factory FriendProfileModel.fromJson(Map<String, dynamic> json) {
@@ -248,6 +268,7 @@ class FriendProfileModel {
       final mutualFriendsData = mutualDataRaw is Map<String, dynamic>
           ? MutualFriendsData.fromJson(mutualDataRaw)
           : null;
+      final shipping = _parseShippingInfo(userJson, json);
       return FriendProfileModel(
         user: FriendProfileUserModel.fromJson(userJson),
         counts: FriendProfileCountsModel.fromJson(countsJson),
@@ -257,6 +278,7 @@ class FriendProfileModel {
         relationship: rel,
         isBlockedByMe: isBlockedByMe,
         mutualFriendsData: mutualFriendsData,
+        shippingInfo: shipping,
       );
     }
 
@@ -274,6 +296,7 @@ class FriendProfileModel {
     final mutualFriendsData = mutualDataRaw is Map<String, dynamic>
         ? MutualFriendsData.fromJson(mutualDataRaw)
         : null;
+    final shipping = _parseShippingInfo(json, json);
     return FriendProfileModel(
       user: FriendProfileUserModel.fromJson(json),
       counts: FriendProfileCountsModel.fromJson(json),
@@ -283,7 +306,28 @@ class FriendProfileModel {
       relationship: rel,
       isBlockedByMe: isBlockedByMe,
       mutualFriendsData: mutualFriendsData,
+      shippingInfo: shipping,
     );
+  }
+
+  /// Parse shippingAddress object from profile. If shippingAddress is null, returns null.
+  static FriendShippingInfo? _parseShippingInfo(
+    Map<String, dynamic> userJson,
+    Map<String, dynamic> root,
+  ) {
+    final shippingObj = root['shippingAddress'] ?? userJson['shippingAddress'];
+    if (shippingObj == null || shippingObj is! Map<String, dynamic>) return null;
+
+    final name = (shippingObj['receiverName']?.toString().trim()) ?? '';
+    final phone = (shippingObj['phoneNumber']?.toString().trim()) ?? '';
+    final addr = (shippingObj['fullAddress']?.toString().trim()) ?? '';
+
+    final info = FriendShippingInfo(
+      receiverName: name,
+      phoneNumber: phone,
+      fullAddress: addr,
+    );
+    return info.hasValidData ? info : null;
   }
 }
 

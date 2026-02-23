@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
@@ -11,6 +12,7 @@ import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/features/friends/data/models/friend_event_model.dart';
+import 'package:wish_listy/features/friends/data/models/friend_profile_model.dart';
 import 'package:wish_listy/features/profile/data/repository/privacy_repository.dart';
 import 'package:wish_listy/features/friends/data/models/friend_wishlist_model.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
@@ -740,6 +742,98 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     _showUnblockConfirmationDialog();
   }
 
+  void _showShippingInfoBottomSheet() {
+    final p = _controller.profile.value;
+    final info = p?.shippingInfo;
+    if (info == null) return;
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final friendName = p?.user.fullName ?? localization.translate('friends.friend');
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 24,
+          bottom: 24 + MediaQuery.of(context).padding.bottom,
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              localization.translate('friends.shippingInfoFor')?.replaceAll('{name}', friendName) ??
+                  'Shipping Info for $friendName',
+              style: AppStyles.headingSmall.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _ShippingInfoRow(
+              label: localization.translate('profile.shippingReceiverName') ?? 'Receiver Name',
+              value: info.receiverName,
+            ),
+            const SizedBox(height: 12),
+            _ShippingInfoRow(
+              label: localization.translate('profile.shippingPhone') ?? 'Phone',
+              value: info.phoneNumber,
+            ),
+            const SizedBox(height: 12),
+            _ShippingInfoRow(
+              label: localization.translate('profile.shippingDetailedAddress') ?? 'Address',
+              value: info.fullAddress,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  final all = [
+                    info.receiverName,
+                    info.phoneNumber,
+                    info.fullAddress,
+                  ].where((s) => s.trim().isNotEmpty).join('\n');
+                  Clipboard.setData(ClipboardData(text: all));
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        localization.translate('profile.addressCopied') ?? 'Copied to clipboard',
+                      ),
+                      backgroundColor: AppColors.success,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.copy_all, size: 20),
+                label: Text(
+                  localization.translate('friends.copyAllInfo') ?? 'Copy All Info',
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _handleUnfriend() async {
     final localization = Provider.of<LocalizationService>(context, listen: false);
     final profile = _controller.profile.value;
@@ -1044,9 +1138,18 @@ class _PatternedHeader extends StatelessWidget {
                           isBlockedByMe: controller.isBlockedByMe.value,
                           isBusy: controller.isSendingFriendRequest.value ||
                               controller.isLoading.value,
+                          hasShippingAddress:
+                              controller.profile.value?.shippingInfo != null,
+                          friendName:
+                              controller.profile.value?.user.fullName ??
+                                  Provider.of<LocalizationService>(context, listen: false).translate('friends.friend'),
+                          shippingInfo: controller.profile.value?.shippingInfo,
                           onRemove: () => (context.findAncestorStateOfType<
                                   _FriendProfileScreenState>())
                               ?._handleUnfriend(),
+                          onShippingTap: () => (context.findAncestorStateOfType<
+                                  _FriendProfileScreenState>())
+                              ?._showShippingInfoBottomSheet(),
                           onAccept: () => (context.findAncestorStateOfType<
                                   _FriendProfileScreenState>())
                               ?._handleAcceptRequest(),
@@ -1248,18 +1351,101 @@ class _FriendFullScreenImageView extends StatelessWidget {
   }
 }
 
+class _ShippingInfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _ShippingInfoRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final displayValue = value.trim().isEmpty
+        ? (localization.translate('common.notSet') ?? '—')
+        : value;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: value.trim().isEmpty
+            ? null
+            : () {
+                Clipboard.setData(ClipboardData(text: value));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      localization.translate('profile.addressCopied') ?? 'Copied',
+                    ),
+                    backgroundColor: AppColors.success,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.border.withOpacity(0.5),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: AppStyles.caption.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      displayValue,
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              if (value.trim().isNotEmpty)
+                Icon(
+                  Icons.copy_outlined,
+                  size: 20,
+                  color: AppColors.primary,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _RelationshipQuickActions extends StatelessWidget {
   final bool isFriend;
   final bool hasIncomingRequest;
   final bool isRequestSent;
   final bool isBlockedByMe;
   final bool isBusy;
+  final bool hasShippingAddress;
+  final String friendName;
+  final FriendShippingInfo? shippingInfo;
   final VoidCallback? onRemove;
   final VoidCallback? onAccept;
   final VoidCallback? onDecline;
   final VoidCallback? onAdd;
   final VoidCallback? onCancel;
   final VoidCallback? onUnblock;
+  final VoidCallback? onShippingTap;
 
   const _RelationshipQuickActions({
     required this.isFriend,
@@ -1267,12 +1453,16 @@ class _RelationshipQuickActions extends StatelessWidget {
     required this.isRequestSent,
     required this.isBlockedByMe,
     required this.isBusy,
+    this.hasShippingAddress = false,
+    this.friendName = '',
+    this.shippingInfo,
     required this.onRemove,
     required this.onAccept,
     required this.onDecline,
     required this.onAdd,
     this.onCancel,
     this.onUnblock,
+    this.onShippingTap,
   });
 
   @override
@@ -1312,13 +1502,21 @@ class _RelationshipQuickActions extends StatelessWidget {
       );
     }
 
-    // 1) Friend -> Remove Friend
+    // 1) Friend -> Remove Friend (+ Location icon if shipping available)
     if (isFriend) {
       return Wrap(
         alignment: WrapAlignment.center,
         spacing: 10,
         runSpacing: 10,
         children: [
+          if (hasShippingAddress && onShippingTap != null)
+            _QuickActionIconButton(
+              icon: Icons.location_on_outlined,
+              backgroundColor: AppColors.primary.withOpacity(0.10),
+              foregroundColor: AppColors.primary,
+              borderColor: AppColors.primary.withOpacity(0.25),
+              onTap: onShippingTap,
+            ),
           _QuickActionButton(
             text: localization.translate('friends.removeFriend'),
             icon: Icons.person_remove_outlined,
@@ -1387,6 +1585,42 @@ class _RelationshipQuickActions extends StatelessWidget {
           onTap: onAdd,
         ),
       ],
+    );
+  }
+}
+
+class _QuickActionIconButton extends StatelessWidget {
+  final IconData icon;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final Color borderColor;
+  final VoidCallback? onTap;
+
+  const _QuickActionIconButton({
+    required this.icon,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.borderColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderColor, width: 1),
+          ),
+          child: Icon(icon, color: foregroundColor, size: 22),
+        ),
+      ),
     );
   }
 }

@@ -28,6 +28,21 @@ import 'package:wish_listy/features/profile/presentation/widgets/profile/profile
 import 'package:wish_listy/core/utils/interest_translation_extension.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/profile/profile_interests_section_widget.dart';
 
+String? _parseShippingAddressFromProfile(Map<String, dynamic> data) {
+  final obj = data['shippingAddress'];
+  if (obj == null || obj is! Map) return null;
+  final s = obj['fullAddress']?.toString().trim();
+  return (s != null && s.isNotEmpty) ? s : null;
+}
+
+bool _parseShippingVisibleFromProfile(Map<String, dynamic> data) {
+  final obj = data['shippingAddress'];
+  if (obj == null || obj is! Map) return true;
+  final v = obj['isVisibleToFriends'];
+  if (v == null) return true;
+  return v == true || v == 'true';
+}
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -244,6 +259,9 @@ class ProfileScreenState extends State<ProfileScreen>
                         onEventsTap: () => MainNavigation.switchToTab(context, 2),
                       ),
                     const SizedBox(height: 16),
+                    if (_userProfile != null)
+                      _buildShippingAddressCard(localization),
+                    if (_userProfile != null) const SizedBox(height: 16),
                     if (_userProfile != null)
                       ProfileInterestsSectionWidget(
                         interests: _userProfile!.interests,
@@ -563,6 +581,115 @@ class ProfileScreenState extends State<ProfileScreen>
 
   void _changePassword() {
     Navigator.pushNamed(context, AppRoutes.changePassword);
+  }
+
+  void _navigateToShippingAddress() async {
+    final result = await Navigator.pushNamed(context, AppRoutes.shippingAddress);
+    if (result == true && mounted) {
+      _loadUserProfile(forceRefresh: true);
+    }
+  }
+
+  Widget _buildShippingAddressCard(LocalizationService localization) {
+    final address = _userProfile?.shippingAddress?.trim();
+    final hasAddress = address != null && address.isNotEmpty;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textTertiary.withOpacity(0.1),
+            offset: const Offset(0, 2),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _navigateToShippingAddress,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    Icons.location_on_outlined,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        localization.translate('profile.shippingAddress') ?? 'Shipping Address',
+                        style: AppStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        localization.translate('profile.shippingAddressSubtitle') ??
+                            'Where friends can send you gifts privately',
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                      if (hasAddress) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          address.length > 50 ? '${address.substring(0, 50)}...' : address,
+                          style: AppStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ] else ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          localization.translate('profile.shippingNotSet') ?? 'Not set',
+                          style: AppStyles.bodySmall.copyWith(
+                            color: AppColors.textTertiary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                if (hasAddress)
+                  Icon(Icons.edit_outlined, size: 20, color: AppColors.textSecondary),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right,
+                  color: AppColors.textTertiary,
+                  size: 22,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _notificationSettings() {
@@ -987,6 +1114,8 @@ class ProfileScreenState extends State<ProfileScreen>
                       privacySettingsData?['showWishlistActivity'] as bool? ?? true,
                 ),
                 interests: interests,
+                shippingAddress: _parseShippingAddressFromProfile(data),
+                shippingVisibleToFriends: _parseShippingVisibleFromProfile(data),
               );
               
               _isLoading = false;
@@ -1486,6 +1615,8 @@ class UserProfile {
   final int giftsGiven;
   final PrivacySettings privacy;
   final List<String> interests;
+  final String? shippingAddress;
+  final bool shippingVisibleToFriends;
 
   UserProfile({
     required this.id,
@@ -1502,6 +1633,8 @@ class UserProfile {
     required this.giftsGiven,
     required this.privacy,
     this.interests = const [],
+    this.shippingAddress,
+    this.shippingVisibleToFriends = true,
   });
   
   UserProfile copyWith({
@@ -1519,6 +1652,8 @@ class UserProfile {
     int? giftsGiven,
     PrivacySettings? privacy,
     List<String>? interests,
+    String? shippingAddress,
+    bool? shippingVisibleToFriends,
   }) {
     return UserProfile(
       id: id ?? this.id,
@@ -1535,6 +1670,8 @@ class UserProfile {
       giftsGiven: giftsGiven ?? this.giftsGiven,
       privacy: privacy ?? this.privacy,
       interests: interests ?? this.interests,
+      shippingAddress: shippingAddress ?? this.shippingAddress,
+      shippingVisibleToFriends: shippingVisibleToFriends ?? this.shippingVisibleToFriends,
     );
   }
 

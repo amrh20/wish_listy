@@ -335,6 +335,12 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
                 // SliverAppBar (The Header)
                 _buildSliverAppBar(eventColor, localization),
 
+                // Belated gift banner for past events
+                if (_event!.status == EventStatus.completed)
+                  SliverToBoxAdapter(
+                    child: _buildBelatedGiftBanner(localization),
+                  ),
+
                 // Content Body
                 SliverToBoxAdapter(
                   child: Padding(
@@ -539,6 +545,44 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Full-width banner for past events: belated gift CTA
+  Widget _buildBelatedGiftBanner(LocalizationService localization) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.warning.withOpacity(0.4),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.card_giftcard_rounded,
+            color: AppColors.warning,
+            size: 28,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              localization.translate('events.belatedGiftBanner'),
+              style: AppStyles.bodyMedium.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2470,13 +2514,6 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
   Widget _buildWishlistCard(LocalizationService localization) {
     final isAccepted = _event?.myInvitationStatus == 'accepted';
     final isCreator = _event?.isCreator ?? false;
-    final isPastStatus =
-        _event?.status == EventStatus.completed || _event?.status == EventStatus.cancelled;
-
-    // Hide entire section if event is past
-    if (isPastStatus) {
-      return const SizedBox.shrink();
-    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2491,7 +2528,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
         ),
         const SizedBox(height: 16),
         // Wishlist Content
-        if (_event!.wishlistId == null && isCreator && !isPastStatus)
+        if (_event!.wishlistId == null && isCreator)
       // Create Event Wishlist placeholder
           Container(
         width: double.infinity, // Full width to match main sheet
