@@ -42,16 +42,16 @@ class ProfileRepository {
     }
   }
 
-  /// Edit/Update existing profile image using PUT /api/auth/profile/edit
-  /// Uses field name [image] and multipart/form-data.
-  /// [imagePath] - Path to the compressed image file
+  /// Edit/Update existing profile image using PUT /api/upload/profile
+  /// Uses field name [profileImage] and multipart/form-data.
+  /// [imagePath] - Path to the image file
   /// Returns normalized map with [imageUrl] and [user] for consistent parsing.
   Future<Map<String, dynamic>> editProfileImage(String imagePath) async {
     try {
       final response = await _apiService.putMultipart(
-        '/auth/profile/edit',
+        '/upload/profile',
         fields: {},
-        fileKey: 'image',
+        fileKey: 'profileImage',
         filePath: imagePath,
       );
 

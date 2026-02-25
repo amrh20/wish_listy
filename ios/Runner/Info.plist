@@ -54,7 +54,7 @@
 	
 	<!-- Photo Library Permission -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app needs access to your gallery to update your profile picture and select images for your wishlist items.</string>
+	<string>WishListy needs access to your photos to let you upload a profile picture.</string>
 	
 	<!-- Photo Library Add Permission -->
 	<key>NSPhotoLibraryAddUsageDescription</key>

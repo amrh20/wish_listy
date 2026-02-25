@@ -272,33 +272,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                   ),
                 ),
               ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: _changeProfilePicture,
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                    ),
-                    child: Icon(
-                      Icons.camera_alt,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ),
             ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            localization.translate('profile.tapToChangeProfilePicture') ?? 'Tap to change profile picture',
-            style: AppStyles.bodySmall.copyWith(color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -700,56 +674,6 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
         onPressed: _isLoading ? null : _saveChanges,
         variant: ButtonVariant.primary,
         isLoading: _isLoading,
-      ),
-    );
-  }
-
-  void _changeProfilePicture() {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              localization.translate('profile.changeProfilePicture') ?? 'Change Profile Picture',
-              style: AppStyles.headingSmall,
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: CustomButton(
-                    text: localization.translate('profile.camera') ?? 'Camera',
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // TODO: Implement camera functionality
-                    },
-                    variant: ButtonVariant.outline,
-                    icon: Icons.camera_alt_outlined,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: CustomButton(
-                    text: localization.translate('profile.gallery') ?? 'Gallery',
-                    onPressed: () {
-                      Navigator.pop(context);
-                      // TODO: Implement gallery functionality
-                    },
-                    variant: ButtonVariant.outline,
-                    icon: Icons.photo_library_outlined,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

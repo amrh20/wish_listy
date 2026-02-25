@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-/// Profile Image State
+/// Profile image upload/delete state
 abstract class ProfileImageState extends Equatable {
   const ProfileImageState();
 
@@ -53,4 +53,3 @@ class ProfileImageDeleteError extends ProfileImageState {
   @override
   List<Object?> get props => [message];
 }
-

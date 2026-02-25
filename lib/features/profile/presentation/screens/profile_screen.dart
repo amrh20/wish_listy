@@ -126,11 +126,50 @@ class ProfileScreenState extends State<ProfileScreen>
     super.dispose();
   }
 
+  void _handleProfileImageStateChanges(
+      BuildContext context, ProfileImageState state) {
+    if (state is ProfileImageUploadSuccess) {
+      if (_userProfile != null) {
+        setState(() {
+          _userProfile = _userProfile!.copyWith(profilePicture: state.imageUrl);
+        });
+      }
+      final authRepository = Provider.of<AuthRepository>(context, listen: false);
+      authRepository.updateProfilePicture(state.imageUrl);
+      context.read<ProfileCubit>().setCurrentProfileImage(state.imageUrl);
+      // Recall profile API in background to sync full profile data
+      _loadUserProfile(forceRefresh: true, silent: true);
+    } else if (state is ProfileImageDeleteSuccess) {
+      if (_userProfile != null) {
+        setState(() {
+          _userProfile = _userProfile!.copyWith(profilePicture: null);
+        });
+      }
+      final authRepository = Provider.of<AuthRepository>(context, listen: false);
+      authRepository.updateProfilePicture(null);
+      context.read<ProfileCubit>().setCurrentProfileImage(null);
+      // Recall profile API in background to sync full profile data
+      _loadUserProfile(forceRefresh: true, silent: true);
+    } else if (state is ProfileImageUploadError ||
+        state is ProfileImageDeleteError) {
+      final errorMessage = state is ProfileImageUploadError
+          ? state.message
+          : (state as ProfileImageDeleteError).message;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context); // Keep alive
     return BlocProvider(
-      create: (context) => ProfileCubit(currentProfileImageUrl: _userProfile?.profilePicture),
+      create: (context) =>
+          ProfileCubit(currentProfileImageUrl: _userProfile?.profilePicture),
       child: BlocListener<ProfileCubit, ProfileImageState>(
         listener: _handleProfileImageStateChanges,
         child: Consumer<LocalizationService>(
@@ -413,39 +452,6 @@ class ProfileScreenState extends State<ProfileScreen>
         },
       ),
     );
-  }
-
-  void _handleProfileImageStateChanges(BuildContext context, ProfileImageState state) {
-    if (state is ProfileImageUploadSuccess) {
-      if (_userProfile != null) {
-        setState(() {
-          _userProfile = _userProfile!.copyWith(profilePicture: state.imageUrl);
-        });
-      }
-      final authRepository = Provider.of<AuthRepository>(context, listen: false);
-      authRepository.updateProfilePicture(state.imageUrl);
-      context.read<ProfileCubit>().setCurrentProfileImage(state.imageUrl);
-    } else if (state is ProfileImageDeleteSuccess) {
-      if (_userProfile != null) {
-        setState(() {
-          _userProfile = _userProfile!.copyWith(profilePicture: null);
-        });
-      }
-      final authRepository = Provider.of<AuthRepository>(context, listen: false);
-      authRepository.updateProfilePicture(null);
-      context.read<ProfileCubit>().setCurrentProfileImage(null);
-    } else if (state is ProfileImageUploadError || state is ProfileImageDeleteError) {
-      final errorMessage = state is ProfileImageUploadError
-          ? state.message
-          : (state as ProfileImageDeleteError).message;
-      
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-          content: Text(errorMessage),
-            backgroundColor: AppColors.error,
-          ),
-        );
-    }
   }
 
   void _showFullScreenImageView(BuildContext context, String imageUrl) {
@@ -1016,22 +1022,25 @@ class ProfileScreenState extends State<ProfileScreen>
   }
 
   // All the business logic methods
-  Future<void> _loadUserProfile({bool forceRefresh = false}) async {
+  Future<void> _loadUserProfile({
+    bool forceRefresh = false,
+    bool silent = false,
+  }) async {
     // Don't reload if already loaded unless force refresh
     if (_hasLoaded && !forceRefresh) {
       return;
     }
 
-    
     // Smart Loading: Only show loading skeleton if profile data doesn't exist yet
     // If data exists, refresh in background without showing loading skeleton
+    // silent=true: refresh in background without loading UI (e.g. after photo upload)
     final hasExistingData = _userProfile != null;
-    if (!hasExistingData || forceRefresh) {
+    if (!silent && (!hasExistingData || forceRefresh)) {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-    } else {
+    } else if (!silent) {
       // Still clear error message
       if (_errorMessage != null) {
         setState(() {
@@ -1125,19 +1134,6 @@ class ProfileScreenState extends State<ProfileScreen>
             
             // Update global AuthRepository profile picture for sync across app
             authRepository.updateProfilePicture(profilePictureUrl?.toString());
-            
-            // Update ProfileCubit with current profile image (if available)
-            // Use try-catch to handle cases where ProfileCubit is not available yet
-            // Also check if context is still mounted before accessing BlocProvider
-            if (mounted) {
-              try {
-                final cubit = context.read<ProfileCubit>();
-                cubit.setCurrentProfileImage(profilePictureUrl?.toString());
-              } catch (e) {
-                // ProfileCubit not available yet - will be set when BlocProvider is created
-                // This is normal if _loadUserProfile is called before build() completes
-              }
-            }
           } catch (parseError) {
             // Handle parsing errors specifically
             if (mounted) {

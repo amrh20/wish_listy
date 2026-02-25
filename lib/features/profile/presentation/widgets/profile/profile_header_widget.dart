@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
-import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/widgets/royal_avatar_wrapper.dart';
 import 'package:wish_listy/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:wish_listy/features/profile/presentation/cubit/profile_state.dart';
@@ -47,19 +46,24 @@ class ProfileHeaderWidget extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Avatar with BlocBuilder
+              // Avatar with BlocBuilder for upload/delete states
               BlocBuilder<ProfileCubit, ProfileImageState>(
                 builder: (context, state) {
                   final isUploading = state is ProfileImageUploading;
                   final isDeleting = state is ProfileImageDeleting;
                   final isLoading = isUploading || isDeleting;
-                  
+
                   String? currentProfileImage = profileImage;
                   if (state is ProfileImageUploadSuccess) {
                     currentProfileImage = state.imageUrl;
                   } else if (state is ProfileImageDeleteSuccess) {
                     currentProfileImage = null;
                   }
+
+                  final hasUploadedImage = currentProfileImage != null &&
+                      currentProfileImage.isNotEmpty &&
+                      !currentProfileImage.contains('placeholder') &&
+                      !currentProfileImage.contains('default');
 
                   return Container(
                     decoration: BoxDecoration(
@@ -76,12 +80,13 @@ class ProfileHeaderWidget extends StatelessWidget {
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
-                        // Avatar Image
                         Hero(
                           tag: 'profile_image_${currentProfileImage ?? 'placeholder'}',
                           child: GestureDetector(
-                            onTap: currentProfileImage != null && currentProfileImage.isNotEmpty
-                                ? () => onShowFullScreenImage(context, currentProfileImage!)
+                            onTap: currentProfileImage != null &&
+                                    currentProfileImage.isNotEmpty
+                                ? () => onShowFullScreenImage(
+                                    context, currentProfileImage!)
                                 : null,
                             child: RoyalAvatarWrapper(
                               userName: userName,
@@ -93,22 +98,19 @@ class ProfileHeaderWidget extends StatelessWidget {
                             ),
                           ),
                         ),
-                        // Camera/Edit Icon
+                        // Pink Edit Icon
                         Positioned(
                           bottom: 0,
                           right: 0,
                           child: GestureDetector(
                             onTap: () {
-                              final cubit = context.read<ProfileCubit>();
-                              cubit.setCurrentProfileImage(currentProfileImage);
-                              
+                              context
+                                  .read<ProfileCubit>()
+                                  .setCurrentProfileImage(currentProfileImage);
                               ProfileImageActionBottomSheet.show(
                                 context,
                                 currentImageUrl: currentProfileImage,
-                                hasUploadedImage: currentProfileImage != null &&
-                                    currentProfileImage.isNotEmpty &&
-                                    !currentProfileImage.contains('placeholder') &&
-                                    !currentProfileImage.contains('default'),
+                                hasUploadedImage: hasUploadedImage,
                               );
                             },
                             child: Container(
@@ -117,7 +119,8 @@ class ProfileHeaderWidget extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: AppColors.accent,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 3),
+                                border: Border.all(
+                                    color: Colors.white, width: 3),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.1),
@@ -127,19 +130,15 @@ class ProfileHeaderWidget extends StatelessWidget {
                                 ],
                               ),
                               child: Icon(
-                                (currentProfileImage != null && 
-                                 currentProfileImage.isNotEmpty &&
-                                 !currentProfileImage.contains('placeholder') &&
-                                 !currentProfileImage.contains('default'))
+                                hasUploadedImage
                                     ? Icons.edit_outlined
-                                    : Icons.camera_alt,
+                                    : Icons.photo_library_outlined,
                                 color: Colors.white,
                                 size: 18,
                               ),
                             ),
                           ),
                         ),
-                        // Loading overlay
                         if (isLoading)
                           Positioned.fill(
                             child: Container(
@@ -150,7 +149,8 @@ class ProfileHeaderWidget extends StatelessWidget {
                               child: const Center(
                                 child: CircularProgressIndicator(
                                   strokeWidth: 3,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               ),
                             ),

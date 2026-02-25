@@ -8,8 +8,6 @@
     <!-- صلاحية الإنترنت - مطلوبة لجميع طلبات الشبكة -->
     <uses-permission android:name="android.permission.INTERNET" />
     
-    <!-- صلاحية الكاميرا - لالتقاط الصور ومسح QR codes -->
-    <uses-permission android:name="android.permission.CAMERA" />
     
     <!-- صلاحية الموقع الدقيق - لتحديد الموقع في الأحداث -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -17,15 +15,6 @@
     <!-- صلاحية الموقع التقريبي - بديل للموقع الدقيق -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     
-    <!-- صلاحية قراءة التخزين الخارجي - للصور والملفات -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    
-    <!-- صلاحية كتابة التخزين الخارجي (للإصدارات الأقدم من Android) -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
-                     android:maxSdkVersion="28" />
-    
-    <!-- صلاحية الوصول لمعرض الصور (Android 13+) -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     
     <!-- صلاحية الاهتزاز للـ haptic feedback -->
     <uses-permission android:name="android.permission.VIBRATE" />
@@ -193,9 +182,6 @@
     </application>
 
     <!-- تحديد الميزات المطلوبة -->
-    <uses-feature 
-        android:name="android.hardware.camera" 
-        android:required="false" />
     <uses-feature 
         android:name="android.hardware.location" 
         android:required="false" />

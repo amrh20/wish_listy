@@ -99,9 +99,15 @@ class CustomBottomNavigation extends StatelessWidget {
         // Map currentIndex directly (now we have 5 tabs matching 5 screens)
         final gNavIndex = currentIndex;
 
+        final bottomSafe = MediaQuery.of(context).padding.bottom;
         return SafeArea(
           child: Container(
-            margin: containerMargin,
+            margin: EdgeInsets.only(
+              left: containerMargin.left,
+              top: containerMargin.top,
+              right: containerMargin.right,
+              bottom: containerMargin.bottom + bottomSafe + 8,
+            ),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.95), // Subtle background
               borderRadius: BorderRadius.circular(30),
