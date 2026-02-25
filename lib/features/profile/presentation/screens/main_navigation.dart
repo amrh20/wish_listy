@@ -26,11 +26,24 @@ class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
 
   /// Helper to switch tabs from child screens while keeping the bottom nav.
+  /// [eventsTabIndex] allows switching to a specific Events sub-tab.
+  /// [wishlistsTabIndex] allows switching to a specific Wishlists sub-tab (e.g. Reservations).
   /// [returnToTabOnBack] When set (e.g. when opening Friends from "Browse Friends" in Wishlists),
   /// the system back button will switch to this tab instead of exiting the app.
-  static void switchToTab(BuildContext context, int index, {int? eventsTabIndex, int? returnToTabOnBack}) {
+  static void switchToTab(
+    BuildContext context,
+    int index, {
+    int? eventsTabIndex,
+    int? wishlistsTabIndex,
+    int? returnToTabOnBack,
+  }) {
     final state = context.findAncestorStateOfType<_MainNavigationState>();
-    state?._onTabTapped(index, eventsTabIndex: eventsTabIndex, returnToTabOnBack: returnToTabOnBack);
+    state?._onTabTapped(
+      index,
+      eventsTabIndex: eventsTabIndex,
+      wishlistsTabIndex: wishlistsTabIndex,
+      returnToTabOnBack: returnToTabOnBack,
+    );
   }
 
   @override
@@ -145,7 +158,12 @@ class _MainNavigationState extends State<MainNavigation>
     });
   }
 
-  void _onTabTapped(int index, {int? eventsTabIndex, int? returnToTabOnBack}) {
+  void _onTabTapped(
+    int index, {
+    int? eventsTabIndex,
+    int? wishlistsTabIndex,
+    int? returnToTabOnBack,
+  }) {
     final authService = Provider.of<AuthRepository>(context, listen: false);
 
     // Remember which tab to return to when user presses back (e.g. from Friends back to Wishlists)
@@ -199,6 +217,14 @@ class _MainNavigationState extends State<MainNavigation>
           _eventsKey.currentState?.switchToInvitedTab();
         });
       }
+      // If already on Wishlists tab and wishlistsTabIndex is provided, switch sub-tab
+      if (index == 1 && wishlistsTabIndex != null) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (wishlistsTabIndex == 1) {
+            _wishlistsKey.currentState?.switchToReservationsTab();
+          }
+        });
+      }
       return;
     }
 
@@ -226,6 +252,15 @@ class _MainNavigationState extends State<MainNavigation>
     if (index == 2 && eventsTabIndex != null) {
       Future.delayed(const Duration(milliseconds: 300), () {
         _eventsKey.currentState?.switchToInvitedTab();
+      });
+    }
+
+    // If switching to Wishlists tab and wishlistsTabIndex is provided, switch to that sub-tab
+    if (index == 1 && wishlistsTabIndex != null) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (wishlistsTabIndex == 1) {
+          _wishlistsKey.currentState?.switchToReservationsTab();
+        }
       });
     }
   }

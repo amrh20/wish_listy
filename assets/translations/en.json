@@ -262,6 +262,8 @@
     "recentWishes": "Recent Wishes",
     "quickActions": "Quick Actions",
     "viewAll": "View All",
+    "pendingReservationsTitle": "Don't forget these gifts! 🎁",
+    "expiresIn": "{time} ⏳",
     "noEvents": "No upcoming events",
     "noWishlists": "No wishlists found",
     "createEvent": "Create Event",

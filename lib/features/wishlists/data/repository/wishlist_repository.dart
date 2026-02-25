@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/features/wishlists/data/models/reservation_model.dart';
 
 /// Wishlist Repository
 /// Handles all wishlist-related API operations
@@ -522,6 +523,39 @@ class WishlistRepository {
       rethrow;
     } catch (e) {
       throw Exception('Failed to load reservations. Please try again.');
+    }
+  }
+
+  /// Get pending reservations (reserved but not yet purchased) for the current user.
+  ///
+  /// Uses API: GET /api/reservations/pending
+  Future<List<PendingReservation>> fetchPendingReservations() async {
+    try {
+      final response = await _apiService.get(
+        '/reservations/pending',
+      );
+
+      // API may return a raw list or { success, data: { reservations: [...] } }
+      final data = response['data'];
+      List<dynamic> reservationsList;
+      if (data is List) {
+        reservationsList = List<dynamic>.from(data);
+      } else if (data != null && data['reservations'] is List) {
+        reservationsList = List<dynamic>.from(data['reservations'] as List);
+      } else if (response is List) {
+        reservationsList = List<dynamic>.from(response as List);
+      } else {
+        reservationsList = <dynamic>[];
+      }
+
+      return reservationsList
+          .whereType<Map<String, dynamic>>()
+          .map((r) => PendingReservation.fromJson(r))
+          .toList();
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw Exception('Failed to load pending reservations. Please try again.');
     }
   }
 

@@ -188,7 +188,7 @@ class EventCard extends StatelessWidget {
   Widget _buildEndedBadge(LocalizationService localization) {
     return Positioned(
       top: -4,
-      right: 12,
+      left: 12,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(

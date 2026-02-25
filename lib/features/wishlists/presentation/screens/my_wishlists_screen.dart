@@ -110,6 +110,13 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     }
   }
 
+  /// Public method to switch to the Reservations tab programmatically.
+  void switchToReservationsTab() {
+    if (!mounted) return;
+    _mainTabController.animateTo(1);
+    _fetchMyReservations();
+  }
+
   void _initializeAnimations() {
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),

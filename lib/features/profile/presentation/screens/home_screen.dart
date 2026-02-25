@@ -26,6 +26,7 @@ import 'package:wish_listy/core/widgets/generic_error_screen.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/fcm_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:wish_listy/features/wishlists/presentation/cubit/pending_reservations_cubit.dart';
 
 class HomeScreen extends StatefulWidget {
   final GlobalKey<HomeScreenState>? key;
@@ -79,6 +80,13 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
   /// Public method to refresh home dashboard from outside (e.g., MainNavigation tab switch)
   Future<void> refreshHome() async {
     await _controller.refresh();
+    // Also refresh pending reservations section if it is mounted
+    try {
+      final pendingCubit = context.read<PendingReservationsCubit>();
+      await pendingCubit.refresh();
+    } catch (_) {
+      // PendingReservationsCubit may not be in the tree yet (e.g. guest / skeleton) – ignore
+    }
   }
 
   String _getTimeBasedGreeting(BuildContext context) {
