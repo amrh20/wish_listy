@@ -46,8 +46,11 @@ class PendingReservationsCubit extends Cubit<PendingReservationsState> {
         super(const PendingReservationsInitial());
 
   /// Load pending reservations from API.
-  Future<void> loadPendingReservations() async {
-    emit(const PendingReservationsLoading());
+  Future<void> loadPendingReservations({bool showLoading = true}) async {
+    // إظهر حالة التحميل بس في أول مرة أو لما نطلبها صراحة
+    if (showLoading || state is PendingReservationsInitial) {
+      emit(const PendingReservationsLoading());
+    }
     try {
       final reservations = await _wishlistRepository.fetchPendingReservations();
       emit(PendingReservationsSuccess(reservations));
@@ -60,6 +63,7 @@ class PendingReservationsCubit extends Cubit<PendingReservationsState> {
     }
   }
 
-  Future<void> refresh() => loadPendingReservations();
+  /// Background refresh بدون إظهار skeleton (يستخدم من HomeScreen.refreshHome).
+  Future<void> refresh() => loadPendingReservations(showLoading: false);
 }
 
