@@ -47,9 +47,10 @@ class AppConstants {
   static const int maxImageHeight = 1920;
 
   // Social Media
-  static const String facebookUrl = 'https://facebook.com/wishlink';
+  static const String facebookUrl = 'https://www.facebook.com/share/1CEGY5CK7L/';
   static const String twitterUrl = 'https://twitter.com/wishlink';
-  static const String instagramUrl = 'https://instagram.com/wishlink';
+  static const String instagramUrl =
+      'https://www.instagram.com/wishlistyapp?igsh=a2NjajhheWdveDZ1';
   static const String supportEmail = 'wishlistyapp@gmail.com';
   static const String privacyPolicyUrl = 'https://wishlink.com/privacy';
   static const String termsOfServiceUrl = 'https://wishlink.com/terms';

@@ -640,7 +640,7 @@ class PendingReservationsSection extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               SizedBox(
-                height: 170,
+                height: 140,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -695,7 +695,7 @@ class _PendingReservationsSkeleton extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 170,
+          height: 140,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -707,54 +707,77 @@ class _PendingReservationsSkeleton extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.1),
+                    width: 1,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.textTertiary.withOpacity(0.08),
+                      color: Colors.black.withOpacity(0.05),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Icon placeholder
-                      Center(
-                        child: Container(
-                          width: 52,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceVariant,
-                            borderRadius: BorderRadius.circular(10),
+                      // Icon + name row placeholder
+                      Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceVariant,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Container(
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceVariant,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
+                      // Owner row placeholder
+                      Row(
+                        children: [
+                          Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceVariant,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            height: 10,
+                            width: 70,
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceVariant,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Expiry badge placeholder
                       Container(
-                        height: 13,
+                        height: 20,
+                        width: 90,
                         decoration: BoxDecoration(
                           color: AppColors.surfaceVariant,
                           borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        height: 10,
-                        width: 70,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        height: 18,
-                        width: 80,
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceVariant,
-                          borderRadius: BorderRadius.circular(999),
                         ),
                       ),
                     ],
@@ -781,14 +804,11 @@ class PendingReservationCard extends StatelessWidget {
     final owner = reservation.owner ?? reservation.wishlist?.owner;
     final ownerName = owner?.fullName ?? owner?.username ?? '';
 
-    // Expiry formatting
     ReservationExpiryFormat? expiryFormat;
     if (reservation.reservedUntil != null) {
       expiryFormat =
           formatReservationExpiry(reservation.reservedUntil!, localization);
     }
-
-    final bgColor = AppColors.primary.withOpacity(0.08);
 
     return InkWell(
       onTap: () {
@@ -801,30 +821,35 @@ class PendingReservationCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: Container(
         width: 180,
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.primary.withOpacity(0.2),
+            width: 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.textTertiary.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 1. Gift icon – on its own row at top
-              Center(
-                child: ClipRRect(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Row: Icon + Item Name (matches OccasionCard layout)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: SizedBox(
-                    width: 52,
-                    height: 52,
+                    width: 40,
+                    height: 40,
                     child: item.imageUrl != null && item.imageUrl!.isNotEmpty
                         ? CachedNetworkImage(
                             imageUrl: item.imageUrl!,
@@ -834,87 +859,86 @@ class PendingReservationCard extends StatelessWidget {
                             color: AppColors.primary.withOpacity(0.1),
                             child: const Icon(
                               Icons.card_giftcard,
-                              size: 26,
+                              size: 22,
                               color: AppColors.primary,
                             ),
                           ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              // 2. Item name – its own line
-              Text(
-                item.name,
-                style: AppStyles.bodySmall.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                  fontSize: 13,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              // 3. Owner – its own line
-              if (ownerName.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 10,
-                      backgroundColor: bgColor,
-                      backgroundImage: owner?.profileImage != null &&
-                              owner!.profileImage!.isNotEmpty
-                          ? NetworkImage(owner.profileImage!)
-                          : null,
-                      child: (owner?.profileImage == null ||
-                              owner!.profileImage!.isEmpty)
-                          ? const Icon(
-                              Icons.person_outline,
-                              size: 11,
-                              color: AppColors.primary,
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        ownerName,
-                        style: AppStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              // 4. Expiry badge – its own line
-              if (expiryFormat != null) ...[
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: expiryFormat.isUrgent
-                        ? AppColors.error.withOpacity(0.08)
-                        : AppColors.warning.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
+                const SizedBox(width: 8),
+                Expanded(
                   child: Text(
-                    '${expiryFormat.text} ⏳',
-                    style: AppStyles.caption.copyWith(
-                      color: expiryFormat.isUrgent
-                          ? AppColors.error
-                          : AppColors.warning,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 10,
+                    item.name,
+                    style: AppStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
-            ],
-          ),
+            ),
+            const SizedBox(height: 8),
+            // Owner row
+            if (ownerName.isNotEmpty)
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 10,
+                    backgroundColor: AppColors.primary.withOpacity(0.08),
+                    backgroundImage: owner?.profileImage != null &&
+                            owner!.profileImage!.isNotEmpty
+                        ? NetworkImage(owner.profileImage!)
+                        : null,
+                    child: (owner?.profileImage == null ||
+                            owner!.profileImage!.isEmpty)
+                        ? const Icon(
+                            Icons.person_outline,
+                            size: 11,
+                            color: AppColors.primary,
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      ownerName,
+                      style: AppStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            const SizedBox(height: 8),
+            // Expiry badge
+            if (expiryFormat != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: expiryFormat.isUrgent
+                      ? AppColors.error.withOpacity(0.1)
+                      : AppColors.warning.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${expiryFormat.text} ⏳',
+                  style: TextStyle(
+                    color: expiryFormat.isUrgent
+                        ? AppColors.error
+                        : AppColors.warning,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

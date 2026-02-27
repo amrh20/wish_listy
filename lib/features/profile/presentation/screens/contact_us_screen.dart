@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/utils/app_constants.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/unified_page_container.dart';
 import 'package:wish_listy/core/widgets/decorative_background.dart';
@@ -228,7 +229,7 @@ class ContactUsScreen extends StatelessWidget {
 
   /// Open Facebook page
   static Future<void> _openFacebookPage(BuildContext context) async {
-    final uri = Uri.parse('https://www.facebook.com/share/1CC3SQ3a7w/');
+    final uri = Uri.parse(AppConstants.facebookUrl);
     try {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);

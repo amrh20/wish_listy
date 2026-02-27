@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
@@ -444,7 +445,13 @@ class ProfileScreenState extends State<ProfileScreen>
                     ),
                     const SizedBox(height: 24),
                     _buildVersionWidget(),
-                    SizedBox(height: MediaQuery.of(context).padding.bottom + 100),
+                    const SizedBox(height: 12),
+                    _buildSocialMediaLinksRow(),
+                    SizedBox(
+                      height: MediaQuery.of(context).padding.bottom +
+                          kBottomNavigationBarHeight +
+                          24,
+                    ),
                   ],
                 ),
               ),
@@ -1421,7 +1428,7 @@ class ProfileScreenState extends State<ProfileScreen>
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Text(
-                'Version $version',
+                'App Version $version',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade400,
@@ -1433,6 +1440,48 @@ class ProfileScreenState extends State<ProfileScreen>
         );
       },
     );
+  }
+
+  Widget _buildSocialMediaLinksRow() {
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _SocialCircleIconButton(
+            icon: FontAwesomeIcons.facebookF,
+            onTap: () => _launchExternalUrl(AppConstants.facebookUrl),
+          ),
+          const SizedBox(width: 16),
+          _SocialCircleIconButton(
+            icon: FontAwesomeIcons.instagram,
+            onTap: () => _launchExternalUrl(AppConstants.instagramUrl),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _launchExternalUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    try {
+      if (await canLaunchUrl(uri)) {
+        final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (ok) return;
+      }
+      await launchUrl(uri, mode: LaunchMode.platformDefault);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            Provider.of<LocalizationService>(context, listen: false)
+                .translate('profile.couldNotLaunchUrl'),
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   Future<void> _copyFcmTokenToClipboard() async {
@@ -1592,6 +1641,42 @@ class ProfileScreenState extends State<ProfileScreen>
         borderRadius: BorderRadius.circular(12),
       ),
       margin: const EdgeInsets.all(16),
+    );
+  }
+}
+
+class _SocialCircleIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _SocialCircleIconButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: const BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: FaIcon(
+              icon,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

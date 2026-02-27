@@ -20,6 +20,7 @@ import 'package:wish_listy/features/events/presentation/screens/events_screen.da
 import 'package:wish_listy/features/friends/presentation/screens/friends_screen.dart';
 import 'profile_screen.dart' show ProfileScreen, ProfileScreenState;
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/services/update_service.dart';
 import 'package:wish_listy/core/services/socket_service.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -87,6 +88,13 @@ class _MainNavigationState extends State<MainNavigation>
       if (authService.isGuest) {
         GuestOnboardingBottomSheet.showIfNeeded(context);
       }
+
+      // Check for app updates via Firebase Remote Config (delayed to avoid
+      // race with overlay/route changes that cause _elements.contains assertion)
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (!context.mounted) return;
+        UpdateService().checkForUpdates(context);
+      });
     });
   }
 

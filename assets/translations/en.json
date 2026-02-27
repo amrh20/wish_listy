@@ -61,6 +61,15 @@
     "selectLanguage": "Select Language",
     "legalInformation": "Legal Information"
   },
+  "app_update": {
+    "forceTitle": "Update Required",
+    "forceMessage": "A new version of WishListy is required to continue.",
+    "flexibleTitle": "Update Available",
+    "flexibleMessage": "A new version of WishListy is available with improvements.",
+    "updateNow": "Update Now",
+    "update": "Update",
+    "later": "Later"
+  },
   "navigation": {
     "home": "Home",
     "wishlist": "Wishlist",
