@@ -254,7 +254,7 @@ class EventModals {
       backgroundColor: Colors.transparent,
       builder: (bottomSheetContext) => LinkWishlistBottomSheet(
         eventId: event.id,
-        onLink: (wishlistId) async {
+        onLink: (wishlistId, {String? wishlistName}) async {
           try {
             await eventRepository.linkWishlistToEvent(
               eventId: event.id,

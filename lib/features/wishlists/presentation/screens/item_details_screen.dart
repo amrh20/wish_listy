@@ -41,6 +41,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
   bool _isExtendingReservation = false;
   String? _errorMessage;
   String? _wishlistName; // Store wishlist name for navigation
+  String? _wishlistOwnerName; // Store wishlist owner name for personalized messages
   Map<String, dynamic>? _rawItemData; // keep raw API data (price/url/purchasedBy object)
   String? _wishlistOwnerId; // Store wishlist owner ID for owner check
 
@@ -102,6 +103,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         
         String wishlistName = 'Wishlist';
         String? wishlistOwnerId;
+        String? wishlistOwnerName;
         
         final directName = itemData['wishlistName']?.toString();
         if (directName != null && directName.isNotEmpty) {
@@ -117,14 +119,17 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           
           final ownerField = wishlistField['owner'];
           if (ownerField is Map<String, dynamic>) {
-            wishlistOwnerId = ownerField['_id']?.toString() ?? ownerField['id']?.toString();
+            wishlistOwnerId =
+                ownerField['_id']?.toString() ?? ownerField['id']?.toString();
+            wishlistOwnerName =
+                ownerField['fullName']?.toString() ?? ownerField['name']?.toString();
           } else if (ownerField is String) {
             wishlistOwnerId = ownerField;
           }
           
           if (wishlistOwnerId == null) {
-            wishlistOwnerId = wishlistField['userId']?.toString() ?? 
-                             wishlistField['user_id']?.toString();
+            wishlistOwnerId = wishlistField['userId']?.toString() ??
+                wishlistField['user_id']?.toString();
           }
         }
 
@@ -133,6 +138,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             _currentItem = updatedItem;
             _wishlistName = wishlistName;
             _wishlistOwnerId = wishlistOwnerId;
+            _wishlistOwnerName = wishlistOwnerName;
             _isLoading = false;
           });
           _startAnimations();
@@ -183,6 +189,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         // API may return `wishlist` as a String id OR an object {name: ..., owner: ...}
         String wishlistName = 'Wishlist';
         String? wishlistOwnerId;
+        String? wishlistOwnerName;
         
         final directName = itemData['wishlistName']?.toString();
         if (directName != null && directName.isNotEmpty) {
@@ -199,15 +206,18 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
           // Extract ownerId from wishlist object
           final ownerField = wishlistField['owner'];
           if (ownerField is Map<String, dynamic>) {
-            wishlistOwnerId = ownerField['_id']?.toString() ?? ownerField['id']?.toString();
+            wishlistOwnerId =
+                ownerField['_id']?.toString() ?? ownerField['id']?.toString();
+            wishlistOwnerName =
+                ownerField['fullName']?.toString() ?? ownerField['name']?.toString();
           } else if (ownerField is String) {
             wishlistOwnerId = ownerField;
           }
           
           // Also check for userId in wishlist object
           if (wishlistOwnerId == null) {
-            wishlistOwnerId = wishlistField['userId']?.toString() ?? 
-                             wishlistField['user_id']?.toString();
+            wishlistOwnerId = wishlistField['userId']?.toString() ??
+                wishlistField['user_id']?.toString();
           }
         }
 
@@ -216,6 +226,7 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
             _currentItem = updatedItem;
             _wishlistName = wishlistName;
             _wishlistOwnerId = wishlistOwnerId;
+            _wishlistOwnerName = wishlistOwnerName;
             _isLoading = false;
           });
           _startAnimations();
@@ -266,7 +277,9 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     final item = _currentItem ?? widget.item;
 
     return PopScope(
-      canPop: Navigator.canPop(context),
+      // Allow normal pops; if nothing could pop (e.g. deep link), we handle
+      // fallback navigation manually in onPopInvoked/_handleBackNavigation.
+      canPop: true,
       onPopInvoked: (didPop) {
         if (!didPop) {
           _handleBackNavigation();
@@ -432,6 +445,10 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                     },
                     onReserve: () => _openReservationDeadlineSheet(item),
                     onExtendReservation: () => _openExtendReservationSheet(_currentItem ?? item),
+                    // Only pass onMarkAsPurchased for State C: reserver who hasn't purchased yet
+                    onMarkAsPurchased: _isReservedByMe(item) && !item.isReceived && item.isPurchased != true
+                        ? _markAsPurchasedAsReserver
+                        : null,
                     isExtendingReservation: _isExtendingReservation,
                     onMarkAsNotReceived: () => _showMarkAsNotReceivedConfirmation(_currentItem ?? item),
                   ),
@@ -524,7 +541,12 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
                         ),
                       ),
                       const SizedBox(height: 12),
-                      _buildGiftedMessageCard(context),
+                      _buildGiftedMessageCard(
+                        context,
+                        item,
+                        isOwner: _isOwner(),
+                        isReservedByMe: _isReservedByMe(item),
+                      ),
                       const SizedBox(height: 20),
                     ],
                     if (item.isPurchasedValue && !item.isReceived) ...[
@@ -683,10 +705,28 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     );
   }
 
-  Widget _buildGiftedMessageCard(BuildContext context) {
+  Widget _buildGiftedMessageCard(
+    BuildContext context,
+    WishlistItem item, {
+    required bool isOwner,
+    required bool isReservedByMe,
+  }) {
     final localization = Provider.of<LocalizationService>(context, listen: false);
-    final text = localization.translate('details.giftedMessageCard') ??
-        'Someone special has already granted this wish. It\'s no longer available for others.';
+    String text;
+
+    if (isReservedByMe && !isOwner) {
+      final ownerName = _wishlistOwnerName ??
+          localization.translate('common.friend') ??
+          'your friend';
+      text = localization.translate(
+            'details.friendReceivedGift',
+            args: {'name': ownerName},
+          ) ??
+          'Thanks! $ownerName received your gift 🎉';
+    } else {
+      text = localization.translate('details.giftedMessageCard') ??
+          'Someone special has already granted this wish. It\'s no longer available for others.';
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
@@ -1800,6 +1840,55 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     }
   }
 
+  /// Shows a confirmation dialog then calls markAsPurchased for the current reserver (State C → B).
+  void _markAsPurchasedAsReserver() {
+    final item = _currentItem ?? widget.item;
+    final loc = Provider.of<LocalizationService>(context, listen: false);
+    ConfirmationDialog.show(
+      context: context,
+      isSuccess: true,
+      title: loc.translate('ui.markAsPurchasedQuestion') ?? 'Mark as Purchased?',
+      message: loc.translate('ui.markAsPurchasedContent') ??
+          'Have you already bought this gift?',
+      primaryActionLabel: loc.translate('ui.markAsPurchased') ?? 'Mark Purchased',
+      onPrimaryAction: () => _performMarkAsPurchased(item),
+      secondaryActionLabel: loc.translate('common.cancel') ?? 'Cancel',
+      onSecondaryAction: () {},
+    );
+  }
+
+  Future<void> _performMarkAsPurchased(WishlistItem item) async {
+    try {
+      setState(() {
+        _currentItem = item.copyWith(isPurchased: true);
+      });
+
+      final updatedItemData = await _wishlistRepository.markAsPurchased(itemId: item.id);
+      final updatedItem = WishlistItem.fromJson(updatedItemData);
+
+      if (!mounted) return;
+      setState(() => _currentItem = updatedItem);
+      await _fetchItemDetails();
+
+      if (mounted) {
+        final loc = Provider.of<LocalizationService>(context, listen: false);
+        UnifiedSnackbar.showSuccess(
+          context: context,
+          message: loc.translate('dialogs.itemMarkedAsPurchased') ?? 'Marked as Purchased! 🛍️',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _currentItem = item);
+        final loc = Provider.of<LocalizationService>(context, listen: false);
+        UnifiedSnackbar.showError(
+          context: context,
+          message: loc.translate('dialogs.failedToUpdateStatus') ?? 'Failed to update. Try again.',
+        );
+      }
+    }
+  }
+
   void _editItem() {
     // Navigate to edit item screen
     final item = _currentItem ?? widget.item;
@@ -1877,18 +1966,21 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
     );
   }
 
-  void _handleBackNavigation() {
-    // Check if we can pop (normal navigation)
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context);
+  Future<void> _handleBackNavigation() async {
+    // First, let the current Navigator (or RouterDelegate) handle back
+    // normally. This covers the common case where we just want to pop back
+    // to the previous screen (wishlist, friend profile, etc.).
+    final didPop = await Navigator.of(context).maybePop();
+    if (didPop) {
       return;
     }
-    
-    // If canPop is false, we came from deep link
-    // Navigate to parent wishlist screen
+
+    // If nothing could pop, we likely arrived via a deep link or as a
+    // replacement route. In that case, navigate explicitly to the parent
+    // wishlist screen or, as a last resort, to the main navigation.
     final item = _currentItem ?? widget.item;
     final wishlistId = item.wishlistId;
-    
+
     if (wishlistId.isNotEmpty) {
       Navigator.pushReplacementNamed(
         context,
@@ -1902,7 +1994,6 @@ class _ItemDetailsScreenState extends State<ItemDetailsScreen>
         },
       );
     } else {
-      // Fallback: navigate to home/main navigation
       Navigator.pushReplacementNamed(context, AppRoutes.mainNavigation);
     }
   }

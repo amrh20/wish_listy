@@ -55,7 +55,14 @@ class ReservedItemCardWidget extends StatelessWidget {
     final owner = item.wishlist?.owner;
     final ownerName = owner?.fullName ?? localization.translate('common.unknown');
     final ownerImage = owner?.profileImage;
-    final isPurchased = item.isPurchasedValue;
+
+    // Use raw flags directly so ?? doesn't swallow explicit `false`.
+    // State A: friend already received the gift (highest priority, regardless of isPurchased)
+    // State B: reserver purchased but friend hasn't confirmed receipt yet
+    // State C: only reserved (show expiry + action buttons)
+    final isReceived = item.isReceived;
+    final isPurchasedRaw = item.isPurchased == true;
+    final isCompleted = isReceived || isPurchasedRaw; // hides all action rows for State A & B
 
     return Material(
       color: Colors.transparent,
@@ -68,14 +75,14 @@ class ReservedItemCardWidget extends StatelessWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isPurchased
+              color: isCompleted
                   ? AppColors.success.withOpacity(0.3)
                   : Colors.grey.shade200,
-              width: isPurchased ? 1.5 : 1,
+              width: isCompleted ? 1.5 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: isPurchased
+                color: isCompleted
                     ? AppColors.success.withOpacity(0.1)
                     : Colors.black.withOpacity(0.04),
                 blurRadius: 12,
@@ -96,7 +103,7 @@ class ReservedItemCardWidget extends StatelessWidget {
                     height: 50,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      color: isPurchased
+                      color: isCompleted
                           ? AppColors.success.withOpacity(0.15)
                           : AppColors.primary.withOpacity(0.1),
                       image: item.imageUrl != null && item.imageUrl!.isNotEmpty
@@ -109,8 +116,8 @@ class ReservedItemCardWidget extends StatelessWidget {
                     ),
                     child: item.imageUrl == null || item.imageUrl!.isEmpty
                         ? Icon(
-                            isPurchased ? Icons.card_giftcard : Icons.card_giftcard,
-                            color: isPurchased ? AppColors.success : AppColors.primary,
+                            Icons.card_giftcard,
+                            color: isCompleted ? AppColors.success : AppColors.primary,
                             size: 24,
                           )
                         : null,
@@ -126,10 +133,10 @@ class ReservedItemCardWidget extends StatelessWidget {
                           item.name,
                           style: AppStyles.bodyMedium.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: isPurchased
+                            color: isCompleted
                                 ? AppColors.textTertiary
                                 : AppColors.textPrimary,
-                            decoration: isPurchased
+                            decoration: isCompleted
                                 ? TextDecoration.lineThrough
                                 : TextDecoration.none,
                           ),
@@ -137,27 +144,41 @@ class ReservedItemCardWidget extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        // Thankful message if purchased, otherwise owner row
-                        if (isPurchased)
-                          // Purchased: show different message based on isReceived
+                        // State A / B message, otherwise owner row (State C)
+                        if (isReceived)
+                          // State A: friend received the gift – personalized thank-you
                           Row(
                             children: [
-                              Icon(
-                                item.isReceived ? Icons.check_circle : Icons.schedule_rounded,
-                                size: 14,
-                                color: AppColors.success,
-                              ),
+                              Icon(Icons.check_circle, size: 14, color: AppColors.success),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
-                                  item.isReceived
-                                      ? (localization.translate(
-                                          'details.friendReceivedGift',
-                                          args: {'name': ownerName},
-                                        ) ?? 'Thanks! $ownerName received your gift 🎉')
-                                      : (localization.translate(
-                                          'details.purchasedAwaitingFriendReceipt',
-                                        ) ?? 'Thanks for purchasing the gift. Waiting for your friend to receive it.'),
+                                  localization.translate(
+                                    'details.friendReceivedGift',
+                                    args: {'name': ownerName},
+                                  ) ?? 'Thanks! $ownerName received your gift 🎉',
+                                  style: AppStyles.bodySmall.copyWith(
+                                    color: AppColors.success,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          )
+                        else if (isPurchasedRaw)
+                          // State B: purchased but not yet received – waiting message
+                          Row(
+                            children: [
+                              Icon(Icons.schedule_rounded, size: 14, color: AppColors.success),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  localization.translate(
+                                    'details.purchasedAwaitingFriendReceipt',
+                                  ) ?? 'Thanks for purchasing the gift. Waiting for your friend to receive it.',
                                   style: AppStyles.bodySmall.copyWith(
                                     color: AppColors.success,
                                     fontSize: 12,
@@ -170,7 +191,7 @@ class ReservedItemCardWidget extends StatelessWidget {
                             ],
                           )
                         else
-                          // Owner Row
+                          // State C: still reserved only – show owner row
                           Row(
                             children: [
                               // Small Avatar
@@ -213,7 +234,7 @@ class ReservedItemCardWidget extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (!isPurchased && (onMarkAsPurchased != null || onCancelReservation != null))
+                  if (!isCompleted && onCancelReservation != null)
                     IconButton(
                       icon: const Icon(Icons.more_vert),
                       onPressed: () => _showActionsBottomSheet(context),
@@ -224,42 +245,63 @@ class ReservedItemCardWidget extends StatelessWidget {
                     ),
                 ],
               ),
-              // Expiry in its own row, Extend action in row below
-              if (!isPurchased && item.reservedUntil != null) ...[
+              // Expiry and Extend – only shown in State C (not completed)
+              if (!isCompleted && item.reservedUntil != null) ...[
                 const SizedBox(height: 10),
                 _buildExpiryRow(context, item.reservedUntil!, localization),
-                if (onExtend != null) ...[
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      if (_remainingExtensions() > 0)
-                        OutlinedButton(
-                          onPressed: () => _openExtendSheet(context),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            side: BorderSide(color: AppColors.primary),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          ),
-                          child: Text(
-                            localization.translate('details.extendReservationWithCount', args: {'count': _remainingExtensions()}) ?? 'Extend Reservation (${_remainingExtensions()} attempts left)',
-                            style: AppStyles.bodySmall.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
-                              fontSize: 12,
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    // Extend button (left side)
+                    if (onExtend != null)
+                      _remainingExtensions() > 0
+                          ? OutlinedButton(
+                              onPressed: () => _openExtendSheet(context),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                side: BorderSide(color: AppColors.primary),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                              child: Text(
+                                localization.translate('details.extendReservationWithCount', args: {'count': _remainingExtensions()}) ??
+                                    'Extend (${_remainingExtensions()} left)',
+                                style: AppStyles.bodySmall.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              localization.translate('details.maxExtensionsReached') ?? 'Max extensions reached',
+                              style: AppStyles.bodySmall.copyWith(
+                                color: AppColors.textTertiary,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
-                        )
-                      else
-                        Text(
-                          localization.translate('details.maxExtensionsReached') ?? 'Max extensions reached',
-                          style: AppStyles.bodySmall.copyWith(
-                            color: AppColors.textTertiary,
+                    const Spacer(),
+                    // Mark Purchased primary button (right side, State C only)
+                    if (onMarkAsPurchased != null)
+                      ElevatedButton.icon(
+                        onPressed: () => _showMarkAsPurchasedConfirmation(context),
+                        icon: const Icon(Icons.check_circle_outline, size: 16, color: Colors.white),
+                        label: Text(
+                          localization.translate('ui.markAsPurchased') ?? 'Mark Purchased',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
                         ),
-                    ],
-                  ),
-                ],
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          elevation: 0,
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ],
           ),
@@ -269,9 +311,8 @@ class ReservedItemCardWidget extends StatelessWidget {
   }
 
   void _showActionsBottomSheet(BuildContext context) {
+    if (onCancelReservation == null) return;
     final localization = Provider.of<LocalizationService>(context, listen: false);
-    final hasActions = onMarkAsPurchased != null || onCancelReservation != null;
-    if (!hasActions) return;
 
     showModalBottomSheet<void>(
       context: context,
@@ -291,33 +332,20 @@ class ReservedItemCardWidget extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (onMarkAsPurchased != null)
-              ListTile(
-                leading: Icon(Icons.check_circle_outline, color: AppColors.success),
-                title: Text(
-                  localization.translate('ui.markAsPurchased') ?? 'Mark as Purchased',
-                  style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+            ListTile(
+              leading: Icon(Icons.close, color: AppColors.error),
+              title: Text(
+                localization.translate('details.cancelReservation') ?? 'Cancel Reservation',
+                style: AppStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.error,
                 ),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _showMarkAsPurchasedConfirmation(context);
-                },
               ),
-            if (onCancelReservation != null)
-              ListTile(
-                leading: Icon(Icons.close, color: AppColors.error),
-                title: Text(
-                  localization.translate('details.cancelReservation') ?? 'Cancel Reservation',
-                  style: AppStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.error,
-                  ),
-                ),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _showCancelConfirmation(context);
-                },
-              ),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _showCancelConfirmation(context);
+              },
+            ),
           ],
         ),
       ),

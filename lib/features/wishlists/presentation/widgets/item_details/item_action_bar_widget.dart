@@ -6,6 +6,7 @@ import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/features/wishlists/data/models/wishlist_model.dart';
 import 'package:wish_listy/features/wishlists/presentation/utils/reservation_expiry_helper.dart';
+import 'package:wish_listy/features/wishlists/presentation/utils/reserved_by_me_state_helper.dart';
 
 class ItemActionBarWidget extends StatelessWidget {
   final WishlistItem item;
@@ -16,6 +17,7 @@ class ItemActionBarWidget extends StatelessWidget {
   final VoidCallback? onCancelReservation;
   final VoidCallback? onReserve;
   final VoidCallback? onExtendReservation;
+  final VoidCallback? onMarkAsPurchased;
   final bool isExtendingReservation;
 
   const ItemActionBarWidget({
@@ -28,6 +30,7 @@ class ItemActionBarWidget extends StatelessWidget {
     this.onCancelReservation,
     this.onReserve,
     this.onExtendReservation,
+    this.onMarkAsPurchased,
     this.isExtendingReservation = false,
   });
 
@@ -37,6 +40,8 @@ class ItemActionBarWidget extends StatelessWidget {
     final isPurchased = item.isPurchasedValue;
     final isReserved = item.isReservedValue;
     final isReservedByOther = isReserved && !isReservedByMe;
+    final reservedByMeState =
+        getReservedByMeState(item, isReservedByMe: isReservedByMe);
 
     // Owner View: Only show "Mark as Received" for Reserved or Purchased items
     if (isOwner) {
@@ -52,28 +57,38 @@ class ItemActionBarWidget extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    // Non-Owner View: Standard guest actions
-    // Case A: Item is Received - No action needed
+    // Non-Owner View: Standard guest actions with reserved-by-me state priority
+    // State A: I reserved and friend already received → celebratory banner, no CTAs
+    if (reservedByMeState == ReservedByMeState.received) {
+      return _buildCelebratoryBanner(context, localization);
+    }
+
+    // State B: I reserved and already purchased, waiting for friend confirmation → waiting message, no CTAs
+    if (reservedByMeState == ReservedByMeState.purchasedAwaitingReceipt) {
+      return _buildPurchasedAwaitingBar(context, localization);
+    }
+
+    // Generic received state for non-reservers
     if (item.isReceived) {
       return _buildReceivedBar(context, localization);
     }
 
-    // Case A.5: Purchased but not Received (should not show for non-owners)
+    // Purchased but not received and not reserved by me – no bottom bar
     if (isPurchased && !item.isReceived) {
       return const SizedBox.shrink();
     }
 
-    // Case B: Reserved by ME
+    // State C: Reserved by ME (only when not purchased/received)
     if (isReservedByMe) {
       return _buildReservedByMeBar(context, localization);
     }
 
-    // Case C: Reserved by OTHERS (Guest view)
+    // Reserved by OTHERS (Guest view)
     if (isReservedByOther) {
       return _buildReservedByOthersBar(context, localization);
     }
 
-    // Case D: Available - Clean Primary Button
+    // Available - Clean Primary Button
     return _buildAvailableBar(context, localization);
   }
 
@@ -140,10 +155,10 @@ class ItemActionBarWidget extends StatelessWidget {
   Widget _buildPurchasedAwaitingBar(BuildContext context, LocalizationService localization) {
     return Container(
       padding: const EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 12,
-        bottom: 12,
+        left: 12,
+        right: 12,
+        top: 10,
+        bottom: 10,
       ),
       color: _getBarSurfaceColor(context),
       child: Container(
@@ -169,7 +184,7 @@ class ItemActionBarWidget extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    localization.translate('details.purchasedAwaitingConfirmation'),
+                    localization.translate('details.purchasedByYouAwaitingConfirmation'),
                     style: AppStyles.bodyMedium.copyWith(
                       color: AppColors.warning,
                       fontWeight: FontWeight.w600,
@@ -233,7 +248,7 @@ class ItemActionBarWidget extends StatelessWidget {
         builder: (context) {
           final primary = Theme.of(context).colorScheme.primary;
           return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
               color: _getBarSurfaceColor(context),
               borderRadius: BorderRadius.circular(14),
@@ -277,78 +292,125 @@ class ItemActionBarWidget extends StatelessWidget {
                 ),
                 // Divider
                 const SizedBox(height: 12),
-                // Bottom: Action buttons (transparent bg for gradient)
+                // Bottom: Action buttons stacked vertically
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (onCancelReservation != null)
-                      OutlinedButton(
-                        onPressed: onCancelReservation,
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          foregroundColor: AppColors.error,
-                          side: BorderSide(color: AppColors.error, width: 1.5),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                    // Top: Primary action - Mark as Purchased (full-width)
+                    if (onMarkAsPurchased != null)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: onMarkAsPurchased,
+                          icon: const Icon(
+                            Icons.check_circle_outline,
+                            size: 16,
+                            color: Colors.white,
                           ),
-                        ),
-                        child: Text(
-                          localization.translate('details.cancelReservation'),
-                          style: const TextStyle(
-                            color: AppColors.error,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    if (onCancelReservation != null && onExtendReservation != null)
-                      const SizedBox(height: 8),
-                    if (onExtendReservation != null)
-                      Tooltip(
-                        message: maxExtensionsReached
-                            ? (localization.translate('details.maxExtensionsReached'))
-                            : '',
-                        child: OutlinedButton(
-                          onPressed: maxExtensionsReached || isExtendingReservation
-                              ? null
-                              : onExtendReservation,
-                          style: OutlinedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            foregroundColor: maxExtensionsReached
-                                ? AppColors.textTertiary
-                                : AppColors.primaryDark,
-                            side: BorderSide(
-                              width: 1.5,
-                              color: maxExtensionsReached
-                                  ? AppColors.textTertiary
-                                  : AppColors.primaryDark,
+                          label: Text(
+                            localization.translate('ui.markAsPurchased') ?? 'Mark Purchased',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 14,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
+                            elevation: 0,
                           ),
-                          child: isExtendingReservation
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : Text(
-                                  maxExtensionsReached
-                                      ? localization.translate('details.maxExtensionsReached')
-                                      : localization.translate('details.extendReservationWithCount', args: {'count': remaining}),
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                    color: maxExtensionsReached
-                                        ? AppColors.textTertiary
-                                        : AppColors.primaryDark,
-                                  ),
-                                ),
                         ),
                       ),
+                    // Middle: Secondary action - Extend (full-width outlined)
+                    if (onExtendReservation != null) ...[
+                      if (onMarkAsPurchased != null) const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: Tooltip(
+                          message: maxExtensionsReached
+                              ? localization.translate('details.maxExtensionsReached')
+                              : '',
+                          child: OutlinedButton(
+                            onPressed: maxExtensionsReached || isExtendingReservation
+                                ? null
+                                : onExtendReservation,
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: maxExtensionsReached
+                                  ? AppColors.textTertiary
+                                  : AppColors.primaryDark,
+                              side: BorderSide(
+                                width: 1.5,
+                                color: maxExtensionsReached
+                                    ? AppColors.textTertiary
+                                    : AppColors.primaryDark,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: isExtendingReservation
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : Text(
+                                    maxExtensionsReached
+                                        ? localization.translate('details.maxExtensionsReached')
+                                        : localization.translate(
+                                            'details.extendReservationWithCount',
+                                            args: {'count': remaining},
+                                          ),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                      color: maxExtensionsReached
+                                          ? AppColors.textTertiary
+                                          : AppColors.primaryDark,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    // Bottom: Destructive action - Cancel Reservation (text-only, full-width)
+                    if (onCancelReservation != null) ...[
+                      if (onMarkAsPurchased != null || onExtendReservation != null)
+                        const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton(
+                          onPressed: onCancelReservation,
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                          ),
+                          child: Text(
+                            localization.translate('details.cancelReservation'),
+                            style: const TextStyle(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],

@@ -31,7 +31,7 @@ class CompactEmptyWishlistCard extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         // Compact Empty State Card
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),

@@ -27,6 +27,9 @@ import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/fcm_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:wish_listy/features/wishlists/presentation/cubit/pending_reservations_cubit.dart';
+import 'package:wish_listy/features/friends/presentation/widgets/suggested_friends_section.dart';
+import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
+import 'package:wish_listy/features/friends/data/models/suggestion_user_model.dart';
 
 class HomeScreen extends StatefulWidget {
   final GlobalKey<HomeScreenState>? key;
@@ -41,6 +44,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
   late HomeController _controller;
   bool _isNotificationDropdownOpen = false;
   DateTime? _lastNotificationTapTime;
+  List<SuggestionUser>? _homeSuggestions; // null = not loaded yet
 
   @override
   bool get wantKeepAlive => true;
@@ -50,6 +54,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
     super.initState();
     _controller = HomeController();
     _controller.fetchDashboardData();
+    _loadHomeSuggestions();
     // Load unread count from NotificationsCubit when app starts
     // This ensures we use the correct API that respects lastBadgeSeenAt
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -77,9 +82,35 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
     super.dispose();
   }
 
+  Future<void> _loadHomeSuggestions() async {
+    try {
+      final suggestions = await FriendsRepository().getSuggestions();
+      if (!mounted) return;
+      setState(() {
+        _homeSuggestions = suggestions;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _homeSuggestions = const [];
+      });
+    }
+  }
+
   /// Public method to refresh home dashboard from outside (e.g., MainNavigation tab switch)
   Future<void> refreshHome() async {
-    await _controller.refresh();
+    // Background refresh: keep existing UI (no skeleton) when data already exists.
+    // HomeController.refresh() already implements "smart loading".
+    try {
+      context.read<NotificationsCubit>().getUnreadCount();
+    } catch (_) {
+      // NotificationsCubit may not be in tree yet – ignore
+    }
+
+    await Future.wait([
+      _controller.refresh(),
+      _loadHomeSuggestions(),
+    ]);
     // Also refresh pending reservations section if it is mounted
     try {
       final pendingCubit = context.read<PendingReservationsCubit>();
@@ -620,12 +651,25 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                     final hasWishlists = (controller.myWishlists ?? []).isNotEmpty;
                     final hasActivities = (controller.latestActivityPreview ?? []).isNotEmpty;
                     final hasOccasions = (controller.upcomingOccasions ?? []).isNotEmpty;
-                    
-                    // Conditional layout logic:
-                    // 1. If wishlists empty AND activities exist -> Compact empty + Happening Now
-                    // 2. If everything empty (true new user) -> Full EmptyHomeScreen
-                    // 3. Otherwise -> ActiveDashboard
-                    final showCompactEmptyWithActivities = isEmpty && hasActivities;
+                    final hasSuggestions = (_homeSuggestions?.isNotEmpty ?? false);
+
+                    // "Truly empty" = no lists, no occasions, no activity, and no suggestions.
+                    // (Suggestions are not part of the dashboard response, so we load them separately.)
+                    final isTrulyEmpty = !hasWishlists &&
+                        !hasActivities &&
+                        !hasOccasions &&
+                        !hasSuggestions;
+
+                    // Compact social-first empty layout:
+                    // - User is new (no own wishlists yet)
+                    // - But they already have some social signal (friends / activity / occasions)
+                    // This layout shows:
+                    //   - Compact "Create Wishlist" card
+                    //   - People You May Know
+                    //   - Upcoming Occasions (if any)
+                    //   - Happening Now (if any)
+                    final showCompactEmptyWithActivities =
+                        isEmpty && !hasWishlists && !isTrulyEmpty;
 
                     return RefreshIndicator(
                       onRefresh: controller.refresh,
@@ -648,12 +692,16 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                           if (controller.isLoading)
                             const SliverToBoxAdapter(child: HomeSkeletonView())
                           else if (showCompactEmptyWithActivities)
-                            // Layout: Compact empty wishlist card + Happening Now section
+                            // Layout: Compact empty wishlist card + People You May Know +
+                            // Upcoming Occasions (if any) + Happening Now (if any)
                             SliverToBoxAdapter(
-                              child: _buildCompactEmptyWithActivities(controller),
+                              child: _buildCompactEmptyWithActivities(
+                                controller,
+                                initialSuggestions: _homeSuggestions,
+                              ),
                             )
-                          else if (isEmpty)
-                            // Full empty state (no wishlists, no activities)
+                          else if (isEmpty && isTrulyEmpty)
+                            // Full playful empty state (no wishlists, no occasions, no activity)
                             const SliverFillRemaining(
                               hasScrollBody: false,
                               child: EmptyHomeScreen(),
@@ -733,20 +781,36 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
 
   /// Build compact empty wishlist state with "Happening Now" activities section
   /// Used when user has no wishlists but has friend activities to show
-  Widget _buildCompactEmptyWithActivities(HomeController controller) {
+  Widget _buildCompactEmptyWithActivities(
+    HomeController controller, {
+    List<SuggestionUser>? initialSuggestions,
+  }) {
     final activities = controller.latestActivityPreview ?? [];
     final occasions = controller.upcomingOccasions ?? [];
+    final localization = Provider.of<LocalizationService>(context, listen: false);
     
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Compact Empty Wishlist Card
+          // 1. Compact Empty Wishlist Card (Because user has no wishlists)
           const CompactEmptyWishlistCard(),
           const SizedBox(height: 24),
           
-          // Upcoming Occasions (if any)
+          // 2. Pending Reservations (Gifts reserved for friends)
+          // This widget handles its own empty state internally (returns SizedBox.shrink if empty).
+          const PendingReservationsSection(),
+          const SizedBox(height: 24),
+          
+          // 3. People You May Know
+          SuggestedFriendsSection(
+            localization: localization,
+            initialSuggestions: initialSuggestions,
+          ),
+          const SizedBox(height: 24),
+          
+          // 4. Friends Events / Upcoming Occasions
           if (occasions.isNotEmpty) ...[
             UpcomingOccasionsSection(
               occasions: _convertEventsToOccasions(occasions),
@@ -754,8 +818,9 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
             const SizedBox(height: 24),
           ],
           
-          // Happening Now Section (activities)
-          HappeningNowSection(activities: activities),
+          // 5. Happening Now (Friend Activities)
+          if (activities.isNotEmpty)
+            HappeningNowSection(activities: activities),
         ],
       ),
     );

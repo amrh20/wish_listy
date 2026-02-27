@@ -322,6 +322,7 @@ class ProfileScreenState extends State<ProfileScreen>
                           subtitle: localization.translate('profile.nameEmailBio'),
                           onTap: _editPersonalInfo,
                           color: AppColors.primary,
+                          showDivider: false,
                         ),
                         ProfileSettingItem(
                           icon: Icons.lock_outline,

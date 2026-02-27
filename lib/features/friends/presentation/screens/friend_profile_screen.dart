@@ -21,6 +21,7 @@ import 'package:wish_listy/features/friends/presentation/controllers/friend_prof
 import 'package:wish_listy/features/wishlists/presentation/widgets/form/wishlist_form_helpers.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:wish_listy/core/widgets/unified_tab_bar.dart';
+import 'package:wish_listy/core/widgets/royal_avatar_wrapper.dart';
 
 class FriendProfileScreen extends StatefulWidget {
   final String friendId;
@@ -1054,7 +1055,7 @@ class _PatternedHeader extends StatelessWidget {
               SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
                   child: Obx(() {
                     final localization = Provider.of<LocalizationService>(context, listen: false);
                     final isLoading = controller.isLoading.value;
@@ -1234,52 +1235,57 @@ class _Avatar extends StatelessWidget {
         ? fullName.trim()[0].toUpperCase()
         : localization.translate('friends.friendInitial');
 
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 4),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: GestureDetector(
-        onTap: hasImage
-            ? () {
-                Navigator.of(context).push(
-                  PageRouteBuilder(
-                    opaque: false,
-                    barrierColor: Colors.black.withOpacity(0.9),
-                    pageBuilder: (context, animation, secondaryAnimation) {
-                      return _FriendFullScreenImageView(imageUrl: imageUrl!);
-                    },
-                    transitionsBuilder:
-                        (context, animation, secondaryAnimation, child) {
-                      return FadeTransition(opacity: animation, child: child);
-                    },
-                  ),
-                );
-              }
-            : null,
-        child: Hero(
-          tag: 'friend_profile_image_${imageUrl ?? 'placeholder'}',
-          child: CircleAvatar(
-            radius: 50,
-            backgroundColor: Colors.white,
-            backgroundImage: hasImage ? NetworkImage(imageUrl!) : null,
-            child: hasImage
-                ? null
-                : Text(
-                    initial,
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
+    return RoyalAvatarWrapper(
+      userName: fullName,
+      crownSize: 34,
+      topOffset: -28,
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 4),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: GestureDetector(
+          onTap: hasImage
+              ? () {
+                  Navigator.of(context).push(
+                    PageRouteBuilder(
+                      opaque: false,
+                      barrierColor: Colors.black.withOpacity(0.9),
+                      pageBuilder: (context, animation, secondaryAnimation) {
+                        return _FriendFullScreenImageView(imageUrl: imageUrl!);
+                      },
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                        return FadeTransition(opacity: animation, child: child);
+                      },
                     ),
-                  ),
+                  );
+                }
+              : null,
+          child: Hero(
+            tag: 'friend_profile_image_${imageUrl ?? 'placeholder'}',
+            child: CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.white,
+              backgroundImage: hasImage ? NetworkImage(imageUrl!) : null,
+              child: hasImage
+                  ? null
+                  : Text(
+                      initial,
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+            ),
           ),
         ),
       ),
@@ -1612,7 +1618,9 @@ class _QuickActionIconButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.all(10),
+          height: 40,
+          width: 40,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(14),

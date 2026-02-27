@@ -810,10 +810,8 @@ class _ModernWishlistItemContent extends StatelessWidget {
   }
 
   void _showReservedActionsBottomSheet(BuildContext context) {
+    if (onToggleReservation == null) return;
     final loc = Provider.of<LocalizationService>(context, listen: false);
-    final hasActions = (onToggleReceivedStatus != null && !item.isPurchasedValue) ||
-        onToggleReservation != null;
-    if (!hasActions) return;
 
     showModalBottomSheet<void>(
       context: context,
@@ -833,33 +831,20 @@ class _ModernWishlistItemContent extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (onToggleReceivedStatus != null && !item.isPurchasedValue)
-              ListTile(
-                leading: Icon(Icons.check_circle, color: AppColors.success),
-                title: Text(
-                  loc.translate('ui.markAsPurchased') ?? 'Mark as Purchased',
-                  style: AppStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+            ListTile(
+              leading: Icon(Icons.close, color: AppColors.error),
+              title: Text(
+                loc.translate('ui.cancelReserve') ?? 'Cancel Reserve',
+                style: AppStyles.bodyLarge.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.error,
                 ),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _confirmMarkAsPurchased(context);
-                },
               ),
-            if (onToggleReservation != null)
-              ListTile(
-                leading: Icon(Icons.close, color: AppColors.error),
-                title: Text(
-                  loc.translate('ui.cancelReserve') ?? 'Cancel Reserve',
-                  style: AppStyles.bodyLarge.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.error,
-                  ),
-                ),
-                onTap: () {
-                  Navigator.of(sheetContext).pop();
-                  _confirmToggleReservation(context, true);
-                },
-              ),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _confirmToggleReservation(context, true);
+              },
+            ),
           ],
         ),
       ),
@@ -1183,8 +1168,6 @@ class _ModernWishlistItemContent extends StatelessWidget {
     required bool isReservedByMe,
     required bool isReservedByOther,
   }) {
-    // Case A: Gifted/Received (isReceived == true) - Highest Priority for NON-OWNER too
-    // This fixes the bug where non-owners were seeing "Reserved/Taken" instead of "Gifted".
     if (isReceived) {
       return Opacity(
         opacity: 0.9,
@@ -1309,7 +1292,10 @@ class _ModernWishlistItemContent extends StatelessWidget {
                     ),
                     child: Center(
                       child: Text(
-                        Provider.of<LocalizationService>(context, listen: false).translate('ui.markedAsGifted') ?? 'Received',
+                        Provider.of<LocalizationService>(context, listen: false).translate(
+                              isReservedByMe ? 'ui.yourGiftArrivedBadge' : 'ui.markedAsGifted',
+                            ) ??
+                            (isReservedByMe ? 'Your gift arrived! 🎁' : 'Received'),
                         style: AppStyles.bodySmall.copyWith(
                           color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
@@ -1403,7 +1389,10 @@ class _ModernWishlistItemContent extends StatelessWidget {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                Provider.of<LocalizationService>(context, listen: false).translate('ui.purchasedWithCheck') ?? 'Purchased',
+                                Provider.of<LocalizationService>(context, listen: false).translate(
+                                      isReservedByMe ? 'ui.youBoughtThisBadge' : 'ui.purchasedWithCheck',
+                                    ) ??
+                                    (isReservedByMe ? 'You bought this 🦸‍♂️' : 'Purchased'),
                                 style: AppStyles.caption.copyWith(
                                   color: AppColors.success,
                                   fontWeight: FontWeight.w600,
@@ -1521,7 +1510,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (onToggleReceivedStatus != null || onToggleReservation != null)
+                      if (onToggleReservation != null)
                         IconButton(
                           icon: const Icon(Icons.more_vert),
                           onPressed: () => _showReservedActionsBottomSheet(context),
@@ -1531,14 +1520,15 @@ class _ModernWishlistItemContent extends StatelessWidget {
                         ),
                     ],
                   ),
-                  // Expiry in its own row, Extend action in row below
+                  // Expiry in its own row, Extend + Mark Purchased actions below
                   if (item.reservedUntil != null) ...[
                     const SizedBox(height: 12),
                     _ReservationExpiryRow(reservedUntil: item.reservedUntil!),
-                    if (onExtend != null) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        // Extend button (left side)
+                        if (onExtend != null)
                           _showExtendButton()
                               ? OutlinedButton(
                                   onPressed: () => _openExtendSheet(context),
@@ -1549,7 +1539,8 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                   ),
                                   child: Text(
                                     Provider.of<LocalizationService>(context, listen: false)
-                                        .translate('details.extendReservationWithCount', args: {'count': _remainingExtensions()}) ?? 'Extend Reservation (${_remainingExtensions()} attempts left)',
+                                        .translate('details.extendReservationWithCount', args: {'count': _remainingExtensions()}) ??
+                                        'Extend (${_remainingExtensions()} left)',
                                     style: AppStyles.bodySmall.copyWith(
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.primary,
@@ -1564,9 +1555,30 @@ class _ModernWishlistItemContent extends StatelessWidget {
                                     fontSize: 12,
                                   ),
                                 ),
-                        ],
-                      ),
-                    ],
+                        const Spacer(),
+                        // Mark Purchased primary button (right side, State C only)
+                        if (onToggleReceivedStatus != null && !item.isPurchasedValue)
+                          ElevatedButton.icon(
+                            onPressed: () => _confirmMarkAsPurchased(context),
+                            icon: const Icon(Icons.check_circle_outline, size: 16, color: Colors.white),
+                            label: Text(
+                              Provider.of<LocalizationService>(context, listen: false)
+                                  .translate('ui.markAsPurchased') ?? 'Mark Purchased',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              elevation: 0,
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ],
               );

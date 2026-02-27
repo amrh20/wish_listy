@@ -2333,7 +2333,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => LinkWishlistBottomSheet(
         eventId: widget.eventId,
-        onLink: (wishlistId) async {
+        onLink: (wishlistId, {String? wishlistName}) async {
           try {
             // Link wishlist to event
             await _eventRepository.linkWishlistToEvent(

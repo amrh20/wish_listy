@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
-import 'package:wish_listy/core/constants/app_styles.dart';
-import 'package:wish_listy/core/constants/bottom_sheet_vectors.dart';
 import 'package:wish_listy/core/widgets/custom_button.dart';
+import 'package:wish_listy/features/events/presentation/widgets/link_wishlist_bottom_sheet.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
 import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
-import 'package:wish_listy/core/widgets/decorated_bottom_sheet.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/wishlists/data/repository/wishlist_repository.dart';
@@ -636,189 +634,21 @@ class _CreateEventScreenState extends State<CreateEventScreen>
   }
 
   void _showLinkWishlistBottomSheet() {
-    final localization = Provider.of<LocalizationService>(
-      context,
-      listen: false,
-    );
-
-    // Show bottom sheet immediately with loading state
-    DecoratedBottomSheet.show(
+    showModalBottomSheet(
       context: context,
-      vectorType: BottomSheetVectorType.creation,
-      title: localization.translate('events.selectWishlistToLink'),
-      height: MediaQuery.of(context).size.height * 0.7,
-      children: [
-        // Use FutureBuilder to load wishlists asynchronously inside the bottom sheet
-        FutureBuilder<List<Map<String, dynamic>>>(
-          future: _wishlistRepository.getWishlists(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return SizedBox(
-                height: MediaQuery.of(context).size.height * 0.5,
-                child: const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            }
-
-            if (snapshot.hasError) {
-              return SizedBox(
-                height: MediaQuery.of(context).size.height * 0.5,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: AppColors.error,
-                      ),
-                      const SizedBox(height: 16),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Text(
-                          'Failed to load wishlists: ${snapshot.error}',
-                          style: AppStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _showLinkWishlistBottomSheet(); // Retry
-                        },
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            final wishlists = snapshot.data ?? [];
-
-            if (wishlists.isEmpty) {
-              return SizedBox(
-                height: MediaQuery.of(context).size.height * 0.5,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.inbox_outlined,
-                        size: 64,
-                        color: AppColors.textTertiary,
-                      ),
-                      const SizedBox(height: 16),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Text(
-                          localization.translate('events.noWishlistsAvailable') ??
-                              'No wishlists available',
-                          style: AppStyles.bodyMedium.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            // Wishlists List
-            return Column(
-              children: [
-                SizedBox(
-                  height: MediaQuery.of(context).size.height * 0.5,
-                  child: ListView.builder(
-                    itemCount: wishlists.length,
-                    itemBuilder: (context, index) {
-                      final wishlist = wishlists[index];
-                      final wishlistId = wishlist['id']?.toString() ?? '';
-                      final wishlistName =
-                          wishlist['name']?.toString() ?? 'Unnamed Wishlist';
-                      final isSelected = _linkedWishlistId == wishlistId;
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
-                        child: ListTile(
-                          onTap: () {
-                            setState(() {
-                              _wishlistOption = 'link';
-                              _linkedWishlistId = wishlistId;
-                              _linkedWishlistName = wishlistName;
-                            });
-                            Navigator.pop(context);
-                          },
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          tileColor: isSelected
-                              ? AppColors.primary.withOpacity(0.1)
-                              : AppColors.surface,
-                          leading: CircleAvatar(
-                            backgroundColor: AppColors.primary.withOpacity(0.1),
-                            child: Icon(
-                              Icons.favorite_rounded,
-                              color: AppColors.primary,
-                              size: 20,
-                            ),
-                          ),
-                          title: Text(
-                            wishlistName,
-                            style: AppStyles.bodyMedium.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          subtitle: Text(
-                            wishlist['description']?.toString() ?? '',
-                            style: AppStyles.bodySmall.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          trailing: isSelected
-                              ? Icon(
-                                  Icons.check_circle,
-                                  color: AppColors.primary,
-                                  size: 24,
-                                )
-                              : Icon(
-                                  Icons.radio_button_unchecked,
-                                  color: AppColors.textTertiary,
-                                  size: 24,
-                                ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // Cancel Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: CustomButton(
-                      text: localization.translate('common.cancel'),
-                      onPressed: () => Navigator.pop(context),
-                      variant: ButtonVariant.outline,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-            );
-          },
-        ),
-      ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => LinkWishlistBottomSheet(
+        eventId: '',
+        onLink: (wishlistId, {String? wishlistName}) {
+          setState(() {
+            _wishlistOption = 'link';
+            _linkedWishlistId = wishlistId;
+            _linkedWishlistName = wishlistName ?? '';
+          });
+          Navigator.pop(context);
+        },
+      ),
     );
   }
 

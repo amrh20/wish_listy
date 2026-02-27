@@ -12,10 +12,12 @@ import 'package:wish_listy/core/services/api_service.dart';
 
 class SuggestedFriendsSection extends StatefulWidget {
   final LocalizationService localization;
+  final List<SuggestionUser>? initialSuggestions;
 
   const SuggestedFriendsSection({
     super.key,
     required this.localization,
+    this.initialSuggestions,
   });
 
   @override
@@ -39,7 +41,13 @@ class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> with 
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat();
-    _loadSuggestions();
+    if (widget.initialSuggestions != null) {
+      _suggestions = widget.initialSuggestions!;
+      _isLoading = false;
+      _errorMessage = null;
+    } else {
+      _loadSuggestions();
+    }
   }
 
   @override
@@ -316,8 +324,8 @@ class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> with 
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text(
             widget.localization.translate('friends.peopleYouMayKnow'),
-            style: AppStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.w800,
+            style: AppStyles.headingMedium.copyWith(
+              fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
             maxLines: 1,

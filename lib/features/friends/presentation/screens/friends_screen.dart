@@ -63,6 +63,9 @@ class FriendsScreenState extends State<FriendsScreen>
 
   bool _hasLoadedOnce = false;
 
+  // Tracks which request IDs are currently being processed (accept/decline)
+  final Set<String> _processingRequestIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -266,17 +269,21 @@ class FriendsScreenState extends State<FriendsScreen>
                     (_isLoadingMoreFriends ? 1 : 0) +
                     1, // +1 for bottom padding
                 itemBuilder: (context, index) {
-                  // Loading indicator at bottom for pagination
-                  if (index == filteredFriends.length) {
-                    if (_isLoadingMoreFriends) {
-                      return const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Center(child: CircularProgressIndicator()),
+                  // Any slot at or beyond the real list is either the loading
+                  // spinner or the bottom-nav-bar padding.
+                  if (index >= filteredFriends.length) {
+                    if (_isLoadingMoreFriends &&
+                        index == filteredFriends.length) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
+                        ),
                       );
                     }
-                    return const SizedBox(
-                      height: 120,
-                    ); // Bottom padding so content is not stuck to bottom nav
+                    return const SizedBox(height: 120);
                   }
                   return AnimationConfiguration.staggeredList(
                     position: index,
@@ -547,6 +554,7 @@ class FriendsScreenState extends State<FriendsScreen>
     final senderName = fromUser.fullName.isNotEmpty
         ? fromUser.fullName
         : fromUser.getDisplayHandle();
+    final isProcessing = _processingRequestIds.contains(request.id);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -656,7 +664,9 @@ class FriendsScreenState extends State<FriendsScreen>
                   child: SizedBox(
                     height: 40,
                     child: OutlinedButton(
-                      onPressed: () => _handleFriendRequest(request, false),
+                      onPressed: isProcessing
+                          ? null
+                          : () => _handleFriendRequest(request, false),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
                         side: BorderSide(
@@ -682,7 +692,9 @@ class FriendsScreenState extends State<FriendsScreen>
                   child: SizedBox(
                     height: 40,
                     child: ElevatedButton(
-                      onPressed: () => _handleFriendRequest(request, true),
+                      onPressed: isProcessing
+                          ? null
+                          : () => _handleFriendRequest(request, true),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.success,
                         foregroundColor: Colors.white,
@@ -692,13 +704,22 @@ class FriendsScreenState extends State<FriendsScreen>
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: Text(
-                        Provider.of<LocalizationService>(context, listen: false).translate('dialogs.accept'),
-                        style: AppStyles.bodySmall.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: isProcessing
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              Provider.of<LocalizationService>(context, listen: false).translate('dialogs.accept'),
+                              style: AppStyles.bodySmall.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ),
@@ -922,24 +943,25 @@ class FriendsScreenState extends State<FriendsScreen>
 
     if (_isLoadingFriends || (_isLoadingMoreFriends && !resetPage)) return;
 
-    // Smart Loading: Only show loading if data doesn't exist yet
-    // If data exists, refresh in background without showing loading indicator
+    // Smart Loading:
+    // - No existing data: show full skeleton loading
+    // - Reset (refresh): refresh silently in background
+    // - Load more (append): always show the bottom loading indicator
     final hasExistingData = _friends.isNotEmpty;
     if (!hasExistingData || forceShowLoading) {
       setState(() {
-        if (resetPage) {
-          _isLoadingFriends = true;
-        } else {
-          _isLoadingMoreFriends = true;
-        }
+        _isLoadingFriends = true;
         _friendsError = null;
       });
+    } else if (!resetPage) {
+      // Loading additional pages – always show the bottom spinner
+      setState(() {
+        _isLoadingMoreFriends = true;
+      });
     } else {
-      // Still clear error message
+      // Silent background refresh – just clear any previous error
       if (_friendsError != null) {
-        setState(() {
-          _friendsError = null;
-        });
+        setState(() => _friendsError = null);
       }
     }
 
@@ -1053,6 +1075,8 @@ class FriendsScreenState extends State<FriendsScreen>
 
   // Action Handlers
   Future<void> _handleFriendRequest(FriendRequest request, bool accept) async {
+    // Show loading on the card buttons
+    setState(() => _processingRequestIds.add(request.id));
     try {
       if (accept) {
         await _friendsRepository.acceptFriendRequest(requestId: request.id);
@@ -1062,8 +1086,9 @@ class FriendsScreenState extends State<FriendsScreen>
 
       if (!mounted) return;
 
-      // Remove request from list
+      // Remove request from list and clear processing flag
       setState(() {
+        _processingRequestIds.remove(request.id);
         _friendRequests.remove(request);
       });
 
@@ -1100,6 +1125,7 @@ class FriendsScreenState extends State<FriendsScreen>
       );
     } on ApiException catch (e) {
       if (!mounted) return;
+      setState(() => _processingRequestIds.remove(request.id));
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -1116,13 +1142,14 @@ class FriendsScreenState extends State<FriendsScreen>
       );
     } catch (e) {
       if (!mounted) return;
+      setState(() => _processingRequestIds.remove(request.id));
       final localization = Provider.of<LocalizationService>(context, listen: false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
-              Icon(Icons.error, color: Colors.white),
-              SizedBox(width: 8),
+              const Icon(Icons.error, color: Colors.white),
+              const SizedBox(width: 8),
               Text(localization.translate('dialogs.failedToProcessFriendRequest')),
             ],
           ),

@@ -95,7 +95,6 @@ class WishlistCardWidget extends StatelessWidget {
             );
           },
         ),
-        const Divider(height: 1),
         // Menu options
         ListTile(
           leading: Icon(Icons.edit_outlined, color: AppColors.textPrimary),

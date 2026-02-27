@@ -8,6 +8,7 @@ class FriendProfileUserModel {
   final String username; // Legacy field - kept for backward compatibility
   final String? handle; // Public handle (e.g., "@amr_hamdy_99")
   final String? profileImage;
+  final String? bio;
   final DateTime? createdAt;
 
   const FriendProfileUserModel({
@@ -16,6 +17,7 @@ class FriendProfileUserModel {
     required this.username,
     this.handle,
     this.profileImage,
+    this.bio,
     this.createdAt,
   });
 
@@ -27,12 +29,14 @@ class FriendProfileUserModel {
         createdAt = DateTime.parse(createdRaw.toString());
       } catch (_) {}
     }
+    final rawBio = json['bio']?.toString().trim();
     return FriendProfileUserModel(
       id: (json['id'] ?? json['_id'])?.toString() ?? '',
       fullName: json['fullName']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
       handle: json['handle']?.toString(),
       profileImage: json['profileImage']?.toString(),
+      bio: (rawBio != null && rawBio.isNotEmpty) ? rawBio : null,
       createdAt: createdAt,
     );
   }

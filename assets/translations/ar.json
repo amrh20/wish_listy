@@ -859,7 +859,6 @@
     "wishlistOptions": "خيارات القائمة",
     "itemSingular": "أمنية",
     "itemPlural": "أمنيات",
-    "reserved": "محجوز",
     "linkWishlistButton": "ربط القائمة",
     "linkExistingWishlistHeader": "ربط قائمة موجودة",
     "linkWishlistToEvent": "ربط قائمة أمنيات بالفعالية",
@@ -1351,7 +1350,9 @@
     "gifted": "تم الشراء",
     "reserved": "محجوز",
     "available": "متاح",
-    "addYourFirstWish": "أضف أمنيتك الأولى"
+    "addYourFirstWish": "أضف أمنيتك الأولى",
+    "yourGiftArrivedBadge": "هديتك وصلت! 🎁",
+    "youBoughtThisBadge": "أنت اشتريتها 🦸‍♂️"
   },
   "activity": {
     "happeningNow": "يحدث الآن",
@@ -1774,6 +1775,7 @@
     "connectThoughtfulGifting": "تواصل من خلال الهدايا المدروسة"
   },
   "ui": {
+    "yourGiftArrivedBadge": "هديتك وصلت! 🎁",
     "yourStats": "إحصائياتك",
     "quickActions": "إجراءات سريعة",
     "events": "الفعاليات",

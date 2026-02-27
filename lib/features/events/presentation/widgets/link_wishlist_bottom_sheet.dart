@@ -9,7 +9,10 @@ import 'package:wish_listy/core/services/localization_service.dart';
 /// Bottom sheet widget for linking an existing wishlist to an event
 class LinkWishlistBottomSheet extends StatefulWidget {
   final String eventId;
-  final Function(String wishlistId) onLink;
+  /// Called when the user confirms their selection.
+  /// [wishlistId] is always present; [wishlistName] is provided for callers
+  /// that need it (e.g. create-event flow, where the event doesn't exist yet).
+  final Function(String wishlistId, {String? wishlistName}) onLink;
 
   const LinkWishlistBottomSheet({
     super.key,
@@ -200,7 +203,19 @@ class _LinkWishlistBottomSheetState extends State<LinkWishlistBottomSheet> {
                   height: 50,
                   child: ElevatedButton(
                     onPressed: () {
-                      widget.onLink(_selectedWishlistId!);
+                      final selectedWishlist = _allWishlists.firstWhere(
+                        (w) =>
+                            (w['id']?.toString() ??
+                                w['_id']?.toString() ??
+                                '') ==
+                            _selectedWishlistId,
+                        orElse: () => {},
+                      );
+                      widget.onLink(
+                        _selectedWishlistId!,
+                        wishlistName:
+                            selectedWishlist['name']?.toString(),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
