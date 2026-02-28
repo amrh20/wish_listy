@@ -39,5 +39,14 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    if target.name == 'image_picker_ios'
+      target.build_configurations.each do |config|
+        config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+          '$(inherited)',
+          'IMAGE_PICKER_NO_CAMERA=1',
+          'IMAGE_PICKER_NO_MICROPHONE=1'
+        ]
+      end
+    end
   end
 end

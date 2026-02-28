@@ -975,6 +975,7 @@ class FriendActivitySection extends StatelessWidget {
         ),
         // Activities Section (only show if there are activities)
         if (displayActivities.isNotEmpty) ...[
+          const SizedBox(height: 32),
           // Header with Title and View All
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
