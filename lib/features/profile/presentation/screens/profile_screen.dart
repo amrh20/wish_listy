@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -18,6 +19,11 @@ import 'package:wish_listy/core/services/deep_link_service.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/core/services/api_service.dart';
+import 'package:wish_listy/core/services/biometric_service.dart';
+import 'package:wish_listy/core/services/fcm_service.dart';
+import 'package:wish_listy/core/services/notification_preference_service.dart';
+import 'package:wish_listy/core/widgets/unified_snackbar.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
 import 'package:wish_listy/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:wish_listy/features/profile/presentation/cubit/profile_state.dart';
@@ -66,6 +72,9 @@ class ProfileScreenState extends State<ProfileScreen>
   bool _hasLoaded = false;
   String? _errorMessage;
   String _currentLanguage = 'en';
+  bool _isBiometricEnabled = false;
+  bool _isBiometricAvailable = false;
+  bool _isPushNotificationsEnabled = false;
 
   @override
   void initState() {
@@ -77,8 +86,9 @@ class ProfileScreenState extends State<ProfileScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_hasLoaded && !_isLoading) {
         _loadUserProfile();
-      } else {
       }
+      _loadBiometricState();
+      _loadNotificationState();
     });
   }
 
@@ -94,6 +104,164 @@ class ProfileScreenState extends State<ProfileScreen>
         _currentLanguage = localization.currentLanguage;
       });
     });
+  }
+
+  Future<void> _loadBiometricState() async {
+    if (!mounted) return;
+    final biometricService = BiometricService();
+    final available = await biometricService.isBiometricAvailable();
+
+    final prefs = await SharedPreferences.getInstance();
+    final identifier = prefs.getString('user_email')?.trim();
+
+    bool enabled = false;
+    if (identifier != null && identifier.isNotEmpty) {
+      enabled = await biometricService.isEnabledForIdentifier(identifier);
+    }
+
+    debugPrint('[Biometric] available=$available, enabled=$enabled, identifier=$identifier');
+
+    if (mounted) {
+      setState(() {
+        _isBiometricAvailable = available;
+        _isBiometricEnabled = enabled;
+      });
+    }
+  }
+
+  Future<void> _onBiometricToggleChanged(bool value) async {
+    if (!mounted) return;
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final prefs = await SharedPreferences.getInstance();
+    final identifier = prefs.getString('user_email')?.trim();
+    if (identifier == null || identifier.isEmpty) {
+      if (mounted) UnifiedSnackbar.showError(context: context, message: localization.translate('auth.biometricFailed') ?? 'Unable to update biometric setting.');
+      return;
+    }
+    final biometricService = BiometricService();
+
+    if (value) {
+      final available = await biometricService.isBiometricAvailable();
+      if (!available) {
+        if (mounted) {
+          UnifiedSnackbar.showError(context: context, message: localization.translate('auth.biometricNotAvailable') ?? 'Biometric not available on this device.');
+        }
+        return;
+      }
+      final didAuthenticate = await biometricService.authenticate(
+        context: context,
+        reason: localization.translate('auth.biometricReason') ?? 'Verify identity to enable biometric login',
+      );
+      if (!didAuthenticate || !mounted) {
+        setState(() => _isBiometricEnabled = false);
+        if (mounted) {
+          UnifiedSnackbar.showError(context: context, message: localization.translate('auth.biometricFailed') ?? 'Biometric verification failed.');
+        }
+        return;
+      }
+      final token = prefs.getString('auth_token');
+      if (token == null || token.isEmpty) {
+        if (mounted) {
+          setState(() => _isBiometricEnabled = false);
+          UnifiedSnackbar.showError(context: context, message: localization.translate('auth.biometricTokenMissing') ?? 'Please login again to enable biometric.');
+        }
+        return;
+      }
+      final success = await biometricService.saveTokenSecurely(
+        token,
+        identifier: identifier,
+        refreshToken: prefs.getString('refresh_token'),
+        userId: prefs.getString('user_id'),
+        userName: prefs.getString('user_name'),
+      );
+      if (mounted) {
+        setState(() => _isBiometricEnabled = success);
+        if (success) {
+          UnifiedSnackbar.showSuccess(context: context, message: localization.translate('auth.biometricEnabled') ?? 'Biometric login enabled.');
+        } else {
+          UnifiedSnackbar.showError(context: context, message: localization.translate('auth.biometricFailed') ?? 'Failed to enable biometric.');
+        }
+      }
+    } else {
+      await biometricService.clearBiometricDataForIdentifier(identifier);
+      if (mounted) setState(() => _isBiometricEnabled = false);
+    }
+  }
+
+  Future<void> _loadNotificationState() async {
+    if (!mounted) return;
+    final prefService = NotificationPreferenceService();
+    final userChoice = await prefService.getPushNotificationsEnabled();
+    if (userChoice != null) {
+      if (mounted) setState(() => _isPushNotificationsEnabled = userChoice);
+      return;
+    }
+    final status = await FcmService().getAuthorizationStatus();
+    final enabled = status == AuthorizationStatus.authorized ||
+        status == AuthorizationStatus.provisional;
+    if (mounted) setState(() => _isPushNotificationsEnabled = enabled);
+  }
+
+  Future<void> _onNotificationToggleChanged(bool value) async {
+    if (!mounted) return;
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final prefService = NotificationPreferenceService();
+    final fcmService = FcmService();
+
+    if (value) {
+      final granted = await fcmService.requestPermissionDirectly();
+      if (!mounted) return;
+      if (granted) {
+        await prefService.setPushNotificationsEnabled(true);
+        setState(() => _isPushNotificationsEnabled = true);
+
+        UnifiedSnackbar.hideCurrent(context);
+        UnifiedSnackbar.showLoading(
+          context: context,
+          message: localization.translate('profile.reactivatingAlerts') ?? 'Reactivating alerts...',
+          duration: const Duration(minutes: 1),
+        );
+
+        final authRepository = Provider.of<AuthRepository>(context, listen: false);
+        final synced = await authRepository.syncFcmToken();
+
+        UnifiedSnackbar.hideCurrent(context);
+
+        if (!mounted) return;
+        if (synced) {
+          UnifiedSnackbar.showSuccess(
+            context: context,
+            message: localization.translate('profile.alertsReactivated') ?? 'Alerts reactivated!',
+          );
+        } else {
+          await prefService.setPushNotificationsEnabled(false);
+          setState(() => _isPushNotificationsEnabled = false);
+          UnifiedSnackbar.showError(
+            context: context,
+            message: localization.translate('profile.alertsReactivationFailed') ?? 'Could not reactivate alerts. Please try again.',
+          );
+        }
+      } else {
+        setState(() => _isPushNotificationsEnabled = false);
+        UnifiedSnackbar.showError(
+          context: context,
+          message: localization.translate('profile.pushNotificationsDenied') ?? 'Could not enable notifications.',
+        );
+      }
+    } else {
+      await prefService.setPushNotificationsEnabled(false);
+      try {
+        final authRepository = Provider.of<AuthRepository>(context, listen: false);
+        await authRepository.deleteFcmToken();
+      } catch (_) {}
+      if (mounted) {
+        setState(() => _isPushNotificationsEnabled = false);
+        UnifiedSnackbar.showSuccess(
+          context: context,
+          message: localization.translate('profile.pushNotificationsDisabled') ?? "Alerts paused. To fully disable, visit your phone's App Settings.",
+        );
+      }
+    }
   }
 
   void _initializeAnimations() {
@@ -342,9 +510,30 @@ class ProfileScreenState extends State<ProfileScreen>
                       gradientColors: [AppColors.warning, AppColors.warning.withValues(alpha: 0.8)],
                       items: [
                         ProfileSettingItem(
+                          icon: Icons.fingerprint,
+                          title: localization.translate('auth.enableBiometric') ?? 'Biometric Login',
+                          subtitle: localization.translate('auth.enableBiometricMessage') ?? 'Use fingerprint or Face ID for quick sign-in',
+                          color: AppColors.primary,
+                          isSwitch: true,
+                          switchValue: _isBiometricEnabled,
+                          onSwitchChanged: _onBiometricToggleChanged,
+                          showDivider: true,
+                        ),
+                        // App Alerts switch hidden for MVP to encourage user engagement
+                        // ProfileSettingItem(
+                        //   icon: Icons.notifications_active_outlined,
+                        //   title: localization.translate('profile.pushNotifications') ?? 'App Alerts',
+                        //   subtitle: localization.translate('profile.pushNotificationsSubtitle') ?? 'Receive updates about your wishes and friends',
+                        //   color: AppColors.primary,
+                        //   isSwitch: true,
+                        //   switchValue: _isPushNotificationsEnabled,
+                        //   onSwitchChanged: _onNotificationToggleChanged,
+                        //   showDivider: true,
+                        // ),
+                        ProfileSettingItem(
                           icon: Icons.notifications_outlined,
-                          title: localization.translate('profile.notificationSettings'),
-                          subtitle: localization.translate('profile.notificationSettingsSubtitle'),
+                          title: localization.translate('profile.notificationSettings') ?? 'Notification Prefs',
+                          subtitle: localization.translate('profile.notificationSettingsSubtitle') ?? 'Customize how you receive alerts',
                           onTap: _notificationSettings,
                           color: AppColors.accent,
                         ),

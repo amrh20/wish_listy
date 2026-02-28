@@ -12,6 +12,7 @@ class NotificationPreferenceService {
   factory NotificationPreferenceService() => _instance;
 
   static const String _lastPermissionRequestTimeKey = 'last_permission_request_time';
+  static const String _pushNotificationsEnabledKey = 'push_notifications_enabled';
   static const Duration _cooldownPeriod = Duration(days: 7);
 
   /// Save the timestamp when user clicks "Maybe later".
@@ -66,6 +67,39 @@ class NotificationPreferenceService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_lastPermissionRequestTimeKey);
+    } catch (e) {
+    }
+  }
+
+  /// Check if user has explicitly disabled push notifications in Profile.
+  /// Returns true if user toggled OFF; false if enabled or no choice yet.
+  Future<bool> hasUserDisabledPushNotifications() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final value = prefs.getString(_pushNotificationsEnabledKey);
+      return value == 'false';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Get user's push notification preference. null = no explicit choice yet.
+  Future<bool?> getPushNotificationsEnabled() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final value = prefs.getString(_pushNotificationsEnabledKey);
+      if (value == null) return null;
+      return value == 'true';
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Save user's push notification preference (from Profile toggle).
+  Future<void> setPushNotificationsEnabled(bool enabled) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_pushNotificationsEnabledKey, enabled ? 'true' : 'false');
     } catch (e) {
     }
   }

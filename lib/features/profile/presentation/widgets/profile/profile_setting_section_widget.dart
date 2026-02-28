@@ -70,6 +70,9 @@ class ProfileSettingSectionWidget extends StatelessWidget {
               onTap: item.onTap,
               color: item.color,
               showDivider: !isLast && item.showDivider,
+              isSwitch: item.isSwitch,
+              switchValue: item.switchValue,
+              onSwitchChanged: item.onSwitchChanged,
             );
           }).toList(),
         ],
@@ -81,16 +84,19 @@ class ProfileSettingSectionWidget extends StatelessWidget {
     required IconData icon,
     required String title,
     required String subtitle,
-    required VoidCallback onTap,
+    VoidCallback? onTap,
     required Color color,
     bool showDivider = true,
+    bool isSwitch = false,
+    bool switchValue = false,
+    ValueChanged<bool>? onSwitchChanged,
   }) {
     return Column(
       children: [
         Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: onTap,
+            onTap: isSwitch ? null : onTap,
             borderRadius: BorderRadius.circular(12),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 0),
@@ -128,11 +134,21 @@ class ProfileSettingSectionWidget extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Icon(
-                    Icons.chevron_right,
-                    color: AppColors.textTertiary,
-                    size: 22,
-                  ),
+                  if (isSwitch)
+                    Switch.adaptive(
+                      value: switchValue,
+                      onChanged: onSwitchChanged,
+                      activeTrackColor: AppColors.primary.withValues(alpha: 0.5),
+                      activeThumbColor: AppColors.primary,
+                      inactiveThumbColor: AppColors.textTertiary,
+                      inactiveTrackColor: AppColors.border,
+                    )
+                  else
+                    Icon(
+                      Icons.chevron_right,
+                      color: AppColors.textTertiary,
+                      size: 22,
+                    ),
                 ],
               ),
             ),
@@ -156,17 +172,23 @@ class ProfileSettingItem {
   final IconData icon;
   final String title;
   final String subtitle;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Color color;
   final bool showDivider;
+  final bool isSwitch;
+  final bool switchValue;
+  final ValueChanged<bool>? onSwitchChanged;
 
   const ProfileSettingItem({
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.onTap,
+    this.onTap,
     required this.color,
     this.showDivider = true,
+    this.isSwitch = false,
+    this.switchValue = false,
+    this.onSwitchChanged,
   });
 }
 

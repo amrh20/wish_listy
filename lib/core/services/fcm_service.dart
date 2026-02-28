@@ -151,7 +151,16 @@ class FcmService {
   /// after onboarding or login).
   ///
   /// Implements a 7-day cooldown period after "Maybe later" is clicked.
+  /// Respects user's explicit choice from Profile: if they disabled
+  /// push notifications there, we never show the dialog.
   Future<void> ensurePermissionRequested(BuildContext context) async {
+    // User explicitly disabled push notifications in Profile - don't ask
+    final preferenceService = NotificationPreferenceService();
+    final userDisabled = await preferenceService.hasUserDisabledPushNotifications();
+    if (userDisabled) {
+      return;
+    }
+
     // Avoid spamming the user with the dialog in a single app session.
     if (_permissionDialogShownInSession) {
       return;
@@ -167,7 +176,6 @@ class FcmService {
     }
 
     // Check cooldown period (7 days since last "Maybe later")
-    final preferenceService = NotificationPreferenceService();
     final shouldShow = await preferenceService.shouldShowPermissionDialog();
     if (!shouldShow) {
       return;
@@ -195,14 +203,41 @@ class FcmService {
         provisional: false,
       );
       
-      // If permission was granted, clear the cooldown timestamp
-      // so we don't show the dialog again
+      // If permission was granted, save preference and clear cooldown
       if (result.authorizationStatus == AuthorizationStatus.authorized ||
           result.authorizationStatus == AuthorizationStatus.provisional) {
+        await preferenceService.setPushNotificationsEnabled(true);
         await preferenceService.clearLastPermissionRequestTime();
       }
     } catch (e) {
     }
+  }
+
+  /// Request notification permission directly (e.g. when user toggles ON in Profile).
+  /// Returns true if permission was granted.
+  Future<bool> requestPermissionDirectly() async {
+    try {
+      final result = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+      final granted = result.authorizationStatus == AuthorizationStatus.authorized ||
+          result.authorizationStatus == AuthorizationStatus.provisional;
+      if (granted) {
+        await NotificationPreferenceService().clearLastPermissionRequestTime();
+      }
+      return granted;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Get current notification authorization status.
+  Future<AuthorizationStatus> getAuthorizationStatus() async {
+    final settings = await _messaging.getNotificationSettings();
+    return settings.authorizationStatus;
   }
 
   void _handleNotificationTap(
