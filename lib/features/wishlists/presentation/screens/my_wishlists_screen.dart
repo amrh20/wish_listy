@@ -20,7 +20,9 @@ import 'package:wish_listy/core/widgets/custom_button.dart';
 import '../widgets/index.dart';
 
 class MyWishlistsScreen extends StatefulWidget {
-  const MyWishlistsScreen({super.key});
+  final void Function(bool isEmpty)? onEmptyStateChanged;
+
+  const MyWishlistsScreen({super.key, this.onEmptyStateChanged});
 
   @override
   MyWishlistsScreenState createState() => MyWishlistsScreenState();
@@ -55,6 +57,7 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
 
   final WishlistRepository _wishlistRepository = WishlistRepository();
   bool _hasLoadedOnce = false;
+  bool? _lastReportedEmpty;
 
   @override
   void initState() {
@@ -142,6 +145,27 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
     super.build(context); // Keep alive
     return Consumer2<LocalizationService, AuthRepository>(
       builder: (context, localization, authService, child) {
+        // Only report empty state when loading is complete (avoid FAB showing during skeleton)
+        if (widget.onEmptyStateChanged != null) {
+          final isLoading = authService.isGuest
+              ? _isLoading
+              : _mainTabController.index == 0
+                  ? _isLoading
+                  : _isLoadingReservations;
+          if (!isLoading) {
+            final isEmpty = authService.isGuest
+                ? _personalWishlists.isEmpty
+                : _mainTabController.index == 0
+                    ? _personalWishlists.isEmpty
+                    : _myReservations.isEmpty;
+            if (_lastReportedEmpty != isEmpty) {
+              _lastReportedEmpty = isEmpty;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) widget.onEmptyStateChanged?.call(isEmpty);
+              });
+            }
+          }
+        }
         // For guest users - show full interface with local data
         // For authenticated users - show full interface with API data
         return Scaffold(
@@ -162,21 +186,6 @@ class MyWishlistsScreenState extends State<MyWishlistsScreen>
                     onSearchChanged: (query) {
                       _onSearchChanged(query);
                     },
-                    actions: [
-                      HeaderAction(
-                        icon: Icons.add_rounded,
-                        iconColor: AppColors.primary, // Purple background
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            AppRoutes.createWishlist,
-                            arguments: {
-                              'previousRoute': AppRoutes.myWishlists,
-                            },
-                          );
-                        },
-                      ),
-                    ],
                     // Hide tabs completely for guest users
                     tabs: authService.isGuest
                         ? null

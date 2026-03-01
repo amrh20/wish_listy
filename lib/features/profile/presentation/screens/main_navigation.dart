@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
+import 'package:wish_listy/core/widgets/overflow_safe_speed_dial.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/widgets/top_navigation.dart';
@@ -57,6 +58,8 @@ class _MainNavigationState extends State<MainNavigation>
   /// When user opened Friends tab from another tab (e.g. "Browse Friends" from Wishlists),
   /// back button should return to this tab index instead of exiting the app.
   int? _returnToTabOnBack;
+  /// Tracks empty state per tab (1=Wishlists, 2=Events, 3=Friends) to hide FAB and avoid conflict with empty-state add buttons.
+  final Map<int, bool> _emptyStateByTab = {};
   late AnimationController _fabAnimationController;
   final PageStorageBucket _pageStorageBucket = PageStorageBucket();
   final GlobalKey<MyWishlistsScreenState> _wishlistsKey = GlobalKey();
@@ -273,22 +276,30 @@ class _MainNavigationState extends State<MainNavigation>
     }
   }
 
+  void _onTabEmptyStateChanged(int tabIndex, bool isEmpty) {
+    if (_emptyStateByTab[tabIndex] != isEmpty) {
+      setState(() {
+        _emptyStateByTab[tabIndex] = isEmpty;
+      });
+    }
+  }
+
   List<Widget> get _screens => [
     KeyedSubtree(
       key: const PageStorageKey('tab_home'),
-      child: HomeScreen(key: _homeKey),
+      child: HomeScreen(key: _homeKey, onEmptyStateChanged: (v) => _onTabEmptyStateChanged(0, v)),
     ),
     KeyedSubtree(
       key: const PageStorageKey('tab_wishlists'),
-      child: MyWishlistsScreen(key: _wishlistsKey),
+      child: MyWishlistsScreen(key: _wishlistsKey, onEmptyStateChanged: (v) => _onTabEmptyStateChanged(1, v)),
     ),
     KeyedSubtree(
       key: const PageStorageKey('tab_events'),
-      child: EventsScreen(key: _eventsKey),
+      child: EventsScreen(key: _eventsKey, onEmptyStateChanged: (v) => _onTabEmptyStateChanged(2, v)),
     ),
     KeyedSubtree(
       key: const PageStorageKey('tab_friends'),
-      child: FriendsScreen(key: _friendsKey),
+      child: FriendsScreen(key: _friendsKey, onEmptyStateChanged: (v) => _onTabEmptyStateChanged(3, v)),
     ),
     KeyedSubtree(
       key: const PageStorageKey('tab_profile'),
@@ -336,6 +347,140 @@ class _MainNavigationState extends State<MainNavigation>
         _profileKey.currentState?.refreshProfile();
         break;
     }
+  }
+
+  Widget _buildSpeedDialChildRow(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color primaryColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: primaryColor, size: 22),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              label,
+              style: AppStyles.bodyMedium.copyWith(
+                color: Colors.grey[800],
+                fontWeight: FontWeight.w600,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget? _buildFloatingActionButton(BuildContext context) {
+    // Home tab: Speed Dial with 3 actions (spread animation)
+    if (_currentIndex == 0) {
+      final localization = Provider.of<LocalizationService>(context, listen: false);
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      if (authService.isGuest) return null;
+      // Hide Speed Dial in empty state to avoid conflict with "Create your first list" button
+      if (_emptyStateByTab[0] != false) return null;
+
+      final isRTL = localization.isRTL;
+      final primaryColor = Theme.of(context).colorScheme.primary;
+
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 1),
+        child: OverflowSafeSpeedDial(
+          icon: Icons.add,
+          activeIcon: Icons.close,
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
+          isRTL: isRTL,
+          children: [
+            OverflowSafeSpeedDialChild(
+              child: _buildSpeedDialChildRow(
+                context,
+                icon: Icons.card_giftcard,
+                label: localization.translate('home.createWishlist') ?? 'Create Wishlist',
+                primaryColor: primaryColor,
+              ),
+              backgroundColor: Colors.white,
+              foregroundColor: primaryColor,
+              onTap: () => Navigator.pushNamed(
+                context,
+                AppRoutes.createWishlist,
+                arguments: {'previousRoute': AppRoutes.myWishlists},
+              ),
+            ),
+            OverflowSafeSpeedDialChild(
+              child: _buildSpeedDialChildRow(
+                context,
+                icon: Icons.event,
+                label: localization.translate('home.createEvent') ?? 'Create Event',
+                primaryColor: primaryColor,
+              ),
+              backgroundColor: Colors.white,
+              foregroundColor: primaryColor,
+              onTap: () async {
+                await Navigator.pushNamed(context, AppRoutes.createEvent);
+                if (mounted) _eventsKey.currentState?.refreshEvents();
+              },
+            ),
+            OverflowSafeSpeedDialChild(
+              child: _buildSpeedDialChildRow(
+                context,
+                icon: Icons.person_add,
+                label: localization.translate('home.addFriend') ?? 'Add Friend',
+                primaryColor: primaryColor,
+              ),
+              backgroundColor: Colors.white,
+              foregroundColor: primaryColor,
+              onTap: () => Navigator.pushNamed(context, AppRoutes.addFriend),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Wishlists / Events / Friends tabs: simple FAB
+    if (_currentIndex != 1 && _currentIndex != 2 && _currentIndex != 3) {
+      return null;
+    }
+    // Hide FAB until we know tab has data (avoid flicker: show then hide on empty)
+    if (_emptyStateByTab[_currentIndex] != false) {
+      return null;
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 1),
+      child: FloatingActionButton(
+        elevation: 0,
+        highlightElevation: 0,
+        onPressed: () async {
+          switch (_currentIndex) {
+            case 1:
+              Navigator.pushNamed(
+                context,
+                AppRoutes.createWishlist,
+                arguments: {'previousRoute': AppRoutes.myWishlists},
+              );
+              break;
+            case 2:
+              await Navigator.pushNamed(context, AppRoutes.createEvent);
+              if (mounted) _eventsKey.currentState?.refreshEvents();
+              break;
+            case 3:
+              Navigator.pushNamed(context, AppRoutes.addFriend);
+              break;
+            default:
+              break;
+          }
+        },
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+    );
   }
 
   @override
@@ -386,6 +531,10 @@ class _MainNavigationState extends State<MainNavigation>
                     bucket: _pageStorageBucket,
                     child: IndexedStack(index: _currentIndex, children: _screens),
                   ),
+                  floatingActionButton: isOffline
+                      ? null
+                      : _buildFloatingActionButton(context),
+                  floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
                   bottomNavigationBar: isOffline
                       ? null
                       : Container(

@@ -712,6 +712,33 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
     final isGuest = authService.isGuest;
 
     return Scaffold(
+      floatingActionButton: (widget.isFriendWishlist || _items.isEmpty)
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: FloatingActionButton(
+                elevation: 0,
+                highlightElevation: 0,
+                onPressed: () async {
+                  await Navigator.pushNamed(
+                    context,
+                    AppRoutes.addItem,
+                    arguments: {
+                      'wishlistId': widget.wishlistId,
+                      'wishlistName': _wishlistName.isNotEmpty
+                          ? _wishlistName
+                          : widget.wishlistName,
+                    },
+                  );
+                  if (!mounted) return;
+                  _loadWishlistDetails();
+                },
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                shape: const CircleBorder(),
+                child: const Icon(Icons.add, color: Colors.white),
+              ),
+            ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: DecorativeBackground(
         showGifts: true,
         child: Stack(
@@ -741,20 +768,6 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                           isFriendWishlist: widget.isFriendWishlist,
                           onBack: () => Navigator.pop(context),
                           onShare: _shareWishlist,
-                          onAddItem: () async {
-                            await Navigator.pushNamed(
-                              context,
-                              AppRoutes.addItem,
-                              arguments: {
-                                'wishlistId': widget.wishlistId,
-                                'wishlistName': _wishlistName.isNotEmpty
-                                    ? _wishlistName
-                                    : widget.wishlistName,
-                              },
-                            );
-                            if (!mounted) return;
-                            _loadWishlistDetails();
-                          },
                           onEdit: _editWishlist,
                           onDelete: _confirmAndDeleteWishlist,
                           localization: localization,

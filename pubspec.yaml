@@ -98,6 +98,7 @@ dependencies:
 
   # OTP Input widget
   pinput: ^3.0.0
+
   package_info_plus: ^9.0.0
 
   # Semantic version comparison for Force Update

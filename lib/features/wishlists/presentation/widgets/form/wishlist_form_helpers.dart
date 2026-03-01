@@ -41,7 +41,7 @@ class WishlistFormHelpers {
       case 'public':
         return localization.translate('events.publicDescription');
       case 'private':
-        return localization.translate('events.privateDescription');
+        return localization.translate('events.privateWishlistDescription');
       case 'friends':
         return localization.translate('events.friendsOnlyDescription');
       default:

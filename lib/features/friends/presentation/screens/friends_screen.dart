@@ -21,8 +21,9 @@ import 'package:wish_listy/features/notifications/presentation/cubit/notificatio
 
 class FriendsScreen extends StatefulWidget {
   final int? initialTabIndex;
-  
-  const FriendsScreen({super.key, this.initialTabIndex});
+  final void Function(bool isEmpty)? onEmptyStateChanged;
+
+  const FriendsScreen({super.key, this.initialTabIndex, this.onEmptyStateChanged});
 
   @override
   FriendsScreenState createState() => FriendsScreenState();
@@ -65,6 +66,7 @@ class FriendsScreenState extends State<FriendsScreen>
 
   // Tracks which request IDs are currently being processed (accept/decline)
   final Set<String> _processingRequestIds = {};
+  bool? _lastReportedEmpty;
 
   @override
   void initState() {
@@ -147,6 +149,23 @@ class FriendsScreenState extends State<FriendsScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context); // Keep alive
+    // Only report empty state when loading is complete (avoid FAB showing during skeleton)
+    if (widget.onEmptyStateChanged != null) {
+      final isLoading = _tabController.index == 0
+          ? _isLoadingFriends
+          : _isLoadingRequests;
+      if (!isLoading) {
+        final isEmpty = _tabController.index == 0
+            ? _friends.isEmpty
+            : _friendRequests.isEmpty;
+        if (_lastReportedEmpty != isEmpty) {
+          _lastReportedEmpty = isEmpty;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) widget.onEmptyStateChanged?.call(isEmpty);
+          });
+        }
+      }
+    }
     return Consumer<LocalizationService>(
       builder: (context, localization, child) {
         return Scaffold(
@@ -158,25 +177,12 @@ class FriendsScreenState extends State<FriendsScreen>
                   // Unified Page Header with Integrated Tabs
                   UnifiedPageHeader(
                     title: localization.translate('ui.friends'),
-
                     showSearch: true,
                     searchHint: localization.translate('ui.searchFriends'),
                     searchController: _searchController,
                     onSearchChanged: (query) {
                       _onSearchChanged();
                     },
-                    actions: [
-                      HeaderAction(
-                        icon: Icons.add_rounded,
-                        iconColor: AppColors.primary,
-                        onTap: () {
-                          Navigator.pushNamed(
-                            context,
-                            AppRoutes.addFriend,
-                          );
-                        },
-                      ),
-                    ],
                     tabs: [
                       UnifiedTab(
                         label: localization.translate('ui.myFriends'),
@@ -800,11 +806,7 @@ class FriendsScreenState extends State<FriendsScreen>
                                     AppRoutes.addFriend,
                                   );
                                 },
-                                variant: ButtonVariant.gradient,
-                                gradientColors: [
-                                  AppColors.secondary,
-                                  AppColors.primary,
-                                ],
+                                variant: ButtonVariant.primary,
                               ),
                             ],
                           ],

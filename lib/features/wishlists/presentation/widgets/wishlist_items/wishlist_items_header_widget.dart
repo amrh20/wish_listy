@@ -9,10 +9,11 @@ class WishlistItemsHeaderWidget extends StatelessWidget {
   final bool isFriendWishlist;
   final VoidCallback onBack;
   final VoidCallback onShare;
-  final VoidCallback onAddItem;
+  final VoidCallback? onAddItem;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final LocalizationService localization;
+  final bool showAddButton;
 
   const WishlistItemsHeaderWidget({
     super.key,
@@ -21,10 +22,11 @@ class WishlistItemsHeaderWidget extends StatelessWidget {
     required this.isFriendWishlist,
     required this.onBack,
     required this.onShare,
-    required this.onAddItem,
+    this.onAddItem,
     required this.onEdit,
     required this.onDelete,
     required this.localization,
+    this.showAddButton = false,
   });
 
   @override
@@ -51,7 +53,7 @@ class WishlistItemsHeaderWidget extends StatelessWidget {
                 onPressed: onShare,
                 icon: Icon(Icons.share, color: AppColors.primary),
               ),
-            if (!isFriendWishlist)
+            if (showAddButton && !isFriendWishlist && onAddItem != null)
               IconButton(
                 onPressed: onAddItem,
                 icon: Container(

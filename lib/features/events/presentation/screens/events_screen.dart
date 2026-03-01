@@ -22,7 +22,9 @@ import '../widgets/empty_states.dart';
 import '../widgets/event_modals.dart';
 
 class EventsScreen extends StatefulWidget {
-  const EventsScreen({super.key});
+  final void Function(bool isEmpty)? onEmptyStateChanged;
+
+  const EventsScreen({super.key, this.onEmptyStateChanged});
 
   @override
   EventsScreenState createState() => EventsScreenState();
@@ -63,6 +65,7 @@ class EventsScreenState extends State<EventsScreen>
   final EventRepository _eventRepository = EventRepository();
 
   bool _hasLoadedOnce = false;
+  bool? _lastReportedEmpty;
 
   @override
   void initState() {
@@ -505,6 +508,18 @@ class EventsScreenState extends State<EventsScreen>
           );
         }
 
+        // Only report empty state when loading is complete (avoid FAB showing during skeleton)
+        if (widget.onEmptyStateChanged != null && !_isLoading) {
+          final isEmpty = _tabController.index == 0
+              ? _myEvents.isEmpty
+              : _invitedEvents.isEmpty;
+          if (_lastReportedEmpty != isEmpty) {
+            _lastReportedEmpty = isEmpty;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) widget.onEmptyStateChanged?.call(isEmpty);
+            });
+          }
+        }
         // For authenticated users - show full interface
         return Scaffold(
           body: UnifiedPageBackground(
@@ -521,25 +536,6 @@ class EventsScreenState extends State<EventsScreen>
                     onSearchChanged: (query) {
                       // Search is handled by listener
                     },
-                    actions: [
-                      HeaderAction(
-                        icon: Icons.add_rounded,
-                        iconColor: AppColors.primary,
-                        onTap: () async {
-                          // Navigate to create event
-                          await Navigator.pushNamed(
-                            context,
-                            AppRoutes.createEvent,
-                          );
-                          // Refresh events list when returning from create event
-                          // This handles the case where user creates event and navigates to details,
-                          // then comes back to events list
-                          if (mounted) {
-                            _loadEvents();
-                          }
-                        },
-                      ),
-                    ],
                     tabs: [
                       UnifiedTab(
                         label: localization.translate('events.myEvents'),

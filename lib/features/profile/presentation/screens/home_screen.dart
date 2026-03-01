@@ -33,8 +33,9 @@ import 'package:wish_listy/features/friends/data/models/suggestion_user_model.da
 
 class HomeScreen extends StatefulWidget {
   final GlobalKey<HomeScreenState>? key;
+  final void Function(bool isEmpty)? onEmptyStateChanged;
 
-  const HomeScreen({this.key}) : super(key: key);
+  const HomeScreen({this.key, this.onEmptyStateChanged}) : super(key: key);
 
   @override
   HomeScreenState createState() => HomeScreenState();
@@ -43,8 +44,10 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
   late HomeController _controller;
   bool _isNotificationDropdownOpen = false;
+  bool? _lastReportedEmpty;
   DateTime? _lastNotificationTapTime;
   List<SuggestionUser>? _homeSuggestions; // null = not loaded yet
+  bool? _hasFriends; // null = loading, true = has friends, false = no friends
 
   @override
   bool get wantKeepAlive => true;
@@ -55,6 +58,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
     _controller = HomeController();
     _controller.fetchDashboardData();
     _loadHomeSuggestions();
+    _loadHasFriends();
     // Load unread count from NotificationsCubit when app starts
     // This ensures we use the correct API that respects lastBadgeSeenAt
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -97,6 +101,24 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
     }
   }
 
+  /// Check if user has any friends (for plus button visibility: hide only when no friends, no events, no wishlists)
+  Future<void> _loadHasFriends() async {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest) {
+      setState(() => _hasFriends = false);
+      return;
+    }
+    try {
+      final response = await FriendsRepository().getFriends(page: 1, limit: 1);
+      if (!mounted) return;
+      final total = response['total'] as int? ?? 0;
+      setState(() => _hasFriends = total > 0);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _hasFriends = false);
+    }
+  }
+
   /// Public method to refresh home dashboard from outside (e.g., MainNavigation tab switch)
   Future<void> refreshHome() async {
     // Background refresh: keep existing UI (no skeleton) when data already exists.
@@ -110,6 +132,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
     await Future.wait([
       _controller.refresh(),
       _loadHomeSuggestions(),
+      _loadHasFriends(),
     ]);
     // Also refresh pending reservations section if it is mounted
     try {
@@ -626,7 +649,22 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
               showCircles: true,
               child: Consumer<HomeController>(
                   builder: (context, controller, child) {
-                    final isEmpty = controller.isNewUser;
+                    // Empty = no wishlists AND no events AND no friends (hide plus button only in that case)
+                    final hasWishlists = (controller.myWishlists).isNotEmpty;
+                    final hasOccasions = (controller.upcomingOccasions).isNotEmpty;
+                    final hasFriends = _hasFriends ?? false;
+                    final isEmpty =
+                        !hasWishlists && !hasOccasions && !hasFriends;
+
+                    // Report empty state for FAB visibility (hide Speed Dial only when truly empty)
+                    if (widget.onEmptyStateChanged != null && !controller.isLoading) {
+                      if (_lastReportedEmpty != isEmpty) {
+                        _lastReportedEmpty = isEmpty;
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) widget.onEmptyStateChanged?.call(isEmpty);
+                        });
+                      }
+                    }
 
                     // Offline / failed-load state:
                     // If the API failed and we have no cached dashboard data, show a full-page error UI
@@ -647,10 +685,8 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                       );
                     }
 
-                    // Determine layout state
-                    final hasWishlists = (controller.myWishlists ?? []).isNotEmpty;
+                    // Determine layout state (reuse hasWishlists and hasOccasions from above)
                     final hasActivities = (controller.latestActivityPreview ?? []).isNotEmpty;
-                    final hasOccasions = (controller.upcomingOccasions ?? []).isNotEmpty;
                     final hasSuggestions = (_homeSuggestions?.isNotEmpty ?? false);
 
                     // "Truly empty" = no lists, no occasions, no activity, and no suggestions.
@@ -796,7 +832,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
         children: [
           // 1. Compact Empty Wishlist Card (Because user has no wishlists)
           const CompactEmptyWishlistCard(),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           
           // 2. Pending Reservations (Gifts reserved for friends)
           // This widget handles its own empty state internally (returns SizedBox.shrink if empty).

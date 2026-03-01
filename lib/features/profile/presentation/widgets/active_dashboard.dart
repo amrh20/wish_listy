@@ -40,7 +40,7 @@ class ActiveDashboard extends StatelessWidget {
       children: [
         // Section 1: My Wishlists (moved to top, always visible)
         MyWishlistsSection(wishlists: wishlists),
-        const SizedBox(height: 24),
+        const SizedBox(height: 16),
         // Section 1.5: Pending Reservations (horizontal)
         const PendingReservationsSection(),
         const SizedBox(height: 24),
@@ -493,67 +493,108 @@ class MyWishlistsSection extends StatelessWidget {
     );
   }
 
-  /// Empty state placeholder card
+  /// Empty state placeholder card: margin 16, app icon + title/subtitle, compact button
   Widget _buildEmptyState(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: Colors.grey.shade200,
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Text(
-              Provider.of<LocalizationService>(context, listen: false).translate('details.youDontHaveWishlistYet'),
-              style: AppStyles.bodyMedium.copyWith(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Material(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(12),
-              child: InkWell(
-                onTap: () {
-                  Navigator.pushNamed(
-                    context,
-                    AppRoutes.createWishlist,
-                    arguments: {
-                      'previousRoute': AppRoutes.mainNavigation,
-                    },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Row: app icon + title + subtitle
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/images/app_logo.png',
+                width: 52,
+                height: 52,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.card_giftcard_rounded,
+                    size: 52,
+                    color: primaryColor,
                   );
                 },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    Provider.of<LocalizationService>(context, listen: false).translate('cards.createWishlist'),
-                    style: AppStyles.bodyMedium.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      localization.translate('cards.noWishlistsYet'),
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.deepPurple[700],
+                      ),
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      localization.translate('cards.emptyWishlistSubtitle'),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.purple[300],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Compact button (wrap content)
+          Material(
+            color: primaryColor,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.createWishlist,
+                  arguments: {
+                    'previousRoute': AppRoutes.mainNavigation,
+                  },
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 10,
+                ),
+                child: Text(
+                  localization.translate('cards.createWishlist'),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

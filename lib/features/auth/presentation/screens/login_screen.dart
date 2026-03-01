@@ -77,18 +77,20 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   /// Called whenever the email/phone field changes
-  /// Checks if biometric is enabled for the specific identifier
+  /// Checks if biometric is enabled for the specific identifier or any account
   void _onIdentifierChanged() {
     final identifier = _usernameController.text.trim();
 
-    // Hide icon if field is empty
+    // Reset attempt flag when field is cleared (allow retry when tapping icon)
     if (identifier.isEmpty) {
-      if (_showBiometricIcon) {
-        setState(() => _showBiometricIcon = false);
-      }
-      // Reset attempt flag when field is cleared
       _hasAttemptedBiometric = false;
       _lastCheckedIdentifier = null;
+      // Still show icon if any account has biometric - check asynchronously
+      if (_isBiometricAvailable) {
+        _checkAnyBiometricEnabled();
+      } else if (_showBiometricIcon) {
+        setState(() => _showBiometricIcon = false);
+      }
       return;
     }
 
@@ -100,6 +102,15 @@ class _LoginScreenState extends State<LoginScreen>
     // Check if biometric is available and enabled for this specific identifier asynchronously
     if (_isBiometricAvailable) {
       _checkBiometricForIdentifier(identifier);
+    }
+  }
+
+  /// Check if ANY account has biometric enabled (for showing icon when field is empty)
+  Future<void> _checkAnyBiometricEnabled() async {
+    final biometricService = BiometricService();
+    final hasAny = await biometricService.hasAnyBiometricEnabled();
+    if (mounted && hasAny != _showBiometricIcon) {
+      setState(() => _showBiometricIcon = hasAny);
     }
   }
 
@@ -204,16 +215,18 @@ class _LoginScreenState extends State<LoginScreen>
     final biometricService = BiometricService();
     final isAvailable = await biometricService.isBiometricAvailable();
 
-    // Debug logs
-
     if (mounted) {
       setState(() {
         _isBiometricAvailable = isAvailable;
       });
 
-      // Trigger initial check for current identifier
-      if (isAvailable && _usernameController.text.trim().isNotEmpty) {
-        _onIdentifierChanged();
+      if (isAvailable) {
+        // Show biometric icon immediately if any account has it enabled
+        _checkAnyBiometricEnabled();
+        // Also check for current identifier if user typed something
+        if (_usernameController.text.trim().isNotEmpty) {
+          _onIdentifierChanged();
+        }
       }
     }
   }
@@ -235,25 +248,28 @@ class _LoginScreenState extends State<LoginScreen>
     if (!mounted) return;
 
     final biometricService = BiometricService();
-    final identifier = _usernameController.text.trim();
+    String? identifier = _usernameController.text.trim();
 
-    // Validate identifier
+    // Priority order for finding identifier (do NOT fill _usernameController for 2,3,4):
+    // 1. Current text in _usernameController
+    // 2. user_email from SharedPreferences
+    // 3. getLastBiometricIdentifier() from secure storage
+    // 4. getFirstIdentifierWithBiometricEnabled() as fallback
     if (identifier.isEmpty) {
-
-      // For auto-trigger, try to get identifier from SharedPreferences
-      if (!isManual) {
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          final savedEmail = prefs.getString('user_email');
-          if (savedEmail != null && savedEmail.isNotEmpty) {
-            _usernameController.text = savedEmail;
-            // Retry with the saved email
-            return _attemptBiometricLogin(isManual: isManual);
-          }
-        } catch (e) {
-        }
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        identifier = prefs.getString('user_email')?.trim();
+      } catch (e) {}
+      if (identifier == null || identifier.isEmpty) {
+        final lastId = await biometricService.getLastBiometricIdentifier();
+        identifier = lastId?.trim();
       }
-      return;
+      if (identifier == null || identifier.isEmpty) {
+        identifier = await biometricService.getFirstIdentifierWithBiometricEnabled();
+      }
+      if (identifier == null || identifier.isEmpty) {
+        return;
+      }
     }
 
     // Check availability and if biometric is enabled for this specific identifier
@@ -339,6 +355,9 @@ class _LoginScreenState extends State<LoginScreen>
           await prefs.setString('user_name', finalUserName);
         }
         await prefs.setString('user_email', finalUserEmail);
+
+        // Update last biometric identifier so next login uses this account
+        await biometricService.setLastBiometricIdentifier(identifier);
 
         // Re-initialize auth repository with saved data
         // This will set the user state correctly

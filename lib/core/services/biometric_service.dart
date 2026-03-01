@@ -39,6 +39,7 @@ class BiometricService {
   static const String _enabledKeyPrefix = 'biometric_enabled_';
   static const String _userIdKeyPrefix = 'biometric_user_id_';
   static const String _userNameKeyPrefix = 'biometric_user_name_';
+  static const String _lastIdentifierKey = 'biometric_last_identifier';
 
   /// Generate storage key for token based on identifier (email or phone)
   String _getTokenKey(String identifier) {
@@ -135,6 +136,47 @@ class BiometricService {
     }
   }
 
+  /// Returns the first identifier that has biometric enabled (from secure storage).
+  /// Used as fallback when no other identifier source is available.
+  /// Returns sanitized identifier (lowercase, normalized).
+  Future<String?> getFirstIdentifierWithBiometricEnabled() async {
+    try {
+      final allKeys = await _secureStorage.readAll();
+      for (final entry in allKeys.entries) {
+        if (entry.key.startsWith(_enabledKeyPrefix) && entry.value == 'true') {
+          return entry.key.substring(_enabledKeyPrefix.length);
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Update the last identifier that had biometric login (original unsanitized).
+  /// Call after every successful biometric login so next time uses this account.
+  Future<void> setLastBiometricIdentifier(String identifier) async {
+    try {
+      if (identifier.trim().isEmpty) return;
+      await _secureStorage.write(
+        key: _lastIdentifierKey,
+        value: identifier.trim(),
+      );
+    } catch (e) {
+    }
+  }
+
+  /// Returns the last identifier that had biometric enabled (original unsanitized).
+  /// Saved when user enables biometric; updated on every successful biometric login.
+  /// NOT cleared on logout. Only cleared when user explicitly disables biometric.
+  Future<String?> getLastBiometricIdentifier() async {
+    try {
+      return await _secureStorage.read(key: _lastIdentifierKey);
+    } catch (e) {
+      return null;
+    }
+  }
+
   /// Check if biometric login is enabled for a specific identifier (email or phone)
   /// This is the main method to use - checks for an exact match
   Future<bool> isEnabledForIdentifier(String identifier) async {
@@ -228,6 +270,10 @@ class BiometricService {
 
       // Save enabled flag
       await _secureStorage.write(key: enabledKey, value: 'true');
+
+      // Save original (unsanitized) identifier for auto-prompt on login screen.
+      // NOT cleared on logout - only when user explicitly disables biometric.
+      await _secureStorage.write(key: _lastIdentifierKey, value: identifier.trim());
 
       // Save user ID if provided
       if (userId != null && userId.isNotEmpty) {
@@ -423,6 +469,12 @@ class BiometricService {
       await _secureStorage.delete(key: enabledKey);
       await _secureStorage.delete(key: userIdKey);
       await _secureStorage.delete(key: userNameKey);
+
+      // Only delete last identifier if it matches (user explicitly disabled this account)
+      final lastId = await _secureStorage.read(key: _lastIdentifierKey);
+      if (lastId != null && _sanitizeIdentifier(lastId) == _sanitizeIdentifier(identifier)) {
+        await _secureStorage.delete(key: _lastIdentifierKey);
+      }
     } catch (e) {
     }
   }
@@ -437,15 +489,25 @@ class BiometricService {
                  key.startsWith(_refreshTokenKeyPrefix) ||
                  key.startsWith(_enabledKeyPrefix) ||
                  key.startsWith(_userIdKeyPrefix) ||
-                 key.startsWith(_userNameKeyPrefix),
+                 key.startsWith(_userNameKeyPrefix) ||
+                 key == _lastIdentifierKey,
       ).toList();
-      
-      
+
       for (final key in biometricKeys) {
         await _secureStorage.delete(key: key);
       }
-      
     } catch (e) {
+    }
+  }
+
+  /// Returns true if ANY account has biometric enabled on this device
+  Future<bool> hasAnyBiometricEnabled() async {
+    try {
+      final allKeys = await _secureStorage.readAll();
+      return allKeys.entries
+          .any((e) => e.key.startsWith(_enabledKeyPrefix) && e.value == 'true');
+    } catch (e) {
+      return false;
     }
   }
 

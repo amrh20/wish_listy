@@ -8,14 +8,15 @@ import 'package:wish_listy/features/profile/data/models/activity_model.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/activity_card.dart';
 
 /// Compact Empty Wishlist Card - Used when wishlists are empty but activities exist
-/// Shows a smaller version of the empty state to make room for the activity feed
+/// Redesigned: gradient background, icon, minimal text, and CTA button
 class CompactEmptyWishlistCard extends StatelessWidget {
   const CompactEmptyWishlistCard({super.key});
 
   @override
   Widget build(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context, listen: false);
-    
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -32,64 +33,78 @@ class CompactEmptyWishlistCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        // Compact Empty State Card
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.grey.shade200,
-                width: 1,
+        // Empty State Card: white bg, app icon + title/subtitle, compact button
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // Small illustration/icon
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Row: app icon + title + subtitle
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/images/app_logo.png',
+                    width: 52,
+                    height: 52,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        Icons.card_giftcard_rounded,
+                        size: 52,
+                        color: primaryColor,
+                      );
+                    },
                   ),
-                  child: Icon(
-                    Icons.card_giftcard_rounded,
-                    color: AppColors.primary,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Text
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        localization.translate('details.youDontHaveWishlistYet'),
-                        style: AppStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                          fontFamily: 'Alexandria',
-                          fontSize: 13,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          localization.translate('cards.noWishlistsYet'),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.deepPurple[700],
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          localization.translate('cards.emptyWishlistSubtitle'),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.purple[300],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // Compact CTA Button
-                TextButton(
-                  onPressed: () {
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Compact button (wrap content)
+              Material(
+                color: primaryColor,
+                borderRadius: BorderRadius.circular(12),
+                child: InkWell(
+                  onTap: () {
                     Navigator.pushNamed(
                       context,
                       AppRoutes.createWishlist,
@@ -98,27 +113,24 @@ class CompactEmptyWishlistCard extends StatelessWidget {
                       },
                     );
                   },
-                  style: TextButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 10,
                     ),
-                  ),
-                  child: Text(
-                    localization.translate('cards.createWishlist'),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      fontFamily: 'Alexandria',
+                    child: Text(
+                      localization.translate('cards.createWishlist'),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],

@@ -127,7 +127,10 @@ class CustomBottomNavigation extends StatelessWidget {
             ),
             child: Padding(
               padding: gnavPadding,
-              child: GNav(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: GNav(
                 gap: gap,
                 color: AppColors.textTertiary, // Inactive icon/text color
                 activeColor:
@@ -145,6 +148,10 @@ class CustomBottomNavigation extends StatelessWidget {
                       ? 8
                       : (isSmallWidth ? 9 : 10),
                 ),
+                tabMargin: EdgeInsets.symmetric(
+                  horizontal: isVerySmallWidth ? 6 : (isSmallWidth ? 8 : 10),
+                ),
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 duration: const Duration(milliseconds: 300),
                 tabBackgroundColor: (tabs[gNavIndex]['color'] as Color)
                     .withOpacity(0.15),
@@ -167,6 +174,7 @@ class CustomBottomNavigation extends StatelessWidget {
               ),
             ),
           ),
+        ),
         );
       },
     );
