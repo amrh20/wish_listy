@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
 import 'package:wish_listy/core/services/api_service.dart';
@@ -299,6 +300,11 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       }
     }
 
+    // Special design for item_not_received (show avatar + name before message)
+    if (_isItemNotReceived(notification)) {
+      return _buildItemNotReceivedCard(notification);
+    }
+
     // Default design for other notification types
     return Builder(
       builder: (context) {
@@ -411,6 +417,136 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           ),
         );
       },
+    );
+  }
+
+  /// Check if notification is item_not_received type
+  bool _isItemNotReceived(AppNotification notification) =>
+      notification.type == NotificationType.itemPurchased &&
+      (notification.data?['type']?.toString().toLowerCase() == 'item_not_received' ||
+          notification.data?['notificationType']?.toString().toLowerCase() == 'item_not_received');
+
+  /// Build specialized item_not_received card (avatar + name before message)
+  Widget _buildItemNotReceivedCard(AppNotification notification) {
+    String? ownerName;
+    String? ownerImage;
+
+    if (notification.data?['relatedUser'] != null &&
+        notification.data!['relatedUser'] is Map<String, dynamic>) {
+      final relatedUser = notification.data!['relatedUser'] as Map<String, dynamic>;
+      ownerName = relatedUser['fullName']?.toString();
+      ownerImage = relatedUser['profileImage']?.toString();
+    }
+    ownerName ??= notification.data?['senderName']?.toString();
+    ownerImage ??= notification.data?['senderImage']?.toString();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: notification.isRead
+              ? Colors.transparent
+              : AppColors.info.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.textTertiary.withOpacity(0.1),
+            offset: const Offset(0, 2),
+            blurRadius: 8,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            context.read<NotificationsCubit>().handleNotificationTap(notification, context);
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  backgroundImage: ownerImage != null && ownerImage.isNotEmpty
+                      ? CachedNetworkImageProvider(ownerImage)
+                      : null,
+                  child: ownerImage == null || ownerImage.isEmpty
+                      ? Text(
+                          (ownerName ?? '?').isNotEmpty
+                              ? (ownerName!.trim().isNotEmpty ? ownerName!.trim()[0].toUpperCase() : '?')
+                              : '?',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: RichText(
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              text: TextSpan(
+                                style: AppStyles.bodyMedium.copyWith(
+                                  color: AppColors.textSecondary,
+                                  height: 1.4,
+                                ),
+                                children: [
+                                  if (ownerName != null && ownerName.isNotEmpty)
+                                    TextSpan(
+                                      text: '$ownerName ',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  TextSpan(text: notification.message),
+                                ],
+                              ),
+                            ),
+                          ),
+                          if (!notification.isRead)
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: const BoxDecoration(
+                                color: AppColors.info,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        notification.timeAgo,
+                        style: AppStyles.caption.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

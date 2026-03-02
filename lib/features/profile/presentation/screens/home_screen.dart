@@ -46,6 +46,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
   bool _isNotificationDropdownOpen = false;
   bool? _lastReportedEmpty;
   DateTime? _lastNotificationTapTime;
+  final GlobalKey _notificationButtonKey = GlobalKey();
   List<SuggestionUser>? _homeSuggestions; // null = not loaded yet
   bool? _hasFriends; // null = loading, true = has friends, false = no friends
 
@@ -338,6 +339,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                                     },
                                     borderRadius: BorderRadius.circular(16),
                                     child: Container(
+                                      key: _notificationButtonKey,
                                       width: 44,
                                       height: 44,
                                       decoration: BoxDecoration(
@@ -906,69 +908,67 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
     }
 
     // Ensure we have fresh notifications data when opening for the first time.
-    // If the cubit hasn't loaded notifications yet, trigger a load so the
-    // dropdown BlocBuilder can update from real API data instead of staying empty.
     final notificationsCubit = context.read<NotificationsCubit>();
     if (notificationsCubit.state is! NotificationsLoaded) {
       notificationsCubit.loadNotifications();
     }
 
-    // Mark as open immediately to prevent multiple opens
     _isNotificationDropdownOpen = true;
 
-    // Show dropdown immediately with current data (no delay)
-    // Load fresh data in the background after opening
-    
-    // Show dropdown menu positioned below the button
-    final RenderBox? button = context.findRenderObject() as RenderBox?;
-    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    
-    if (button != null) {
-      // Position dropdown below the button with small offset
+    // Defer to next frame so layout is complete and we get accurate button position
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        _isNotificationDropdownOpen = false;
+        return;
+      }
+      // Use this.context (State's context) - valid in callbacks; avoid Builder context
+      _showNotificationDropdownImpl(this.context, notifications, unreadCount);
+    });
+  }
+
+  void _showNotificationDropdownImpl(
+    BuildContext context,
+    List<AppNotification> notifications,
+    int unreadCount,
+  ) {
+    const dropdownWidth = 360.0;
+    const horizontalMargin = 16.0;
+
+    // listen: false - we're in a callback (post-frame), not during build
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final isRTL = localization.isRTL;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Use GlobalKey for reliable RenderBox; fallback to root overlay
+    final RenderBox? button = _notificationButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final overlayState = Overlay.of(context, rootOverlay: true);
+    final RenderBox overlay = overlayState.context.findRenderObject() as RenderBox;
+
+    double dropdownLeft;
+    double dropdownTop;
+
+    if (button != null && button.hasSize) {
       final buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
       final buttonSize = button.size;
-      
-      final RelativeRect position = RelativeRect.fromRect(
-        Rect.fromLTWH(
-          buttonPosition.dx,
-          buttonPosition.dy + buttonSize.height + 8,
-          buttonSize.width,
-          0,
-        ),
-        Offset.zero & overlay.size,
-      );
-      
-      final localization = Provider.of<LocalizationService>(context, listen: true);
-      final isRTL = localization.isRTL;
-      final screenWidth = MediaQuery.of(context).size.width;
-      
-      // Calculate dropdown position so it always opens inward and stays fully visible.
-      // We anchor the dropdown's right edge to the button's right edge, then clamp.
-      const dropdownWidth = 360.0;
-      const horizontalMargin = 16.0;
+      dropdownTop = buttonPosition.dy + buttonSize.height + 8;
+      dropdownLeft = buttonPosition.dx + buttonSize.width - dropdownWidth;
+    } else {
+      // Fallback: position below top bar when button position unavailable
+      dropdownTop = 100.0;
+      dropdownLeft = screenWidth - dropdownWidth - horizontalMargin;
+    }
 
-      // Preferred: align dropdown RIGHT with button RIGHT (works well in both LTR/RTL)
-      double dropdownLeft = buttonPosition.dx + buttonSize.width - dropdownWidth;
+    // Clamp within screen bounds
+    final minLeft = horizontalMargin;
+    final maxLeft = screenWidth - dropdownWidth - horizontalMargin;
+    if (dropdownLeft < minLeft) dropdownLeft = minLeft;
+    if (dropdownLeft > maxLeft) dropdownLeft = maxLeft < minLeft ? minLeft : maxLeft;
 
-      // Clamp within screen bounds
-      final minLeft = horizontalMargin;
-      final maxLeft = screenWidth - dropdownWidth - horizontalMargin;
-      if (dropdownLeft < minLeft) dropdownLeft = minLeft;
-      if (dropdownLeft > maxLeft) dropdownLeft = maxLeft < minLeft ? minLeft : maxLeft;
+    // Start loading notifications in background
+    final cubit = context.read<NotificationsCubit>();
+    cubit.loadNotifications().then((_) => cubit.dismissBadge());
 
-      final dropdownTop = buttonPosition.dy + buttonSize.height + 8;
-      
-      // 1. Start loading notifications immediately (non-blocking)
-      // This ensures API is called BEFORE dialog opens
-      final cubit = context.read<NotificationsCubit>();
-      cubit.loadNotifications().then((_) {
-        // Dismiss badge only after successful fetch
-        cubit.dismissBadge();
-      });
-
-      // 2. Open dialog immediately (no await - non-blocking)
-      // The dropdown uses BlocBuilder and will update automatically when data arrives
-      showGeneralDialog(
+    showGeneralDialog(
         context: context,
         barrierDismissible: true,
         barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -1030,7 +1030,6 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
         // Reset flag when dialog is closed
         _isNotificationDropdownOpen = false;
       });
-    }
   }
 }
 

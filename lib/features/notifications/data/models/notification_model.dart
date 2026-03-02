@@ -110,6 +110,8 @@ class AppNotification {
         case 'item_purchased':
         case 'itemreceived':
         case 'item_received':
+        case 'itemnotreceived':
+        case 'item_not_received':
           type = NotificationType.itemPurchased;
           break;
         case 'itemreserved':

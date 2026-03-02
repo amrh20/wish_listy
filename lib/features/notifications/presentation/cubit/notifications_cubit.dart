@@ -679,7 +679,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         // ==========================================
         // GIFTS & WISHLISTS - Navigate to Item Details
         // Types: item_reserved, item_unreserved, item_purchased, item_received,
-        // reservation_reminder, reservation_cancelled, reservation_expired
+        // item_not_received, reservation_reminder, reservation_cancelled, reservation_expired
         // ==========================================
         case NotificationType.itemReserved:
         case NotificationType.itemUnreserved:
@@ -689,7 +689,21 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         case NotificationType.reservationCancelled:
           final itemId = extractItemId();
           final wishlistId = extractWishlistId();
-          
+
+          // item_not_received: always navigate to wishlist details screen
+          final isItemNotReceived = notification.data?['type']?.toString().toLowerCase() == 'item_not_received' ||
+              notification.data?['notificationType']?.toString().toLowerCase() == 'item_not_received';
+          if (isItemNotReceived && wishlistId != null && wishlistId.isNotEmpty) {
+            Navigator.pushNamed(
+              context,
+              AppRoutes.wishlistItems,
+              arguments: {
+                'wishlistId': wishlistId,
+                'wishlistName': notification.title,
+              },
+            );
+            break;
+          }
           
           // IMPORTANT: Capture navigator BEFORE any async operations
           // The context may become invalid after the dropdown is closed

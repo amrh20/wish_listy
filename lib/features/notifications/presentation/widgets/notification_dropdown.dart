@@ -517,6 +517,11 @@ class _NotificationItem extends StatelessWidget {
     this.onDecline,
   });
 
+  bool get _isItemNotReceived =>
+      notification.type == NotificationType.itemPurchased &&
+      (notification.data?['type']?.toString().toLowerCase() == 'item_not_received' ||
+          notification.data?['notificationType']?.toString().toLowerCase() == 'item_not_received');
+
   @override
   Widget build(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context, listen: false);
@@ -530,7 +535,8 @@ class _NotificationItem extends StatelessWidget {
                           isFriendRequestAccepted || 
                           isEventResponse ||
                           isEventInvitation ||
-                          notification.type == NotificationType.friendRequestRejected;
+                          notification.type == NotificationType.friendRequestRejected ||
+                          _isItemNotReceived;
     
     // Extract user info from notification data
     final senderName = _extractSenderName();
@@ -717,7 +723,9 @@ class _NotificationItem extends StatelessWidget {
               recognizer: TapGestureRecognizer()
                 ..onTap = () {
                   // Navigate to user profile if available
-                  final userId = notification.data?['senderId'] ?? 
+                  final relatedUser = notification.data?['relatedUser'];
+                  final userId = (relatedUser is Map ? relatedUser['_id'] ?? relatedUser['id'] : null)?.toString() ??
+                                notification.data?['senderId'] ??
                                 notification.data?['sender']?['_id'] ??
                                 notification.data?['fromUser']?['_id'];
                   if (userId != null) {
