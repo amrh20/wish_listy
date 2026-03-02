@@ -75,7 +75,7 @@ class HomeSkeletonView extends StatelessWidget {
           const SizedBox(height: 24),
           // Activity section skeleton
           _buildSectionSkeleton(
-            title: '${Provider.of<LocalizationService>(context, listen: false).translate('activity.happeningNow')} ⚡',
+            title: '${Provider.of<LocalizationService>(context, listen: true).translate('activity.happeningNow')} ⚡',
             child: ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),

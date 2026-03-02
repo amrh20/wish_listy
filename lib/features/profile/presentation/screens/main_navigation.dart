@@ -23,6 +23,7 @@ import 'profile_screen.dart' show ProfileScreen, ProfileScreenState;
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/update_service.dart';
 import 'package:wish_listy/core/services/socket_service.dart';
+import 'package:wish_listy/features/wishlists/presentation/cubit/pending_reservations_cubit.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -287,7 +288,10 @@ class _MainNavigationState extends State<MainNavigation>
   List<Widget> get _screens => [
     KeyedSubtree(
       key: const PageStorageKey('tab_home'),
-      child: HomeScreen(key: _homeKey, onEmptyStateChanged: (v) => _onTabEmptyStateChanged(0, v)),
+      child: BlocProvider(
+        create: (_) => PendingReservationsCubit()..loadPendingReservations(),
+        child: HomeScreen(key: _homeKey, onEmptyStateChanged: (v) => _onTabEmptyStateChanged(0, v)),
+      ),
     ),
     KeyedSubtree(
       key: const PageStorageKey('tab_wishlists'),
@@ -380,7 +384,7 @@ class _MainNavigationState extends State<MainNavigation>
   Widget? _buildFloatingActionButton(BuildContext context) {
     // Home tab: Speed Dial with 3 actions (spread animation)
     if (_currentIndex == 0) {
-      final localization = Provider.of<LocalizationService>(context, listen: false);
+      final localization = Provider.of<LocalizationService>(context, listen: true);
       final authService = Provider.of<AuthRepository>(context, listen: false);
       if (authService.isGuest) return null;
       // Hide Speed Dial in empty state to avoid conflict with "Create your first list" button
@@ -534,7 +538,10 @@ class _MainNavigationState extends State<MainNavigation>
                   floatingActionButton: isOffline
                       ? null
                       : _buildFloatingActionButton(context),
-                  floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+                  floatingActionButtonLocation:
+                      Directionality.of(context) == TextDirection.rtl
+                          ? FloatingActionButtonLocation.startFloat
+                          : FloatingActionButtonLocation.endFloat,
                   bottomNavigationBar: isOffline
                       ? null
                       : Container(
@@ -604,7 +611,7 @@ class _MainNavigationState extends State<MainNavigation>
               // Title
               Builder(
                 builder: (context) {
-                  final localization = Provider.of<LocalizationService>(context, listen: false);
+                  final localization = Provider.of<LocalizationService>(context, listen: true);
                   String titleKey = '';
                   String descKey = '';
                   if (featureName == 'Events') {
@@ -645,7 +652,7 @@ class _MainNavigationState extends State<MainNavigation>
               // CTA Button
               Builder(
                 builder: (context) {
-                  final localization = Provider.of<LocalizationService>(context, listen: false);
+                  final localization = Provider.of<LocalizationService>(context, listen: true);
                   return CustomButton(
                     text: localization.translate('guest.unlock.createFreeAccount'),
                     onPressed: () {
@@ -663,7 +670,7 @@ class _MainNavigationState extends State<MainNavigation>
               // Secondary button
               Builder(
                 builder: (context) {
-                  final localization = Provider.of<LocalizationService>(context, listen: false);
+                  final localization = Provider.of<LocalizationService>(context, listen: true);
                   return TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: Text(

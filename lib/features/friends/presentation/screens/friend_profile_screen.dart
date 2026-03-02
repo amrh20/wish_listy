@@ -43,7 +43,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   late final FriendProfileController _controller;
   final PrivacyRepository _privacyRepository = PrivacyRepository();
 
-  static const double _expandedHeaderHeight = 360.0; // Accommodate avatar, handle, stats, Quick Actions, mutual friends (avoids bottom overflow)
+  static const double _expandedHeaderHeight = 368.0; // Accommodate avatar, handle, stats, Quick Actions, mutual friends (avoids bottom overflow)
 
   @override
   void initState() {
@@ -2342,7 +2342,7 @@ class _BodyContentState extends State<_BodyContent> {
                         'wishlistId': w.id,
                         'wishlistName': w.name,
                         'totalItems': w.itemCount,
-                        'purchasedItems': 0,
+                        'purchasedItems': w.purchasedCount,
                         'isFriendWishlist': true,
                         'friendName': friendName,
                       },
@@ -2495,6 +2495,7 @@ class _WishlistGridCard extends StatelessWidget {
     final hasItems = wishlist.itemCount > 0;
     final hasDescription = wishlist.description != null &&
         wishlist.description!.trim().isNotEmpty;
+    final isAllFulfilled = hasItems && wishlist.purchasedCount >= wishlist.itemCount;
 
     // Format category name (translated)
     final rawCategory = (wishlist.category ?? 'other').trim().toLowerCase();
@@ -2511,8 +2512,8 @@ class _WishlistGridCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1.0,
+          color: isAllFulfilled ? AppColors.success.withOpacity(0.5) : Colors.grey.shade200,
+          width: isAllFulfilled ? 1.5 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
@@ -2636,20 +2637,37 @@ class _WishlistGridCard extends StatelessWidget {
                                 return Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(
-                                      Icons.card_giftcard_outlined,
-                                      size: 13,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '${wishlist.itemCount} ${wishlist.itemCount == 1 ? localization.translate('friends.wish') : localization.translate('friends.wishes')}',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
+                                    if (isAllFulfilled) ...[
+                                      Icon(
+                                        Icons.celebration_rounded,
+                                        size: 13,
+                                        color: AppColors.success,
                                       ),
-                                    ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        localization.translate('ui.fulfilledTag') ?? 'Fulfilled',
+                                        style: TextStyle(
+                                          color: AppColors.success,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ] else ...[
+                                      Icon(
+                                        Icons.card_giftcard_outlined,
+                                        size: 13,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${wishlist.itemCount} ${wishlist.itemCount == 1 ? localization.translate('friends.wish') : localization.translate('friends.wishes')}',
+                                        style: TextStyle(
+                                          color: Colors.grey.shade700,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 );
                               },
@@ -2737,8 +2755,41 @@ class _WishlistGridCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // 3. Middle Section: Bubbles Preview (only if has items)
-              if (hasItems)
+              // 3. Middle Section: Celebration or Bubbles Preview
+              if (isAllFulfilled)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.success.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.celebration_rounded, size: 20, color: AppColors.success),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Builder(
+                          builder: (context) {
+                            final localization = Provider.of<LocalizationService>(context, listen: false);
+                            return Text(
+                              localization.translate('ui.allWishesFulfilled') ?? 'All wishes fulfilled! 🎉',
+                              style: TextStyle(
+                                color: AppColors.success,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else if (hasItems)
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,

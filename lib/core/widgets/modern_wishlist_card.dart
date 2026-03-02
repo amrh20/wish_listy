@@ -154,6 +154,7 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
     final hasItems = widget.totalItems > 0;
     final hasDescription =
         widget.description != null && widget.description!.trim().isNotEmpty;
+    final isAllFulfilled = hasItems && widget.giftedItems >= widget.totalItems;
 
     return Container(
       constraints: const BoxConstraints(
@@ -165,8 +166,8 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1.0,
+          color: isAllFulfilled ? AppColors.success.withOpacity(0.5) : Colors.grey.shade200,
+          width: isAllFulfilled ? 1.5 : 1.0,
         ),
         boxShadow: [
           BoxShadow(
@@ -187,13 +188,41 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
             children: [
               // 1. Top Section: Header
               widget.isReadOnly
-                  ? _buildCompactHeader(categoryVisual, categoryName, hasDescription)
-                  : _buildFullHeader(categoryVisual, categoryColor, categoryName, hasDescription),
+                  ? _buildCompactHeader(categoryVisual, categoryName, hasDescription, isAllFulfilled)
+                  : _buildFullHeader(categoryVisual, categoryColor, categoryName, hasDescription, isAllFulfilled),
 
               const SizedBox(height: 16),
 
-              // 2. Middle Section: Bubbles Preview (only if has items AND previewItemNames is not empty)
-              if (hasItems && widget.previewItemNames.isNotEmpty) ...[
+              // 2. Middle Section: Celebration message or Bubbles Preview
+              if (isAllFulfilled) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.success.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.celebration_rounded, size: 20, color: AppColors.success),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          localization.translate('ui.allWishesFulfilled') ?? 'All wishes fulfilled! 🎉',
+                          style: TextStyle(
+                            color: AppColors.success,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else if (hasItems && widget.previewItemNames.isNotEmpty) ...[
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Row(
@@ -259,6 +288,7 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
     _CategoryVisual categoryVisual,
     String categoryName,
     bool hasDescription,
+    bool isAllFulfilled,
   ) {
     return Row(
       children: [
@@ -292,6 +322,7 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
     Color categoryColor,
     String categoryName,
     bool hasDescription,
+    bool isAllFulfilled,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,18 +390,37 @@ class _ModernWishlistCardState extends State<ModernWishlistCard>
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                '• ${widget.totalItems} ${widget.totalItems == 1 ? Provider.of<LocalizationService>(context, listen: false).translate('cards.wish') : Provider.of<LocalizationService>(context, listen: false).translate('cards.wishes')}',
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 11,
+            if (isAllFulfilled) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                child: Text(
+                  Provider.of<LocalizationService>(context, listen: false).translate('ui.fulfilledTag') ?? 'Fulfilled',
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-            ),
+            ] else ...[
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  '• ${widget.totalItems} ${widget.totalItems == 1 ? Provider.of<LocalizationService>(context, listen: false).translate('cards.wish') : Provider.of<LocalizationService>(context, listen: false).translate('cards.wishes')}',
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 11,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ],
         ),
         if (hasDescription) ...[

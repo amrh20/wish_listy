@@ -738,7 +738,10 @@ class _WishlistItemsScreenState extends State<WishlistItemsScreen> {
                 child: const Icon(Icons.add, color: Colors.white),
               ),
             ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButtonLocation:
+          Directionality.of(context) == TextDirection.rtl
+              ? FloatingActionButtonLocation.startFloat
+              : FloatingActionButtonLocation.endFloat,
       body: DecorativeBackground(
         showGifts: true,
         child: Stack(

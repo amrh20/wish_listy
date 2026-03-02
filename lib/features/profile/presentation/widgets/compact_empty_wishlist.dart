@@ -14,7 +14,7 @@ class CompactEmptyWishlistCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(context, listen: true);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Column(
@@ -150,7 +150,7 @@ class HappeningNowSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(context, listen: true);
     
     // Limit to 3 activities for preview
     final displayActivities = activities.take(3).toList();

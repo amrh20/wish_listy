@@ -175,15 +175,17 @@ class _SpeedDialOverlay extends StatelessWidget {
           onTap: onClose,
           child: Container(color: Colors.black.withOpacity(0.5)),
         ),
+        // Always position overlay on physical right (matches FAB which is always on right)
         Positioned(
-          left: isRTL ? 16 : null,
-          right: isRTL ? null : 16,
+          left: null,
+          right: 16,
           bottom: bottomOffset + safeBottom,
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: maxChildWidth),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: isRTL ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+              crossAxisAlignment:
+                  isRTL ? CrossAxisAlignment.start : CrossAxisAlignment.end,
               // Order: bottom to top = Create Wishlist, Create Event, Add Friend
               children: List.generate(children.length * 2 - 1, (i) {
                 if (i.isOdd) {

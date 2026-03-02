@@ -66,6 +66,7 @@ class FriendWishlistModel {
   final String? category;
   final FriendWishlistOwnerModel? owner;
   final int itemCount;
+  final int purchasedCount;
   final List<PreviewItem> previewItems;
   final DateTime? createdAt;
 
@@ -77,9 +78,21 @@ class FriendWishlistModel {
     this.category,
     this.owner,
     required this.itemCount,
+    this.purchasedCount = 0,
     this.previewItems = const [],
     this.createdAt,
   });
+
+  static int _parsePurchasedCount(Map<String, dynamic> json) {
+    final pc = json['purchasedCount'] ?? json['purchased_count'];
+    if (pc is num) return pc.toInt();
+    final stats = json['stats'];
+    if (stats is Map && stats['purchasedItems'] != null) {
+      final v = stats['purchasedItems'];
+      if (v is num) return v.toInt();
+    }
+    return 0;
+  }
 
   factory FriendWishlistModel.fromJson(Map<String, dynamic> json) {
     final rawId = json['_id'] ?? json['id'];
@@ -113,8 +126,9 @@ class FriendWishlistModel {
       owner: ownerJson is Map<String, dynamic>
           ? FriendWishlistOwnerModel.fromJson(ownerJson)
           : null,
-      itemCount: (json['itemCount'] as num?)?.toInt() ?? 
+      itemCount: (json['itemCount'] as num?)?.toInt() ??
                  (json['item_count'] as num?)?.toInt() ?? 0,
+      purchasedCount: _parsePurchasedCount(json),
       previewItems: previewItems,
       createdAt: createdAt,
     );

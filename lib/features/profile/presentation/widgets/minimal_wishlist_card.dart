@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/wishlists/presentation/widgets/index.dart';
 
@@ -18,6 +20,9 @@ class MinimalWishlistCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final categoryVisual = _getCategoryVisual(wishlist.category);
+    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final isAllFulfilled = wishlist.itemCount > 0 &&
+        wishlist.purchasedCount >= wishlist.itemCount;
 
     return Material(
       color: Colors.transparent,
@@ -37,13 +42,13 @@ class MinimalWishlistCard extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16), // Increased vertical padding for taller card
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16), // Match occasion card style
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Colors.grey.shade200, // Subtle border for definition
-              width: 1,
+              color: isAllFulfilled ? AppColors.success.withOpacity(0.5) : Colors.grey.shade200,
+              width: isAllFulfilled ? 1.5 : 1,
             ),
             boxShadow: [
               BoxShadow(
@@ -85,13 +90,15 @@ class MinimalWishlistCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              // Item count - more subtle (greyish)
+              // Item count or celebration message
               Text(
-                '${wishlist.itemCount} items',
+                isAllFulfilled
+                    ? (localization.translate('ui.allWishesFulfilled') ?? 'All wishes fulfilled! 🎉')
+                    : '${wishlist.itemCount} ${wishlist.itemCount == 1 ? localization.translate('cards.wish') : localization.translate('cards.wishes')}',
                 style: TextStyle(
-                  color: Colors.grey.shade500, // More subtle grey
+                  color: isAllFulfilled ? AppColors.success : Colors.grey.shade500,
                   fontSize: 12,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: isAllFulfilled ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
               const SizedBox(width: 8),

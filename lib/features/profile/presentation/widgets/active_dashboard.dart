@@ -77,7 +77,7 @@ class UpcomingOccasionsSection extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  '${Provider.of<LocalizationService>(context, listen: false).translate('cards.friendsEvents')} 🎂',
+                  '${Provider.of<LocalizationService>(context, listen: true).translate('cards.friendsEvents')} 🎂',
                   style: AppStyles.headingMedium.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
@@ -98,7 +98,7 @@ class UpcomingOccasionsSection extends StatelessWidget {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(
-                  Provider.of<LocalizationService>(context, listen: false).translate('home.viewAll'),
+                  Provider.of<LocalizationService>(context, listen: true).translate('home.viewAll'),
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
@@ -258,7 +258,7 @@ class _OccasionCard extends StatelessWidget {
                     children: [
                       // "Hosted by" in black
                       TextSpan(
-                        text: '${Provider.of<LocalizationService>(context, listen: false).translate('cards.hostedBy')} ',
+                        text: '${Provider.of<LocalizationService>(context, listen: true).translate('cards.hostedBy')} ',
                         style: AppStyles.bodySmall.copyWith(
                           color: AppColors.textPrimary,
                           fontSize: 12,
@@ -279,7 +279,7 @@ class _OccasionCard extends StatelessWidget {
               )
             else
               Text(
-                '${Provider.of<LocalizationService>(context, listen: false).translate('cards.hostedBy')} ${occasion.hostName}',
+                '${Provider.of<LocalizationService>(context, listen: true).translate('cards.hostedBy')} ${occasion.hostName}',
                 style: AppStyles.bodySmall.copyWith(
                   color: AppColors.textSecondary,
                   fontSize: 12,
@@ -438,7 +438,7 @@ class MyWishlistsSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${Provider.of<LocalizationService>(context, listen: false).translate('cards.myWishlists')} 🎁',
+                '${Provider.of<LocalizationService>(context, listen: true).translate('cards.myWishlists')} 🎁',
                 style: AppStyles.headingMedium.copyWith(
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -450,7 +450,7 @@ class MyWishlistsSection extends StatelessWidget {
                   MainNavigation.switchToTab(context, 1);
                 },
                 child: Text(
-                  Provider.of<LocalizationService>(context, listen: false).translate('home.viewAll'),
+                  Provider.of<LocalizationService>(context, listen: true).translate('home.viewAll'),
                   style: AppStyles.bodyMedium.copyWith(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
@@ -495,7 +495,7 @@ class MyWishlistsSection extends StatelessWidget {
 
   /// Empty state placeholder card: margin 16, app icon + title/subtitle, compact button
   Widget _buildEmptyState(BuildContext context) {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(context, listen: true);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
     return Container(
@@ -606,12 +606,10 @@ class PendingReservationsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(context, listen: true);
 
-    return BlocProvider(
-      create: (_) => PendingReservationsCubit()..loadPendingReservations(),
-      child: BlocBuilder<PendingReservationsCubit, PendingReservationsState>(
-        builder: (context, state) {
+    return BlocBuilder<PendingReservationsCubit, PendingReservationsState>(
+      builder: (context, state) {
           if (state is PendingReservationsLoading ||
               state is PendingReservationsInitial) {
             return const _PendingReservationsSkeleton();
@@ -696,7 +694,6 @@ class PendingReservationsSection extends StatelessWidget {
             ],
           );
         },
-      ),
     );
   }
 }
@@ -840,7 +837,7 @@ class PendingReservationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(context, listen: true);
     final item = reservation.item;
     final owner = reservation.owner ?? reservation.wishlist?.owner;
     final ownerName = owner?.fullName ?? owner?.username ?? '';
@@ -994,7 +991,7 @@ class FriendActivitySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(context, listen: true);
     
     // Add null safety check before accessing activities
     final safeActivities = activities ?? [];

@@ -144,7 +144,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
   }
 
   String _getTimeBasedGreeting(BuildContext context) {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(context, listen: true);
     final hour = DateTime.now().hour;
     if (hour < 12) {
       return localization.translate('home.goodMorning');
@@ -408,7 +408,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                     // Bottom: "Ready to make wishes" text (minimal spacing)
                     const SizedBox(height: 4), // Further reduced from 6 to 4
                     Text(
-                      Provider.of<LocalizationService>(context, listen: false)
+                      Provider.of<LocalizationService>(context, listen: true)
                           .translate('profile.readyToMakeWishesComeTrue'),
                       style: AppStyles.bodyMedium.copyWith(
                         color: AppColors.textSecondary.withOpacity(0.85),
@@ -708,7 +708,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                         isEmpty && !hasWishlists && !isTrulyEmpty;
 
                     return RefreshIndicator(
-                      onRefresh: controller.refresh,
+                      onRefresh: refreshHome,
                       color: AppColors.primary,
                       child: CustomScrollView(
                         physics: const AlwaysScrollableScrollPhysics(),
@@ -823,7 +823,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
   }) {
     final activities = controller.latestActivityPreview ?? [];
     final occasions = controller.upcomingOccasions ?? [];
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(context, listen: true);
     
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
@@ -938,7 +938,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
         Offset.zero & overlay.size,
       );
       
-      final localization = Provider.of<LocalizationService>(context, listen: false);
+      final localization = Provider.of<LocalizationService>(context, listen: true);
       final isRTL = localization.isRTL;
       final screenWidth = MediaQuery.of(context).size.width;
       
