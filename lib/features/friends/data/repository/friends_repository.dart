@@ -307,6 +307,7 @@ class FriendsRepository {
   Future<Map<String, dynamic>> getFriends({
     int page = 1,
     int limit = 20,
+    String? search,
   }) async {
     try {
       final response = await _apiService.get(
@@ -314,6 +315,7 @@ class FriendsRepository {
         queryParameters: {
           'page': page,
           'limit': limit,
+          if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
         },
       );
 

@@ -107,7 +107,8 @@ class FriendsScreenState extends State<FriendsScreen>
 
   void _onScroll() {
     // Detect when user scrolls to bottom to load more friends
-    if (_scrollController.position.pixels >=
+    if (_searchQuery.length < 2 &&
+        _scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMoreFriends &&
         _hasMoreFriends &&
@@ -135,6 +136,27 @@ class FriendsScreenState extends State<FriendsScreen>
     setState(() {
       _searchQuery = _searchController.text.toLowerCase();
     });
+
+    final trimmedQuery = _searchQuery.trim();
+
+    if (trimmedQuery.length >= 2) {
+      // When searching, reset pagination and load friends from API with search term
+      _currentPage = 1;
+      _hasMoreFriends = true;
+      _loadFriends(
+        resetPage: true,
+        forceShowLoading: true,
+        search: trimmedQuery,
+      );
+    } else {
+      // When search is cleared or too short, reload full friends list without search
+      _currentPage = 1;
+      _hasMoreFriends = true;
+      _loadFriends(
+        resetPage: true,
+        forceShowLoading: true,
+      );
+    }
   }
 
   @override
@@ -231,7 +253,7 @@ class FriendsScreenState extends State<FriendsScreen>
 
   Widget _buildMyFriendsTab(LocalizationService localization) {
     // Show loading state
-    if (_isLoadingFriends && _friends.isEmpty) {
+    if (_isLoadingFriends && (_friends.isEmpty || _searchQuery.length >= 2)) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -259,27 +281,25 @@ class FriendsScreenState extends State<FriendsScreen>
       );
     }
 
-    final filteredFriends = _getFilteredFriends();
-
     return RefreshIndicator(
       onRefresh: _refreshFriends,
       color: AppColors.primary,
-      child: filteredFriends.isEmpty
+      child: _friends.isEmpty
           ? _buildEmptyState()
           : AnimationLimiter(
               child: ListView.builder(
                 physics: const AlwaysScrollableScrollPhysics(),
                 controller: _scrollController,
                 padding: const EdgeInsets.all(16),
-                itemCount: filteredFriends.length +
+                itemCount: _friends.length +
                     (_isLoadingMoreFriends ? 1 : 0) +
                     1, // +1 for bottom padding
                 itemBuilder: (context, index) {
                   // Any slot at or beyond the real list is either the loading
                   // spinner or the bottom-nav-bar padding.
-                  if (index >= filteredFriends.length) {
+                  if (index >= _friends.length) {
                     if (_isLoadingMoreFriends &&
-                        index == filteredFriends.length) {
+                        index == _friends.length) {
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 20),
                         child: Center(
@@ -298,7 +318,7 @@ class FriendsScreenState extends State<FriendsScreen>
                       verticalOffset: 50.0,
                       child: FadeInAnimation(
                         child: _buildFriendCard(
-                          filteredFriends[index],
+                          _friends[index],
                           localization,
                         ),
                       ),
@@ -904,17 +924,6 @@ class FriendsScreenState extends State<FriendsScreen>
   }
 
   // Helper Methods
-  List<Friend> _getFilteredFriends() {
-    if (_searchQuery.isEmpty) return _friends;
-
-    return _friends.where((friend) {
-      final fullName = friend.fullName.toLowerCase();
-      final handle = (friend.handle ?? '').toLowerCase();
-      return fullName.contains(_searchQuery) ||
-          handle.contains(_searchQuery);
-    }).toList();
-  }
-
   String _formatRequestTime(DateTime createdAt) {
     final now = DateTime.now();
     final difference = now.difference(createdAt);
@@ -929,7 +938,11 @@ class FriendsScreenState extends State<FriendsScreen>
   }
 
   /// Load friends from API
-  Future<void> _loadFriends({bool resetPage = false, bool forceShowLoading = false}) async {
+  Future<void> _loadFriends({
+    bool resetPage = false,
+    bool forceShowLoading = false,
+    String? search,
+  }) async {
     // Don't make API calls for guest users
     final authService = Provider.of<AuthRepository>(context, listen: false);
     if (authService.isGuest) {
@@ -971,6 +984,7 @@ class FriendsScreenState extends State<FriendsScreen>
       final response = await _friendsRepository.getFriends(
         page: _currentPage,
         limit: 10,
+        search: search,
       );
 
       if (!mounted) return;
@@ -1011,7 +1025,10 @@ class FriendsScreenState extends State<FriendsScreen>
 
   /// Load more friends (pagination)
   Future<void> _loadMoreFriends() async {
-    if (!_hasMoreFriends || _isLoadingMoreFriends || _isLoadingFriends) return;
+    if (_searchQuery.length >= 2 ||
+        !_hasMoreFriends ||
+        _isLoadingMoreFriends ||
+        _isLoadingFriends) return;
 
     setState(() {
       _currentPage++;

@@ -359,7 +359,9 @@ class ReservedItemCardWidget extends StatelessWidget {
 
   Widget _buildExpiryRow(BuildContext context, DateTime reservedUntil, LocalizationService localization) {
     final format = formatReservationExpiry(reservedUntil, localization);
-    final color = format.isUrgent ? AppColors.warning : AppColors.textSecondary;
+    final color = format.isExpired
+        ? AppColors.textTertiary
+        : (format.isUrgent ? AppColors.warning : AppColors.textSecondary);
     final theme = Theme.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,

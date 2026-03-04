@@ -2,10 +2,16 @@ import 'package:wish_listy/core/services/localization_service.dart';
 
 /// Result of formatting a reservation expiry date for display.
 class ReservationExpiryFormat {
-  const ReservationExpiryFormat({required this.text, required this.isUrgent});
+  const ReservationExpiryFormat({
+    required this.text,
+    required this.isUrgent,
+    this.isExpired = false,
+  });
   final String text;
   /// True when expiration is today or tomorrow (use amber/warning color).
   final bool isUrgent;
+  /// True when reservation has already expired (use grey/muted color).
+  final bool isExpired;
 }
 
 /// Shared logic for formatting [reservedUntil] for display.
@@ -19,7 +25,13 @@ ReservationExpiryFormat formatReservationExpiry(
   final today = DateTime(now.year, now.month, now.day);
   final days = atMidnight.difference(today).inDays;
 
-  if (days <= 0) {
+  if (days < 0) {
+    final text = days == -1
+        ? localization.translate('details.expiredYesterday')
+        : localization.translate('details.expired');
+    return ReservationExpiryFormat(text: text, isUrgent: false, isExpired: true);
+  }
+  if (days == 0) {
     return ReservationExpiryFormat(
       text: localization.translate('details.expiresToday'),
       isUrgent: true,

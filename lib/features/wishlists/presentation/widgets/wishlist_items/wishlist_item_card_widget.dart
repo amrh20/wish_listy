@@ -1890,7 +1890,7 @@ class _ModernWishlistItemContent extends StatelessWidget {
   }
 }
 
-/// Small row showing reservation expiry (icon + text). Muted color by default; amber when today/tomorrow.
+/// Small row showing reservation expiry (icon + text). Grey when expired; amber when today/tomorrow.
 class _ReservationExpiryRow extends StatelessWidget {
   const _ReservationExpiryRow({required this.reservedUntil});
 
@@ -1901,9 +1901,9 @@ class _ReservationExpiryRow extends StatelessWidget {
     final loc = Provider.of<LocalizationService>(context, listen: false);
     final theme = Theme.of(context);
     final format = formatReservationExpiry(reservedUntil, loc);
-    final color = format.isUrgent
-        ? (AppColors.warning)
-        : theme.colorScheme.onSurfaceVariant;
+    final color = format.isExpired
+        ? AppColors.textTertiary
+        : (format.isUrgent ? AppColors.warning : theme.colorScheme.onSurfaceVariant);
 
     return Row(
       mainAxisSize: MainAxisSize.min,

@@ -1444,6 +1444,8 @@
     "expiresInDays": "تنتهي خلال {count} أيام",
     "expiresToday": "تنتهي اليوم",
     "expiresTomorrow": "تنتهي غداً",
+    "expired": "انتهت الصلاحية",
+    "expiredYesterday": "انتهت أمس",
     "extendingReservation": "جاري التمديد...",
     "byFriend": "من {name}",
     "bySecretFriend": "من حد (سرّي) 🤫",

@@ -280,7 +280,9 @@ class ItemActionBarWidget extends StatelessWidget {
                             Text(
                               expiryText,
                               style: AppStyles.bodySmall.copyWith(
-                                color: AppColors.textSecondary,
+                                color: expiryFormat?.isExpired == true
+                                    ? AppColors.textTertiary
+                                    : AppColors.textSecondary,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),

@@ -960,16 +960,16 @@ class PendingReservationCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: expiryFormat.isUrgent
-                      ? AppColors.error.withOpacity(0.1)
+                  color: expiryFormat.isExpired
+                      ? AppColors.textTertiary.withOpacity(0.15)
                       : AppColors.warning.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  '${expiryFormat.text} ⏳',
+                  '${expiryFormat.text} ${expiryFormat.isExpired ? '' : '⏳'}',
                   style: TextStyle(
-                    color: expiryFormat.isUrgent
-                        ? AppColors.error
+                    color: expiryFormat.isExpired
+                        ? AppColors.textTertiary
                         : AppColors.warning,
                     fontWeight: FontWeight.w600,
                     fontSize: 10,

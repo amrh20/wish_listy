@@ -1443,6 +1443,8 @@
     "expiresInDays": "Ends in {count} days",
     "expiresToday": "Expires today",
     "expiresTomorrow": "Expires tomorrow",
+    "expired": "Expired",
+    "expiredYesterday": "Expired yesterday",
     "extendingReservation": "Extending...",
     "byFriend": "By {name}",
     "bySecretFriend": "By a Secret Friend 🤫",
