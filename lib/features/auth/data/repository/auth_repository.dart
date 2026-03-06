@@ -1163,7 +1163,6 @@ class AuthRepository extends ChangeNotifier {
     required Function(String error) onCodeAutoRetrievalTimeout,
   }) async {
     try {
-      
       // Use sanitizePhoneForFirebase to ensure exact match with Firebase Console format
       final sanitizedPhone = sanitizePhoneForFirebase(phoneNumber);
       
@@ -1203,6 +1202,8 @@ class AuthRepository extends ChangeNotifier {
     required String smsCode,
   }) async {
     try {
+
+      debugPrint('verifyPhoneOTP: starting with verificationId=$verificationId, smsCode=$smsCode');
 
       // Create credential from verification ID and SMS code
       // CRITICAL: Use the exact verificationId passed from VerificationScreen

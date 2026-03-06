@@ -19,6 +19,7 @@ import 'package:wish_listy/core/services/biometric_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -663,7 +664,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   /// Handle unverified account during login
-  /// Sends a new OTP via backend API and redirects to verification screen
+  /// Sends a new OTP and redirects to verification screen
   Future<void> _handleUnverifiedAccount({String? userId}) async {
     if (!mounted) return;
 
@@ -686,17 +687,76 @@ class _LoginScreenState extends State<LoginScreen>
       setState(() => _isLoading = true);
     }
 
-    final countryCode = isPhone ? '+${_selectedCountry.phoneCode}' : null;
-
     try {
-      // Send new OTP via backend API (works for both phone and email)
-      await authRepository.resendOtp(username, countryCode: countryCode);
+      final countryCode = isPhone ? '+${_selectedCountry.phoneCode}' : null;
 
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+      if (isPhone) {
+        // Phone login: trigger Firebase Phone Auth immediately so user receives an SMS
+        // Sanitize phone number to strict E.164 format before calling Firebase
+        String sanitizedPhone = username;
+        try {
+          sanitizedPhone = authRepository.sanitizePhoneForFirebase(username);
+        } catch (e) {
+          if (mounted) {
+            setState(() => _isLoading = false);
+            UnifiedSnackbar.showError(
+              context: context,
+              message: localization.translate('auth.invalidPhoneFormat') ??
+                  'Invalid phone number format. Please check and try again.',
+            );
+          }
+          return;
+        }
 
-      // Navigate to verification/OTP screen
-      if (mounted) {
+        await authRepository.verifyPhoneNumber(
+          phoneNumber: sanitizedPhone,
+          onCodeSent: (verificationId) {
+            if (!mounted) return;
+
+            setState(() => _isLoading = false);
+
+            Navigator.pushNamed(
+              context,
+              AppRoutes.verification,
+              arguments: {
+                'username': sanitizedPhone,
+                'isPhone': true,
+                'verificationId': verificationId,
+                'userId': userId,
+                'countryCode': countryCode,
+              },
+            );
+          },
+          onVerificationCompleted: () {
+            // Rare auto-verification case; just stop loading.
+            if (!mounted) return;
+            setState(() => _isLoading = false);
+          },
+          onVerificationFailed: (error) {
+            if (!mounted) return;
+            setState(() => _isLoading = false);
+            UnifiedSnackbar.showError(
+              context: context,
+              message: error.isNotEmpty
+                  ? error
+                  : (localization.translate('auth.verificationFailed') ??
+                      'Failed to send verification code. Please try again.'),
+            );
+          },
+          onCodeAutoRetrievalTimeout: (error) {
+            // Just log; user can always request a new code.
+            debugPrint(
+              'LoginScreen: verifyPhoneNumber auto-retrieval timeout for $sanitizedPhone -> $error',
+            );
+          },
+        );
+      } else {
+        // Email login: keep using backend resendOtp API
+        await authRepository.resendOtp(username, countryCode: countryCode);
+
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+
         Navigator.pushNamed(
           context,
           AppRoutes.verification,
@@ -709,12 +769,18 @@ class _LoginScreenState extends State<LoginScreen>
         );
       }
     } catch (e) {
-      // Even if resendOtp fails, still navigate to OTP screen
-      // (user can tap "Resend" from there)
       if (!mounted) return;
       setState(() => _isLoading = false);
 
-      if (mounted) {
+      // For email: still navigate so user can resend from OTP screen.
+      // For phone: do not navigate without verificationId — show error and stay on login.
+      if (isPhone) {
+        UnifiedSnackbar.showError(
+          context: context,
+          message: localization.translate('auth.verificationFailed') ??
+              'Failed to send verification code. Please try again.',
+        );
+      } else {
         Navigator.pushNamed(
           context,
           AppRoutes.verification,
@@ -722,7 +788,7 @@ class _LoginScreenState extends State<LoginScreen>
             'username': username,
             'isPhone': isPhone,
             'userId': userId,
-            'countryCode': countryCode,
+            'countryCode': null,
           },
         );
       }

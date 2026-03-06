@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:provider/provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
@@ -44,7 +45,7 @@ class ContactUsScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: UnifiedPageContainer(
-                  child: Padding(
+                  child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       children: [
@@ -87,10 +88,20 @@ class ContactUsScreen extends StatelessWidget {
 
                         // Email Card
                         _buildEmailCard(localization),
-                        const SizedBox(height: 24),
-                        // Facebook Card
-                        _buildFacebookCard(context, localization),
-                        const SizedBox(height: 60),
+                        const SizedBox(height: 32),
+                        // Follow Us label
+                        Text(
+                          localization.translate('profile.followUs') ?? 'Follow Us',
+                          style: AppStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        // Social Links (same as profile screen)
+                        _buildSocialMediaLinksRow(context),
+                        const SizedBox(height: 40),
                       ],
                     ),
                   ),
@@ -165,71 +176,44 @@ class ContactUsScreen extends StatelessWidget {
     );
   }
 
-  /// Build Facebook Card
-  Widget _buildFacebookCard(BuildContext context, LocalizationService localization) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      elevation: 2,
-      child: InkWell(
-        onTap: () => _openFacebookPage(context),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1877F2).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.facebook_rounded,
-                  color: const Color(0xFF1877F2),
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      localization.translate('profile.followUsOnFacebook'),
-                      style: AppStyles.bodyMedium.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Facebook',
-                      style: AppStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: AppColors.textTertiary,
-                size: 18,
-              ),
-            ],
+  /// Social media links row (Facebook, Instagram, Snapchat, TikTok, X)
+  Widget _buildSocialMediaLinksRow(BuildContext context) {
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _SocialCircleIconButton(
+            icon: FontAwesomeIcons.facebookF,
+            onTap: () => _launchExternalUrl(context, AppConstants.facebookUrl),
           ),
-        ),
+          const SizedBox(width: 16),
+          _SocialCircleIconButton(
+            icon: FontAwesomeIcons.instagram,
+            onTap: () => _launchExternalUrl(context, AppConstants.instagramUrl),
+          ),
+          const SizedBox(width: 16),
+          _SocialCircleIconButton(
+            icon: FontAwesomeIcons.snapchatGhost,
+            onTap: () => _launchExternalUrl(context, AppConstants.snapchatUrl),
+          ),
+          const SizedBox(width: 16),
+          _SocialCircleIconButton(
+            icon: FontAwesomeIcons.tiktok,
+            onTap: () => _launchExternalUrl(context, AppConstants.tiktokUrl),
+          ),
+          const SizedBox(width: 16),
+          _SocialCircleIconButton(
+            icon: FontAwesomeIcons.xTwitter,
+            onTap: () => _launchExternalUrl(context, AppConstants.xUrl),
+          ),
+        ],
       ),
     );
   }
 
-  /// Open Facebook page
-  static Future<void> _openFacebookPage(BuildContext context) async {
-    final uri = Uri.parse(AppConstants.facebookUrl);
+  /// Generic URL launcher for external links
+  static Future<void> _launchExternalUrl(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
     try {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -261,7 +245,44 @@ class ContactUsScreen extends StatelessWidget {
         await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
     } catch (e) {
+      debugPrint('Failed to send email: $e');
     }
+  }
+}
+
+class _SocialCircleIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _SocialCircleIconButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 40,
+          height: 40,
+          decoration: const BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: FaIcon(
+              icon,
+              color: Colors.white,
+              size: 22,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

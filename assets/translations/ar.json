@@ -171,6 +171,7 @@
     "codeValidFor": "صلاحية الكود ١٠ دقايق",
     "codeExpired": "انتهت صلاحية الرمز. يرجى طلب رمز جديد.",
     "unverifiedAccountMessage": "لديك حساب غير مفعّل بالفعل. تم إرسال رمز جديد.",
+    "registrationVerificationMessage": "تم التسجيل بنجاح! من فضلك تحقق من رقم هاتفك.",
     "unverifiedAccountLoginMessage": "حسابك غير مفعّل. يرجى إتمام التحقق أولاً.",
     "invalidIdentifier": "معرف غير صحيح. الرجاء المحاولة مرة أخرى.",
     "termsAndConditions": "أوافق على الشروط والأحكام وسياسة الخصوصية",

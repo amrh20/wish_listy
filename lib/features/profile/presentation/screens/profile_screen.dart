@@ -634,8 +634,28 @@ class ProfileScreenState extends State<ProfileScreen>
                     ),
                     const SizedBox(height: 24),
                     _buildVersionWidget(),
+                    const SizedBox(height: 24),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Divider(
+                        height: 1,
+                        color: AppColors.border,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Center(
+                      child: Text(
+                        localization.translate('profile.followUs') ?? 'Follow Us',
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     _buildSocialMediaLinksRow(),
+                    const SizedBox(height: 24),
                     SizedBox(
                       height: MediaQuery.of(context).padding.bottom +
                           kBottomNavigationBarHeight +
@@ -1644,6 +1664,21 @@ class ProfileScreenState extends State<ProfileScreen>
           _SocialCircleIconButton(
             icon: FontAwesomeIcons.instagram,
             onTap: () => _launchExternalUrl(AppConstants.instagramUrl),
+          ),
+          const SizedBox(width: 16),
+          _SocialCircleIconButton(
+            icon: FontAwesomeIcons.snapchatGhost,
+            onTap: () => _launchExternalUrl(AppConstants.snapchatUrl),
+          ),
+          const SizedBox(width: 16),
+          _SocialCircleIconButton(
+            icon: FontAwesomeIcons.tiktok,
+            onTap: () => _launchExternalUrl(AppConstants.tiktokUrl),
+          ),
+          const SizedBox(width: 16),
+          _SocialCircleIconButton(
+            icon: FontAwesomeIcons.xTwitter,
+            onTap: () => _launchExternalUrl(AppConstants.xUrl),
           ),
         ],
       ),

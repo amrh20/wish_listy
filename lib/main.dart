@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -51,8 +53,11 @@ Future<void> _initializeAppCheck() async {
         androidProvider: AndroidProvider.debug,
         appleProvider: AppleProvider.debug,
       );
-      
-      
+      // Warm up attestation so it's ready before user tries phone auth
+      await FirebaseAppCheck.instance.getToken(true).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw TimeoutException('App Check token timeout'),
+      ).catchError((_) {});
       // Wait 5 seconds then try to get and print debug token
       _printDebugToken();
     } catch (e) {
@@ -65,6 +70,11 @@ Future<void> _initializeAppCheck() async {
         androidProvider: AndroidProvider.playIntegrity,
         appleProvider: AppleProvider.deviceCheck,
       );
+      // Warm up attestation so it's ready before user tries phone auth
+      await FirebaseAppCheck.instance.getToken(true).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw TimeoutException('App Check token timeout'),
+      ).catchError((_) {});
     } catch (e) {
       // In production, this is more critical, but we'll continue anyway
     }

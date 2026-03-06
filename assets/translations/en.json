@@ -171,6 +171,7 @@
     "codeValidFor": "Code valid for 10 minutes",
     "codeExpired": "Code expired. Please request a new one.",
     "unverifiedAccountMessage": "You have an unverified account. A new code was sent.",
+    "registrationVerificationMessage": "Registration successful! Please verify your phone number.",
     "unverifiedAccountLoginMessage": "Your account is not verified. Please verify first.",
     "invalidIdentifier": "Invalid identifier. Please try again.",
     "termsAndConditions": "I agree to the Terms and Conditions and Privacy Policy",

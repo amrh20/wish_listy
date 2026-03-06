@@ -217,6 +217,24 @@ class _VerificationScreenState extends State<VerificationScreen>
       return;
     }
 
+    // For phone verification: ensure we actually have a verificationId before calling Firebase.
+    if (widget.isPhone) {
+      if (_currentVerificationId == null || _currentVerificationId!.isEmpty) {
+        final localization = Provider.of<LocalizationService>(context, listen: false);
+        debugPrint('VerificationScreen: Missing verificationId for ${widget.username} when submitting OTP.');
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = localization.translate('auth.verificationFailed') ??
+                'Verification session has expired. Please request a new code.';
+          });
+        }
+        return;
+      } else {
+        debugPrint('VerificationScreen: Using verificationId=$_currentVerificationId for ${widget.username}.');
+      }
+    }
+
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -553,14 +571,16 @@ class _VerificationScreenState extends State<VerificationScreen>
     AuthRepository authRepository,
   ) async {
     if (widget.isPhone) {
-      // Phone verification - ensure verificationId is available
-      if (_currentVerificationId == null) {
-        throw Exception('Verification ID is missing. Please request a new code.');
+      if (_currentVerificationId != null && _currentVerificationId!.isNotEmpty) {
+        return await authRepository.verifyPhoneOTP(
+          verificationId: _currentVerificationId!,
+          smsCode: _otpController.text.trim(),
+        );
       }
-
-      return await authRepository.verifyPhoneOTP(
-        verificationId: _currentVerificationId!, // Use latest verificationId
-        smsCode: _otpController.text.trim(),
+      // Firebase verificationId unavailable — verify via backend OTP endpoint
+      return await authRepository.verifyEmailOTP(
+        username: widget.username,
+        otp: _otpController.text.trim(),
       );
     } else {
       // Email verification
@@ -630,56 +650,144 @@ class _VerificationScreenState extends State<VerificationScreen>
     }
 
     try {
-      final authCubit = context.read<AuthCubit>();
-      await authCubit.resendOtp(
-        widget.username,
-        countryCode: widget.isPhone ? widget.countryCode : null,
-      );
-
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      _startResendTimer();
-
       final localization = Provider.of<LocalizationService>(context, listen: false);
-      final message = localization.translate('auth.codeResent') ?? 'Verification code resent';
-      final isArabic = localization.currentLanguage == 'ar';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(
-                Icons.check_circle_outline,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  message,
-                  style: isArabic
-                      ? GoogleFonts.alexandria(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
-                        )
-                      : AppStyles.bodyMedium.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
-                        ),
+      if (widget.isPhone) {
+        // Phone flow: resend via Firebase Phone Auth, not backend OTP API
+        final authRepository = Provider.of<AuthRepository>(context, listen: false);
+
+        await authRepository.verifyPhoneNumber(
+          phoneNumber: widget.username,
+          onCodeSent: (verificationId) {
+            if (!mounted) return;
+
+            debugPrint(
+              'VerificationScreen resend: onCodeSent new verificationId=$verificationId for ${widget.username}',
+            );
+
+            setState(() {
+              _isLoading = false;
+              _currentVerificationId = verificationId;
+            });
+
+            _startResendTimer();
+
+            final isArabic = localization.currentLanguage == 'ar';
+            final message = localization.translate('auth.codeResent') ?? 'Verification code resent';
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle_outline,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        message,
+                        style: isArabic
+                            ? GoogleFonts.alexandria(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                              )
+                            : AppStyles.bodyMedium.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: AppColors.success,
+                duration: const Duration(seconds: 3),
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.all(16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-            ],
+            );
+          },
+          onVerificationCompleted: () {
+            if (!mounted) return;
+            setState(() => _isLoading = false);
+          },
+          onVerificationFailed: (error) {
+            if (!mounted) return;
+            setState(() {
+              _isLoading = false;
+              _errorMessage = error;
+            });
+            _showErrorSnackBar(
+              error.isNotEmpty
+                  ? error
+                  : (localization.translate('auth.verificationFailed') ??
+                      'Failed to resend code. Please try again.'),
+              localization,
+            );
+          },
+          onCodeAutoRetrievalTimeout: (error) {
+            debugPrint(
+              'VerificationScreen resend: codeAutoRetrievalTimeout for ${widget.username} -> $error',
+            );
+          },
+        );
+      } else {
+        // Email flow: keep using backend resendOtp API
+        final authRepository = Provider.of<AuthRepository>(context, listen: false);
+        await authRepository.resendOtp(
+          widget.username,
+          countryCode: widget.countryCode,
+        );
+
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        _startResendTimer();
+
+        final isArabic = localization.currentLanguage == 'ar';
+        final message = localization.translate('auth.codeResent') ?? 'Verification code resent';
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    message,
+                    style: isArabic
+                        ? GoogleFonts.alexandria(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          )
+                        : AppStyles.bodyMedium.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-          backgroundColor: AppColors.success,
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      );
+        );
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       final localization = Provider.of<LocalizationService>(context, listen: false);

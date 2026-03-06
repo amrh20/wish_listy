@@ -1,7 +1,8 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
@@ -279,15 +280,10 @@ class _SignupScreenState extends State<SignupScreen>
 
       // Check if user already exists but is unverified
       if (response['requiresVerification'] == true && mounted) {
-        setState(() => _isLoading = false);
-        
         // Extract userId from response (may be in user or data field)
         final userData = response['user'] ?? response['data'];
         final userId = userData?['id'] ?? userData?['_id'] ?? userData?['userId'];
-        
-        // Show clean snackbar message
-        _showUnverifiedAccountMessage(localization);
-        
+
         // Handle verification flow based on phone/email
         if (isPhone) {
           // Sanitize phone number to strict E.164 format (no spaces) before calling Firebase
@@ -296,20 +292,47 @@ class _SignupScreenState extends State<SignupScreen>
             sanitizedPhone = authRepository.sanitizePhoneForFirebase(username);
           } catch (e) {
             if (mounted) {
+              setState(() => _isLoading = false);
               _showErrorSnackBar('Invalid phone number format. Please check and try again.');
             }
             return;
           }
-          
-          // Phone: Trigger Firebase Phone Auth to send new SMS
-          await _handlePhoneVerification(
+
+          // Web: skip Firebase Phone Auth and use backend OTP
+          if (kIsWeb) {
+            if (mounted) {
+              setState(() => _isLoading = false);
+              Navigator.pushReplacementNamed(
+                context,
+                AppRoutes.verification,
+                arguments: {
+                  'username': sanitizedPhone,
+                  'isPhone': true,
+                  'userId': userId,
+                  'countryCode': '+${_selectedCountry.phoneCode}',
+                },
+              );
+            }
+            return;
+          }
+
+          // Phone: Trigger Firebase Phone Auth — navigation only inside onCodeSent
+          final ok = await _handlePhoneVerification(
             authRepository,
             sanitizedPhone,
             userId: userId,
             countryCode: '+${_selectedCountry.phoneCode}',
           );
+          if (ok && mounted) {
+            _showRegistrationVerificationMessage(localization);
+          }
+          // When ok is false, loading already stopped and error shown; do not navigate without verificationId
         } else {
-          // Email: Navigate directly to verification screen
+          // Email: stop loading, then navigate to verification screen
+          if (mounted) {
+            setState(() => _isLoading = false);
+          }
+
           await Future.delayed(const Duration(milliseconds: 500));
           if (mounted) {
             Navigator.pushReplacementNamed(
@@ -321,15 +344,14 @@ class _SignupScreenState extends State<SignupScreen>
                 'userId': userId,
               },
             );
+
+            _showRegistrationVerificationMessage(localization);
           }
         }
         return;
       }
 
       if (response['success'] == true && mounted) {
-        // Stop loading indicator
-        setState(() => _isLoading = false);
-
         // Extract userId from registration response
         final userData = response['user'] ?? response['data'];
         final userId = userData?['id'] ?? userData?['_id'] ?? userData?['userId'];
@@ -342,20 +364,46 @@ class _SignupScreenState extends State<SignupScreen>
             sanitizedPhone = authRepository.sanitizePhoneForFirebase(username);
           } catch (e) {
             if (mounted) {
+              setState(() => _isLoading = false);
               _showErrorSnackBar('Invalid phone number format. Please check and try again.');
             }
             return;
           }
-          
-          // Phone registration: trigger Firebase Phone Auth to send SMS
-          await _handlePhoneVerification(
+
+          // Web: skip Firebase Phone Auth and use backend OTP
+          if (kIsWeb) {
+            if (mounted) {
+              setState(() => _isLoading = false);
+              Navigator.pushReplacementNamed(
+                context,
+                AppRoutes.verification,
+                arguments: {
+                  'username': sanitizedPhone,
+                  'isPhone': true,
+                  'userId': userId,
+                  'countryCode': '+${_selectedCountry.phoneCode}',
+                },
+              );
+            }
+            return;
+          }
+
+          // Phone registration: trigger Firebase Phone Auth — navigation only inside onCodeSent
+          final ok = await _handlePhoneVerification(
             authRepository,
             sanitizedPhone,
             userId: userId,
             countryCode: '+${_selectedCountry.phoneCode}',
           );
+          if (ok && mounted) {
+            _showRegistrationVerificationMessage(localization);
+          }
         } else {
-          // Email registration: navigate directly to verification screen
+          // Email registration: stop loading then navigate directly to verification screen
+          if (mounted) {
+            setState(() => _isLoading = false);
+          }
+
           if (mounted) {
             Navigator.pushReplacementNamed(
               context,
@@ -366,6 +414,8 @@ class _SignupScreenState extends State<SignupScreen>
                 'userId': userId,
               },
             );
+
+            _showRegistrationVerificationMessage(localization);
           }
         }
       } else {
@@ -378,20 +428,17 @@ class _SignupScreenState extends State<SignupScreen>
     } on ApiException catch (e) {
       setState(() => _isLoading = false);
       
-      // Check if this is an unverified account error
-      final isUnverifiedAccount = e.data != null && 
-          (e.data['requiresVerification'] == true || 
+      // Check if this is an unverified account error (register flow)
+      final isUnverifiedAccount = e.data != null &&
+          (e.data['requiresVerification'] == true ||
            e.message.toLowerCase().contains('unverified'));
-      
+
       if (isUnverifiedAccount && mounted) {
         // Extract userId from error response
         final errorData = e.data;
         final userData = errorData?['user'] ?? errorData?['data'];
         final userId = userData?['id'] ?? userData?['_id'] ?? userData?['userId'] ?? errorData?['userId'];
-        
-        // Show clean snackbar message (not error)
-        _showUnverifiedAccountMessage(localization);
-        
+
         // Handle verification flow based on phone/email
         if (isPhone) {
           // Sanitize phone number to strict E.164 format (no spaces) before calling Firebase
@@ -404,14 +451,35 @@ class _SignupScreenState extends State<SignupScreen>
             }
             return;
           }
-          
-          // Phone: Automatically trigger Firebase Phone Auth to send SMS
-          await _handlePhoneVerification(
+
+          // Web: skip Firebase Phone Auth and use backend OTP
+          if (kIsWeb) {
+            if (mounted) {
+              setState(() => _isLoading = false);
+              Navigator.pushReplacementNamed(
+                context,
+                AppRoutes.verification,
+                arguments: {
+                  'username': sanitizedPhone,
+                  'isPhone': true,
+                  'userId': userId,
+                  'countryCode': '+${_selectedCountry.phoneCode}',
+                },
+              );
+            }
+            return;
+          }
+
+          // Phone: Automatically trigger Firebase Phone Auth — navigation only inside onCodeSent
+          final ok = await _handlePhoneVerification(
             authRepository,
             sanitizedPhone,
             userId: userId,
             countryCode: '+${_selectedCountry.phoneCode}',
           );
+          if (ok && mounted) {
+            _showRegistrationVerificationMessage(localization);
+          }
         } else {
           // Email: Navigate directly to verification screen
           await Future.delayed(const Duration(milliseconds: 500));
@@ -425,11 +493,13 @@ class _SignupScreenState extends State<SignupScreen>
                 'userId': userId,
               },
             );
+
+            _showRegistrationVerificationMessage(localization);
           }
         }
         return; // Don't show error snackbar
       }
-      
+
       // Regular error - show error snackbar
       if (mounted) {
         // Show backend error message directly
@@ -450,93 +520,81 @@ class _SignupScreenState extends State<SignupScreen>
     }
   }
 
-  Future<void> _handlePhoneVerification(
+  Future<bool> _handlePhoneVerification(
     AuthRepository authRepository,
     String phoneNumber, {
     String? userId,
     String? countryCode,
   }) async {
-    if (!mounted) return;
+    if (!mounted) return false;
 
     if (mounted) {
       setState(() => _isLoading = true);
     }
 
-    bool hasNavigated = false; // Prevent multiple navigations
+    final completer = Completer<bool>();
+    bool hasNavigated = false;
+
+    void completeOnce(bool value) {
+      if (!completer.isCompleted) {
+        completer.complete(value);
+      }
+    }
 
     try {
       String? verificationId;
 
       await authRepository.verifyPhoneNumber(
-        phoneNumber: phoneNumber, // Already sanitized to E.164 format
+        phoneNumber: phoneNumber,
         onCodeSent: (id) {
           if (!mounted || hasNavigated) return;
-          
-          verificationId = id;
           hasNavigated = true;
-          
-          
+          verificationId = id;
+          debugPrint('Phone verification: onCodeSent verificationId=$verificationId for $phoneNumber');
+
           if (mounted) {
             setState(() => _isLoading = false);
-          }
-          
-          if (mounted) {
-            // Pass sanitized phone number and userId to VerificationScreen
             Navigator.pushReplacementNamed(
               context,
               AppRoutes.verification,
               arguments: {
-                'username': phoneNumber, // E.164 format: +201064448681
+                'username': phoneNumber,
                 'isPhone': true,
-                'verificationId': verificationId, // Persist verificationId
+                'verificationId': id,
                 'userId': userId,
                 'countryCode': countryCode,
               },
             );
           }
+          completeOnce(true);
         },
         onVerificationCompleted: () {
-          // Auto-verification completed (rare case)
           if (!mounted || hasNavigated) return;
           hasNavigated = true;
-          
           if (mounted) {
             setState(() => _isLoading = false);
-          }
-          
-          if (mounted) {
             Navigator.pushReplacementNamed(
               context,
               AppRoutes.login,
-              arguments: {
-                'username': phoneNumber,
-              },
+              arguments: {'username': phoneNumber},
             );
           }
+          completeOnce(true);
         },
         onVerificationFailed: (error) {
           if (!mounted) return;
-          
           if (mounted) {
             setState(() => _isLoading = false);
-          }
-          
-          if (mounted) {
             _showErrorSnackBar('Failed to send verification code: $error');
           }
+          completeOnce(false);
         },
         onCodeAutoRetrievalTimeout: (error) {
-          // Still navigate to verification screen even if auto-retrieval times out
           if (!mounted || hasNavigated) return;
-          
           if (verificationId != null) {
             hasNavigated = true;
-            
             if (mounted) {
               setState(() => _isLoading = false);
-            }
-            
-            if (mounted) {
               Navigator.pushReplacementNamed(
                 context,
                 AppRoutes.verification,
@@ -549,22 +607,37 @@ class _SignupScreenState extends State<SignupScreen>
                 },
               );
             }
+            completeOnce(true);
           } else if (mounted) {
-            // If verificationId is null, just stop loading
             setState(() => _isLoading = false);
+            completeOnce(false);
           }
         },
       );
+
+      // Wait for onCodeSent (or failure) so we never return before verificationId is ready
+      final ok = await completer.future.timeout(
+        const Duration(seconds: 90),
+        onTimeout: () {
+          completeOnce(false);
+          if (mounted) {
+            setState(() => _isLoading = false);
+            _showErrorSnackBar('Verification timed out. Please try again.');
+          }
+          return false;
+        },
+      );
+      return ok;
     } catch (e) {
-      if (!mounted) return;
-      
+      if (!completer.isCompleted) {
+        completer.complete(false);
+      }
+      if (!mounted) return false;
       if (mounted) {
         setState(() => _isLoading = false);
-      }
-      
-      if (mounted) {
         _showErrorSnackBar('Failed to send verification code. Please try again.');
       }
+      return false;
     }
   }
 
@@ -628,16 +701,17 @@ class _SignupScreenState extends State<SignupScreen>
     );
   }
 
-  /// Show clean snackbar message for unverified account
+  /// Show clean snackbar message for registration verification step
   /// Uses Alexandria font for Arabic text
-  void _showUnverifiedAccountMessage(LocalizationService localization) {
+  void _showRegistrationVerificationMessage(LocalizationService localization) {
     if (!mounted) return;
-    
-    final message = localization.translate('auth.unverifiedAccountMessage') ??
-        'You already have an unverified account. A new code has been sent.';
-    
+
+    final message =
+        localization.translate('auth.registrationVerificationMessage') ??
+            'Registration successful! Please verify your phone number.';
+
     final isArabic = localization.currentLanguage == 'ar';
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(

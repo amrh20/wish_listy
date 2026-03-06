@@ -51,6 +51,11 @@ class AppConstants {
   static const String twitterUrl = 'https://twitter.com/wishlink';
   static const String instagramUrl =
       'https://www.instagram.com/wishlistyapp?igsh=a2NjajhheWdveDZ1';
+  static const String snapchatUrl =
+      'https://www.snapchat.com/add/wishlisty?share_id=2kesyOe7WNk&locale=en-GB';
+  static const String tiktokUrl =
+      'https://www.tiktok.com/@wishlistyapp1?_r=1&_t=ZS-94Qnk1Y3qkh';
+  static const String xUrl = 'https://x.com/WishlistyApp';
   static const String supportEmail = 'wishlistyapp@gmail.com';
   static const String privacyPolicyUrl = 'https://wishlink.com/privacy';
   static const String termsOfServiceUrl = 'https://wishlink.com/terms';
