@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/services/socket_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
@@ -72,6 +73,13 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   // StreamController to notify EventDetailsScreen when event is updated
   final StreamController<String> _eventUpdateController = StreamController<String>.broadcast();
   Stream<String> get eventUpdateStream => _eventUpdateController.stream;
+
+  /// Clear iOS app icon badge when unread count becomes 0.
+  void _clearAppBadgeIfZero(int unreadCount) {
+    if (unreadCount == 0) {
+      FlutterAppBadger.removeBadge();
+    }
+  }
 
   NotificationsCubit() : super(NotificationsInitial()) {
     final initTimestamp = DateTime.now().toIso8601String();
@@ -190,7 +198,8 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         unreadCount: newUnreadCount,
         isNewNotification: true, // Mark as new notification from Socket
       ));
-      
+      _clearAppBadgeIfZero(newUnreadCount);
+
       final emitCompleteTimestamp = DateTime.now().toIso8601String();
       
       // If unreadCount was not in payload, fetch accurate count from backend (async, non-blocking)
@@ -237,6 +246,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         unreadCount: 0,
         isNewNotification: false,
       ));
+      _clearAppBadgeIfZero(0);
       return;
     }
 
@@ -328,6 +338,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         unreadCount: unreadCount,
         isNewNotification: false, // This is from API load, not new Socket notification
       ));
+      _clearAppBadgeIfZero(unreadCount);
     } on ApiException catch (e) {
       emit(NotificationsError(e.message));
     } catch (e, stackTrace) {
@@ -360,6 +371,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         unreadCount: unreadCount,
         isNewNotification: false, // This is a state update, not new Socket notification
       ));
+      _clearAppBadgeIfZero(unreadCount);
 
       // Update on backend using PATCH as per requirements
       await _apiService.patch('/notifications/$notificationId/read');
@@ -389,6 +401,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         isNewNotification: false,
       ));
     }
+    _clearAppBadgeIfZero(unreadCount);
   }
 
   /// Get unread count from backend (uses lastBadgeSeenAt logic)
@@ -436,7 +449,8 @@ class NotificationsCubit extends Cubit<NotificationsState> {
           isNewNotification: false,
         ));
       }
-      
+      _clearAppBadgeIfZero(unreadCount);
+
       return unreadCount;
     } on ApiException catch (e) {
       return 0;
@@ -463,7 +477,8 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         unreadCount: 0,
         isNewNotification: false,
       ));
-      
+      _clearAppBadgeIfZero(0);
+
       // Call backend API to update lastBadgeSeenAt (fire and forget)
       _apiService.patch('/notifications/dismiss-badge').then((_) {
         // After API call succeeds, fetch accurate unreadCount from backend
@@ -476,6 +491,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
               unreadCount: unreadCount,
               isNewNotification: false,
             ));
+            _clearAppBadgeIfZero(unreadCount);
           }
         }).catchError((e) {
         });
@@ -490,6 +506,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
             unreadCount: unreadCount,
             isNewNotification: false,
           ));
+          _clearAppBadgeIfZero(unreadCount);
         }
       });
       
@@ -870,6 +887,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         unreadCount: updatedUnreadCount,
         isNewNotification: false, // This is a state update, not new Socket notification
       ));
+      _clearAppBadgeIfZero(updatedUnreadCount);
 
       // Delete on backend
       await _apiService.delete('/notifications/$notificationId');
@@ -949,6 +967,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         unreadCount: unreadCount,
         isNewNotification: false,
       ));
+      _clearAppBadgeIfZero(unreadCount);
 
       // Delete on backend (best effort). If it fails, reload to stay in sync.
       for (final id in idsToRemove) {
@@ -979,7 +998,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         unreadCount: newUnreadCount,
         isNewNotification: false,
       ));
-      
+      _clearAppBadgeIfZero(newUnreadCount);
     }
   }
 
@@ -1002,7 +1021,7 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         unreadCount: newUnreadCount,
         isNewNotification: false,
       ));
-      
+      _clearAppBadgeIfZero(newUnreadCount);
     }
   }
 

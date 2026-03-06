@@ -23,6 +23,7 @@ import 'profile_screen.dart' show ProfileScreen, ProfileScreenState;
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/update_service.dart';
 import 'package:wish_listy/core/services/socket_service.dart';
+import 'package:flutter_app_badger/flutter_app_badger.dart';
 import 'package:wish_listy/features/wishlists/presentation/cubit/pending_reservations_cubit.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -149,7 +150,11 @@ class _MainNavigationState extends State<MainNavigation>
 
     // Refresh notification badge to ensure it reflects backend state
     try {
-      context.read<NotificationsCubit>().getUnreadCount();
+      context.read<NotificationsCubit>().getUnreadCount().then((count) {
+        if (count == 0) {
+          FlutterAppBadger.removeBadge();
+        }
+      });
     } catch (e) {
       // Cubit may not be available if context is invalid
     }
