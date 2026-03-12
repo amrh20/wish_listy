@@ -275,7 +275,8 @@ class _CustomTextFieldState extends State<CustomTextField>
                           ? FontWeight.w500
                           : FontWeight.normal,
                     ),
-                    floatingLabelStyle: AppStyles.bodySmall.copyWith(
+                    floatingLabelStyle: AppStyles.bodyMedium.copyWith(
+                      fontSize: 15,
                       color: _isFocused
                           ? (displayError != null
                                 ? AppColors.error
