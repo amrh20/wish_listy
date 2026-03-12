@@ -326,8 +326,12 @@
         document.getElementById('openInAppBtn').href = buildAppDeepLink();
 
         // Attempt to open the app when page loads (works on Android)
+        // Skip auto-redirect on root page - wishlisty:// alone is invalid on Safari
         window.addEventListener('load', function() {
-            setTimeout(openApp, 500);
+            const path = window.location.pathname || '/';
+            if (path.length > 1 && path !== '/') {
+                setTimeout(openApp, 500);
+            }
         });
     </script>
 </body>
