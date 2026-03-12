@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -82,7 +83,8 @@ Future<void> _initializeAppCheck() async {
 }
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
 
   // Initialize Firebase (required for Firebase Messaging)
   // MUST use firebase_options.dart to ensure correct apiKey
@@ -194,6 +196,8 @@ void main() async {
       notificationsCubit: notificationsCubit,
     ),
   );
+
+  FlutterNativeSplash.remove();
 
   // Phase 1: Defer FCM init so it doesn't block the first frame
   // Initialize FCM after runApp() but ensure auth state is ready

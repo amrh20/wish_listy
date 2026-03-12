@@ -90,6 +90,10 @@ class AppColors {
   // Auth Specific (Moved here to be official)
   static const Color authBackground = Color(0xFFF8F9FF);
 
+  // Splash / Brand screens - rich purple gradient
+  static const Color splashGradientTop = Color(0xFF9F67F5);
+  static const Color splashGradientBottom = Color(0xFF5B21B6);
+
   // ===========================================================================
   // 5. GRADIENTS (Reduced to Essentials)
   // ===========================================================================
@@ -109,6 +113,13 @@ class AppColors {
     colors: [accent, accentLight],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
+  );
+
+  // Splash / brand screen background
+  static const LinearGradient splashGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [splashGradientTop, splashGradientBottom],
   );
 
   // Use this for Background overlays

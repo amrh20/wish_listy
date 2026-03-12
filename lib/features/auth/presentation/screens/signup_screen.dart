@@ -324,7 +324,7 @@ class _SignupScreenState extends State<SignupScreen>
             countryCode: '+${_selectedCountry.phoneCode}',
           );
           if (ok && mounted) {
-            _showRegistrationVerificationMessage(localization);
+            _showRegistrationVerificationMessage(localization, isPhone: isPhone);
           }
           // When ok is false, loading already stopped and error shown; do not navigate without verificationId
         } else {
@@ -345,7 +345,7 @@ class _SignupScreenState extends State<SignupScreen>
               },
             );
 
-            _showRegistrationVerificationMessage(localization);
+            _showRegistrationVerificationMessage(localization, isPhone: isPhone);
           }
         }
         return;
@@ -396,7 +396,7 @@ class _SignupScreenState extends State<SignupScreen>
             countryCode: '+${_selectedCountry.phoneCode}',
           );
           if (ok && mounted) {
-            _showRegistrationVerificationMessage(localization);
+            _showRegistrationVerificationMessage(localization, isPhone: isPhone);
           }
         } else {
           // Email registration: stop loading then navigate directly to verification screen
@@ -415,7 +415,7 @@ class _SignupScreenState extends State<SignupScreen>
               },
             );
 
-            _showRegistrationVerificationMessage(localization);
+            _showRegistrationVerificationMessage(localization, isPhone: isPhone);
           }
         }
       } else {
@@ -478,7 +478,7 @@ class _SignupScreenState extends State<SignupScreen>
             countryCode: '+${_selectedCountry.phoneCode}',
           );
           if (ok && mounted) {
-            _showRegistrationVerificationMessage(localization);
+            _showRegistrationVerificationMessage(localization, isPhone: isPhone);
           }
         } else {
           // Email: Navigate directly to verification screen
@@ -494,7 +494,7 @@ class _SignupScreenState extends State<SignupScreen>
               },
             );
 
-            _showRegistrationVerificationMessage(localization);
+            _showRegistrationVerificationMessage(localization, isPhone: isPhone);
           }
         }
         return; // Don't show error snackbar
@@ -703,12 +703,20 @@ class _SignupScreenState extends State<SignupScreen>
 
   /// Show clean snackbar message for registration verification step
   /// Uses Alexandria font for Arabic text
-  void _showRegistrationVerificationMessage(LocalizationService localization) {
+  /// [isPhone] - true if user signed up with phone, false if with email
+  void _showRegistrationVerificationMessage(
+    LocalizationService localization, {
+    required bool isPhone,
+  }) {
     if (!mounted) return;
 
-    final message =
-        localization.translate('auth.registrationVerificationMessage') ??
-            'Registration successful! Please verify your phone number.';
+    final key = isPhone
+        ? 'auth.registrationVerificationMessagePhone'
+        : 'auth.registrationVerificationMessageEmail';
+    final message = localization.translate(key) ??
+        (isPhone
+            ? 'Registration successful! Please check your phone to enter the verification code.'
+            : 'Registration successful! Please check your email to enter the verification code.');
 
     final isArabic = localization.currentLanguage == 'ar';
 

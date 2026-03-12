@@ -891,10 +891,12 @@ class _NotificationItem extends StatelessWidget {
           child: OutlinedButton(
             onPressed: () async {
               final scaffoldMessenger = ScaffoldMessenger.of(context);
-              cubit.deleteNotification(notification.id);
               Navigator.pop(context);
               try {
                 await cubit.respondToEvent(eventId, 'declined');
+                await cubit.deleteNotification(notification.id);
+                cubit.loadNotifications();
+                cubit.getUnreadCount();
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
                     content: Text(localization.translate('notifications.youDeclinedInvitation')),
@@ -930,10 +932,12 @@ class _NotificationItem extends StatelessWidget {
           child: OutlinedButton(
             onPressed: () async {
               final scaffoldMessenger = ScaffoldMessenger.of(context);
-              cubit.deleteNotification(notification.id);
               Navigator.pop(context);
               try {
                 await cubit.respondToEvent(eventId, 'maybe');
+                await cubit.deleteNotification(notification.id);
+                cubit.loadNotifications();
+                cubit.getUnreadCount();
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
                     content: Text(localization.translate('notifications.youMarkedMaybe')),
@@ -970,10 +974,12 @@ class _NotificationItem extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () async {
                 final scaffoldMessenger = ScaffoldMessenger.of(context);
-                cubit.deleteNotification(notification.id);
                 Navigator.pop(context);
                 try {
                   await cubit.respondToEvent(eventId, 'accepted');
+                  await cubit.deleteNotification(notification.id);
+                  cubit.loadNotifications();
+                  cubit.getUnreadCount();
                   scaffoldMessenger.showSnackBar(
                     SnackBar(
                       content: Text(localization.translate('notifications.youAcceptedInvitation')),

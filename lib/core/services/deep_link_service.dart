@@ -32,7 +32,17 @@ class DeepLinkService {
 
   /// Share app invite: [shareMessage] should be the localized message (invite.inviteFriendsShareMessage) + inviteLink.
   static Future<void> shareAppInvite(String shareMessage) async {
-    await Share.share(shareMessage, subject: 'WishListy');
+    await Share.share(
+      shareMessage,
+      subject: 'WishListy',
+      sharePositionOrigin: Rect.fromPoints(
+        const Offset(0, 0),
+        const Offset(1, 1),
+      ),
+    ).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => ShareResult.unavailable,
+    );
   }
 
   /// Generates a deep link URL for a wishlist or event
@@ -330,6 +340,13 @@ class DeepLinkService {
     await Share.share(
       message,
       subject: 'wishListy - $entityDisplayName',
+      sharePositionOrigin: Rect.fromPoints(
+        const Offset(0, 0),
+        const Offset(1, 1),
+      ),
+    ).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => ShareResult.unavailable,
     );
   }
 

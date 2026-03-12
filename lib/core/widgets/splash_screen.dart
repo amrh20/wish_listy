@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/services/deep_link_service.dart';
-import 'package:wish_listy/core/widgets/app_logo.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
@@ -16,20 +15,24 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _breathingController;
-  late Animation<double> _breathingAnimation;
+    with SingleTickerProviderStateMixin {
+  late AnimationController _exitController;
+  late Animation<double> _exitOpacity;
+
+  Widget? _targetScreen;
+  bool _exitComplete = false;
 
   @override
   void initState() {
     super.initState();
-    _breathingController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    )..repeat(reverse: true);
 
-    _breathingAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _breathingController, curve: Curves.easeInOut),
+    _exitController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
+    _exitOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _exitController, curve: Curves.easeInOut),
     );
 
     _startSplashSequence();
@@ -37,51 +40,49 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
-    _breathingController.dispose();
+    _exitController.dispose();
     super.dispose();
   }
 
   void _startSplashSequence() async {
-    // Phase 3: Minimum 1 second splash; run auth/guest check in parallel so we
-    // navigate as soon as both the delay and the check are done.
-    final minSplashDelay = Future.delayed(const Duration(seconds: 1));
-    final targetScreenFuture = _resolveTargetScreen();
-
-    final results = await Future.wait([minSplashDelay, targetScreenFuture]);
+    final targetScreen = await _resolveTargetScreen();
 
     if (!mounted) return;
+    if (targetScreen == null) return;
 
-    final targetScreen = results[1] as Widget?;
-    if (targetScreen == null || !mounted) return;
+    setState(() => _targetScreen = targetScreen);
 
-    // If a deep link already pushed a screen on top of SplashScreen,
-    // don't override it by navigating to Home/MainNavigation.
     final isCurrent = ModalRoute.of(context)?.isCurrent ?? false;
-    if (!isCurrent) {
-      return;
-    }
+    if (!isCurrent) return;
 
+    _exitController.forward().then((_) {
+      if (!mounted || _exitComplete) return;
+      _exitComplete = true;
+      _doNavigate();
+    });
+  }
+
+  void _doNavigate() {
+    if (!mounted || _targetScreen == null) return;
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) {
-          return targetScreen;
-        },
-        transitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (context, animation, secondaryAnimation) => _targetScreen!,
+        transitionDuration: const Duration(milliseconds: 500),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOut,
+          );
+          return FadeTransition(opacity: curved, child: child);
         },
       ),
     );
-
-    // If the app was opened via a deep link (cold start), navigate to it now.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       DeepLinkService().navigatePendingIfAny();
     });
   }
 
-  /// Resolves the target screen (MainNavigation, OnboardingScreen) based on
-  /// auth state and guest data. Returns null if widget is unmounted.
   Future<Widget?> _resolveTargetScreen() async {
     final authRepository = Provider.of<AuthRepository>(context, listen: false);
 
@@ -97,36 +98,38 @@ class _SplashScreenState extends State<SplashScreen>
       return const MainNavigation();
     }
 
-    final guestDataRepo = Provider.of<GuestDataRepository>(
-      context,
-      listen: false,
-    );
+    final guestDataRepo =
+        Provider.of<GuestDataRepository>(context, listen: false);
     final hasGuestData = await guestDataRepo.hasGuestData();
 
     if (!mounted) return null;
 
-    return hasGuestData
-        ? const MainNavigation()
-        : const OnboardingScreen();
+    return hasGuestData ? const MainNavigation() : const OnboardingScreen();
+  }
+
+  Widget _buildSplashContent() {
+    return Container(
+      color: AppColors.primary,
+      child: Center(
+        child: CircularProgressIndicator(
+          color: AppColors.textWhite,
+          strokeWidth: 3,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Colors.white, AppColors.primary.withOpacity(0.1)],
-          ),
-        ),
-        child: Center(
-          child: ScaleTransition(
-            scale: _breathingAnimation,
-            child: const AppLogo(size: 120, showText: false),
-          ),
-        ),
+      body: AnimatedBuilder(
+        animation: _exitController,
+        builder: (context, _) {
+          return Opacity(
+            opacity: _exitOpacity.value,
+            child: _buildSplashContent(),
+          );
+        },
       ),
     );
   }

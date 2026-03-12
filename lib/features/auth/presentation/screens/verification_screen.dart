@@ -479,7 +479,7 @@ class _VerificationScreenState extends State<VerificationScreen>
         return;
       }
       
-      // Backend 400/401: map errorCode to specific Arabic messages
+      // Backend 400/401: map errorCode to localized messages
       String errorMsg;
       final status = e.statusCode;
       final responseData = e.data;
@@ -489,13 +489,16 @@ class _VerificationScreenState extends State<VerificationScreen>
       if ((status == 400 || status == 401) && backendCode != null && backendCode.isNotEmpty) {
         switch (backendCode) {
           case 'OTP_INVALID':
-            errorMsg = 'رقم الكود غير صحيح، تأكد من الأرقام وأعد المحاولة';
+            errorMsg = localization.translate('auth.otpWrongCode') ??
+                'Incorrect code. Please check the digits and try again.';
             break;
           case 'OTP_EXPIRED':
-            errorMsg = 'انتهت صلاحية الكود (10 دقائق). اضغط على إعادة الإرسال للحصول على كود جديد';
+            errorMsg = localization.translate('auth.otpExpired') ??
+                'Code expired (10 minutes). Tap Resend to get a new code.';
             break;
           case 'OTP_NOT_FOUND':
-            errorMsg = 'لا يوجد كود نشط حالياً، برجاء طلب كود جديد';
+            errorMsg = localization.translate('auth.otpNotFound') ??
+                'No active code. Please request a new code.';
             break;
           default:
             errorMsg = localization.translate('auth.verificationFailed') ??

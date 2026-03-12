@@ -781,6 +781,13 @@ class ProfileScreenState extends State<ProfileScreen>
         subject: localization.currentLanguage == 'ar'
             ? 'مشاركة الملف الشخصي - $userName'
             : 'Share Profile - $userName',
+        sharePositionOrigin: Rect.fromPoints(
+          const Offset(0, 0),
+          const Offset(1, 1),
+        ),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => ShareResult.unavailable,
       );
     } catch (e) {
       if (mounted) {

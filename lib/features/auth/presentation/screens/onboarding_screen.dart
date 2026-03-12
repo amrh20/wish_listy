@@ -88,12 +88,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   void _onPageChanged() {
-    final newPage = _pageController.page?.round() ?? 0;
-    if (newPage != _currentPage) {
+    final page = _pageController.page ?? 0;
+    final newPage = page.round();
+    if (newPage != _currentPage && (page - newPage).abs() < 0.5) {
       setState(() {
         _currentPage = newPage;
       });
-      // Trigger animation for new slide
       _slideControllers[newPage].forward(from: 0.0);
     }
   }
@@ -150,6 +150,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           final slides = _buildSlides(localization);
                           return PageView.builder(
                             controller: _pageController,
+                            physics: const BouncingScrollPhysics(),
                             itemCount: slides.length,
                             itemBuilder: (context, index) {
                               return _buildSlide(slides[index], index);
@@ -176,24 +177,30 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       width: double.infinity,
       height: double.infinity,
       color: Colors.white,
-      child: Stack(
-        children: [
-              // Decorative shapes based on current slide
-          AnimatedBuilder(
-            animation: _pageController,
-            builder: (context, child) {
-              final localization = Provider.of<LocalizationService>(context, listen: false);
-              final slides = _buildSlides(localization);
-              final slide = slides[_currentPage];
-              return CustomPaint(
-                painter: DecorativeShapesPainter(
-                  color: slide.color.withOpacity(0.08),
-                ),
-                size: Size.infinite,
-              );
-            },
-          ),
-        ],
+      child: AnimatedBuilder(
+        animation: _pageController,
+        builder: (context, child) {
+          final localization = Provider.of<LocalizationService>(context, listen: false);
+          final slides = _buildSlides(localization);
+          final page = _pageController.hasClients
+              ? (_pageController.page ?? _currentPage.toDouble())
+              : _currentPage.toDouble();
+
+          final fromIndex = page.floor().clamp(0, slides.length - 1);
+          final toIndex = (fromIndex + 1).clamp(0, slides.length - 1);
+          final t = page - fromIndex;
+
+          final interpolatedColor = Color.lerp(
+            slides[fromIndex].color.withOpacity(0.07),
+            slides[toIndex].color.withOpacity(0.07),
+            t,
+          )!;
+
+          return CustomPaint(
+            painter: DecorativeShapesPainter(color: interpolatedColor),
+            size: Size.infinite,
+          );
+        },
       ),
     );
   }
@@ -562,6 +569,7 @@ class DecorativeShapesPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant DecorativeShapesPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 

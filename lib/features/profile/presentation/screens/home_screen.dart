@@ -88,6 +88,11 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
   }
 
   Future<void> _loadHomeSuggestions() async {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest) {
+      if (mounted) setState(() => _homeSuggestions = const []);
+      return;
+    }
     try {
       final suggestions = await FriendsRepository().getSuggestions();
       if (!mounted) return;

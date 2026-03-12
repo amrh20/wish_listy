@@ -150,6 +150,12 @@ class ApiService {
             return;
           }
 
+          // Guest users should never be redirected to login on 401
+          if (AuthRepository().isGuest) {
+            handler.next(error);
+            return;
+          }
+
           clearAuthToken();
           try {
             AuthRepository().logoutSilently();

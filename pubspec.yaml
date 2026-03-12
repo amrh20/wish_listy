@@ -5,7 +5,7 @@ description: "WishListy - Connect through thoughtful gifting. A modern Flutter a
 publish_to: 'none'
 
 # Version and build number
-version: 1.0.0+81
+version: 1.0.0+87
 
 environment:
   sdk: ^3.8.1
@@ -80,7 +80,7 @@ dependencies:
   intl: ^0.20.2
 
   # Share functionality
-  share_plus: ^10.1.2
+  share_plus: ^12.0.1
 
   # Deep linking support
   app_links: ^6.3.2
@@ -104,6 +104,9 @@ dependencies:
 
   # Semantic version comparison for Force Update
   pub_semver: ^2.1.0
+
+  # Native splash screen (hides white screen during initialization)
+  flutter_native_splash: ^2.4.0
 
 dev_dependencies:
   flutter_test:
@@ -172,3 +175,11 @@ flutter_launcher_icons:
   ios: true
   image_path_ios: "assets/images/wishlisty_icon.png"
   remove_alpha_ios: true
+
+# Native Splash Configuration - app primary purple/mauve
+flutter_native_splash:
+  color: "#7C3AED"
+  image: assets/images/app_icon.png
+  android: true
+  ios: true
+  web: false
