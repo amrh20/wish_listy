@@ -3,11 +3,13 @@
     "apps": [],
     "details": [
       {
-        "appID": "REPLACE_WITH_TEAM_ID.com.example.wishListy",
+        "appID": "3FK3FC8BRM.com.amr.wishlisty",
         "paths": [
           "/wishlist/*",
           "/event/*",
-          "*"
+          "/item/*",
+          "/reset-password",
+          "/invite"
         ]
       }
     ]
