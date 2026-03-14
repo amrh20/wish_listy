@@ -55,10 +55,10 @@ class CustomTopNavigation extends StatelessWidget {
 
         return Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColors.surfaceOf(context),
             boxShadow: [
               BoxShadow(
-                color: AppColors.textTertiary.withOpacity(0.1),
+                color: AppColors.textTertiaryOf(context).withOpacity(0.1),
                 offset: const Offset(0, 2),
                 blurRadius: 20,
                 spreadRadius: 0,

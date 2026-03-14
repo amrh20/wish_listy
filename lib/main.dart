@@ -266,7 +266,7 @@ class _MyAppState extends State<MyApp> {
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme(locale: currentLocale),
             darkTheme: AppTheme.darkTheme(locale: currentLocale),
-            themeMode: ThemeMode.system,
+            themeMode: ThemeMode.dark, // Use ThemeMode.system to follow device
             locale: currentLocale,
             supportedLocales: const [Locale('en', 'US'), Locale('ar', 'SA')],
             localizationsDelegates: const [

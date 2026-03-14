@@ -61,6 +61,71 @@ class AppColors {
   static const Color borderDark = Color(0xFFCBD5E1);
 
   // ===========================================================================
+  // 3b. DARK MODE COLORS
+  // ===========================================================================
+
+  static const Color backgroundDark = Color(0xFF0F172A);
+  static const Color surfaceDark = Color(0xFF1E293B);
+  static const Color surfaceVariantDark = Color(0xFF334155);
+
+  static const Color textPrimaryDark = Color(0xFFF8FAFC);
+  static const Color textSecondaryDark = Color(0xFFCBD5E1);
+  static const Color textTertiaryDark = Color(0xFF94A3B8);
+
+  static const Color borderDarkMode = Color(0xFF475569);
+
+  static const Color authBackgroundDark = Color(0xFF0F172A);
+
+  // Dark mode pastels (muted for dark backgrounds)
+  static const Color cardBlueDark = Color(0xFF1E3A5F);
+  static const Color cardPurpleDark = Color(0xFF2D1F4E);
+  static const Color cardGreenDark = Color(0xFF1A3D32);
+  static const Color cardPinkDark = Color(0xFF4A2C3D);
+  static const Color cardPeachDark = Color(0xFF4A3D2C);
+
+  /// Whether the current theme is dark
+  static bool isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  /// Theme-aware background color
+  static Color backgroundOf(BuildContext context) =>
+      isDark(context) ? backgroundDark : background;
+
+  /// Theme-aware surface color
+  static Color surfaceOf(BuildContext context) =>
+      isDark(context) ? surfaceDark : surface;
+
+  /// Theme-aware surface variant
+  static Color surfaceVariantOf(BuildContext context) =>
+      isDark(context) ? surfaceVariantDark : surfaceVariant;
+
+  /// Theme-aware primary text color
+  static Color textPrimaryOf(BuildContext context) =>
+      isDark(context) ? textPrimaryDark : textPrimary;
+
+  /// Theme-aware secondary text color
+  static Color textSecondaryOf(BuildContext context) =>
+      isDark(context) ? textSecondaryDark : textSecondary;
+
+  /// Theme-aware tertiary text color
+  static Color textTertiaryOf(BuildContext context) =>
+      isDark(context) ? textTertiaryDark : textTertiary;
+
+  /// Theme-aware border color
+  static Color borderOf(BuildContext context) =>
+      isDark(context) ? borderDarkMode : border;
+
+  /// Theme-aware auth background
+  static Color authBackgroundOf(BuildContext context) =>
+      isDark(context) ? authBackgroundDark : authBackground;
+
+  /// Theme-aware pastel cards list
+  static List<Color> pastelCardsOf(BuildContext context) =>
+      isDark(context)
+          ? [cardBlueDark, cardPurpleDark, cardGreenDark, cardPinkDark, cardPeachDark]
+          : pastelCards;
+
+  // ===========================================================================
   // 4. UI SPECIFIC (Cards & Decor)
   // ===========================================================================
 

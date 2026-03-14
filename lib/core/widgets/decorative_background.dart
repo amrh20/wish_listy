@@ -69,15 +69,21 @@ class _DecorativeBackgroundState extends State<DecorativeBackground>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFFF8F5FB), // Very light purple (top)
-            const Color(0xFFF0EBF7), // Slightly more purple (bottom)
-          ],
+          colors: isDark
+              ? [
+                  AppColors.backgroundDark,
+                  AppColors.surfaceDark,
+                ]
+              : [
+                  const Color(0xFFF8F5FB), // Very light purple (top)
+                  const Color(0xFFF0EBF7), // Slightly more purple (bottom)
+                ],
         ),
       ),
       child: Stack(

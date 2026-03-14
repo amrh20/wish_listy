@@ -109,7 +109,7 @@ class AppTheme {
   // Helper method to create locale-aware TextTheme
   static TextTheme _getTextTheme(Locale locale, ThemeData baseTheme, {bool isDark = false}) {
     final isArabic = locale.languageCode == 'ar';
-    final textColor = isDark ? AppColors.textPrimary : onSurface;
+    final textColor = isDark ? AppColors.textPrimaryDark : onSurface;
 
     if (isArabic) {
       // Use Alexandria for Arabic
@@ -274,16 +274,19 @@ class AppTheme {
     final currentLocale = locale ?? const Locale('en');
     final baseTheme = ThemeData(
       useMaterial3: true,
+      brightness: Brightness.dark,
       colorScheme: ColorScheme.dark(
         primary: primary,
         secondary: secondary,
-        surface: AppColors.surface,
-        onSurface: AppColors.textPrimary,
+        surface: AppColors.surfaceDark,
+        onSurface: AppColors.textPrimaryDark,
         error: error,
       ),
+      scaffoldBackgroundColor: AppColors.backgroundDark,
     );
     
     return baseTheme.copyWith(
+      scaffoldBackgroundColor: AppColors.backgroundDark,
       textTheme: _getTextTheme(currentLocale, baseTheme, isDark: true),
       // Note: For primary action buttons, use PrimaryGradientButton widget instead.
       // This theme is kept for Material defaults and backward compatibility.
@@ -303,7 +306,7 @@ class AppTheme {
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.surface,
+        color: AppColors.surfaceDark,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
@@ -312,7 +315,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: AppColors.surfaceDark,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radiusMedium),
           borderSide: BorderSide.none,

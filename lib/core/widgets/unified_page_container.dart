@@ -25,7 +25,7 @@ class UnifiedPageContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: backgroundColor ?? AppColors.background,
+        color: backgroundColor ?? AppColors.backgroundOf(context),
         borderRadius: showTopRadius
             ? BorderRadius.only(
                 topLeft: Radius.circular(topRadius),
@@ -35,7 +35,7 @@ class UnifiedPageContainer extends StatelessWidget {
         boxShadow: showShadow
             ? [
                 BoxShadow(
-                  color: AppColors.textTertiary.withOpacity(0.1),
+                  color: AppColors.textTertiaryOf(context).withOpacity(0.1),
                   offset: const Offset(0, -4),
                   blurRadius: 16,
                   spreadRadius: 0,
@@ -80,8 +80,8 @@ class UnifiedPageBackground extends StatelessWidget {
               gradientColors ??
               [
                 AppColors.primary.withOpacity(0.08),
-                AppColors.background,
-                AppColors.background,
+                AppColors.backgroundOf(context),
+                AppColors.backgroundOf(context),
               ],
           stops: const [0.0, 0.3, 1.0],
         ),

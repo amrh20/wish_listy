@@ -213,25 +213,25 @@ class _CustomTextFieldState extends State<CustomTextField>
                   onFieldSubmitted: (_) => _validateField(),
                   style: AppStyles.bodyLarge.copyWith(
                     color: widget.enabled
-                        ? AppColors.textPrimary
-                        : AppColors.textTertiary,
+                        ? AppColors.textPrimaryOf(context)
+                        : AppColors.textTertiaryOf(context),
                   ),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: AppColors.surfaceOf(context),
 
-                    // Border styles - White background with subtle border
+                    // Border styles
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: AppColors.border.withOpacity(0.2),
+                        color: AppColors.borderOf(context).withOpacity(0.2),
                         width: 1,
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(
-                        color: AppColors.border.withOpacity(0.2),
+                        color: AppColors.borderOf(context).withOpacity(0.2),
                         width: 1,
                       ),
                     ),
@@ -270,7 +270,7 @@ class _CustomTextFieldState extends State<CustomTextField>
                           ? (displayError != null
                                 ? AppColors.error
                                 : AppColors.primary)
-                          : AppColors.textSecondary,
+                          : AppColors.textSecondaryOf(context),
                       fontWeight: _isFocused
                           ? FontWeight.w500
                           : FontWeight.normal,
@@ -281,14 +281,14 @@ class _CustomTextFieldState extends State<CustomTextField>
                           ? (displayError != null
                                 ? AppColors.error
                                 : AppColors.primary)
-                          : AppColors.textSecondary,
+                          : AppColors.textSecondaryOf(context),
                       fontWeight: FontWeight.w500,
                     ),
 
                     // Hint
                     hintText: widget.hint,
                     hintStyle: AppStyles.bodyMedium.copyWith(
-                      color: AppColors.textTertiary,
+                      color: AppColors.textTertiaryOf(context),
                     ),
 
                     // Icons
@@ -299,7 +299,7 @@ class _CustomTextFieldState extends State<CustomTextField>
                                 ? (displayError != null
                                       ? AppColors.error
                                       : AppColors.primary)
-                                : AppColors.textTertiary,
+                                : AppColors.textTertiaryOf(context),
                             size: 20,
                           )
                         : null,
@@ -307,7 +307,7 @@ class _CustomTextFieldState extends State<CustomTextField>
 
                     // Counter
                     counterStyle: AppStyles.caption.copyWith(
-                      color: AppColors.textTertiary,
+                      color: AppColors.textTertiaryOf(context),
                     ),
 
                     // Error text

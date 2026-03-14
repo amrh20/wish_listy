@@ -108,7 +108,7 @@ class CustomBottomNavigation extends StatelessWidget {
               bottom: containerMargin.bottom,
             ),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95), // Subtle background
+              color: AppColors.surfaceOf(context).withOpacity(0.95),
               borderRadius: BorderRadius.circular(30),
               boxShadow: [
                 BoxShadow(
@@ -132,7 +132,7 @@ class CustomBottomNavigation extends StatelessWidget {
                 alignment: Alignment.center,
                 child: GNav(
                 gap: gap,
-                color: AppColors.textTertiary, // Inactive icon/text color
+                color: AppColors.textTertiaryOf(context),
                 activeColor:
                     tabs[gNavIndex]['color'] as Color, // Active icon/text color
                 iconSize: iconSize,
