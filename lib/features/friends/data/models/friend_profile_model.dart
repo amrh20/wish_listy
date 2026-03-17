@@ -48,6 +48,13 @@ class FriendProfileUserModel {
     }
     return 'User #$id';
   }
+
+  /// Returns @handle when set, or null when handle is null/empty (use in UI to avoid showing lone @)
+  String? getDisplayHandleOrNull() {
+    final h = handle?.trim();
+    if (h == null || h.isEmpty) return null;
+    return h.startsWith('@') ? h : '@$h';
+  }
 }
 
 @immutable

@@ -102,6 +102,13 @@ class User {
     return 'User #$id';
   }
 
+  /// Returns @handle when set, or null when handle is null/empty (use in UI to avoid showing lone @ or "User #ID")
+  String? getDisplayHandleOrNull() {
+    final h = handle?.trim();
+    if (h == null || h.isEmpty) return null;
+    return h.startsWith('@') ? h : '@$h';
+  }
+
   @override
   String toString() {
     return 'User(id: $id, fullName: $fullName, username: $username, handle: $handle)';

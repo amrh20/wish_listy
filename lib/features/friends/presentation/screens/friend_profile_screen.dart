@@ -1109,11 +1109,11 @@ class _PatternedHeader extends StatelessWidget {
                             ],
                           ],
                         ),
-                        // Handle below name - always show (will display "User #ID" if handle is null)
-                        if (user != null) ...[
+                        // Handle below name - only show when set (never show lone @ or "User #ID")
+                        if (user != null && user.getDisplayHandleOrNull() != null) ...[
                           const SizedBox(height: 4),
                           Text(
-                            user.getDisplayHandle(),
+                            user.getDisplayHandleOrNull()!,
                             style: TextStyle(
                               fontSize: 14,
                               color: AppColors.textSecondary,

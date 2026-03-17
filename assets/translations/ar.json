@@ -240,7 +240,12 @@
     "notNow": "ليس الآن",
     "biometricEnabled": "تم تفعيل تسجيل الدخول البيومتري بنجاح!",
     "verifyIdentity": "يرجى التحقق من هويتك للمتابعة",
-    "biometricTokenMissing": "يرجى تسجيل الدخول يدوياً مرة واحدة لمزامنة البيومترية."
+    "biometricTokenMissing": "يرجى تسجيل الدخول يدوياً مرة واحدة لمزامنة البيومترية.",
+    "continueWithGoogle": "Google",
+    "continueWithApple": "Apple",
+    "googleSignInFailed": "فشل تسجيل الدخول بـ Google. يرجى المحاولة مرة أخرى.",
+    "appleSignInFailed": "فشل تسجيل الدخول بـ Apple. يرجى المحاولة مرة أخرى.",
+    "appleSignInComingSoon": "تسجيل الدخول بـ Apple قريباً!"
   },
   "welcome": {
     "title": "مرحباً بك",
@@ -1077,6 +1082,8 @@
     "shareProfile": "شارك ملفك الشخصي",
     "title": "ملفك الشخصي",
     "editProfile": "تعديل ملفك الشخصي",
+    "setYourHandle": "اضبط معرفك",
+    "addUsername": "أضف اسم مستخدم",
     "account": "الحساب",
     "personalInfo": "المعلومات الشخصية",
     "accountSettings": "إعدادات حسابك",

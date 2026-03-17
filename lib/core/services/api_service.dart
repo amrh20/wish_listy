@@ -603,6 +603,7 @@ class ApiService {
 /// Custom exception class for API errors
 class ApiException implements Exception {
   final String message;
+  final String? messageKey;
   final int? statusCode;
   final dynamic data;
   final ApiErrorKind kind;
@@ -612,7 +613,8 @@ class ApiException implements Exception {
     this.statusCode,
     this.data,
     this.kind = ApiErrorKind.unknown,
-  }) : message = _sanitizeMessage(_extractMessageFromData(data) ?? message);
+  })  : messageKey = _extractMessageKeyFromData(data),
+        message = _sanitizeMessage(_extractMessageFromData(data) ?? message);
 
   bool get isNoInternet => kind == ApiErrorKind.noInternet;
   bool get isTimeout => kind == ApiErrorKind.timeout;
@@ -639,6 +641,22 @@ class ApiException implements Exception {
       }
     } catch (_) {
       // Ignore parsing issues; fall back to provided message
+    }
+    return null;
+  }
+
+  static String? _extractMessageKeyFromData(dynamic data) {
+    try {
+      if (data is Map) {
+        final dynamic key =
+            data['messageKey'] ?? data['message_key'] ?? data['errorKey'] ?? data['error_key'];
+        if (key != null) {
+          final s = key.toString().trim();
+          return s.isEmpty ? null : s;
+        }
+      }
+    } catch (_) {
+      // Ignore parsing issues; fall back to null
     }
     return null;
   }

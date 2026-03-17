@@ -527,10 +527,10 @@ class FriendsScreenState extends State<FriendsScreen>
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
-                      if (friend.fullName.isNotEmpty) ...[
+                      if (friend.fullName.isNotEmpty && friend.getDisplayHandleOrNull() != null) ...[
                         const SizedBox(height: 2),
                         Text(
-                          friend.getDisplayHandle(),
+                          friend.getDisplayHandleOrNull()!,
                           style: AppStyles.bodySmall.copyWith(
                             color: AppColors.textTertiary,
                           ),
@@ -658,10 +658,10 @@ class FriendsScreenState extends State<FriendsScreen>
                           ),
                         ),
                       ),
-                      if (fromUser.fullName.isNotEmpty) ...[
+                      if (fromUser.fullName.isNotEmpty && fromUser.getDisplayHandleOrNull() != null) ...[
                         const SizedBox(height: 2),
                         Text(
-                          fromUser.getDisplayHandle(),
+                          fromUser.getDisplayHandleOrNull()!,
                           style: AppStyles.bodySmall.copyWith(
                             color: AppColors.textTertiary,
                           ),

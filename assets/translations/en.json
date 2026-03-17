@@ -240,7 +240,12 @@
     "notNow": "Not Now",
     "biometricEnabled": "Biometric login enabled successfully!",
     "verifyIdentity": "Please verify identity to continue",
-    "biometricTokenMissing": "Please login manually once to sync biometrics."
+    "biometricTokenMissing": "Please login manually once to sync biometrics.",
+    "continueWithGoogle": "Google",
+    "continueWithApple": "Apple",
+    "googleSignInFailed": "Google sign-in failed. Please try again.",
+    "appleSignInFailed": "Apple sign-in failed. Please try again.",
+    "appleSignInComingSoon": "Apple Sign-In coming soon!"
   },
   "welcome": {
     "title": "Welcome",
@@ -1076,6 +1081,8 @@
     "shareProfile": "Share Profile",
     "title": "Profile",
     "editProfile": "Edit Profile",
+    "setYourHandle": "Set your handle",
+    "addUsername": "Add username",
     "account": "Account",
     "personalInfo": "Personal Info",
     "accountSettings": "Account Settings",

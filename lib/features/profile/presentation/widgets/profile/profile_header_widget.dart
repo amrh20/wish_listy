@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/widgets/royal_avatar_wrapper.dart';
+import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/profile/presentation/cubit/profile_cubit.dart';
 import 'package:wish_listy/features/profile/presentation/cubit/profile_state.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/profile_image_action_bottom_sheet.dart';
@@ -173,19 +175,9 @@ class ProfileHeaderWidget extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
               ),
-              // Handle
-              if (userHandle != null && userHandle!.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  userHandle!,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+              // Handle: show @handle when set, or placeholder when null/empty
+              const SizedBox(height: 4),
+              _buildHandleRow(context),
               // Bio
               if (hasBio) ...[
                 const SizedBox(height: 8),
@@ -204,6 +196,65 @@ class ProfileHeaderWidget extends StatelessWidget {
                   ),
                 ),
               ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatHandle(String? raw) {
+    final h = raw?.trim();
+    if (h == null || h.isEmpty) return '';
+    return h.startsWith('@') ? h : '@$h';
+  }
+
+  Widget _buildHandleRow(BuildContext context) {
+    final loc = Provider.of<LocalizationService>(context, listen: false);
+    final displayHandle = _formatHandle(userHandle);
+    final hasHandle = displayHandle.isNotEmpty;
+
+    if (hasHandle) {
+      return Text(
+        displayHandle,
+        style: const TextStyle(
+          fontSize: 14,
+          color: AppColors.textSecondary,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+      );
+    }
+
+    final placeholder = loc.translate('profile.setYourHandle') ?? 'Set your handle';
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onEditPersonalInfo,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                placeholder,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.primary.withOpacity(0.9),
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(width: 6),
+              Icon(
+                Icons.edit_outlined,
+                size: 14,
+                color: AppColors.primary.withOpacity(0.8),
+              ),
             ],
           ),
         ),

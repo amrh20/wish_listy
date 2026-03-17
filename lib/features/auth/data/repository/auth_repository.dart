@@ -1,10 +1,11 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/socket_service.dart';
 import 'package:wish_listy/core/services/biometric_service.dart';
@@ -24,6 +25,7 @@ class AuthRepository extends ChangeNotifier {
   AuthRepository._internal();
 
   final ApiService _apiService = ApiService();
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   UserState _userState = UserState.loading;
   String? _userId;
@@ -71,7 +73,7 @@ class AuthRepository extends ChangeNotifier {
 
           // Sync FCM token in background so startup is not blocked
           // This ensures token is sent to backend when user restarts app while logged in
-          _syncFcmTokenWithRetries().catchError((_) {});
+          _syncFcmTokenWithRetries().catchError((_) => false);
         }
       } else {
         _userState = UserState.guest;
@@ -290,6 +292,209 @@ class AuthRepository extends ChangeNotifier {
     }
   }
 
+  /// Login with Google Sign-In.
+  /// Returns true on success, false if user cancelled, throws ApiException on error.
+  Future<bool> loginWithGoogle() async {
+    try {
+      // Force account picker: clear any cached session before opening UI.
+      await _googleSignIn.signOut().catchError((_) {});
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return false;
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      final idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+      if (idToken == null) {
+        throw ApiException('Failed to get authentication token');
+      }
+
+      String? fcmToken;
+      try {
+        fcmToken = await FirebaseMessaging.instance.getToken();
+      } catch (_) {}
+
+      final response = await _apiService.post(
+        '/auth/google',
+        data: {
+          'idToken': idToken,
+          if (fcmToken != null) 'fcmToken': fcmToken,
+        },
+      );
+
+      if (response['success'] == true) {
+        final userData = response['user'] ?? response['data'];
+        final token = response['token'];
+
+        _userState = UserState.authenticated;
+        _userId =
+            userData?['id'] ?? 'user_${DateTime.now().millisecondsSinceEpoch}';
+        _userEmail =
+            userData?['username'] ?? userData?['email'] ?? googleUser.email;
+        _userName =
+            userData?['fullName'] ??
+            userData?['name'] ??
+            googleUser.displayName ??
+            '';
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('is_logged_in', true);
+        await prefs.setString('user_id', _userId!);
+        await prefs.setString('user_email', _userEmail!);
+        await prefs.setString('user_name', _userName!);
+
+        if (token != null) {
+          await prefs.setString('auth_token', token);
+          final refreshToken =
+              response['refreshToken'] ?? response['refresh_token'];
+          if (refreshToken != null) {
+            await prefs.setString('refresh_token', refreshToken.toString());
+          }
+          _apiService.setAuthToken(token);
+          await SocketService().authenticateSocket(token);
+          await _syncFcmTokenWithRetries();
+        }
+
+        notifyListeners();
+        return true;
+      } else {
+        throw ApiException(
+          response['message'] ?? 'Google sign-in failed',
+          statusCode: 400,
+          data: response,
+        );
+      }
+    } on ApiException {
+      // Clear client-side sessions so retry shows account picker again.
+      await _googleSignIn.signOut().catchError((_) {});
+      await _googleSignIn.disconnect().catchError((_) {});
+      await FirebaseAuth.instance.signOut().catchError((_) {});
+      rethrow;
+    } catch (e) {
+      // Clear client-side sessions so retry shows account picker again.
+      await _googleSignIn.signOut().catchError((_) {});
+      await _googleSignIn.disconnect().catchError((_) {});
+      await FirebaseAuth.instance.signOut().catchError((_) {});
+      if (e.toString().contains('canceled') ||
+          e.toString().contains('cancelled')) {
+        return false;
+      }
+      throw ApiException('Google sign-in failed. Please try again.');
+    }
+  }
+
+  /// Login with Apple Sign-In.
+  /// Returns true on success, false if user cancelled, throws ApiException on error.
+  Future<bool> loginWithApple() async {
+    try {
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: const [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      final userCredential =
+          await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+
+      final firebaseIdToken = await userCredential.user?.getIdToken();
+      if (firebaseIdToken == null || firebaseIdToken.isEmpty) {
+        throw ApiException('Failed to get authentication token');
+      }
+
+      String? fcmToken;
+      try {
+        fcmToken = await FirebaseMessaging.instance.getToken();
+      } catch (_) {}
+
+      final response = await _apiService.post(
+        '/auth/apple',
+        data: {
+          'idToken': firebaseIdToken,
+          if (fcmToken != null) 'fcmToken': fcmToken,
+        },
+      );
+
+      if (response['success'] == true) {
+        final userData = response['user'] ?? response['data'];
+        final token = response['token'];
+
+        _userState = UserState.authenticated;
+        _userId =
+            userData?['id'] ?? 'user_${DateTime.now().millisecondsSinceEpoch}';
+        _userEmail = userData?['username'] ??
+            userData?['email'] ??
+            appleCredential.email;
+
+        final fallbackName = [
+          appleCredential.givenName,
+          appleCredential.familyName,
+        ].whereType<String>().where((s) => s.trim().isNotEmpty).join(' ');
+
+        _userName = userData?['fullName'] ??
+            userData?['name'] ??
+            fallbackName;
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('is_logged_in', true);
+        await prefs.setString('user_id', _userId!);
+        if ((_userEmail ?? '').isNotEmpty) {
+          await prefs.setString('user_email', _userEmail!);
+        }
+        await prefs.setString('user_name', _userName ?? '');
+
+        if (token != null) {
+          await prefs.setString('auth_token', token);
+          final refreshToken = response['refreshToken'] ?? response['refresh_token'];
+          if (refreshToken != null) {
+            await prefs.setString('refresh_token', refreshToken.toString());
+          }
+          _apiService.setAuthToken(token);
+          await SocketService().authenticateSocket(token);
+          await _syncFcmTokenWithRetries();
+        }
+
+        notifyListeners();
+        return true;
+      } else {
+        throw ApiException(
+          response['message'] ?? 'Apple sign-in failed',
+          statusCode: 400,
+          data: response,
+        );
+      }
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // Clear Firebase session so retry is clean.
+      await FirebaseAuth.instance.signOut().catchError((_) {});
+      if (e.code == AuthorizationErrorCode.canceled) {
+        return false;
+      }
+      throw ApiException('Apple sign-in failed. Please try again.');
+    } on ApiException {
+      // Clear Firebase session so retry is clean.
+      await FirebaseAuth.instance.signOut().catchError((_) {});
+      rethrow;
+    } catch (e) {
+      // Clear Firebase session so retry is clean.
+      await FirebaseAuth.instance.signOut().catchError((_) {});
+      if (e.toString().contains('canceled') || e.toString().contains('cancelled')) {
+        return false;
+      }
+      throw ApiException('Apple sign-in failed. Please try again.');
+    }
+  }
+
   // Register new user using real API
   Future<bool> registerUser({
     required String username, // email or phone
@@ -353,7 +558,19 @@ class AuthRepository extends ChangeNotifier {
 
   // Logout using real API
   Future<void> logout() async {
-    
+    // Clear Google Sign-In cache so next "Login with Google" shows account picker
+    try {
+      await _googleSignIn.signOut();
+      await _googleSignIn.disconnect();
+    } catch (e) {
+      // Ignore if user was not signed in with Google
+    }
+    try {
+      await FirebaseAuth.instance.signOut();
+    } catch (e) {
+      // Ignore if no Firebase user
+    }
+
     try {
       // Disconnect from Socket.IO first
       SocketService().disconnect();
@@ -419,7 +636,19 @@ class AuthRepository extends ChangeNotifier {
   /// This method clears all local state without making any backend requests
   /// to avoid infinite loops when handling unauthorized errors.
   Future<void> logoutSilently() async {
-    
+    // Clear Google Sign-In cache so next "Login with Google" shows account picker
+    try {
+      await _googleSignIn.signOut();
+      await _googleSignIn.disconnect();
+    } catch (e) {
+      // Ignore if user was not signed in with Google
+    }
+    try {
+      await FirebaseAuth.instance.signOut();
+    } catch (e) {
+      // Ignore if no Firebase user
+    }
+
     // Disconnect from Socket.IO
     try {
       SocketService().disconnect();
@@ -566,40 +795,81 @@ class AuthRepository extends ChangeNotifier {
     }
   }
 
-  // Delete account using real API
+  /// Deletes the user account. Execution order:
+  /// 1. Backend API delete (must succeed with 200).
+  /// 2. Only on success: Google disconnect/signOut, Firebase user delete/signOut,
+  ///    biometric and local storage cleanup.
   Future<void> deleteAccount() async {
     try {
-      // Disconnect from Socket.IO
+      // Disconnect from Socket.IO before API so we don't send with doomed token
       SocketService().disconnect();
 
-      // Call API to delete account
-      // Backend endpoint: DELETE /api/auth/delete-account
+      // 1. Backend API first — only proceed with cleanup on success (200 OK)
       await _apiService.delete('/auth/delete-account');
     } on ApiException {
-      // Re-throw ApiException so UI can show error message
       rethrow;
     } catch (e) {
-      // Convert unexpected errors to ApiException
       throw ApiException('Failed to delete account: $e');
     }
 
-    // Clear local state (only if API call succeeded)
+    // 2. Google: revoke OAuth token and sign out so next time shows account picker
+    try {
+      final googleSignIn = GoogleSignIn();
+      await googleSignIn.disconnect();
+      await googleSignIn.signOut();
+    } catch (e) {
+      // Continue with full cleanup even if Google cleanup fails
+    }
+
+    // 3. Firebase Auth: delete current user (may require recent login), then sign out
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        try {
+          await user.delete();
+        } on FirebaseAuthException catch (e) {
+          if (e.code == 'requires-recent-login') {
+            // Backend already deleted account; we still sign out locally
+          }
+          // Proceed to signOut regardless
+        }
+      }
+      await FirebaseAuth.instance.signOut();
+    } catch (e) {
+      // Continue with full cleanup even if Firebase cleanup fails
+    }
+
+    // 4. Local & biometric: clear all credentials (JWTs, biometric tokens)
+    try {
+      await BiometricService().clearAllBiometricData();
+    } catch (e) {
+      // Continue with remaining cleanup
+    }
+
+    // 5. In-memory state and local storage
     _userState = UserState.guest;
     _userId = null;
     _userEmail = null;
     _userName = null;
 
-    // Clear local storage
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('is_logged_in', false);
-    await prefs.remove('user_id');
-    await prefs.remove('user_email');
-    await prefs.remove('user_name');
-    await prefs.remove('auth_token');
-    await prefs.remove('refresh_token');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_logged_in', false);
+      await prefs.remove('user_id');
+      await prefs.remove('user_email');
+      await prefs.remove('user_name');
+      await prefs.remove('auth_token');
+      await prefs.remove('refresh_token');
+    } catch (e) {
+      // Best-effort
+    }
 
-    // Clear API service token
     _apiService.clearAuthToken();
+    try {
+      _apiService.dio.options.headers.remove('Authorization');
+    } catch (e) {
+      // Best-effort
+    }
 
     notifyListeners();
   }

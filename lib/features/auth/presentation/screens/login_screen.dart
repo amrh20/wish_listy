@@ -14,12 +14,14 @@ import 'package:wish_listy/core/widgets/custom_button.dart';
 import 'package:wish_listy/core/widgets/custom_text_field.dart';
 import 'package:wish_listy/core/widgets/confirmation_dialog.dart';
 import 'package:wish_listy/core/widgets/unified_snackbar.dart';
+import 'package:wish_listy/core/widgets/dialogs.dart';
 import 'package:country_picker/country_picker.dart';
 import 'package:wish_listy/core/services/biometric_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -56,6 +58,8 @@ class _LoginScreenState extends State<LoginScreen>
   bool _hasManuallySelectedCountry = false;
   bool _usernameHasText = false;
   String? _usernameErrorText;
+  bool _isGoogleSignInLoading = false;
+  bool _isAppleSignInLoading = false;
   late Country _selectedCountry;
 
   @override
@@ -613,27 +617,12 @@ class _LoginScreenState extends State<LoginScreen>
           context,
           listen: false,
         );
-
-        // ApiException now extracts backend `data.message` and sanitizes noisy prefixes
-        // so `e.message` should already be the user-facing backend message.
-        String errorMessage = e.message.trim();
-        if (errorMessage.isEmpty) {
-          errorMessage = localization.translate('auth.unexpectedError');
-        }
-
-        // Use backend message as the dialog title (localization-friendly via Accept-Language)
-        // Keep message empty/minimal.
-        final String title = errorMessage;
-
-        // Show error dialog with Lottie animation - only close button
-        ConfirmationDialog.show(
-          context: context,
-          isSuccess: false,
-          title: title,
-          message: '',
-          secondaryActionLabel: localization.translate('auth.close'),
-          onSecondaryAction: () {},
-          barrierDismissible: true,
+        final translated = e.messageKey != null
+            ? localization.translate(e.messageKey!)
+            : null;
+        Dialogs.showErrorSnackbar(
+          context,
+          (translated?.trim().isNotEmpty ?? false) ? translated! : e.message,
         );
       }
     } catch (e) {
@@ -661,6 +650,220 @@ class _LoginScreenState extends State<LoginScreen>
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    if (_isGoogleSignInLoading || _isLoading) return;
+
+    setState(() => _isGoogleSignInLoading = true);
+
+    try {
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      final success = await authService.loginWithGoogle();
+
+      if (!success) return;
+
+      if (mounted) {
+        try {
+          final notificationsCubit = context.read<NotificationsCubit>();
+          notificationsCubit.getUnreadCount();
+        } catch (_) {}
+
+        // Same as email/password: offer biometric if available and not yet enabled for this account
+        final prefs = await SharedPreferences.getInstance();
+        final googleEmail = prefs.getString('user_email');
+        final biometricService = BiometricService();
+        final isAvailable = await biometricService.isBiometricAvailable();
+        final isEnabledForThisAccount = googleEmail != null &&
+            googleEmail.isNotEmpty &&
+            await biometricService.isEnabledForIdentifier(googleEmail);
+
+        if (isAvailable && !isEnabledForThisAccount && googleEmail != null && googleEmail.isNotEmpty) {
+          final userId = prefs.getString('user_id');
+          final userName = prefs.getString('user_name');
+          await _showBiometricEnablementPrompt(
+            authService,
+            userId: userId,
+            userName: userName,
+            identifier: googleEmail,
+          );
+        } else {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.mainNavigation,
+            (route) => false,
+          );
+        }
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        final localization = Provider.of<LocalizationService>(
+          context,
+          listen: false,
+        );
+        final translated = e.messageKey != null
+            ? localization.translate(e.messageKey!)
+            : null;
+        Dialogs.showErrorSnackbar(
+          context,
+          (translated?.trim().isNotEmpty ?? false) ? translated! : e.message,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final localization = Provider.of<LocalizationService>(
+          context,
+          listen: false,
+        );
+        Dialogs.showErrorSnackbar(
+          context,
+          localization.translate('auth.googleSignInFailed') ??
+              'Google sign-in failed. Please try again.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isGoogleSignInLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleAppleSignIn() async {
+    if (_isAppleSignInLoading || _isLoading) return;
+
+    setState(() => _isAppleSignInLoading = true);
+
+    try {
+      final authService = Provider.of<AuthRepository>(context, listen: false);
+      final success = await authService.loginWithApple();
+
+      if (!success) return;
+
+      if (mounted) {
+        try {
+          final notificationsCubit = context.read<NotificationsCubit>();
+          notificationsCubit.getUnreadCount();
+        } catch (_) {}
+
+        // Offer biometric if available and not yet enabled for this account (same as Google)
+        final prefs = await SharedPreferences.getInstance();
+        final appleIdentifier = prefs.getString('user_email');
+        final biometricService = BiometricService();
+        final isAvailable = await biometricService.isBiometricAvailable();
+        final isEnabledForThisAccount = appleIdentifier != null &&
+            appleIdentifier.isNotEmpty &&
+            await biometricService.isEnabledForIdentifier(appleIdentifier);
+
+        if (isAvailable &&
+            !isEnabledForThisAccount &&
+            appleIdentifier != null &&
+            appleIdentifier.isNotEmpty) {
+          final userId = prefs.getString('user_id');
+          final userName = prefs.getString('user_name');
+          await _showBiometricEnablementPrompt(
+            authService,
+            userId: userId,
+            userName: userName,
+            identifier: appleIdentifier,
+          );
+        } else {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            AppRoutes.mainNavigation,
+            (route) => false,
+          );
+        }
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        final localization = Provider.of<LocalizationService>(
+          context,
+          listen: false,
+        );
+        final translated = e.messageKey != null
+            ? localization.translate(e.messageKey!)
+            : null;
+        Dialogs.showErrorSnackbar(
+          context,
+          (translated?.trim().isNotEmpty ?? false) ? translated! : e.message,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final localization = Provider.of<LocalizationService>(
+          context,
+          listen: false,
+        );
+        Dialogs.showErrorSnackbar(
+          context,
+          localization.translate('auth.appleSignInFailed') ??
+              'Apple sign-in failed. Please try again.',
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isAppleSignInLoading = false);
+      }
+    }
+  }
+
+  Widget _buildSocialAuthButton({
+    required Widget icon,
+    required String label,
+    required bool isLoading,
+    required VoidCallback onTap,
+  }) {
+    final bool isDisabled =
+        _isLoading || _isGoogleSignInLoading || _isAppleSignInLoading;
+    return InkWell(
+      onTap: isDisabled ? null : onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(
+            color: isDisabled
+                ? AppColors.textTertiary.withOpacity(0.3)
+                : AppColors.border,
+            width: 1.5,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isLoading)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(AppColors.primary),
+                ),
+              )
+            else
+              icon,
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                label,
+                style: AppStyles.bodyMedium.copyWith(
+                  color: isDisabled
+                      ? AppColors.textTertiary
+                      : AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   /// Handle unverified account during login
@@ -1254,140 +1457,165 @@ class _LoginScreenState extends State<LoginScreen>
 
                                                 const SizedBox(height: 32),
 
-                                                // Login Button and Biometric Button
+                                                // Login Button (80%) + Biometric Button (20%) in one row
                                                 FadeTransition(
                                                   opacity: _buttonFade,
-                                                  child: Column(
+                                                  child: Row(
                                                     children: [
-                                                      CustomButton(
-                                                        text: localization
-                                                            .translate(
-                                                              'auth.signIn',
-                                                            ),
-                                                        onPressed: _handleLogin,
-                                                        isLoading: _isLoading,
-                                                        variant: ButtonVariant
-                                                            .gradient,
-                                                        gradientColors: [
-                                                          AppColors.primary,
-                                                          AppColors.info,
-                                                          AppColors.secondary,
-                                                        ],
+                                                      Expanded(
+                                                        flex: 4,
+                                                        child: CustomButton(
+                                                          text: localization
+                                                              .translate(
+                                                                'auth.signIn',
+                                                              ),
+                                                          onPressed: _handleLogin,
+                                                          isLoading: _isLoading,
+                                                          variant: ButtonVariant
+                                                              .gradient,
+                                                          gradientColors: [
+                                                            AppColors.primary,
+                                                            AppColors.info,
+                                                            AppColors.secondary,
+                                                          ],
+                                                        ),
                                                       ),
-                                                      // Biometric Button (if available for this identifier)
-                                                      if (_showBiometricIcon)
-                                                        Padding(
-                                                          padding:
-                                                              const EdgeInsets.only(
-                                                                top: 16,
-                                                              ),
-                                                          child: InkWell(
-                                                            onTap:
-                                                                (_isLoading ||
-                                                                    _isCheckingBiometric)
-                                                                ? null
-                                                                : () => _attemptBiometricLogin(
-                                                                    isManual:
-                                                                        true,
-                                                                  ),
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                  12,
-                                                                ),
-                                                            child: Container(
-                                                              padding:
-                                                                  const EdgeInsets.symmetric(
-                                                                    horizontal:
-                                                                        24,
-                                                                    vertical:
-                                                                        16,
-                                                                  ),
-                                                              decoration: BoxDecoration(
-                                                                border: Border.all(
-                                                                  color:
-                                                                      (_isLoading ||
-                                                                          _isCheckingBiometric)
-                                                                      ? AppColors
-                                                                            .textTertiary
-                                                                            .withOpacity(
-                                                                              0.3,
-                                                                            )
-                                                                      : AppColors
-                                                                            .primary,
-                                                                  width: 1.5,
-                                                                ),
-                                                                borderRadius:
-                                                                    BorderRadius.circular(
-                                                                      12,
-                                                                    ),
-                                                                color: Colors
-                                                                    .transparent,
-                                                              ),
-                                                              child: Row(
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .center,
-                                                                children: [
-                                                                  Icon(
-                                                                    Icons
-                                                                        .fingerprint,
+                                                      if (_showBiometricIcon) ...[
+                                                        const SizedBox(width: 12),
+                                                        Expanded(
+                                                          flex: 1,
+                                                          child: SizedBox(
+                                                            height: 54,
+                                                            child: InkWell(
+                                                              onTap:
+                                                                  (_isLoading ||
+                                                                      _isCheckingBiometric)
+                                                                      ? null
+                                                                      : () => _attemptBiometricLogin(
+                                                                          isManual: true,
+                                                                        ),
+                                                              borderRadius:
+                                                                  BorderRadius.circular(12),
+                                                              child: Container(
+                                                                decoration: BoxDecoration(
+                                                                  border: Border.all(
                                                                     color:
                                                                         (_isLoading ||
                                                                             _isCheckingBiometric)
-                                                                        ? AppColors
-                                                                              .textTertiary
-                                                                        : AppColors
-                                                                              .primary,
-                                                                    size: 24,
+                                                                            ? AppColors.textTertiary
+                                                                                .withOpacity(0.3)
+                                                                            : AppColors.primary,
+                                                                    width: 1.5,
                                                                   ),
-                                                                  const SizedBox(
-                                                                    width: 8,
-                                                                  ),
-                                                                  Text(
-                                                                    localization.translate(
-                                                                          'auth.useBiometric',
-                                                                        ) ??
-                                                                        'Use Fingerprint or Face ID',
-                                                                    style: AppStyles.bodyMedium.copyWith(
-                                                                      color:
-                                                                          (_isLoading ||
-                                                                              _isCheckingBiometric)
-                                                                          ? AppColors.textTertiary
-                                                                          : AppColors.primary,
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w600,
-                                                                      fontFamily:
-                                                                          'Alexandria',
-                                                                    ),
-                                                                  ),
-                                                                  if (_isCheckingBiometric) ...[
-                                                                    const SizedBox(
-                                                                      width: 12,
-                                                                    ),
-                                                                    SizedBox(
-                                                                      width: 16,
-                                                                      height:
-                                                                          16,
-                                                                      child: CircularProgressIndicator(
-                                                                        strokeWidth:
-                                                                            2,
-                                                                        valueColor:
-                                                                            AlwaysStoppedAnimation<
-                                                                              Color
-                                                                            >(
+                                                                  borderRadius:
+                                                                      BorderRadius.circular(12),
+                                                                  color: Colors.transparent,
+                                                                ),
+                                                                child: Center(
+                                                                  child: _isCheckingBiometric
+                                                                      ? SizedBox(
+                                                                          width: 24,
+                                                                          height: 24,
+                                                                          child: CircularProgressIndicator(
+                                                                            strokeWidth: 2,
+                                                                            valueColor: AlwaysStoppedAnimation<Color>(
                                                                               AppColors.primary,
                                                                             ),
-                                                                      ),
-                                                                    ),
-                                                                  ],
-                                                                ],
+                                                                          ),
+                                                                        )
+                                                                      : Icon(
+                                                                          Icons.fingerprint,
+                                                                          color: (_isLoading ||
+                                                                                  _isCheckingBiometric)
+                                                                              ? AppColors.textTertiary
+                                                                              : AppColors.primary,
+                                                                          size: 28,
+                                                                        ),
+                                                                ),
                                                               ),
                                                             ),
                                                           ),
                                                         ),
+                                                      ],
                                                     ],
                                                   ),
+                                                ),
+
+                                                // Social Auth Divider
+                                                Padding(
+                                                  padding: const EdgeInsets.only(
+                                                    top: 24,
+                                                    bottom: 8,
+                                                  ),
+                                                  child: Row(
+                                                    children: [
+                                                      const Expanded(
+                                                        child: Divider(
+                                                          color: AppColors.border,
+                                                        ),
+                                                      ),
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 16,
+                                                            ),
+                                                        child: Text(
+                                                          localization.translate(
+                                                                'auth.continueWith',
+                                                              ) ??
+                                                              'or continue with',
+                                                          style: AppStyles
+                                                              .bodySmall
+                                                              .copyWith(
+                                                                color: AppColors
+                                                                    .textTertiary,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                      const Expanded(
+                                                        child: Divider(
+                                                          color: AppColors.border,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+
+                                                // Google + Apple in one row
+                                                Row(
+                                                  children: [
+                                                    Expanded(
+                                                      child: _buildSocialAuthButton(
+                                                        icon: Icon(
+                                                          FontAwesomeIcons.google,
+                                                          size: 20,
+                                                          color: const Color(0xFFDB4437),
+                                                        ),
+                                                        label: localization.translate(
+                                                              'auth.continueWithGoogle',
+                                                            ) ??
+                                                            'Continue with Google',
+                                                        isLoading: _isGoogleSignInLoading,
+                                                        onTap: _handleGoogleSignIn,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    Expanded(
+                                                      child: _buildSocialAuthButton(
+                                                        icon: const Icon(
+                                                          Icons.apple,
+                                                          size: 24,
+                                                          color: Colors.black,
+                                                        ),
+                                                        label: localization.translate(
+                                                              'auth.continueWithApple',
+                                                            ) ??
+                                                            'Continue with Apple',
+                                                        isLoading: _isAppleSignInLoading,
+                                                        onTap: _handleAppleSignIn,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ],
                                             ),
@@ -1397,7 +1625,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     ),
                                   ),
 
-                                  const SizedBox(height: 32),
+                                  const SizedBox(height: 16),
 
                                   // Sign Up Link
                                   Row(
@@ -1871,11 +2099,14 @@ class _LoginScreenState extends State<LoginScreen>
     return text;
   }
 
-  /// Show bottom sheet to enable biometric login
+  /// Show bottom sheet to enable biometric login.
+  /// [identifier] When provided (e.g. Google email), used as the biometric storage key.
+  /// When null, uses the username field (email/phone) for email/password login.
   Future<void> _showBiometricEnablementPrompt(
     AuthRepository authService, {
     String? userId,
     String? userName,
+    String? identifier,
   }) async {
     if (!mounted) return;
 
@@ -2098,10 +2329,10 @@ class _LoginScreenState extends State<LoginScreen>
                               return;
                             }
 
-                            // Get the current user's identifier (email or phone)
-                            final identifier = _usernameController.text.trim();
+                            // Use provided identifier (e.g. Google email) or username field
+                            final identifierToUse = identifier ?? _usernameController.text.trim();
 
-                            if (identifier.isEmpty) {
+                            if (identifierToUse.isEmpty) {
                               scaffoldMessenger.hideCurrentSnackBar();
                               scaffoldMessenger.showSnackBar(
                                 SnackBar(
@@ -2133,7 +2364,7 @@ class _LoginScreenState extends State<LoginScreen>
                             final success = await biometricService
                                 .saveTokenSecurely(
                               token,
-                              identifier: identifier,
+                              identifier: identifierToUse,
                               refreshToken: refreshToken,
                               userId: finalUserId,
                               userName: finalUserName,

@@ -373,13 +373,14 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                         ),
                       ),
                     ),
-                    // Display handle instead of username
-                    Text(
-                      user.getDisplayHandle(),
-                      style: AppStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
+                    // Display handle only when set (never show lone @ or "User #ID")
+                    if (user.getDisplayHandleOrNull() != null)
+                      Text(
+                        user.getDisplayHandleOrNull()!,
+                        style: AppStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
                     if (user.mutualFriendsCount != null && user.mutualFriendsCount! > 0)
                       Text(
                         localization.translate(

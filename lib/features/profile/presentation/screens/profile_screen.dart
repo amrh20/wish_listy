@@ -398,7 +398,7 @@ class ProfileScreenState extends State<ProfileScreen>
           userName: _userProfile?.name ?? '',
           profileImage: _userProfile?.profilePicture,
           userBio: _userProfile?.bio,
-          userHandle: _userProfile?.getDisplayHandle(),
+          userHandle: _userProfile?.handle,
           onEditPersonalInfo: _editPersonalInfo,
           onShowFullScreenImage: _showFullScreenImageView,
         ),
@@ -1994,6 +1994,13 @@ class UserProfile {
       return handle!.startsWith('@') ? handle! : '@$handle';
     }
     return 'User #$id';
+  }
+
+  /// Returns @handle when set, or null when handle is null/empty (use in UI to avoid showing lone @)
+  String? getDisplayHandleOrNull() {
+    final h = handle?.trim();
+    if (h == null || h.isEmpty) return null;
+    return h.startsWith('@') ? h : '@$h';
   }
 }
 
