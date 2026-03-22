@@ -124,7 +124,7 @@
     "female": "Female",
     "other": "Other",
     "alreadyHaveAccount": "Already have an account?",
-    "dontHaveAccount": "Don't have an account? ",
+    "dontHaveAccount": "Or ",
     "createAccountSubtitle": "Create and share your wishlists with friends and family",
     "loginWithGoogle": "Login with Google",
     "loginWithApple": "Login with Apple",
@@ -140,6 +140,9 @@
     "emailOrPhone": "Email or Phone Number",
     "rememberMe": "Remember me",
     "continueWith": "or continue with",
+    "quickAccessVia": "Or quick access via",
+    "socialLoginCreatesAccount": "Log in or create an account instantly via social login",
+    "signUpManuallyHere": "sign up manually via email",
     "accountCreated": "Account Created!",
     "verifyEmail": "Please check your email to verify your account.",
     "continue": "Continue",
@@ -631,6 +634,7 @@
     "faq_a12": "On a friend's list, tap 'Reserve' on an item to let others know it's taken."
   },
   "events": {
+    "privateWishlistDescription": "Keep this wishlist private to yourself",
     "nocreatewishlist": "No wishlist created",
     "createWishlist": "Create Wishlist",
     "createWishlistDescription": "Create a wishlist for this event",

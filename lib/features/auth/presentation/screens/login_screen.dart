@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/theme/app_theme.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/services/api_service.dart';
 import 'package:wish_listy/core/services/socket_service.dart';
@@ -1543,27 +1544,29 @@ class _LoginScreenState extends State<LoginScreen>
 
                                                 // Social Auth Divider
                                                 Padding(
-                                                  padding: const EdgeInsets.only(
-                                                    top: 24,
-                                                    bottom: 8,
+                                                  padding: EdgeInsets.only(
+                                                    top: AppTheme.spacing24,
+                                                    bottom: AppTheme.spacing8,
                                                   ),
                                                   child: Row(
                                                     children: [
-                                                      const Expanded(
+                                                      Expanded(
                                                         child: Divider(
                                                           color: AppColors.border,
+                                                          thickness: 1,
                                                         ),
                                                       ),
                                                       Padding(
                                                         padding:
-                                                            const EdgeInsets.symmetric(
-                                                              horizontal: 16,
+                                                            EdgeInsets.symmetric(
+                                                              horizontal:
+                                                                  AppTheme.spacing16,
                                                             ),
                                                         child: Text(
                                                           localization.translate(
-                                                                'auth.continueWith',
+                                                                'auth.quickAccessVia',
                                                               ) ??
-                                                              'or continue with',
+                                                              'Or quick access via',
                                                           style: AppStyles
                                                               .bodySmall
                                                               .copyWith(
@@ -1572,9 +1575,10 @@ class _LoginScreenState extends State<LoginScreen>
                                                               ),
                                                         ),
                                                       ),
-                                                      const Expanded(
+                                                      Expanded(
                                                         child: Divider(
                                                           color: AppColors.border,
+                                                          thickness: 1,
                                                         ),
                                                       ),
                                                     ],
@@ -1617,6 +1621,26 @@ class _LoginScreenState extends State<LoginScreen>
                                                     ),
                                                   ],
                                                 ),
+
+                                                // Social caption
+                                                Padding(
+                                                  padding: EdgeInsets.only(
+                                                    top: AppTheme.spacing8,
+                                                  ),
+                                                  child: Text(
+                                                    localization.translate(
+                                                          'auth.socialLoginCreatesAccount',
+                                                        ) ??
+                                                        'Log in or create an account instantly via social login',
+                                                    style: AppStyles.bodySmall
+                                                        .copyWith(
+                                                          color: AppColors
+                                                              .textTertiary,
+                                                          fontSize: 11,
+                                                        ),
+                                                    textAlign: TextAlign.center,
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                           ),
@@ -1625,51 +1649,47 @@ class _LoginScreenState extends State<LoginScreen>
                                     ),
                                   ),
 
-                                  const SizedBox(height: 16),
+                                  SizedBox(height: AppTheme.spacing16),
 
-                                  // Sign Up Link
+                                  // Sign Up Link (manual option)
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       Text(
                                         localization.translate(
                                           'auth.dontHaveAccount',
-                                        ),
+                                        ) ??
+                                        "Or ",
                                         style: AppStyles.bodyMedium.copyWith(
                                           color: AppColors.textSecondary,
                                         ),
                                       ),
-                                      AnimatedContainer(
-                                        duration: const Duration(
-                                          milliseconds: 200,
-                                        ),
-                                        child: TextButton(
-                                          onPressed: () {
-                                            AppRoutes.pushReplacementNamed(
-                                              context,
-                                              AppRoutes.signup,
-                                            );
-                                          },
-                                          style: TextButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
+                                      TextButton(
+                                        onPressed: () {
+                                          AppRoutes.pushReplacementNamed(
+                                            context,
+                                            AppRoutes.signup,
+                                          );
+                                        },
+                                        style: TextButton.styleFrom(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: AppTheme.spacing8,
+                                            vertical: AppTheme.spacing4,
                                           ),
-                                          child: Text(
-                                            localization.translate(
-                                              'auth.signup',
-                                            ),
-                                            style: AppStyles.bodyMedium
-                                                .copyWith(
-                                                  color: AppColors.primary,
-                                                  fontWeight: FontWeight.w600,
-                                                  decoration:
-                                                      TextDecoration.underline,
-                                                  decorationColor: AppColors
-                                                      .primary
-                                                      .withOpacity(0.3),
-                                                ),
+                                        ),
+                                        child: Text(
+                                          localization.translate(
+                                            'auth.signUpManuallyHere',
+                                          ) ??
+                                          'sign up manually via email',
+                                          style: AppStyles.bodyMedium.copyWith(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.w600,
+                                            decoration:
+                                                TextDecoration.underline,
+                                            decorationColor: AppColors
+                                                .primary
+                                                .withOpacity(0.3),
                                           ),
                                         ),
                                       ),
