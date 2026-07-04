@@ -134,6 +134,10 @@ class AppNotification {
         case 'wishlist_shared':
           type = NotificationType.wishlistShared;
           break;
+        case 'chat_message':
+        case 'chatmessage':
+          type = NotificationType.chatMessage;
+          break;
         case 'reservation_expired':
           type = NotificationType.reservationExpired;
           break;
@@ -377,6 +381,7 @@ enum NotificationType {
   reservationExpired,
   reservationCancelled,
   reservationReminder,
+  chatMessage,
   general,
 }
 
@@ -411,6 +416,8 @@ extension NotificationTypeExtension on NotificationType {
         return 'Reservation Cancelled';
       case NotificationType.reservationReminder:
         return 'Reservation Reminder';
+      case NotificationType.chatMessage:
+        return 'New Message';
       case NotificationType.general:
         return 'Notification';
     }
@@ -446,6 +453,8 @@ extension NotificationTypeExtension on NotificationType {
         return '❌';
       case NotificationType.reservationReminder:
         return '🔔';
+      case NotificationType.chatMessage:
+        return '💬';
       case NotificationType.general:
         return '🔔';
     }
@@ -511,6 +520,8 @@ extension AppNotificationLocalization on AppNotification {
         return 'notifications.reservation_cancelled';
       case NotificationType.reservationReminder:
         return 'notifications.reservation_reminder';
+      case NotificationType.chatMessage:
+        return 'notifications.chat_message';
       case NotificationType.general:
         return 'notifications.general';
     }

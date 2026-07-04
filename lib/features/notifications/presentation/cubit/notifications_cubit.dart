@@ -778,6 +778,34 @@ class NotificationsCubit extends Cubit<NotificationsState> {
             showErrorToast('dialogs.wishlistNoLongerAvailable');
           }
           break;
+
+        // Chat message - navigate directly to the conversation
+        case NotificationType.chatMessage:
+          final senderId = extractUserId() ??
+              notification.relatedId ??
+              notification.data?['senderId']?.toString() ??
+              notification.data?['sender_id']?.toString();
+          final chatRoomId = notification.data?['chatRoomId']?.toString() ??
+              notification.data?['chat_room_id']?.toString();
+          final senderName = notification.data?['senderName']?.toString() ??
+              notification.data?['sender_name']?.toString() ??
+              notification.title;
+
+          if (senderId != null && senderId.isNotEmpty) {
+            Navigator.pushNamed(
+              context,
+              AppRoutes.chatRoom,
+              arguments: {
+                'userId': senderId,
+                if (senderName.isNotEmpty) 'displayName': senderName,
+                if (chatRoomId != null && chatRoomId.isNotEmpty)
+                  'chatRoomId': chatRoomId,
+              },
+            );
+          } else {
+            Navigator.pushNamed(context, AppRoutes.chatInbox);
+          }
+          break;
         
         // Default - show message as snackbar
         default:

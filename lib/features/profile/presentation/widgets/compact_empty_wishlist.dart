@@ -2,25 +2,199 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/core/theme/app_theme.dart';
 import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/features/profile/data/models/activity_model.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/activity_card.dart';
 
-/// Compact Empty Wishlist Card - Used when wishlists are empty but activities exist
-/// Redesigned: gradient background, icon, minimal text, and CTA button
-class CompactEmptyWishlistCard extends StatelessWidget {
-  const CompactEmptyWishlistCard({super.key});
+const double _emptyWishlistPatternSize = 120;
+const double _emptyWishlistCenterGiftSize = 76;
+
+/// Scattered light-purple icon pattern + centered gift / app logo. Flat, no shadows.
+class _EmptyWishlistPatternStack extends StatelessWidget {
+  const _EmptyWishlistPatternStack({required this.primaryColor});
+
+  final Color primaryColor;
+
+  static Color _patternTint(Color base) => base.withValues(alpha: 0.12);
+
+  Widget _scatter(Widget child, {required double left, required double top}) {
+    return Positioned(left: left, top: top, child: child);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = _patternTint(AppColors.primary);
+    return SizedBox(
+      width: _emptyWishlistPatternSize,
+      height: _emptyWishlistPatternSize,
+      child: Stack(
+        clipBehavior: Clip.hardEdge,
+        children: [
+          _scatter(
+            Transform.rotate(
+              angle: -0.22,
+              child: Icon(Icons.redeem_rounded, size: 22, color: tint),
+            ),
+            left: 5,
+            top: 12,
+          ),
+          _scatter(
+            Transform.rotate(
+              angle: 0.28,
+              child: Icon(Icons.auto_awesome_rounded, size: 19, color: tint),
+            ),
+            left: 70,
+            top: 8,
+          ),
+          _scatter(
+            Transform.rotate(
+              angle: 0.14,
+              child: Icon(Icons.card_giftcard_rounded, size: 20, color: tint),
+            ),
+            left: 8,
+            top: 72,
+          ),
+          _scatter(
+            Transform.rotate(
+              angle: -0.18,
+              child: Icon(Icons.star_rounded, size: 18, color: tint),
+            ),
+            left: 88,
+            top: 62,
+          ),
+          _scatter(
+            Transform.rotate(
+              angle: 0.35,
+              child: Icon(Icons.celebration_rounded, size: 21, color: tint),
+            ),
+            left: 42,
+            top: 3,
+          ),
+          Center(
+            child: Image.asset(
+              'assets/images/app_logo.png',
+              width: _emptyWishlistCenterGiftSize,
+              height: _emptyWishlistCenterGiftSize,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.card_giftcard_rounded,
+                  size: _emptyWishlistCenterGiftSize,
+                  color: primaryColor,
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// White card: horizontal patterned icon + title, subtitle, and CTA.
+/// Used on Home when the user has no wishlists but other dashboard content exists,
+/// and in [ActiveDashboard] when the wishlists section is empty.
+class EmptyWishlistPromoCard extends StatelessWidget {
+  const EmptyWishlistPromoCard({super.key});
 
   @override
   Widget build(BuildContext context) {
     final localization = Provider.of<LocalizationService>(context, listen: true);
     final primaryColor = Theme.of(context).colorScheme.primary;
 
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppTheme.spacing16),
+      margin: const EdgeInsets.symmetric(horizontal: AppTheme.spacing16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _EmptyWishlistPatternStack(primaryColor: primaryColor),
+              const SizedBox(width: AppTheme.spacing20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      localization.translate('cards.noWishlistsYet'),
+                      style: AppStyles.headingSmallWithContext(context).copyWith(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primaryDark,
+                      ),
+                    ),
+                    const SizedBox(height: AppTheme.spacing8),
+                    Text(
+                      localization.translate('cards.emptyWishlistSubtitle'),
+                      style: AppStyles.bodyLargeWithContext(context).copyWith(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        height: 1.35,
+                        color: AppColors.primaryDark.withValues(alpha: 0.55),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppTheme.spacing16),
+          Material(
+            color: primaryColor,
+            borderRadius: BorderRadius.circular(AppTheme.radiusSmall + 4),
+            child: InkWell(
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.createWishlist,
+                  arguments: {
+                    'previousRoute': AppRoutes.mainNavigation,
+                  },
+                );
+              },
+              borderRadius: BorderRadius.circular(AppTheme.radiusSmall + 4),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.spacing24,
+                  vertical: 10,
+                ),
+                child: Text(
+                  localization.translate('cards.createWishlist'),
+                  textAlign: TextAlign.center,
+                  style: AppStyles.buttonWithContext(context),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact Empty Wishlist Card - Used when wishlists are empty but activities exist
+class CompactEmptyWishlistCard extends StatelessWidget {
+  const CompactEmptyWishlistCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final localization = Provider.of<LocalizationService>(context, listen: true);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text(
@@ -33,106 +207,7 @@ class CompactEmptyWishlistCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        // Empty State Card: white bg, app icon + title/subtitle, compact button
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Row: app icon + title + subtitle
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    'assets/images/app_logo.png',
-                    width: 52,
-                    height: 52,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Icon(
-                        Icons.card_giftcard_rounded,
-                        size: 52,
-                        color: primaryColor,
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          localization.translate('cards.noWishlistsYet'),
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.deepPurple[700],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          localization.translate('cards.emptyWishlistSubtitle'),
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                            color: Colors.purple[300],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // Compact button (wrap content)
-              Material(
-                color: primaryColor,
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      AppRoutes.createWishlist,
-                      arguments: {
-                        'previousRoute': AppRoutes.mainNavigation,
-                      },
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 28,
-                      vertical: 10,
-                    ),
-                    child: Text(
-                      localization.translate('cards.createWishlist'),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        const EmptyWishlistPromoCard(),
       ],
     );
   }

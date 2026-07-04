@@ -83,6 +83,24 @@
     "inviteFriendsTitle": "Invite Friends",
     "inviteFriendsSubtitle": "Share the app with friends and family"
   },
+  "chat": {
+    "title": "Messages",
+    "searchHint": "Search conversations",
+    "emptyTitle": "No conversations yet",
+    "emptySubtitle": "Start chatting with your friends from their profile.",
+    "typing": "Typing...",
+    "online": "Online",
+    "offlineStatus": "Offline",
+    "send": "Send",
+    "todayAt": "Today at {time}",
+    "yesterdayAt": "Yesterday at {time}",
+    "restricted": "Messaging is unavailable for this user.",
+    "offline": "You're offline. Messages will sync when connection returns.",
+    "messageFailed": "Message failed to send.",
+    "noMessages": "No messages yet",
+    "messageFriend": "Message Friend",
+    "inputHint": "Write a message..."
+  },
   "interests": {
     "interestWatches": "Watches",
     "interestPerfumes": "Perfumes",
@@ -1563,6 +1581,7 @@
     "event_response": "Event Response",
     "event_reminder": "Event Reminder",
     "wishlist_shared": "List Shared",
+    "chat_message": "New Message",
     "general": "Notification"
   },
   "common": {

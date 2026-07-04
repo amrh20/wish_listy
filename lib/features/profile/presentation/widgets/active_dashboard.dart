@@ -9,6 +9,7 @@ import 'package:wish_listy/core/utils/app_routes.dart';
 import 'package:wish_listy/features/profile/presentation/models/home_models.dart';
 import 'package:wish_listy/features/wishlists/presentation/widgets/index.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
+import 'package:wish_listy/features/profile/presentation/widgets/compact_empty_wishlist.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/minimal_wishlist_card.dart';
 import 'package:wish_listy/features/profile/data/models/activity_model.dart';
 import 'package:wish_listy/features/profile/presentation/widgets/activity_card.dart';
@@ -493,110 +494,8 @@ class MyWishlistsSection extends StatelessWidget {
     );
   }
 
-  /// Empty state placeholder card: margin 16, app icon + title/subtitle, compact button
   Widget _buildEmptyState(BuildContext context) {
-    final localization = Provider.of<LocalizationService>(context, listen: true);
-    final primaryColor = Theme.of(context).colorScheme.primary;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Row: app icon + title + subtitle
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/images/app_logo.png',
-                width: 52,
-                height: 52,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.card_giftcard_rounded,
-                    size: 52,
-                    color: primaryColor,
-                  );
-                },
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      localization.translate('cards.noWishlistsYet'),
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.deepPurple[700],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      localization.translate('cards.emptyWishlistSubtitle'),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.purple[300],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Compact button (wrap content)
-          Material(
-            color: primaryColor,
-            borderRadius: BorderRadius.circular(12),
-            child: InkWell(
-              onTap: () {
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.createWishlist,
-                  arguments: {
-                    'previousRoute': AppRoutes.mainNavigation,
-                  },
-                );
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 28,
-                  vertical: 10,
-                ),
-                child: Text(
-                  localization.translate('cards.createWishlist'),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    return const EmptyWishlistPromoCard();
   }
 }
 

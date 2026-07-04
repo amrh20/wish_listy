@@ -1,5 +1,12 @@
 import 'package:wish_listy/features/friends/data/models/mutual_friends_data_model.dart';
 
+double? _userParseOptionalDouble(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value);
+  return null;
+}
+
 /// User model for friends/search results
 /// Matches backend API response structure
 class User {
@@ -14,6 +21,9 @@ class User {
   final String? friendshipStatus; // Status: 'pending', 'received', 'accepted', etc.
   final String? requestId; // Friend request ID (if status is 'received' or 'pending')
   final bool? isFriend; // Whether user is already a friend
+  final double? discoveryScore;
+  final double? interestOverlap;
+  final double? categoryOverlap;
 
   User({
     required this.id,
@@ -27,6 +37,9 @@ class User {
     this.friendshipStatus,
     this.requestId,
     this.isFriend,
+    this.discoveryScore,
+    this.interestOverlap,
+    this.categoryOverlap,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -47,6 +60,9 @@ class User {
       friendshipStatus: json['friendshipStatus'] ?? json['friendship_status'],
       requestId: json['friendRequestId'] ?? json['friend_request_id'] ?? json['requestId'] ?? json['request_id'],
       isFriend: json['isFriend'] ?? json['is_friend'] ?? false,
+      discoveryScore: _userParseOptionalDouble(json['discoveryScore'] ?? json['discovery_score']),
+      interestOverlap: _userParseOptionalDouble(json['interestOverlap'] ?? json['interest_overlap']),
+      categoryOverlap: _userParseOptionalDouble(json['categoryOverlap'] ?? json['category_overlap']),
     );
   }
 
@@ -63,6 +79,9 @@ class User {
       if (friendshipStatus != null) 'friendshipStatus': friendshipStatus,
       if (requestId != null) 'requestId': requestId,
       if (isFriend != null) 'isFriend': isFriend,
+      if (discoveryScore != null) 'discoveryScore': discoveryScore,
+      if (interestOverlap != null) 'interestOverlap': interestOverlap,
+      if (categoryOverlap != null) 'categoryOverlap': categoryOverlap,
     };
   }
 
@@ -78,6 +97,9 @@ class User {
     String? friendshipStatus,
     String? requestId,
     bool? isFriend,
+    double? discoveryScore,
+    double? interestOverlap,
+    double? categoryOverlap,
   }) {
     return User(
       id: id ?? this.id,
@@ -91,6 +113,9 @@ class User {
       friendshipStatus: friendshipStatus ?? this.friendshipStatus,
       requestId: requestId ?? this.requestId,
       isFriend: isFriend ?? this.isFriend,
+      discoveryScore: discoveryScore ?? this.discoveryScore,
+      interestOverlap: interestOverlap ?? this.interestOverlap,
+      categoryOverlap: categoryOverlap ?? this.categoryOverlap,
     );
   }
 

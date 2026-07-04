@@ -83,6 +83,24 @@
     "inviteFriendsTitle": "دعوة الأصدقاء",
     "inviteFriendsSubtitle": "شارك التطبيق مع أصدقائك وعائلتك"
   },
+  "chat": {
+    "title": "الرسائل",
+    "searchHint": "ابحث في المحادثات",
+    "emptyTitle": "لا توجد محادثات بعد",
+    "emptySubtitle": "ابدأ مراسلة أصدقائك من صفحة الملف الشخصي.",
+    "typing": "يكتب الآن...",
+    "online": "متصل الآن",
+    "offlineStatus": "غير متصل",
+    "send": "إرسال",
+    "todayAt": "اليوم الساعة {time}",
+    "yesterdayAt": "أمس الساعة {time}",
+    "restricted": "المراسلة غير متاحة مع هذا المستخدم.",
+    "offline": "لا يوجد اتصال حالياً. ستتم المزامنة عند عودة الإنترنت.",
+    "messageFailed": "تعذر إرسال الرسالة.",
+    "noMessages": "لا توجد رسائل بعد",
+    "messageFriend": "مراسلة الصديق",
+    "inputHint": "اكتب رسالة..."
+  },
   "interests": {
     "interestWatches": "ساعات",
     "interestPerfumes": "عطور",
@@ -1563,6 +1581,7 @@
     "event_response": "الرد على الحدث",
     "event_reminder": "تذكير بالحدث",
     "wishlist_shared": "تم مشاركة قائمة الأمنيات",
+    "chat_message": "رسالة جديدة",
     "general": "إشعار"
   },
   "common": {

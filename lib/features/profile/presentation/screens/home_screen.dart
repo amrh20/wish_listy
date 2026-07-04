@@ -20,6 +20,8 @@ import 'package:wish_listy/features/events/data/models/event_model.dart';
 import 'package:wish_listy/features/notifications/presentation/widgets/notification_dropdown.dart';
 import 'package:wish_listy/features/notifications/data/models/notification_model.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'package:wish_listy/features/chat/presentation/cubit/chat_cubit.dart';
+import 'package:wish_listy/features/chat/presentation/cubit/chat_state.dart';
 import 'package:wish_listy/core/services/localization_service.dart';
 import 'package:wish_listy/core/widgets/royal_avatar_wrapper.dart';
 import 'package:wish_listy/core/widgets/generic_error_screen.dart';
@@ -41,7 +43,8 @@ class HomeScreen extends StatefulWidget {
   HomeScreenState createState() => HomeScreenState();
 }
 
-class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
+class HomeScreenState extends State<HomeScreen>
+    with AutomaticKeepAliveClientMixin {
   late HomeController _controller;
   bool _isNotificationDropdownOpen = false;
   bool? _lastReportedEmpty;
@@ -65,13 +68,17 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final cubit = context.read<NotificationsCubit>();
       cubit.getUnreadCount();
+      context.read<ChatCubit>().initialize();
     });
-    
+
     // Request notification permission after first successful login or when app opens authenticated
     // This ensures the dialog appears at a high-value moment (Home Screen) rather than at launch
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authRepository = Provider.of<AuthRepository>(context, listen: false);
-      
+      final authRepository = Provider.of<AuthRepository>(
+        context,
+        listen: false,
+      );
+
       // Only show permission dialog if user is fully authenticated (not guest)
       if (authRepository.isAuthenticated && context.mounted) {
         FcmService().ensurePermissionRequested(context).catchError((error) {
@@ -150,7 +157,10 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
   }
 
   String _getTimeBasedGreeting(BuildContext context) {
-    final localization = Provider.of<LocalizationService>(context, listen: true);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: true,
+    );
     final hour = DateTime.now().hour;
     if (hour < 12) {
       return localization.translate('home.goodMorning');
@@ -166,11 +176,12 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
     if (controller.isHeaderLoading) {
       return _buildHeaderSkeleton();
     }
-    
+
     final dashboardData = controller.dashboardData.value;
     final firstName = dashboardData?.user.firstName ?? 'Friend';
-    final fullName = firstName; // Using firstName as fullName is not available in DashboardUser
-    
+    final fullName =
+        firstName; // Using firstName as fullName is not available in DashboardUser
+
     // Get dashboard profile image (will be overridden by Consumer<AuthRepository> below for instant updates)
     final dashboardProfileImageUrl = dashboardData?.user.avatar;
     final unreadCount = dashboardData?.stats.unreadNotificationsCount ?? 0;
@@ -203,14 +214,20 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
             // Main content
             Container(
               // Reduced vertical padding to minimize header height
-              padding: const EdgeInsets.fromLTRB(20, 44, 20, 8), // Reduced bottom from 12 to 8
+              padding: const EdgeInsets.fromLTRB(
+                20,
+                44,
+                20,
+                8,
+              ), // Reduced bottom from 12 to 8
               child: SafeArea(
                 bottom: false,
                 top: false, // Top SafeArea is handled by padding
                 minimum: EdgeInsets.zero,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min, // Ensure column takes minimum space
+                  mainAxisSize:
+                      MainAxisSize.min, // Ensure column takes minimum space
                   children: [
                     // Top Row: Avatar + Greeting Column + Notification
                     Row(
@@ -221,41 +238,52 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                         Consumer<AuthRepository>(
                           builder: (context, authRepository, child) {
                             // Get global profile image for instant sync
-                            final globalProfileImage = authRepository.profilePicture;
-                            final displayImageUrl = globalProfileImage ?? dashboardProfileImageUrl;
-                            
+                            final globalProfileImage =
+                                authRepository.profilePicture;
+                            final displayImageUrl =
+                                globalProfileImage ?? dashboardProfileImageUrl;
+
                             return GestureDetector(
                               onTap: () {
-                                MainNavigation.switchToTab(context, 4); // Switch to Profile tab
+                                MainNavigation.switchToTab(
+                                  context,
+                                  4,
+                                ); // Switch to Profile tab
                               },
                               child: RoyalAvatarWrapper(
                                 userName: fullName,
                                 child: CircleAvatar(
                                   radius: 25,
                                   backgroundColor: Colors.white,
-                                  child: displayImageUrl != null && displayImageUrl.isNotEmpty
+                                  child:
+                                      displayImageUrl != null &&
+                                          displayImageUrl.isNotEmpty
                                       ? ClipOval(
                                           child: CachedNetworkImage(
                                             imageUrl: displayImageUrl,
                                             width: 50,
                                             height: 50,
                                             fit: BoxFit.cover,
-                                            placeholder: (context, url) => Container(
-                                              width: 50,
-                                              height: 50,
-                                              color: Colors.white,
-                                              child: Center(
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: AppColors.primary,
+                                            placeholder: (context, url) =>
+                                                Container(
+                                                  width: 50,
+                                                  height: 50,
+                                                  color: Colors.white,
+                                                  child: Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                          color:
+                                                              AppColors.primary,
+                                                        ),
+                                                  ),
                                                 ),
-                                              ),
-                                            ),
-                                            errorWidget: (context, url, error) => Icon(
-                                              Icons.person_rounded,
-                                              color: AppColors.primary,
-                                              size: 30,
-                                            ),
+                                            errorWidget:
+                                                (context, url, error) => Icon(
+                                                  Icons.person_rounded,
+                                                  color: AppColors.primary,
+                                                  size: 30,
+                                                ),
                                           ),
                                         )
                                       : Icon(
@@ -273,7 +301,10 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                         Expanded(
                           child: GestureDetector(
                             onTap: () {
-                              MainNavigation.switchToTab(context, 4); // Switch to Profile tab
+                              MainNavigation.switchToTab(
+                                context,
+                                4,
+                              ); // Switch to Profile tab
                             },
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,54 +328,35 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                                   style: AppStyles.headingLarge.copyWith(
                                     color: AppColors.textPrimary,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: MediaQuery.of(context).size.width < 360 ? 18 : 20,
+                                    fontSize:
+                                        MediaQuery.of(context).size.width < 360
+                                        ? 18
+                                        : 20,
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                        // Right: Notification Bell (pushed to end with Spacer)
-                        BlocBuilder<NotificationsCubit, NotificationsState>(
-                          builder: (context, state) {
-                            final notifications = state is NotificationsLoaded
-                                ? state.notifications
-                                : <AppNotification>[];
-                            final unreadCount = state is NotificationsLoaded
-                                ? state.unreadCount
-                                : 0;
-
-                            return Builder(
-                              builder: (buttonContext) {
+                        // Right: Chat + Notification buttons
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            BlocBuilder<ChatCubit, ChatState>(
+                              builder: (context, state) {
+                                final unreadCount = state is ChatLoaded
+                                    ? state.unreadCount
+                                    : 0;
                                 return Material(
                                   color: Colors.transparent,
-                                    child: InkWell(
+                                  child: InkWell(
                                     onTap: () {
-                                      // Debounce: prevent rapid taps (within 300ms)
-                                      final now = DateTime.now();
-                                      if (_lastNotificationTapTime != null &&
-                                          now.difference(_lastNotificationTapTime!) <
-                                              const Duration(milliseconds: 300)) {
-                                        return;
-                                      }
-                                      _lastNotificationTapTime = now;
-
-                                      // Prevent opening if already open
-                                      if (_isNotificationDropdownOpen) {
-                                        return;
-                                      }
-
-                                      // Always open dropdown immediately with current data (cached or empty)
-                                      // The dropdown uses BlocBuilder and will update automatically when data loads
-                                      _showNotificationDropdown(
-                                        buttonContext,
-                                        notifications,
-                                        unreadCount,
-                                      );
+                                      Navigator.of(
+                                        context,
+                                      ).pushNamed(AppRoutes.chatInbox);
                                     },
                                     borderRadius: BorderRadius.circular(16),
                                     child: Container(
-                                      key: _notificationButtonKey,
                                       width: 44,
                                       height: 44,
                                       decoration: BoxDecoration(
@@ -356,7 +368,9 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withOpacity(0.1),
+                                            color: Colors.black.withOpacity(
+                                              0.1,
+                                            ),
                                             offset: const Offset(0, 2),
                                             blurRadius: 8,
                                             spreadRadius: 0,
@@ -366,11 +380,11 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                                       child: Stack(
                                         clipBehavior: Clip.none,
                                         children: [
-                                          Center(
+                                          const Center(
                                             child: Icon(
-                                              Icons.notifications_outlined,
+                                              Icons.chat_bubble_outline_rounded,
                                               color: AppColors.primary,
-                                              size: 22,
+                                              size: 21,
                                             ),
                                           ),
                                           if (unreadCount > 0)
@@ -379,19 +393,24 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                                               right: -2,
                                               child: Container(
                                                 padding: EdgeInsets.symmetric(
-                                                  horizontal: unreadCount > 9 ? 4 : 5,
+                                                  horizontal: unreadCount > 9
+                                                      ? 4
+                                                      : 5,
                                                   vertical: 2,
                                                 ),
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.accent,
+                                                decoration: const BoxDecoration(
+                                                  color: AppColors.primary,
                                                   shape: BoxShape.circle,
                                                 ),
-                                                constraints: const BoxConstraints(
-                                                  minWidth: 18,
-                                                  minHeight: 18,
-                                                ),
+                                                constraints:
+                                                    const BoxConstraints(
+                                                      minWidth: 18,
+                                                      minHeight: 18,
+                                                    ),
                                                 child: Text(
-                                                  unreadCount > 9 ? '9+' : '$unreadCount',
+                                                  unreadCount > 9
+                                                      ? '9+'
+                                                      : '$unreadCount',
                                                   style: const TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 11,
@@ -407,16 +426,145 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                                   ),
                                 );
                               },
-                            );
-                          },
+                            ),
+                            const SizedBox(width: 10),
+                            BlocBuilder<NotificationsCubit, NotificationsState>(
+                              builder: (context, state) {
+                                final notifications =
+                                    state is NotificationsLoaded
+                                    ? state.notifications
+                                    : <AppNotification>[];
+                                final unreadCount = state is NotificationsLoaded
+                                    ? state.unreadCount
+                                    : 0;
+
+                                return Builder(
+                                  builder: (buttonContext) {
+                                    return Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () {
+                                          // Debounce: prevent rapid taps (within 300ms)
+                                          final now = DateTime.now();
+                                          if (_lastNotificationTapTime !=
+                                                  null &&
+                                              now.difference(
+                                                    _lastNotificationTapTime!,
+                                                  ) <
+                                                  const Duration(
+                                                    milliseconds: 300,
+                                                  )) {
+                                            return;
+                                          }
+                                          _lastNotificationTapTime = now;
+
+                                          // Prevent opening if already open
+                                          if (_isNotificationDropdownOpen) {
+                                            return;
+                                          }
+
+                                          // Always open dropdown immediately with current data (cached or empty)
+                                          // The dropdown uses BlocBuilder and will update automatically when data loads
+                                          _showNotificationDropdown(
+                                            buttonContext,
+                                            notifications,
+                                            unreadCount,
+                                          );
+                                        },
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Container(
+                                          key: _notificationButtonKey,
+                                          width: 44,
+                                          height: 44,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.white.withOpacity(
+                                                0.3,
+                                              ),
+                                              width: 1,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(
+                                                  0.1,
+                                                ),
+                                                offset: const Offset(0, 2),
+                                                blurRadius: 8,
+                                                spreadRadius: 0,
+                                              ),
+                                            ],
+                                          ),
+                                          child: Stack(
+                                            clipBehavior: Clip.none,
+                                            children: [
+                                              Center(
+                                                child: Icon(
+                                                  Icons.notifications_outlined,
+                                                  color: AppColors.primary,
+                                                  size: 22,
+                                                ),
+                                              ),
+                                              if (unreadCount > 0)
+                                                Positioned(
+                                                  top: -2,
+                                                  right: -2,
+                                                  child: Container(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                          horizontal:
+                                                              unreadCount > 9
+                                                              ? 4
+                                                              : 5,
+                                                          vertical: 2,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.accent,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                          minWidth: 18,
+                                                          minHeight: 18,
+                                                        ),
+                                                    child: Text(
+                                                      unreadCount > 9
+                                                          ? '9+'
+                                                          : '$unreadCount',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 11,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                    ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
                     // Bottom: "Ready to make wishes" text (minimal spacing)
                     const SizedBox(height: 4), // Further reduced from 6 to 4
                     Text(
-                      Provider.of<LocalizationService>(context, listen: true)
-                          .translate('profile.readyToMakeWishesComeTrue'),
+                      Provider.of<LocalizationService>(
+                        context,
+                        listen: true,
+                      ).translate('profile.readyToMakeWishesComeTrue'),
                       style: AppStyles.bodyMedium.copyWith(
                         color: AppColors.textSecondary.withOpacity(0.85),
                         fontSize: 13,
@@ -464,14 +612,20 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
             // Main content
             Container(
               // Match the tighter padding used in the real header
-              padding: const EdgeInsets.fromLTRB(20, 44, 20, 8), // Reduced to match header
+              padding: const EdgeInsets.fromLTRB(
+                20,
+                44,
+                20,
+                8,
+              ), // Reduced to match header
               child: SafeArea(
                 bottom: false,
                 top: false,
                 minimum: EdgeInsets.zero,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min, // Ensure column takes minimum space
+                  mainAxisSize:
+                      MainAxisSize.min, // Ensure column takes minimum space
                   children: [
                     // Top Row: Avatar + Greeting + Notification skeleton
                     Row(
@@ -525,7 +679,9 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
                       ],
                     ),
                     // Bottom: Welcome message skeleton (minimal spacing)
-                    const SizedBox(height: 4), // Further reduced from 6 to 4 to match header
+                    const SizedBox(
+                      height: 4,
+                    ), // Further reduced from 6 to 4 to match header
                     Container(
                       width: 180,
                       height: 14,
@@ -637,9 +793,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
           Navigator.pushNamed(
             context,
             AppRoutes.createWishlist,
-            arguments: {
-              'previousRoute': AppRoutes.mainNavigation,
-            },
+            arguments: {'previousRoute': AppRoutes.mainNavigation},
           );
         },
       );
@@ -655,123 +809,125 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
               showGifts: true,
               showCircles: true,
               child: Consumer<HomeController>(
-                  builder: (context, controller, child) {
-                    // Empty = no wishlists AND no events AND no friends (hide plus button only in that case)
-                    final hasWishlists = (controller.myWishlists).isNotEmpty;
-                    final hasOccasions = (controller.upcomingOccasions).isNotEmpty;
-                    final hasFriends = _hasFriends ?? false;
-                    final isEmpty =
-                        !hasWishlists && !hasOccasions && !hasFriends;
+                builder: (context, controller, child) {
+                  // Empty = no wishlists AND no events AND no friends (hide plus button only in that case)
+                  final hasWishlists = (controller.myWishlists).isNotEmpty;
+                  final hasOccasions =
+                      (controller.upcomingOccasions).isNotEmpty;
+                  final hasFriends = _hasFriends ?? false;
+                  final isEmpty = !hasWishlists && !hasOccasions && !hasFriends;
 
-                    // Report empty state for FAB visibility (hide Speed Dial only when truly empty)
-                    if (widget.onEmptyStateChanged != null && !controller.isLoading) {
-                      if (_lastReportedEmpty != isEmpty) {
-                        _lastReportedEmpty = isEmpty;
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (mounted) widget.onEmptyStateChanged?.call(isEmpty);
-                        });
-                      }
+                  // Report empty state for FAB visibility (hide Speed Dial only when truly empty)
+                  if (widget.onEmptyStateChanged != null &&
+                      !controller.isLoading) {
+                    if (_lastReportedEmpty != isEmpty) {
+                      _lastReportedEmpty = isEmpty;
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) widget.onEmptyStateChanged?.call(isEmpty);
+                      });
                     }
+                  }
 
-                    // Offline / failed-load state:
-                    // If the API failed and we have no cached dashboard data, show a full-page error UI
-                    // instead of falling back to "empty home" + snackbars.
-                    final hasNoData = controller.dashboardData.value == null;
-                    final hasError = controller.errorMessage != null &&
-                        controller.errorMessage!.trim().isNotEmpty;
-                    if (!controller.isLoading && hasNoData && hasError) {
-                      if (controller.errorKind == ApiErrorKind.noInternet) {
-                        return GenericErrorScreen.noInternet(
-                          withScaffold: false,
-                          onRetry: () async => controller.refresh(),
-                        );
-                      }
-                      return GenericErrorScreen.serverError(
+                  // Offline / failed-load state:
+                  // If the API failed and we have no cached dashboard data, show a full-page error UI
+                  // instead of falling back to "empty home" + snackbars.
+                  final hasNoData = controller.dashboardData.value == null;
+                  final hasError =
+                      controller.errorMessage != null &&
+                      controller.errorMessage!.trim().isNotEmpty;
+                  if (!controller.isLoading && hasNoData && hasError) {
+                    if (controller.errorKind == ApiErrorKind.noInternet) {
+                      return GenericErrorScreen.noInternet(
                         withScaffold: false,
                         onRetry: () async => controller.refresh(),
                       );
                     }
-
-                    // Determine layout state (reuse hasWishlists and hasOccasions from above)
-                    final hasActivities = (controller.latestActivityPreview ?? []).isNotEmpty;
-                    final hasSuggestions = (_homeSuggestions?.isNotEmpty ?? false);
-
-                    // "Truly empty" = no lists, no occasions, no activity, and no suggestions.
-                    // (Suggestions are not part of the dashboard response, so we load them separately.)
-                    final isTrulyEmpty = !hasWishlists &&
-                        !hasActivities &&
-                        !hasOccasions &&
-                        !hasSuggestions;
-
-                    // Compact social-first empty layout:
-                    // - User is new (no own wishlists yet)
-                    // - But they already have some social signal (friends / activity / occasions)
-                    // This layout shows:
-                    //   - Compact "Create Wishlist" card
-                    //   - People You May Know
-                    //   - Upcoming Occasions (if any)
-                    //   - Happening Now (if any)
-                    final showCompactEmptyWithActivities =
-                        isEmpty && !hasWishlists && !isTrulyEmpty;
-
-                    return RefreshIndicator(
-                      onRefresh: refreshHome,
-                      color: AppColors.primary,
-                      child: CustomScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        slivers: [
-                          // Rich Header (Fixed/Pinned)
-                          SliverPersistentHeader(
-                            pinned: true,
-                            delegate: _FixedHeaderDelegate(
-                              child: _buildRichHeader(controller),
-                            ),
-                          ),
-                          // Spacing between Header and content
-                          const SliverToBoxAdapter(
-                            child: SizedBox(height: 20),
-                          ),
-                          // Content - Conditional Layout
-                          if (controller.isLoading)
-                            const SliverToBoxAdapter(child: HomeSkeletonView())
-                          else if (showCompactEmptyWithActivities)
-                            // Layout: Compact empty wishlist card + People You May Know +
-                            // Upcoming Occasions (if any) + Happening Now (if any)
-                            SliverToBoxAdapter(
-                              child: _buildCompactEmptyWithActivities(
-                                controller,
-                                initialSuggestions: _homeSuggestions,
-                              ),
-                            )
-                          else if (isEmpty && isTrulyEmpty)
-                            // Full playful empty state (no wishlists, no occasions, no activity)
-                            const SliverFillRemaining(
-                              hasScrollBody: false,
-                              child: EmptyHomeScreen(),
-                            )
-                          else
-                            // Active dashboard with all data
-                            SliverToBoxAdapter(
-                              child: ActiveDashboard(
-                                occasions: _convertEventsToOccasions(
-                                  controller.upcomingOccasions ?? [],
-                                ),
-                                wishlists: _convertWishlistsToSummaries(
-                                  controller.myWishlists ?? [],
-                                ),
-                                activities: controller.latestActivityPreview ?? [],
-                              ),
-                            ),
-                          // Bottom padding to clear Bottom Navigation Bar (extra space so content is not stuck to nav)
-                          const SliverToBoxAdapter(
-                            child: SizedBox(height: 140),
-                          ),
-                        ],
-                      ),
+                    return GenericErrorScreen.serverError(
+                      withScaffold: false,
+                      onRetry: () async => controller.refresh(),
                     );
-                  },
-                ),
+                  }
+
+                  // Determine layout state (reuse hasWishlists and hasOccasions from above)
+                  final hasActivities =
+                      (controller.latestActivityPreview ?? []).isNotEmpty;
+                  final hasSuggestions =
+                      (_homeSuggestions?.isNotEmpty ?? false);
+
+                  // "Truly empty" = no lists, no occasions, no activity, and no suggestions.
+                  // (Suggestions are not part of the dashboard response, so we load them separately.)
+                  final isTrulyEmpty =
+                      !hasWishlists &&
+                      !hasActivities &&
+                      !hasOccasions &&
+                      !hasSuggestions;
+
+                  // Compact social-first empty layout:
+                  // - User is new (no own wishlists yet)
+                  // - But they already have some social signal (friends / activity / occasions)
+                  // This layout shows:
+                  //   - Compact "Create Wishlist" card
+                  //   - People You May Know
+                  //   - Upcoming Occasions (if any)
+                  //   - Happening Now (if any)
+                  final showCompactEmptyWithActivities =
+                      isEmpty && !hasWishlists && !isTrulyEmpty;
+
+                  return RefreshIndicator(
+                    onRefresh: refreshHome,
+                    color: AppColors.primary,
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        // Rich Header (Fixed/Pinned)
+                        SliverPersistentHeader(
+                          pinned: true,
+                          delegate: _FixedHeaderDelegate(
+                            child: _buildRichHeader(controller),
+                          ),
+                        ),
+                        // Spacing between Header and content
+                        const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                        // Content - Conditional Layout
+                        if (controller.isLoading)
+                          const SliverToBoxAdapter(child: HomeSkeletonView())
+                        else if (showCompactEmptyWithActivities)
+                          // Layout: Compact empty wishlist card + People You May Know +
+                          // Upcoming Occasions (if any) + Happening Now (if any)
+                          SliverToBoxAdapter(
+                            child: _buildCompactEmptyWithActivities(
+                              controller,
+                              initialSuggestions: _homeSuggestions,
+                            ),
+                          )
+                        else if (isEmpty && isTrulyEmpty)
+                          // Full playful empty state (no wishlists, no occasions, no activity)
+                          const SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: EmptyHomeScreen(),
+                          )
+                        else
+                          // Active dashboard with all data
+                          SliverToBoxAdapter(
+                            child: ActiveDashboard(
+                              occasions: _convertEventsToOccasions(
+                                controller.upcomingOccasions ?? [],
+                              ),
+                              wishlists: _convertWishlistsToSummaries(
+                                controller.myWishlists ?? [],
+                              ),
+                              activities:
+                                  controller.latestActivityPreview ?? [],
+                            ),
+                          ),
+                        // Bottom padding to clear Bottom Navigation Bar (extra space so content is not stuck to nav)
+                        const SliverToBoxAdapter(child: SizedBox(height: 140)),
+                      ],
+                    ),
+                  );
+                },
               ),
+            ),
           ],
         ),
       ),
@@ -782,7 +938,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
   List<UpcomingOccasion> _convertEventsToOccasions(List<Event>? events) {
     // Add null safety check - return empty list if events is null or empty
     if (events == null || events.isEmpty) return [];
-    
+
     return events.map((event) {
       return UpcomingOccasion(
         id: event.id,
@@ -797,17 +953,19 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
     }).toList();
   }
 
-  List<WishlistSummary> _convertWishlistsToSummaries(List<Wishlist>? wishlists) {
+  List<WishlistSummary> _convertWishlistsToSummaries(
+    List<Wishlist>? wishlists,
+  ) {
     // Add null safety check - return empty list if wishlists is null or empty
     if (wishlists == null || wishlists.isEmpty) return [];
-    
+
     return wishlists.map((wishlist) {
       // Use items.length for accurate count (even if items array is populated)
       // The wishlist.totalItems getter already does this, but we want to ensure accuracy
-      final itemCount = wishlist.items.isNotEmpty 
-          ? wishlist.items.length 
+      final itemCount = wishlist.items.isNotEmpty
+          ? wishlist.items.length
           : wishlist.totalItems;
-      
+
       return WishlistSummary(
         id: wishlist.id,
         name: wishlist.name,
@@ -830,8 +988,11 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
   }) {
     final activities = controller.latestActivityPreview ?? [];
     final occasions = controller.upcomingOccasions ?? [];
-    final localization = Provider.of<LocalizationService>(context, listen: true);
-    
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: true,
+    );
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       child: Column(
@@ -840,19 +1001,19 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
           // 1. Compact Empty Wishlist Card (Because user has no wishlists)
           const CompactEmptyWishlistCard(),
           const SizedBox(height: 16),
-          
+
           // 2. Pending Reservations (Gifts reserved for friends)
           // This widget handles its own empty state internally (returns SizedBox.shrink if empty).
           const PendingReservationsSection(),
           const SizedBox(height: 24),
-          
+
           // 3. People You May Know
           SuggestedFriendsSection(
             localization: localization,
             initialSuggestions: initialSuggestions,
           ),
           const SizedBox(height: 24),
-          
+
           // 4. Friends Events / Upcoming Occasions
           if (occasions.isNotEmpty) ...[
             UpcomingOccasionsSection(
@@ -860,7 +1021,7 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
             ),
             const SizedBox(height: 24),
           ],
-          
+
           // 5. Happening Now (Friend Activities)
           if (activities.isNotEmpty)
             HappeningNowSection(activities: activities),
@@ -880,11 +1041,17 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
       final months = (difference.inDays / 30).floor();
       return months == 1 ? '1 month ago' : '$months months ago';
     } else if (difference.inDays > 0) {
-      return difference.inDays == 1 ? '1 day ago' : '${difference.inDays} days ago';
+      return difference.inDays == 1
+          ? '1 day ago'
+          : '${difference.inDays} days ago';
     } else if (difference.inHours > 0) {
-      return difference.inHours == 1 ? '1 hour ago' : '${difference.inHours} hours ago';
+      return difference.inHours == 1
+          ? '1 hour ago'
+          : '${difference.inHours} hours ago';
     } else if (difference.inMinutes > 0) {
-      return difference.inMinutes == 1 ? '1 minute ago' : '${difference.inMinutes} minutes ago';
+      return difference.inMinutes == 1
+          ? '1 minute ago'
+          : '${difference.inMinutes} minutes ago';
     } else {
       return 'Just now';
     }
@@ -940,20 +1107,28 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
     const horizontalMargin = 16.0;
 
     // listen: false - we're in a callback (post-frame), not during build
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
     final isRTL = localization.isRTL;
     final screenWidth = MediaQuery.of(context).size.width;
 
     // Use GlobalKey for reliable RenderBox; fallback to root overlay
-    final RenderBox? button = _notificationButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? button =
+        _notificationButtonKey.currentContext?.findRenderObject() as RenderBox?;
     final overlayState = Overlay.of(context, rootOverlay: true);
-    final RenderBox overlay = overlayState.context.findRenderObject() as RenderBox;
+    final RenderBox overlay =
+        overlayState.context.findRenderObject() as RenderBox;
 
     double dropdownLeft;
     double dropdownTop;
 
     if (button != null && button.hasSize) {
-      final buttonPosition = button.localToGlobal(Offset.zero, ancestor: overlay);
+      final buttonPosition = button.localToGlobal(
+        Offset.zero,
+        ancestor: overlay,
+      );
       final buttonSize = button.size;
       dropdownTop = buttonPosition.dy + buttonSize.height + 8;
       dropdownLeft = buttonPosition.dx + buttonSize.width - dropdownWidth;
@@ -967,74 +1142,72 @@ class HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMix
     final minLeft = horizontalMargin;
     final maxLeft = screenWidth - dropdownWidth - horizontalMargin;
     if (dropdownLeft < minLeft) dropdownLeft = minLeft;
-    if (dropdownLeft > maxLeft) dropdownLeft = maxLeft < minLeft ? minLeft : maxLeft;
+    if (dropdownLeft > maxLeft)
+      dropdownLeft = maxLeft < minLeft ? minLeft : maxLeft;
 
     // Start loading notifications in background
     final cubit = context.read<NotificationsCubit>();
     cubit.loadNotifications().then((_) => cubit.dismissBadge());
 
     showGeneralDialog(
-        context: context,
-        barrierDismissible: true,
-        barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-        barrierColor: Colors.black.withOpacity(0.4), // Semi-transparent overlay
-        transitionDuration: const Duration(milliseconds: 200),
-        pageBuilder: (dialogContext, animation, secondaryAnimation) {
-          return Directionality(
-            textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
-            child: Material(
-              color: Colors.transparent,
-              child: Stack(
-                children: [
-                  // Backdrop overlay (tappable to close)
-                  Positioned.fill(
-                    child: GestureDetector(
-                      onTap: () => Navigator.of(dialogContext).pop(),
-                      behavior: HitTestBehavior.opaque,
-                      child: Container(
-                        color: Colors.transparent,
-                      ),
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black.withOpacity(0.4), // Semi-transparent overlay
+      transitionDuration: const Duration(milliseconds: 200),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return Directionality(
+          textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+          child: Material(
+            color: Colors.transparent,
+            child: Stack(
+              children: [
+                // Backdrop overlay (tappable to close)
+                Positioned.fill(
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(dialogContext).pop(),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(color: Colors.transparent),
+                  ),
+                ),
+                // Notification dropdown positioned below button
+                Positioned(
+                  left: dropdownLeft,
+                  top: dropdownTop,
+                  child: GestureDetector(
+                    onTap:
+                        () {}, // Prevent tap from closing when clicking on dropdown
+                    child: NotificationDropdown(
+                      notifications:
+                          notifications, // Use current data immediately
+                      unreadCount: unreadCount, // Use current count immediately
                     ),
                   ),
-                  // Notification dropdown positioned below button
-                  Positioned(
-                    left: dropdownLeft,
-                    top: dropdownTop,
-                    child: GestureDetector(
-                      onTap: () {}, // Prevent tap from closing when clicking on dropdown
-                      child: NotificationDropdown(
-                        notifications: notifications, // Use current data immediately
-                        unreadCount: unreadCount, // Use current count immediately
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          );
-        },
-        transitionBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOut,
-            ),
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, -0.05),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOut,
-              )),
-              child: child,
-            ),
-          );
-        },
-      ).then((_) {
-        // Reset flag when dialog is closed
-        _isNotificationDropdownOpen = false;
-      });
+          ),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child: SlideTransition(
+            position:
+                Tween<Offset>(
+                  begin: const Offset(0, -0.05),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: animation, curve: Curves.easeOut),
+                ),
+            child: child,
+          ),
+        );
+      },
+    ).then((_) {
+      // Reset flag when dialog is closed
+      _isNotificationDropdownOpen = false;
+    });
   }
 }
 
@@ -1064,7 +1237,10 @@ class _FixedHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     final h = _getHeaderHeight();
     // Force the child to match the sliver's extent so we never get invalid
     // sliver geometry when the header is compact.

@@ -46,12 +46,16 @@ import '../../features/profile/presentation/screens/contact_us_screen.dart';
 import '../../features/profile/presentation/screens/shipping_address_screen.dart';
 import '../../features/wishlists/data/models/wishlist_model.dart';
 import '../../features/events/data/models/event_model.dart';
+import '../../features/chat/presentation/screens/chat_inbox_screen.dart';
+import '../../features/chat/presentation/screens/chat_room_screen.dart';
+import '../../features/chat/presentation/cubit/chat_room_cubit.dart';
 
 class AppRoutes {
   // Route Names
   static const String splash = '/';
   static const String welcome = '/welcome';
-  static const String onboarding = '/welcome'; // Alias for welcome (OnboardingScreen)
+  static const String onboarding =
+      '/welcome'; // Alias for welcome (OnboardingScreen)
   static const String login = '/login';
   static const String signup = '/signup';
   static const String forgotPassword = '/forgot-password';
@@ -88,7 +92,9 @@ class AppRoutes {
   static const String faq = '/faq';
   static const String contactUs = '/contact-us';
   static const String shippingAddress = '/shipping-address';
-  
+  static const String chatInbox = '/chat';
+  static const String chatRoom = '/chat/room';
+
   // Deep Link Routes (for Universal/App Links)
   static const String deepLinkWishlist = '/wishlist';
   static const String deepLinkEvent = '/event';
@@ -116,6 +122,7 @@ class AppRoutes {
     faq: (context) => const FaqScreen(),
     contactUs: (context) => const ContactUsScreen(),
     shippingAddress: (context) => const ShippingAddressScreen(),
+    chatInbox: (context) => const ChatInboxScreen(),
   };
 
   // Route Generator for dynamic routes
@@ -128,7 +135,7 @@ class AppRoutes {
         builder: (context) => FriendsScreen(initialTabIndex: initialTabIndex),
       );
     }
-    
+
     // Handle createWishlist route with optional wishlistId for editing and eventId for event context
     if (settings.name == createWishlist) {
       final args = settings.arguments as Map<String, dynamic>?;
@@ -149,16 +156,18 @@ class AppRoutes {
       final args = settings.arguments as Map<String, dynamic>?;
       final wishlistId = args?['wishlistId']?.toString().trim();
       if (args == null || wishlistId == null || wishlistId.isEmpty) {
-        return MaterialPageRoute(
-          builder: (context) => MainNavigation(),
-        );
+        return MaterialPageRoute(builder: (context) => MainNavigation());
       }
       return MaterialPageRoute(
         builder: (context) => WishlistItemsScreen(
           wishlistName: args['wishlistName']?.toString() ?? 'My Wishlist',
           wishlistId: wishlistId,
-          totalItems: (args['totalItems'] is int) ? args['totalItems'] as int : 0,
-          purchasedItems: (args['purchasedItems'] is int) ? args['purchasedItems'] as int : 0,
+          totalItems: (args['totalItems'] is int)
+              ? args['totalItems'] as int
+              : 0,
+          purchasedItems: (args['purchasedItems'] is int)
+              ? args['purchasedItems'] as int
+              : 0,
           isFriendWishlist: args['isFriendWishlist'] == true,
           friendName: args['friendName']?.toString(),
         ),
@@ -167,19 +176,16 @@ class AppRoutes {
       // Support both Map and WishlistItem directly
       if (settings.arguments is WishlistItem) {
         return MaterialPageRoute(
-          builder: (context) => ItemDetailsScreen(
-            item: settings.arguments as WishlistItem,
-          ),
+          builder: (context) =>
+              ItemDetailsScreen(item: settings.arguments as WishlistItem),
         );
       } else {
         // Legacy support for Map arguments
         final args = settings.arguments as Map<String, dynamic>?;
         if (args == null) {
-          return MaterialPageRoute(
-            builder: (context) => MainNavigation(),
-          );
+          return MaterialPageRoute(builder: (context) => MainNavigation());
         }
-        
+
         // Deep link support: if only itemId is provided, create minimal WishlistItem
         // The screen will fetch full data in _fetchItemDetails
         if (args.containsKey('itemId') && args['fromDeepLink'] == true) {
@@ -196,7 +202,7 @@ class AppRoutes {
             ),
           );
         }
-        
+
         // Legacy support for full Map arguments
         return MaterialPageRoute(
           builder: (context) => ItemDetailsScreen(
@@ -262,7 +268,9 @@ class AppRoutes {
     } else if (settings.name == blockedUsers) {
       return MaterialPageRoute(
         builder: (context) => BlocProvider(
-          create: (_) => BlockedUsersCubit(repository: PrivacyRepository())..loadBlockedUsers(),
+          create: (_) =>
+              BlockedUsersCubit(repository: PrivacyRepository())
+                ..loadBlockedUsers(),
           child: const BlockedUsersScreen(),
         ),
       );
@@ -277,13 +285,33 @@ class AppRoutes {
           popToHomeOnBack: popToHomeOnBack,
         ),
       );
+    } else if (settings.name == chatRoom) {
+      final args = settings.arguments as Map<String, dynamic>? ?? {};
+      final userId = args['userId']?.toString() ?? '';
+      final displayName = args['displayName']?.toString();
+      final avatarUrl = args['avatarUrl']?.toString();
+      final chatRoomId = args['chatRoomId']?.toString();
+
+      if (userId.trim().isEmpty) {
+        return MaterialPageRoute(builder: (context) => MainNavigation());
+      }
+
+      return MaterialPageRoute(
+        builder: (context) => BlocProvider(
+          create: (_) => ChatRoomCubit(userId: userId, chatRoomId: chatRoomId),
+          child: ChatRoomScreen(
+            userId: userId,
+            displayName: displayName,
+            avatarUrl: avatarUrl,
+            chatRoomId: chatRoomId,
+          ),
+        ),
+      );
     } else if (settings.name == eventDetails) {
       final args = settings.arguments as Map<String, dynamic>?;
       final eventId = args?['eventId']?.toString().trim();
       if (args == null || eventId == null || eventId.isEmpty) {
-        return MaterialPageRoute(
-          builder: (context) => MainNavigation(),
-        );
+        return MaterialPageRoute(builder: (context) => MainNavigation());
       }
       return MaterialPageRoute(
         builder: (context) => EventDetailsScreen(eventId: eventId),
@@ -306,7 +334,7 @@ class AppRoutes {
       final type = args?['type'] as String?;
       final title = args?['title'] as String?;
       final content = args?['content'] as String?;
-      
+
       return MaterialPageRoute(
         builder: (context) => LegalInfoScreen(
           title: title ?? 'Legal Information',
@@ -344,22 +372,23 @@ class AppRoutes {
           child: const ForgotPasswordScreen(),
         ),
       );
-      } else if (settings.name == verification) {
-        final args = settings.arguments as Map<String, dynamic>?;
+    } else if (settings.name == verification) {
+      final args = settings.arguments as Map<String, dynamic>?;
 
-        return MaterialPageRoute(
-          builder: (context) => BlocProvider<AuthCubit>(
-            create: (context) => AuthCubit(repository: context.read<AuthRepository>()),
-            child: VerificationScreen(
-              username: args?['username'] ?? '',
-              isPhone: args?['isPhone'] ?? false,
-              verificationId: args?['verificationId'] as String?,
-              userId: args?['userId'] as String?,
-              countryCode: args?['countryCode'] as String?,
-            ),
+      return MaterialPageRoute(
+        builder: (context) => BlocProvider<AuthCubit>(
+          create: (context) =>
+              AuthCubit(repository: context.read<AuthRepository>()),
+          child: VerificationScreen(
+            username: args?['username'] ?? '',
+            isPhone: args?['isPhone'] ?? false,
+            verificationId: args?['verificationId'] as String?,
+            userId: args?['userId'] as String?,
+            countryCode: args?['countryCode'] as String?,
           ),
-        );
-      }
+        ),
+      );
+    }
 
     return null;
   }

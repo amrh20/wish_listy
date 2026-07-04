@@ -378,26 +378,30 @@ class FriendsRepository {
     }
   }
 
-  /// Get friend suggestions (People You May Know)
+  /// Get friend suggestions (People You May Know) via Discovery V2.
   ///
-  /// Returns list of suggested users
-  /// Response format: {success: true, count: 20, data: [...]}
+  /// Returns list of suggested users.
+  /// Response format: { success, data: [...] } (list may be nested under data).
   Future<List<SuggestionUser>> getSuggestions() async {
     try {
-      final response = await _apiService.get('/friends/suggestions');
+      final response = await _apiService.get('/v2/friends/discover');
 
-      // Parse response: {success: true, count: 20, data: [...]}
-      final data = response['data'] as List<dynamic>?;
+      final raw = response['data'];
+      List<dynamic>? list;
+      if (raw is List<dynamic>) {
+        list = raw;
+      } else if (raw is Map<String, dynamic>) {
+        final inner = raw['users'] ?? raw['suggestions'] ?? raw['items'];
+        if (inner is List<dynamic>) list = inner;
+      }
 
-      if (data == null || data.isEmpty) {
+      if (list == null || list.isEmpty) {
         return [];
       }
 
-      final suggestions = data
+      return list
           .map((json) => SuggestionUser.fromJson(json as Map<String, dynamic>))
           .toList();
-
-      return suggestions;
     } on ApiException {
       rethrow;
     } catch (e) {

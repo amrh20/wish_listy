@@ -25,6 +25,7 @@ import 'core/storage/adapters/wishlist_adapter.dart';
 import 'features/wishlists/data/repository/guest_data_repository.dart';
 import 'features/wishlists/data/models/wishlist_model.dart';
 import 'features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'features/chat/presentation/cubit/chat_cubit.dart';
 import 'features/profile/presentation/providers/activity_provider.dart';
 import 'core/services/deep_link_service.dart';
 import 'core/navigation/app_route_observer.dart';
@@ -34,14 +35,13 @@ import 'core/services/fcm_service.dart';
 Future<void> _printDebugToken() async {
   // Wait 5 seconds for App Check to initialize
   await Future.delayed(const Duration(seconds: 5));
-  
+
   try {
     final token = await FirebaseAppCheck.instance.getToken();
     if (token != null && token.isNotEmpty) {
       // Print in a very visible format
     }
-  } catch (e) {
-  }
+  } catch (e) {}
 }
 
 /// Initialize Firebase App Check with Play Integrity provider
@@ -55,10 +55,13 @@ Future<void> _initializeAppCheck() async {
         appleProvider: AppleProvider.debug,
       );
       // Warm up attestation so it's ready before user tries phone auth
-      await FirebaseAppCheck.instance.getToken(true).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('App Check token timeout'),
-      ).catchError((_) {});
+      await FirebaseAppCheck.instance
+          .getToken(true)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException('App Check token timeout'),
+          )
+          .catchError((_) {});
       // Wait 5 seconds then try to get and print debug token
       _printDebugToken();
     } catch (e) {
@@ -72,10 +75,13 @@ Future<void> _initializeAppCheck() async {
         appleProvider: AppleProvider.deviceCheck,
       );
       // Warm up attestation so it's ready before user tries phone auth
-      await FirebaseAppCheck.instance.getToken(true).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('App Check token timeout'),
-      ).catchError((_) {});
+      await FirebaseAppCheck.instance
+          .getToken(true)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw TimeoutException('App Check token timeout'),
+          )
+          .catchError((_) {});
     } catch (e) {
       // In production, this is more critical, but we'll continue anyway
     }
@@ -108,8 +114,7 @@ void main() async {
   // This must be done after Firebase.initializeApp and before runApp.
   try {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  } catch (e) {
-  }
+  } catch (e) {}
 
   // Initialize Hive for guest local storage (must run first)
   await Hive.initFlutter();
@@ -143,14 +148,13 @@ void main() async {
   try {
     await authRepository.initialize().timeout(
       const Duration(seconds: 5),
-      onTimeout: () {
-      },
+      onTimeout: () {},
     );
-  } catch (e) {
-  }
+  } catch (e) {}
 
   // Create NotificationsCubit instance immediately to ensure listener is registered
   final notificationsCubit = NotificationsCubit();
+  final chatCubit = ChatCubit();
 
   // Prevent black screen on build errors - show helpful error widget instead
   ErrorWidget.builder = (FlutterErrorDetails details) {
@@ -194,6 +198,7 @@ void main() async {
       authRepository: authRepository,
       guestDataRepository: guestDataRepository,
       notificationsCubit: notificationsCubit,
+      chatCubit: chatCubit,
     ),
   );
 
@@ -206,6 +211,7 @@ void main() async {
       .initialize(
         authRepository: authRepository,
         notificationsCubit: notificationsCubit,
+        chatCubit: chatCubit,
       )
       .then((_) => debugPrint('✅ FcmService initialized successfully'))
       .catchError((e) => debugPrint('⚠️ Error initializing FcmService: $e'));
@@ -216,9 +222,11 @@ class MyApp extends StatefulWidget {
   final AuthRepository authRepository;
   final GuestDataRepository guestDataRepository;
   final NotificationsCubit notificationsCubit;
-  
+  final ChatCubit chatCubit;
+
   // Create navigatorKey once and reuse it across rebuilds
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
 
   const MyApp({
     super.key,
@@ -226,6 +234,7 @@ class MyApp extends StatefulWidget {
     required this.authRepository,
     required this.guestDataRepository,
     required this.notificationsCubit,
+    required this.chatCubit,
   });
 
   @override
@@ -249,11 +258,16 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider<LocalizationService>(
           create: (_) => widget.localizationService,
         ),
-        ChangeNotifierProvider<AuthRepository>(create: (_) => widget.authRepository),
-        Provider<GuestDataRepository>(create: (_) => widget.guestDataRepository),
+        ChangeNotifierProvider<AuthRepository>(
+          create: (_) => widget.authRepository,
+        ),
+        Provider<GuestDataRepository>(
+          create: (_) => widget.guestDataRepository,
+        ),
         BlocProvider<NotificationsCubit>.value(
           value: widget.notificationsCubit, // Use the pre-created instance
         ),
+        BlocProvider<ChatCubit>.value(value: widget.chatCubit),
         ChangeNotifierProvider<ActivityProvider>(
           create: (_) => ActivityProvider(),
         ),

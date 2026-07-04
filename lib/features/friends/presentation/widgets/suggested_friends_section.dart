@@ -14,10 +14,20 @@ class SuggestedFriendsSection extends StatefulWidget {
   final LocalizationService localization;
   final List<SuggestionUser>? initialSuggestions;
 
+  /// When true, [parentDiscoverLoading] and [parentDiscoverSuggestions] are used; no internal fetch.
+  final bool useParentDiscover;
+  final bool parentDiscoverLoading;
+  final List<SuggestionUser> parentDiscoverSuggestions;
+  final void Function(String userId)? onParentDiscoverDismiss;
+
   const SuggestedFriendsSection({
     super.key,
     required this.localization,
     this.initialSuggestions,
+    this.useParentDiscover = false,
+    this.parentDiscoverLoading = false,
+    this.parentDiscoverSuggestions = const [],
+    this.onParentDiscoverDismiss,
   });
 
   @override
@@ -41,12 +51,31 @@ class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> with 
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat();
-    if (widget.initialSuggestions != null) {
+    if (widget.useParentDiscover) {
+      _suggestions = List<SuggestionUser>.from(widget.parentDiscoverSuggestions);
+      _isLoading = widget.parentDiscoverLoading;
+      _errorMessage = null;
+    } else if (widget.initialSuggestions != null) {
       _suggestions = widget.initialSuggestions!;
       _isLoading = false;
       _errorMessage = null;
     } else {
       _loadSuggestions();
+    }
+  }
+
+  @override
+  void didUpdateWidget(SuggestedFriendsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.useParentDiscover) {
+      if (oldWidget.parentDiscoverLoading != widget.parentDiscoverLoading ||
+          oldWidget.parentDiscoverSuggestions != widget.parentDiscoverSuggestions) {
+        setState(() {
+          _isLoading = widget.parentDiscoverLoading;
+          _suggestions = List<SuggestionUser>.from(widget.parentDiscoverSuggestions);
+          _errorMessage = null;
+        });
+      }
     }
   }
 
@@ -94,6 +123,9 @@ class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> with 
       setState(() {
         _suggestions.removeAt(index);
       });
+    }
+    if (widget.useParentDiscover) {
+      widget.onParentDiscoverDismiss?.call(userId);
     }
 
     // Call API in background (silent failure - UI already updated)
@@ -336,6 +368,7 @@ class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> with 
         SizedBox(
           height: 200,
           child: ListView.builder(
+            primary: false,
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             itemCount: _suggestions.length,
@@ -377,6 +410,7 @@ class _SuggestedFriendsSectionState extends State<SuggestedFriendsSection> with 
                     0.5 * (1 + (2 * _animationController.value - 1).abs()))));
 
         return ListView.builder(
+          primary: false,
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
           itemCount: 3,

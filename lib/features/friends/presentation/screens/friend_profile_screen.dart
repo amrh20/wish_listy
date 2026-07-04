@@ -25,6 +25,7 @@ import 'package:wish_listy/core/widgets/royal_avatar_wrapper.dart';
 
 class FriendProfileScreen extends StatefulWidget {
   final String friendId;
+
   /// When true, back button returns to Home (MainNavigation) instead of just pop.
   /// Set to true when opened from friend-request notification to avoid loading/empty screen.
   final bool popToHomeOnBack;
@@ -43,7 +44,8 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   late final FriendProfileController _controller;
   final PrivacyRepository _privacyRepository = PrivacyRepository();
 
-  static const double _expandedHeaderHeight = 368.0; // Accommodate avatar, handle, stats, Quick Actions, mutual friends (avoids bottom overflow)
+  static const double _expandedHeaderHeight =
+      368.0; // Accommodate avatar, handle, stats, Quick Actions, mutual friends (avoids bottom overflow)
 
   @override
   void initState() {
@@ -83,127 +85,155 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-            SliverAppBar(
-              pinned: true,
-              expandedHeight: _expandedHeaderHeight,
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              surfaceTintColor: Colors.transparent,
-              leading: IconButton(
-                onPressed: () {
-                  if (widget.popToHomeOnBack) {
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      AppRoutes.mainNavigation,
-                      (route) => false,
-                    );
-                  } else {
-                    Navigator.pop(context);
-                  }
-                },
-                icon: const Icon(
-                  Icons.arrow_back_ios,
-                  color: AppColors.textPrimary,
-                  size: 18,
-                ),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  padding: const EdgeInsets.all(8),
-                  shape: const CircleBorder(),
-                ),
-              ),
-              actions: [
-                Obx(() {
-                  final isBlockedByMe = _controller.isBlockedByMe.value;
-                  final localization = Provider.of<LocalizationService>(context, listen: false);
-                  return PopupMenuButton<String>(
-                    icon: Icon(
-                      Icons.more_vert,
-                      color: AppColors.textPrimary,
-                      size: 22,
-                    ),
-                    padding: EdgeInsets.zero,
-                    onSelected: (value) {
-                      if (value == 'report') {
-                        _showReportDialog();
-                      } else if (value == 'block') {
-                        _showBlockConfirmationDialog();
-                      } else if (value == 'unblock') {
-                        _handleUnblock();
-                      }
-                    },
-                    itemBuilder: (context) {
-                      return [
-                        PopupMenuItem<String>(
-                          value: 'report',
-                          child: Row(
-                            children: [
-                              Icon(Icons.flag_outlined, color: AppColors.textPrimary, size: 20),
-                              const SizedBox(width: 12),
-                              Text(localization.translate('friends.reportUser')),
-                            ],
-                          ),
-                        ),
-                        if (isBlockedByMe)
-                          PopupMenuItem<String>(
-                            value: 'unblock',
-                            child: Row(
-                              children: [
-                                Icon(Icons.lock_open, color: AppColors.primary, size: 20),
-                                const SizedBox(width: 12),
-                                Text(
-                                  localization.translate('friends.unblockUser'),
-                                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
-                                ),
-                              ],
-                            ),
-                          )
-                        else
-                          PopupMenuItem<String>(
-                            value: 'block',
-                            child: Row(
-                              children: [
-                                Icon(Icons.block, color: AppColors.error, size: 20),
-                                const SizedBox(width: 12),
-                                Text(
-                                  localization.translate('friends.blockUser'),
-                                  style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w600),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ];
-                    },
-                  );
-                }),
-              ],
-              flexibleSpace: FlexibleSpaceBar(
-                background: _PatternedHeader(controller: _controller),
-              ),
-            ),
-
-            // Carved / bottom-sheet effect: pull the white sheet up to overlap header.
-            SliverToBoxAdapter(
-              child: Transform(
-                transform: Matrix4.translationValues(0.0, -20.0, 0.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(32),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 18,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
+              SliverAppBar(
+                pinned: true,
+                expandedHeight: _expandedHeaderHeight,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                surfaceTintColor: Colors.transparent,
+                leading: IconButton(
+                  onPressed: () {
+                    if (widget.popToHomeOnBack) {
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        AppRoutes.mainNavigation,
+                        (route) => false,
+                      );
+                    } else {
+                      Navigator.pop(context);
+                    }
+                  },
+                  icon: const Icon(
+                    Icons.arrow_back_ios,
+                    color: AppColors.textPrimary,
+                    size: 18,
                   ),
-                  child: _BodyContent(controller: _controller, onUnblock: _handleUnblock),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    padding: const EdgeInsets.all(8),
+                    shape: const CircleBorder(),
+                  ),
+                ),
+                actions: [
+                  Obx(() {
+                    final isBlockedByMe = _controller.isBlockedByMe.value;
+                    final localization = Provider.of<LocalizationService>(
+                      context,
+                      listen: false,
+                    );
+                    return PopupMenuButton<String>(
+                      icon: Icon(
+                        Icons.more_vert,
+                        color: AppColors.textPrimary,
+                        size: 22,
+                      ),
+                      padding: EdgeInsets.zero,
+                      onSelected: (value) {
+                        if (value == 'report') {
+                          _showReportDialog();
+                        } else if (value == 'block') {
+                          _showBlockConfirmationDialog();
+                        } else if (value == 'unblock') {
+                          _handleUnblock();
+                        }
+                      },
+                      itemBuilder: (context) {
+                        return [
+                          PopupMenuItem<String>(
+                            value: 'report',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.flag_outlined,
+                                  color: AppColors.textPrimary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  localization.translate('friends.reportUser'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isBlockedByMe)
+                            PopupMenuItem<String>(
+                              value: 'unblock',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.lock_open,
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    localization.translate(
+                                      'friends.unblockUser',
+                                    ),
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            PopupMenuItem<String>(
+                              value: 'block',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.block,
+                                    color: AppColors.error,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    localization.translate('friends.blockUser'),
+                                    style: TextStyle(
+                                      color: AppColors.error,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ];
+                      },
+                    );
+                  }),
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  background: _PatternedHeader(controller: _controller),
                 ),
               ),
-            ),
-          ],
+
+              // Carved / bottom-sheet effect: pull the white sheet up to overlap header.
+              SliverToBoxAdapter(
+                child: Transform(
+                  transform: Matrix4.translationValues(0.0, -20.0, 0.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(32),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 18,
+                          offset: const Offset(0, -2),
+                        ),
+                      ],
+                    ),
+                    child: _BodyContent(
+                      controller: _controller,
+                      onUnblock: _handleUnblock,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -214,8 +244,23 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     await _controller.fetchProfile();
   }
 
+  void _openChatRoom() {
+    final user = _controller.profile.value?.user;
+    Navigator.of(context).pushNamed(
+      AppRoutes.chatRoom,
+      arguments: {
+        'userId': widget.friendId,
+        'displayName': user?.fullName,
+        'avatarUrl': user?.profileImage,
+      },
+    );
+  }
+
   Future<void> _handleAddFriend() async {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
     try {
       await _controller.sendFriendRequest();
       if (!mounted) return;
@@ -269,14 +314,20 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   }
 
   Future<void> _handleAcceptRequest() async {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
     final requestId = _controller.incomingRequestId.value.isNotEmpty
         ? _controller.incomingRequestId.value
         : null;
     try {
       await _controller.acceptIncomingRequest();
       if (!mounted) return;
-      _removeFriendRequestNotification(friendUserId: widget.friendId, requestId: requestId);
+      _removeFriendRequestNotification(
+        friendUserId: widget.friendId,
+        requestId: requestId,
+      );
       context.read<NotificationsCubit>().loadNotifications();
       context.read<NotificationsCubit>().getUnreadCount();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -317,7 +368,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
             children: [
               const Icon(Icons.error, color: Colors.white),
               const SizedBox(width: 8),
-              Text(localization.translate('friends.failedToAcceptFriendRequest')),
+              Text(
+                localization.translate('friends.failedToAcceptFriendRequest'),
+              ),
             ],
           ),
           backgroundColor: AppColors.error,
@@ -329,7 +382,10 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   }
 
   Future<void> _handleCancelRequest() async {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
     try {
       await _controller.cancelFriendRequest();
       if (!mounted) return;
@@ -368,7 +424,10 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      final localization = Provider.of<LocalizationService>(context, listen: false);
+      final localization = Provider.of<LocalizationService>(
+        context,
+        listen: false,
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
@@ -387,14 +446,20 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   }
 
   Future<void> _handleDeclineRequest() async {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
     final requestId = _controller.incomingRequestId.value.isNotEmpty
         ? _controller.incomingRequestId.value
         : null;
     try {
       await _controller.declineIncomingRequest();
       if (!mounted) return;
-      _removeFriendRequestNotification(friendUserId: widget.friendId, requestId: requestId);
+      _removeFriendRequestNotification(
+        friendUserId: widget.friendId,
+        requestId: requestId,
+      );
       context.read<NotificationsCubit>().loadNotifications();
       context.read<NotificationsCubit>().getUnreadCount();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -435,7 +500,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
             children: [
               const Icon(Icons.error, color: Colors.white),
               const SizedBox(width: 8),
-              Text(localization.translate('friends.failedToRejectFriendRequest')),
+              Text(
+                localization.translate('friends.failedToRejectFriendRequest'),
+              ),
             ],
           ),
           backgroundColor: AppColors.error,
@@ -447,13 +514,18 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   }
 
   void _showReportDialog() {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
     final reasonController = TextEditingController();
     showDialog<void>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           backgroundColor: AppColors.surface,
           title: Text(localization.translate('friends.reportUser')),
           content: SingleChildScrollView(
@@ -463,15 +535,21 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
               children: [
                 Text(
                   localization.translate('friends.reportDescription'),
-                  style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                  style: AppStyles.bodyMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: reasonController,
                   maxLines: 3,
                   decoration: InputDecoration(
-                    hintText: localization.translate('friends.reportDescriptionPlaceholder'),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    hintText: localization.translate(
+                      'friends.reportDescriptionPlaceholder',
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     filled: true,
                     fillColor: Colors.white,
                   ),
@@ -497,12 +575,16 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                         children: [
                           const Icon(Icons.check_circle, color: Colors.white),
                           const SizedBox(width: 8),
-                          Text(localization.translate('friends.reportSubmitted')),
+                          Text(
+                            localization.translate('friends.reportSubmitted'),
+                          ),
                         ],
                       ),
                       backgroundColor: AppColors.success,
                       behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   );
                 } on ApiException catch (e) {
@@ -518,17 +600,25 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                       ),
                       backgroundColor: AppColors.error,
                       behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   );
                 } catch (_) {
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(localization.translate('friends.failedToSendFriendRequest')),
+                      content: Text(
+                        localization.translate(
+                          'friends.failedToSendFriendRequest',
+                        ),
+                      ),
                       backgroundColor: AppColors.error,
                       behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   );
                 }
@@ -542,18 +632,32 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   }
 
   void _showBlockConfirmationDialog() {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
-    final name = _controller.profile.value?.user.fullName ?? localization.translate('friends.friend');
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+    final name =
+        _controller.profile.value?.user.fullName ??
+        localization.translate('friends.friend');
     showDialog<void>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           backgroundColor: AppColors.surface,
-          title: Text(localization.translate('friends.blockUserConfirmTitle', args: {'name': name})),
+          title: Text(
+            localization.translate(
+              'friends.blockUserConfirmTitle',
+              args: {'name': name},
+            ),
+          ),
           content: Text(
             localization.translate('friends.blockUserConfirmMessage'),
-            style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
           actions: [
             TextButton(
@@ -565,7 +669,8 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                 Navigator.of(dialogContext).pop();
                 final scaffoldMessenger = ScaffoldMessenger.of(context);
                 final loadingSnackBar = _buildLoadingSnackBar(
-                  localization.translate('common.pleaseWait') ?? 'Processing...',
+                  localization.translate('common.pleaseWait') ??
+                      'Processing...',
                 );
                 scaffoldMessenger.showSnackBar(loadingSnackBar);
                 try {
@@ -573,7 +678,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                   if (!mounted) return;
                   scaffoldMessenger.hideCurrentSnackBar();
                   scaffoldMessenger.showSnackBar(
-                    _buildSuccessSnackBar(localization.translate('friends.userBlocked')),
+                    _buildSuccessSnackBar(
+                      localization.translate('friends.userBlocked'),
+                    ),
                   );
                   Navigator.of(context).pushNamedAndRemoveUntil(
                     AppRoutes.mainNavigation,
@@ -583,20 +690,34 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                   if (!mounted) return;
                   scaffoldMessenger.hideCurrentSnackBar();
                   scaffoldMessenger.showSnackBar(
-                    _buildErrorSnackBar(e.message.isNotEmpty ? e.message : (localization.translate('friends.failedToSendFriendRequest') ?? 'Something went wrong')),
+                    _buildErrorSnackBar(
+                      e.message.isNotEmpty
+                          ? e.message
+                          : (localization.translate(
+                                  'friends.failedToSendFriendRequest',
+                                ) ??
+                                'Something went wrong'),
+                    ),
                   );
                 } catch (_) {
                   if (!mounted) return;
                   scaffoldMessenger.hideCurrentSnackBar();
                   scaffoldMessenger.showSnackBar(
-                    _buildErrorSnackBar(localization.translate('friends.failedToSendFriendRequest')),
+                    _buildErrorSnackBar(
+                      localization.translate(
+                        'friends.failedToSendFriendRequest',
+                      ),
+                    ),
                   );
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
               child: Text(
                 localization.translate('friends.blockUser'),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -621,7 +742,10 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
           Expanded(
             child: Text(
               message,
-              style: AppStyles.bodyMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w500),
+              style: AppStyles.bodyMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -642,7 +766,10 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
           Expanded(
             child: Text(
               message,
-              style: AppStyles.bodyMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w500),
+              style: AppStyles.bodyMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -662,7 +789,10 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
           Expanded(
             child: Text(
               message,
-              style: AppStyles.bodyMedium.copyWith(color: Colors.white, fontWeight: FontWeight.w500),
+              style: AppStyles.bodyMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -674,18 +804,32 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   }
 
   void _showUnblockConfirmationDialog() {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
-    final name = _controller.profile.value?.user.fullName ?? localization.translate('friends.friend');
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+    final name =
+        _controller.profile.value?.user.fullName ??
+        localization.translate('friends.friend');
     showDialog<void>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           backgroundColor: AppColors.surface,
-          title: Text(localization.translate('friends.unblockUserConfirmTitle', args: {'name': name})),
+          title: Text(
+            localization.translate(
+              'friends.unblockUserConfirmTitle',
+              args: {'name': name},
+            ),
+          ),
           content: Text(
             localization.translate('friends.unblockUserConfirmMessage'),
-            style: AppStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+            style: AppStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
           actions: [
             TextButton(
@@ -697,10 +841,15 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                 Navigator.of(dialogContext).pop();
                 _performUnblock();
               },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+              ),
               child: Text(
                 localization.translate('friends.unblockUser'),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -710,7 +859,10 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   }
 
   Future<void> _performUnblock() async {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final loadingSnackBar = _buildLoadingSnackBar(
       localization.translate('common.pleaseWait') ?? 'Processing...',
@@ -728,13 +880,21 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
       if (!mounted) return;
       scaffoldMessenger.hideCurrentSnackBar();
       scaffoldMessenger.showSnackBar(
-        _buildErrorSnackBar(e.message.isNotEmpty ? e.message : (localization.translate('friends.failedToRemoveFriend') ?? 'Something went wrong')),
+        _buildErrorSnackBar(
+          e.message.isNotEmpty
+              ? e.message
+              : (localization.translate('friends.failedToRemoveFriend') ??
+                    'Something went wrong'),
+        ),
       );
     } catch (_) {
       if (!mounted) return;
       scaffoldMessenger.hideCurrentSnackBar();
       scaffoldMessenger.showSnackBar(
-        _buildErrorSnackBar(localization.translate('friends.failedToRemoveFriend') ?? 'Something went wrong'),
+        _buildErrorSnackBar(
+          localization.translate('friends.failedToRemoveFriend') ??
+              'Something went wrong',
+        ),
       );
     }
   }
@@ -747,8 +907,12 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
     final p = _controller.profile.value;
     final info = p?.shippingInfo;
     if (info == null) return;
-    final localization = Provider.of<LocalizationService>(context, listen: false);
-    final friendName = p?.user.fullName ?? localization.translate('friends.friend');
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
+    final friendName =
+        p?.user.fullName ?? localization.translate('friends.friend');
 
     showModalBottomSheet(
       context: context,
@@ -770,7 +934,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              localization.translate('friends.shippingInfoFor')?.replaceAll('{name}', friendName) ??
+              localization
+                      .translate('friends.shippingInfoFor')
+                      ?.replaceAll('{name}', friendName) ??
                   'Shipping Info for $friendName',
               style: AppStyles.headingSmall.copyWith(
                 fontWeight: FontWeight.bold,
@@ -779,7 +945,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
             ),
             const SizedBox(height: 20),
             _ShippingInfoRow(
-              label: localization.translate('profile.shippingReceiverName') ?? 'Receiver Name',
+              label:
+                  localization.translate('profile.shippingReceiverName') ??
+                  'Receiver Name',
               value: info.receiverName,
             ),
             const SizedBox(height: 12),
@@ -789,7 +957,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
             ),
             const SizedBox(height: 12),
             _ShippingInfoRow(
-              label: localization.translate('profile.shippingDetailedAddress') ?? 'Address',
+              label:
+                  localization.translate('profile.shippingDetailedAddress') ??
+                  'Address',
               value: info.fullAddress,
             ),
             const SizedBox(height: 24),
@@ -807,7 +977,8 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(
-                        localization.translate('profile.addressCopied') ?? 'Copied to clipboard',
+                        localization.translate('profile.addressCopied') ??
+                            'Copied to clipboard',
                       ),
                       backgroundColor: AppColors.success,
                       behavior: SnackBarBehavior.floating,
@@ -816,7 +987,8 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
                 },
                 icon: const Icon(Icons.copy_all, size: 20),
                 label: Text(
-                  localization.translate('friends.copyAllInfo') ?? 'Copy All Info',
+                  localization.translate('friends.copyAllInfo') ??
+                      'Copy All Info',
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -836,9 +1008,13 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   }
 
   Future<void> _handleUnfriend() async {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
     final profile = _controller.profile.value;
-    final friendName = profile?.user.fullName ?? localization.translate('friends.friend');
+    final friendName =
+        profile?.user.fullName ?? localization.translate('friends.friend');
 
     // Show confirmation dialog
     final shouldRemove = await showDialog<bool>(
@@ -857,7 +1033,10 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
             ),
           ),
           content: Text(
-            localization.translate('dialogs.removeFriendMessage', args: {'name': friendName}),
+            localization.translate(
+              'dialogs.removeFriendMessage',
+              args: {'name': friendName},
+            ),
             style: AppStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
@@ -929,19 +1108,14 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
         SnackBar(
           content: Row(
             children: [
-              const Icon(
-                Icons.check_circle,
-                color: Colors.white,
-              ),
+              const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 8),
               Text(localization.translate('friends.friendRemoved')),
             ],
           ),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
 
@@ -966,9 +1140,7 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
           ),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
     } catch (e) {
@@ -982,16 +1154,15 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  localization.translate('friends.failedToRemoveFriend') ?? 'Failed to remove friend. Please try again.',
+                  localization.translate('friends.failedToRemoveFriend') ??
+                      'Failed to remove friend. Please try again.',
                 ),
               ),
             ],
           ),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
     }
@@ -1003,9 +1174,9 @@ class _FriendProfileScreenState extends State<FriendProfileScreen> {
   }) {
     try {
       context.read<NotificationsCubit>().resolveFriendRequestNotification(
-            friendUserId: friendUserId,
-            requestId: requestId,
-          );
+        friendUserId: friendUserId,
+        requestId: requestId,
+      );
     } catch (_) {
       // If NotificationsCubit isn't provided in the current widget tree, ignore.
     }
@@ -1026,10 +1197,7 @@ class _PatternedHeader extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFFDF2F8),
-                Color(0xFFF3E8FF),
-              ],
+              colors: [Color(0xFFFDF2F8), Color(0xFFF3E8FF)],
             ),
           ),
           child: Stack(
@@ -1057,7 +1225,10 @@ class _PatternedHeader extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
                   child: Obx(() {
-                    final localization = Provider.of<LocalizationService>(context, listen: false);
+                    final localization = Provider.of<LocalizationService>(
+                      context,
+                      listen: false,
+                    );
                     final isLoading = controller.isLoading.value;
                     final p = controller.profile.value;
                     final user = p?.user;
@@ -1078,10 +1249,7 @@ class _PatternedHeader extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _Avatar(
-                          fullName: fullName,
-                          imageUrl: profileImage,
-                        ),
+                        _Avatar(fullName: fullName, imageUrl: profileImage),
                         const SizedBox(height: 8),
                         Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1110,7 +1278,8 @@ class _PatternedHeader extends StatelessWidget {
                           ],
                         ),
                         // Handle below name - only show when set (never show lone @ or "User #ID")
-                        if (user != null && user.getDisplayHandleOrNull() != null) ...[
+                        if (user != null &&
+                            user.getDisplayHandleOrNull() != null) ...[
                           const SizedBox(height: 4),
                           Text(
                             user.getDisplayHandleOrNull()!,
@@ -1134,38 +1303,68 @@ class _PatternedHeader extends StatelessWidget {
                           isFriend: controller.isFriend.value,
                           hasIncomingRequest:
                               controller.hasIncomingRequest.value,
-                          isRequestSent:
-                              controller.hasOutgoingRequest.value,
+                          isRequestSent: controller.hasOutgoingRequest.value,
                           isBlockedByMe: controller.isBlockedByMe.value,
-                          isBusy: controller.isSendingFriendRequest.value ||
+                          isBusy:
+                              controller.isSendingFriendRequest.value ||
                               controller.isLoading.value,
                           hasShippingAddress:
                               controller.profile.value?.shippingInfo != null,
                           friendName:
                               controller.profile.value?.user.fullName ??
-                                  Provider.of<LocalizationService>(context, listen: false).translate('friends.friend'),
+                              Provider.of<LocalizationService>(
+                                context,
+                                listen: false,
+                              ).translate('friends.friend'),
                           shippingInfo: controller.profile.value?.shippingInfo,
-                          onRemove: () => (context.findAncestorStateOfType<
-                                  _FriendProfileScreenState>())
-                              ?._handleUnfriend(),
-                          onShippingTap: () => (context.findAncestorStateOfType<
-                                  _FriendProfileScreenState>())
-                              ?._showShippingInfoBottomSheet(),
-                          onAccept: () => (context.findAncestorStateOfType<
-                                  _FriendProfileScreenState>())
-                              ?._handleAcceptRequest(),
-                          onDecline: () => (context.findAncestorStateOfType<
-                                  _FriendProfileScreenState>())
-                              ?._handleDeclineRequest(),
-                          onAdd: () => (context.findAncestorStateOfType<
-                                  _FriendProfileScreenState>())
-                              ?._handleAddFriend(),
-                          onCancel: () => (context.findAncestorStateOfType<
-                                  _FriendProfileScreenState>())
-                              ?._handleCancelRequest(),
-                          onUnblock: () => (context.findAncestorStateOfType<
-                                  _FriendProfileScreenState>())
-                              ?._handleUnblock(),
+                          onRemove: () =>
+                              (context
+                                      .findAncestorStateOfType<
+                                        _FriendProfileScreenState
+                                      >())
+                                  ?._handleUnfriend(),
+                          onShippingTap: () =>
+                              (context
+                                      .findAncestorStateOfType<
+                                        _FriendProfileScreenState
+                                      >())
+                                  ?._showShippingInfoBottomSheet(),
+                          onMessage: () =>
+                              (context
+                                      .findAncestorStateOfType<
+                                        _FriendProfileScreenState
+                                      >())
+                                  ?._openChatRoom(),
+                          onAccept: () =>
+                              (context
+                                      .findAncestorStateOfType<
+                                        _FriendProfileScreenState
+                                      >())
+                                  ?._handleAcceptRequest(),
+                          onDecline: () =>
+                              (context
+                                      .findAncestorStateOfType<
+                                        _FriendProfileScreenState
+                                      >())
+                                  ?._handleDeclineRequest(),
+                          onAdd: () =>
+                              (context
+                                      .findAncestorStateOfType<
+                                        _FriendProfileScreenState
+                                      >())
+                                  ?._handleAddFriend(),
+                          onCancel: () =>
+                              (context
+                                      .findAncestorStateOfType<
+                                        _FriendProfileScreenState
+                                      >())
+                                  ?._handleCancelRequest(),
+                          onUnblock: () =>
+                              (context
+                                      .findAncestorStateOfType<
+                                        _FriendProfileScreenState
+                                      >())
+                                  ?._handleUnblock(),
                         ),
                         if (p?.mutualFriendsData != null &&
                             p!.mutualFriendsData!.totalCount > 0) ...[
@@ -1209,11 +1408,7 @@ class _PatternedHeader extends StatelessWidget {
           color: color,
           shape: BoxShape.circle,
           boxShadow: [
-            BoxShadow(
-              color: color,
-              blurRadius: 120,
-              spreadRadius: 18,
-            ),
+            BoxShadow(color: color, blurRadius: 120, spreadRadius: 18),
           ],
         ),
       ),
@@ -1229,7 +1424,10 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
     final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
     final initial = fullName.trim().isNotEmpty
         ? fullName.trim()[0].toUpperCase()
@@ -1263,8 +1461,11 @@ class _Avatar extends StatelessWidget {
                       },
                       transitionsBuilder:
                           (context, animation, secondaryAnimation, child) {
-                        return FadeTransition(opacity: animation, child: child);
-                      },
+                            return FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            );
+                          },
                     ),
                   );
                 }
@@ -1320,19 +1521,17 @@ class _FriendFullScreenImageView extends StatelessWidget {
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
                         return const Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                          ),
+                          child: CircularProgressIndicator(color: Colors.white),
                         );
                       },
                       errorBuilder: (context, error, stackTrace) =>
                           const Center(
-                        child: Icon(
-                          Icons.error_outline,
-                          color: Colors.white,
-                          size: 40,
-                        ),
-                      ),
+                            child: Icon(
+                              Icons.error_outline,
+                              color: Colors.white,
+                              size: 40,
+                            ),
+                          ),
                     ),
                   ),
                 ),
@@ -1341,11 +1540,7 @@ class _FriendFullScreenImageView extends StatelessWidget {
                 top: 16,
                 left: 16,
                 child: IconButton(
-                  icon: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 28,
-                  ),
+                  icon: const Icon(Icons.close, color: Colors.white, size: 28),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
@@ -1365,7 +1560,10 @@ class _ShippingInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
     final displayValue = value.trim().isEmpty
         ? (localization.translate('common.notSet') ?? '—')
         : value;
@@ -1380,7 +1578,8 @@ class _ShippingInfoRow extends StatelessWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      localization.translate('profile.addressCopied') ?? 'Copied',
+                      localization.translate('profile.addressCopied') ??
+                          'Copied',
                     ),
                     backgroundColor: AppColors.success,
                     behavior: SnackBarBehavior.floating,
@@ -1393,9 +1592,7 @@ class _ShippingInfoRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.background,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.border.withOpacity(0.5),
-            ),
+            border: Border.all(color: AppColors.border.withOpacity(0.5)),
           ),
           child: Row(
             children: [
@@ -1423,11 +1620,7 @@ class _ShippingInfoRow extends StatelessWidget {
                 ),
               ),
               if (value.trim().isNotEmpty)
-                Icon(
-                  Icons.copy_outlined,
-                  size: 20,
-                  color: AppColors.primary,
-                ),
+                Icon(Icons.copy_outlined, size: 20, color: AppColors.primary),
             ],
           ),
         ),
@@ -1452,6 +1645,7 @@ class _RelationshipQuickActions extends StatelessWidget {
   final VoidCallback? onCancel;
   final VoidCallback? onUnblock;
   final VoidCallback? onShippingTap;
+  final VoidCallback? onMessage;
 
   const _RelationshipQuickActions({
     required this.isFriend,
@@ -1469,11 +1663,15 @@ class _RelationshipQuickActions extends StatelessWidget {
     this.onCancel,
     this.onUnblock,
     this.onShippingTap,
+    this.onMessage,
   });
 
   @override
   Widget build(BuildContext context) {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
 
     // Keep the header flexible: use Wrap instead of Row to avoid overflow.
     if (isBusy) {
@@ -1499,9 +1697,8 @@ class _RelationshipQuickActions extends StatelessWidget {
           _QuickActionButton(
             text: localization.translate('friends.unblockUser'),
             icon: Icons.lock_open,
-            backgroundColor: AppColors.primary.withOpacity(0.10),
-            foregroundColor: AppColors.primary,
-            borderColor: AppColors.primary.withOpacity(0.25),
+backgroundColor: AppColors.primary.withValues(alpha: 0.10),            foregroundColor: AppColors.primary,
+            borderColor: AppColors.primary.withValues(alpha: 0.25),
             onTap: onUnblock,
           ),
         ],
@@ -1518,11 +1715,19 @@ class _RelationshipQuickActions extends StatelessWidget {
           if (hasShippingAddress && onShippingTap != null)
             _QuickActionIconButton(
               icon: Icons.location_on_outlined,
-              backgroundColor: AppColors.primary.withOpacity(0.10),
+              backgroundColor: AppColors.primary.withValues(alpha: 0.10),
               foregroundColor: AppColors.primary,
-              borderColor: AppColors.primary.withOpacity(0.25),
+              borderColor: AppColors.primary.withValues(alpha: 0.25),
               onTap: onShippingTap,
             ),
+          _QuickActionButton(
+            text: localization.translate('chat.messageFriend'),
+            icon: Icons.chat_bubble_outline_rounded,
+            backgroundColor: AppColors.primary.withValues(alpha: 0.10),
+            foregroundColor: AppColors.primary,
+            borderColor: AppColors.primary.withValues(alpha: 0.25),
+            onTap: onMessage,
+          ),
           _QuickActionButton(
             text: localization.translate('friends.removeFriend'),
             icon: Icons.person_remove_outlined,
@@ -1585,9 +1790,9 @@ class _RelationshipQuickActions extends StatelessWidget {
         _QuickActionButton(
           text: localization.translate('friends.sendRequest'),
           icon: Icons.person_add_alt_1_outlined,
-          backgroundColor: AppColors.primary.withOpacity(0.10),
+          backgroundColor: AppColors.primary.withValues(alpha: 0.10),
           foregroundColor: AppColors.primary,
-          borderColor: AppColors.primary.withOpacity(0.25),
+          borderColor: AppColors.primary.withValues(alpha: 0.25),
           onTap: onAdd,
         ),
       ],
@@ -1736,7 +1941,10 @@ class _GlassStatsContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
@@ -1756,23 +1964,27 @@ class _GlassStatsContainer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: _buildStatItem(context, localization.translate('friends.wishlists'), wishlists.toString()),
+            child: _buildStatItem(
+              context,
+              localization.translate('friends.wishlists'),
+              wishlists.toString(),
+            ),
           ),
-          Container(
-            width: 1,
-            height: 20,
-            color: Colors.grey.shade300,
-          ),
+          Container(width: 1, height: 20, color: Colors.grey.shade300),
           Expanded(
-            child: _buildStatItem(context, localization.translate('navigation.friends'), friends.toString()),
+            child: _buildStatItem(
+              context,
+              localization.translate('navigation.friends'),
+              friends.toString(),
+            ),
           ),
-          Container(
-            width: 1,
-            height: 20,
-            color: Colors.grey.shade300,
-          ),
+          Container(width: 1, height: 20, color: Colors.grey.shade300),
           Expanded(
-            child: _buildStatItem(context, localization.translate('navigation.events'), events.toString()),
+            child: _buildStatItem(
+              context,
+              localization.translate('navigation.events'),
+              events.toString(),
+            ),
           ),
         ],
       ),
@@ -1814,10 +2026,7 @@ class _BodyContentState extends State<_BodyContent> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Colors.purple.shade100,
-                  Colors.purple.shade50,
-                ],
+                colors: [Colors.purple.shade100, Colors.purple.shade50],
               ),
               shape: BoxShape.circle,
               boxShadow: [
@@ -1828,11 +2037,7 @@ class _BodyContentState extends State<_BodyContent> {
                 ),
               ],
             ),
-            child: Icon(
-              icon,
-              size: 48,
-              color: Colors.purple.shade400,
-            ),
+            child: Icon(icon, size: 48, color: Colors.purple.shade400),
           ),
           const SizedBox(height: 24),
           Text(
@@ -1882,10 +2087,7 @@ class _BodyContentState extends State<_BodyContent> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.grey.shade200,
-          width: 1.0,
-        ),
+        border: Border.all(color: Colors.grey.shade200, width: 1.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
@@ -1964,11 +2166,7 @@ class _BodyContentState extends State<_BodyContent> {
           ),
           // Divider
           const SizedBox(height: 12),
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: Colors.grey.shade200,
-          ),
+          Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
           const SizedBox(height: 12),
           // Bubbles Preview Skeleton
           Row(
@@ -2124,7 +2322,10 @@ class _BodyContentState extends State<_BodyContent> {
 
   @override
   Widget build(BuildContext context) {
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
 
     return Obx(() {
       if (widget.controller.isBlockedByMe.value) {
@@ -2153,7 +2354,11 @@ class _BodyContentState extends State<_BodyContent> {
                 if (widget.onUnblock != null)
                   TextButton.icon(
                     onPressed: widget.onUnblock,
-                    icon: const Icon(Icons.lock_open, size: 20, color: AppColors.primary),
+                    icon: const Icon(
+                      Icons.lock_open,
+                      size: 20,
+                      color: AppColors.primary,
+                    ),
                     label: Text(
                       localization.translate('friends.unblockUser'),
                       style: AppStyles.bodyMedium.copyWith(
@@ -2162,8 +2367,11 @@ class _BodyContentState extends State<_BodyContent> {
                       ),
                     ),
                     style: TextButton.styleFrom(
-                      backgroundColor: AppColors.primary.withOpacity(0.10),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -2209,7 +2417,10 @@ class _BodyContentState extends State<_BodyContent> {
             const SizedBox(height: 20),
 
             // Tab Content (no TabBarView here to avoid unbounded-height issues inside Slivers)
-            if (_selectedMainTab == 0) _buildWishlistsTab(localization) else _buildEventsTab(localization),
+            if (_selectedMainTab == 0)
+              _buildWishlistsTab(localization)
+            else
+              _buildEventsTab(localization),
           ],
         ),
       );
@@ -2219,7 +2430,10 @@ class _BodyContentState extends State<_BodyContent> {
   /// Build Wishlists Tab Content
   Widget _buildWishlistsTab(LocalizationService localization) {
     return Obx(() {
-      final localization = Provider.of<LocalizationService>(context, listen: false);
+      final localization = Provider.of<LocalizationService>(
+        context,
+        listen: false,
+      );
       final isLoading = widget.controller.isLoading.value;
       final allWishlists = widget.controller.wishlists;
 
@@ -2231,7 +2445,9 @@ class _BodyContentState extends State<_BodyContent> {
         return _buildEmptyState(
           icon: Icons.card_giftcard,
           title: localization.translate('friends.noPublicWishlists'),
-          subtitle: localization.translate('friends.noPublicWishlistsDescription'),
+          subtitle: localization.translate(
+            'friends.noPublicWishlistsDescription',
+          ),
         );
       }
 
@@ -2250,7 +2466,8 @@ class _BodyContentState extends State<_BodyContent> {
       final filteredWishlists = _selectedCategory == 'all'
           ? allWishlists
           : allWishlists.where((w) {
-              if (w.category == null || w.category!.trim().isEmpty) return false;
+              if (w.category == null || w.category!.trim().isEmpty)
+                return false;
               return w.category!.trim().toLowerCase() == _selectedCategory;
             }).toList();
 
@@ -2261,7 +2478,9 @@ class _BodyContentState extends State<_BodyContent> {
           // Aligned with parent tabs by matching padding (parent has 16 + UnifiedTabBar margin 20 = 36)
           if (uniqueCategoriesRaw.isNotEmpty) ...[
             Padding(
-              padding: const EdgeInsets.only(left: 20), // Match UnifiedTabBar horizontal margin
+              padding: const EdgeInsets.only(
+                left: 20,
+              ), // Match UnifiedTabBar horizontal margin
               child: SizedBox(
                 height: 40,
                 child: SingleChildScrollView(
@@ -2271,7 +2490,10 @@ class _BodyContentState extends State<_BodyContent> {
                       final isSelected = category == _selectedCategory;
                       final label = category == 'all'
                           ? (localization.translate('common.all') ?? 'All')
-                          : WishlistFormHelpers.getCategoryDisplayName(category, localization);
+                          : WishlistFormHelpers.getCategoryDisplayName(
+                              category,
+                              localization,
+                            );
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ChoiceChip(
@@ -2287,9 +2509,12 @@ class _BodyContentState extends State<_BodyContent> {
                           selectedColor: AppColors.primary,
                           checkmarkColor: Colors.white, // White check icon
                           labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : AppColors.textPrimary,
-                            fontWeight:
-                                isSelected ? FontWeight.w600 : FontWeight.normal,
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.textPrimary,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                             fontSize: 13,
                           ),
                           backgroundColor: Colors.grey.shade100,
@@ -2322,18 +2547,19 @@ class _BodyContentState extends State<_BodyContent> {
               itemCount: filteredWishlists.length,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              separatorBuilder: (context, index) =>
-                  const SizedBox(height: 14),
+              separatorBuilder: (context, index) => const SizedBox(height: 14),
               itemBuilder: (context, index) {
                 final w = filteredWishlists[index];
                 return _WishlistGridCard(
                   wishlist: w,
                   controller: widget.controller,
                   onTap: () {
-                    final localization =
-                        Provider.of<LocalizationService>(context, listen: false);
-                    final friendName = widget.controller.profile.value?.user
-                            .fullName ??
+                    final localization = Provider.of<LocalizationService>(
+                      context,
+                      listen: false,
+                    );
+                    final friendName =
+                        widget.controller.profile.value?.user.fullName ??
                         localization.translate('friends.friend');
                     Navigator.pushNamed(
                       context,
@@ -2364,7 +2590,9 @@ class _BodyContentState extends State<_BodyContent> {
         // Filter Chips (match Wishlists style)
         // Aligned with parent tabs by matching padding (parent has 16 + UnifiedTabBar margin 20 = 36)
         Padding(
-          padding: const EdgeInsets.only(left: 20), // Match UnifiedTabBar horizontal margin
+          padding: const EdgeInsets.only(
+            left: 20,
+          ), // Match UnifiedTabBar horizontal margin
           child: SizedBox(
             height: 40,
             child: SingleChildScrollView(
@@ -2408,8 +2636,10 @@ class _BodyContentState extends State<_BodyContent> {
             return _buildEventSkeletonList();
           }
           if (filteredEvents.isEmpty) {
-            final localization =
-                Provider.of<LocalizationService>(context, listen: false);
+            final localization = Provider.of<LocalizationService>(
+              context,
+              listen: false,
+            );
             return _buildEmptyState(
               icon: Icons.event_busy,
               title: _selectedFilter == 'past'
@@ -2428,8 +2658,10 @@ class _BodyContentState extends State<_BodyContent> {
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final e = filteredEvents[index];
-              final localization =
-                  Provider.of<LocalizationService>(context, listen: false);
+              final localization = Provider.of<LocalizationService>(
+                context,
+                listen: false,
+              );
               return _EventTicketCard(
                 event: e,
                 localization: localization,
@@ -2468,9 +2700,7 @@ class _BodyContentState extends State<_BodyContent> {
       ),
       backgroundColor: Colors.grey.shade100,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     );
   }
 }
@@ -2493,14 +2723,19 @@ class _WishlistGridCard extends StatelessWidget {
     final previewItems = wishlist.previewItems.take(3).toList();
     final hasMore = wishlist.itemCount > 3;
     final hasItems = wishlist.itemCount > 0;
-    final hasDescription = wishlist.description != null &&
-        wishlist.description!.trim().isNotEmpty;
-    final isAllFulfilled = hasItems && wishlist.purchasedCount >= wishlist.itemCount;
+    final hasDescription =
+        wishlist.description != null && wishlist.description!.trim().isNotEmpty;
+    final isAllFulfilled =
+        hasItems && wishlist.purchasedCount >= wishlist.itemCount;
 
     // Format category name (translated)
     final rawCategory = (wishlist.category ?? 'other').trim().toLowerCase();
     final categoryName = rawCategory.isEmpty || rawCategory == 'general'
-        ? (Provider.of<LocalizationService>(context, listen: false).translate('events.other') ?? 'Other')
+        ? (Provider.of<LocalizationService>(
+                context,
+                listen: false,
+              ).translate('events.other') ??
+              'Other')
         : WishlistFormHelpers.getCategoryDisplayName(
             rawCategory,
             Provider.of<LocalizationService>(context, listen: false),
@@ -2512,7 +2747,9 @@ class _WishlistGridCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isAllFulfilled ? AppColors.success.withOpacity(0.5) : Colors.grey.shade200,
+          color: isAllFulfilled
+              ? AppColors.success.withOpacity(0.5)
+              : Colors.grey.shade200,
           width: isAllFulfilled ? 1.5 : 1.0,
         ),
         boxShadow: [
@@ -2633,7 +2870,11 @@ class _WishlistGridCard extends StatelessWidget {
                             ),
                             Builder(
                               builder: (context) {
-                                final localization = Provider.of<LocalizationService>(context, listen: false);
+                                final localization =
+                                    Provider.of<LocalizationService>(
+                                      context,
+                                      listen: false,
+                                    );
                                 return Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -2645,7 +2886,10 @@ class _WishlistGridCard extends StatelessWidget {
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        localization.translate('ui.fulfilledTag') ?? 'Fulfilled',
+                                        localization.translate(
+                                              'ui.fulfilledTag',
+                                            ) ??
+                                            'Fulfilled',
                                         style: TextStyle(
                                           color: AppColors.success,
                                           fontSize: 12,
@@ -2675,34 +2919,79 @@ class _WishlistGridCard extends StatelessWidget {
                             if (wishlist.createdAt != null)
                               Builder(
                                 builder: (context) {
-                                  final localization = Provider.of<LocalizationService>(context, listen: false);
+                                  final localization =
+                                      Provider.of<LocalizationService>(
+                                        context,
+                                        listen: false,
+                                      );
                                   final now = DateTime.now();
-                                  final diff = now.difference(wishlist.createdAt!);
+                                  final diff = now.difference(
+                                    wishlist.createdAt!,
+                                  );
                                   final String timeAgo;
                                   if (diff.inDays > 365) {
                                     final years = (diff.inDays / 365).floor();
                                     timeAgo = years == 1
-                                        ? (localization.translate('activity.oneYearAgo') ?? '1 year ago')
-                                        : (localization.translate('activity.yearsAgo', args: {'count': years}) ?? '${years} years ago');
+                                        ? (localization.translate(
+                                                'activity.oneYearAgo',
+                                              ) ??
+                                              '1 year ago')
+                                        : (localization.translate(
+                                                'activity.yearsAgo',
+                                                args: {'count': years},
+                                              ) ??
+                                              '${years} years ago');
                                   } else if (diff.inDays > 30) {
                                     final months = (diff.inDays / 30).floor();
                                     timeAgo = months == 1
-                                        ? (localization.translate('activity.oneMonthAgo') ?? '1 month ago')
-                                        : (localization.translate('activity.monthsAgo', args: {'count': months}) ?? '${months} months ago');
+                                        ? (localization.translate(
+                                                'activity.oneMonthAgo',
+                                              ) ??
+                                              '1 month ago')
+                                        : (localization.translate(
+                                                'activity.monthsAgo',
+                                                args: {'count': months},
+                                              ) ??
+                                              '${months} months ago');
                                   } else if (diff.inDays > 0) {
                                     timeAgo = diff.inDays == 1
-                                        ? (localization.translate('activity.oneDayAgo') ?? '1 day ago')
-                                        : (localization.translate('activity.daysAgo', args: {'count': diff.inDays}) ?? '${diff.inDays} days ago');
+                                        ? (localization.translate(
+                                                'activity.oneDayAgo',
+                                              ) ??
+                                              '1 day ago')
+                                        : (localization.translate(
+                                                'activity.daysAgo',
+                                                args: {'count': diff.inDays},
+                                              ) ??
+                                              '${diff.inDays} days ago');
                                   } else if (diff.inHours > 0) {
                                     timeAgo = diff.inHours == 1
-                                        ? (localization.translate('activity.oneHourAgo') ?? '1 hour ago')
-                                        : (localization.translate('activity.hoursAgo', args: {'count': diff.inHours}) ?? '${diff.inHours} hours ago');
+                                        ? (localization.translate(
+                                                'activity.oneHourAgo',
+                                              ) ??
+                                              '1 hour ago')
+                                        : (localization.translate(
+                                                'activity.hoursAgo',
+                                                args: {'count': diff.inHours},
+                                              ) ??
+                                              '${diff.inHours} hours ago');
                                   } else if (diff.inMinutes > 0) {
                                     timeAgo = diff.inMinutes == 1
-                                        ? (localization.translate('activity.oneMinuteAgo') ?? '1 minute ago')
-                                        : (localization.translate('activity.minutesAgo', args: {'count': diff.inMinutes}) ?? '${diff.inMinutes} minutes ago');
+                                        ? (localization.translate(
+                                                'activity.oneMinuteAgo',
+                                              ) ??
+                                              '1 minute ago')
+                                        : (localization.translate(
+                                                'activity.minutesAgo',
+                                                args: {'count': diff.inMinutes},
+                                              ) ??
+                                              '${diff.inMinutes} minutes ago');
                                   } else {
-                                    timeAgo = localization.translate('activity.justNow') ?? 'Just now';
+                                    timeAgo =
+                                        localization.translate(
+                                          'activity.justNow',
+                                        ) ??
+                                        'Just now';
                                   }
                                   return Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -2748,17 +3037,16 @@ class _WishlistGridCard extends StatelessWidget {
 
               // 2. Divider (always shown)
               const SizedBox(height: 12),
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: Colors.grey.shade200,
-              ),
+              Divider(height: 1, thickness: 1, color: Colors.grey.shade200),
               const SizedBox(height: 12),
 
               // 3. Middle Section: Celebration or Bubbles Preview
               if (isAllFulfilled)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.success.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -2769,14 +3057,23 @@ class _WishlistGridCard extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.celebration_rounded, size: 20, color: AppColors.success),
+                      Icon(
+                        Icons.celebration_rounded,
+                        size: 20,
+                        color: AppColors.success,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Builder(
                           builder: (context) {
-                            final localization = Provider.of<LocalizationService>(context, listen: false);
+                            final localization =
+                                Provider.of<LocalizationService>(
+                                  context,
+                                  listen: false,
+                                );
                             return Text(
-                              localization.translate('ui.allWishesFulfilled') ?? 'All wishes fulfilled! 🎉',
+                              localization.translate('ui.allWishesFulfilled') ??
+                                  'All wishes fulfilled! 🎉',
                               style: TextStyle(
                                 color: AppColors.success,
                                 fontSize: 13,
@@ -2796,7 +3093,10 @@ class _WishlistGridCard extends StatelessWidget {
                   children: [
                     Builder(
                       builder: (context) {
-                        final localization = Provider.of<LocalizationService>(context, listen: false);
+                        final localization = Provider.of<LocalizationService>(
+                          context,
+                          listen: false,
+                        );
                         return Text(
                           localization.translate('friends.wishes'),
                           style: TextStyle(
@@ -2825,7 +3125,10 @@ class _WishlistGridCard extends StatelessWidget {
                     Flexible(
                       child: Builder(
                         builder: (context) {
-                          final localization = Provider.of<LocalizationService>(context, listen: false);
+                          final localization = Provider.of<LocalizationService>(
+                            context,
+                            listen: false,
+                          );
                           return Text(
                             localization.translate('friends.noWishesYet'),
                             style: TextStyle(
@@ -2849,7 +3152,9 @@ class _WishlistGridCard extends StatelessWidget {
   }
 
   List<Widget> _buildPreviewBubbles(
-      List<PreviewItem> previewItems, bool hasMore) {
+    List<PreviewItem> previewItems,
+    bool hasMore,
+  ) {
     final bubbles = <Widget>[
       for (final item in previewItems)
         _FriendIconBubble(
@@ -2859,8 +3164,9 @@ class _WishlistGridCard extends StatelessWidget {
     ];
 
     if (hasMore) {
-      bubbles.add(_FriendMoreCountBubble(
-          count: wishlist.itemCount - previewItems.length));
+      bubbles.add(
+        _FriendMoreCountBubble(count: wishlist.itemCount - previewItems.length),
+      );
     }
 
     final spaced = <Widget>[];
@@ -2876,20 +3182,14 @@ class _FriendIconBubble extends StatelessWidget {
   final String itemName;
   final Color background;
 
-  const _FriendIconBubble({
-    required this.itemName,
-    required this.background,
-  });
+  const _FriendIconBubble({required this.itemName, required this.background});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 40,
       width: 40,
-      decoration: BoxDecoration(
-        color: background,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: background, shape: BoxShape.circle),
       child: const Icon(
         Icons.card_giftcard,
         size: 18,
@@ -2913,11 +3213,7 @@ class _FriendPlaceholderBubble extends StatelessWidget {
           strokeWidth: 1.3,
         ),
         child: Center(
-          child: Icon(
-            Icons.add,
-            size: 16,
-            color: Colors.grey.withOpacity(0.7),
-          ),
+          child: Icon(Icons.add, size: 16, color: Colors.grey.withOpacity(0.7)),
         ),
       ),
     );
@@ -3030,7 +3326,7 @@ class _EventTicketCard extends StatelessWidget {
   }
 
   ({IconData icon, Color color, Color textColor, String label})
-      _getEventTypeStyle(String? type) {
+  _getEventTypeStyle(String? type) {
     final t = (type ?? '').toLowerCase().trim();
     switch (t) {
       case 'birthday':
@@ -3117,13 +3413,16 @@ class _EventTicketCard extends StatelessWidget {
           icon: Icons.event,
           color: Colors.purple.shade50,
           textColor: Colors.purple.shade700,
-          label: t.isEmpty ? localization.translate('events.other') : t[0].toUpperCase() + t.substring(1),
+          label: t.isEmpty
+              ? localization.translate('events.other')
+              : t[0].toUpperCase() + t.substring(1),
         );
     }
   }
 
-  ({IconData icon, Color color, String label})
-      _getInvitationStatusStyle(InvitationStatus status) {
+  ({IconData icon, Color color, String label}) _getInvitationStatusStyle(
+    InvitationStatus status,
+  ) {
     switch (status) {
       case InvitationStatus.accepted:
         return (
@@ -3168,7 +3467,9 @@ class _EventTicketCard extends StatelessWidget {
     final day = date != null ? date.day.toString() : '--';
 
     // Get status badge text and color based on invitation status
-    final invitationStatusData = _getInvitationStatusStyle(event.invitationStatus);
+    final invitationStatusData = _getInvitationStatusStyle(
+      event.invitationStatus,
+    );
 
     return Material(
       color: Colors.transparent,
@@ -3420,9 +3721,15 @@ class _EventTicketCard extends StatelessWidget {
                               const SizedBox(height: 2),
                               Builder(
                                 builder: (context) {
-                                  final localization = Provider.of<LocalizationService>(context, listen: false);
+                                  final localization =
+                                      Provider.of<LocalizationService>(
+                                        context,
+                                        listen: false,
+                                      );
                                   return Text(
-                                    localization.translate('friends.tapToViewWishes'),
+                                    localization.translate(
+                                      'friends.tapToViewWishes',
+                                    ),
                                     style: TextStyle(
                                       color: Colors.grey.shade600,
                                       fontSize: 11,
@@ -3456,10 +3763,14 @@ class _EventTicketCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInvitedGuests(List<FriendEventInvitedFriendModel> invitedFriends) {
+  Widget _buildInvitedGuests(
+    List<FriendEventInvitedFriendModel> invitedFriends,
+  ) {
     // Take first 3 friends
     final displayFriends = invitedFriends.take(3).toList();
-    final overflowCount = invitedFriends.length > 3 ? invitedFriends.length - 3 : 0;
+    final overflowCount = invitedFriends.length > 3
+        ? invitedFriends.length - 3
+        : 0;
 
     // Helper to get initials from fullName
     String getInitials(String fullName) {
@@ -3479,7 +3790,10 @@ class _EventTicketCard extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 8),
           child: Builder(
             builder: (context) {
-              final localization = Provider.of<LocalizationService>(context, listen: false);
+              final localization = Provider.of<LocalizationService>(
+                context,
+                listen: false,
+              );
               return Text(
                 localization.translate('friends.invitedGuests'),
                 style: TextStyle(
@@ -3497,9 +3811,10 @@ class _EventTicketCard extends StatelessWidget {
             ...displayFriends.asMap().entries.map((entry) {
               final index = entry.key;
               final friend = entry.value;
-              final hasImage = friend.profileImage != null &&
+              final hasImage =
+                  friend.profileImage != null &&
                   friend.profileImage!.isNotEmpty;
-              
+
               return Transform.translate(
                 offset: Offset(index > 0 ? -6.0 : 0.0, 0.0),
                 child: CircleAvatar(
@@ -3554,10 +3869,7 @@ class _EventTypeBadge extends StatelessWidget {
   final String type;
   final ({IconData icon, Color color, Color textColor, String label}) style;
 
-  const _EventTypeBadge({
-    required this.type,
-    required this.style,
-  });
+  const _EventTypeBadge({required this.type, required this.style});
 
   @override
   Widget build(BuildContext context) {
@@ -3570,11 +3882,7 @@ class _EventTypeBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            style.icon,
-            size: 14,
-            color: style.textColor,
-          ),
+          Icon(style.icon, size: 14, color: style.textColor),
           const SizedBox(width: 4),
           Text(
             style.label,
@@ -3620,4 +3928,3 @@ class _StatusPill extends StatelessWidget {
     );
   }
 }
-

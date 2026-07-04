@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:wish_listy/core/services/api_service.dart';
 
 /// Socket Service for real-time notifications
@@ -19,6 +18,11 @@ class SocketService {
   bool _isConnected = false;
   bool _isConnecting = false;
   final List<Function(Map<String, dynamic>)> _notificationListeners = [];
+  final List<Function(Map<String, dynamic>)> _chatMessageListeners = [];
+  final List<Function(Map<String, dynamic>)> _chatReadListeners = [];
+  final List<Function(Map<String, dynamic>)> _chatUnreadListeners = [];
+  final List<Function(Map<String, dynamic>)> _typingListeners = [];
+  final List<Function(Map<String, dynamic>)> _userStatusListeners = [];
   final List<void Function()> _onConnectListeners = [];
 
   /// Get socket server URL based on platform
@@ -32,13 +36,16 @@ class SocketService {
     final scheme = apiUri.scheme; // 'https' or 'http'
     final host = apiUri.host;
     final port = apiUri.hasPort ? apiUri.port : (scheme == 'https' ? 443 : 80);
-    
-    
+
     // Build socket URL: same scheme, host, and port as API, but without /api path
-    final socketUrl = port == 443 || port == 80 || (scheme == 'https' && port == 443) || (scheme == 'http' && port == 80)
-        ? '$scheme://$host'  // Omit port for default ports
+    final socketUrl =
+        port == 443 ||
+            port == 80 ||
+            (scheme == 'https' && port == 443) ||
+            (scheme == 'http' && port == 80)
+        ? '$scheme://$host' // Omit port for default ports
         : '$scheme://$host:$port';
-    
+
     return socketUrl;
   }
 
@@ -48,15 +55,13 @@ class SocketService {
   /// [token] Optional token to use instead of reading from SharedPreferences
   /// This is useful when connecting immediately after login before token is saved
   Future<void> connect({bool forceReconnect = false, String? token}) async {
-    
-    
     // If force reconnect is requested, disconnect first
     if (forceReconnect) {
       disconnect();
       // Add a small delay to ensure cleanup is complete
       await Future.delayed(const Duration(milliseconds: 100));
     }
-    
+
     if (_isConnected || _isConnecting) {
       if (!forceReconnect) {
         return;
@@ -68,8 +73,7 @@ class SocketService {
         try {
           _socket!.disconnect();
           _socket!.dispose();
-        } catch (e) {
-        }
+        } catch (e) {}
         _socket = null;
       }
     }
@@ -83,21 +87,25 @@ class SocketService {
         final prefs = await SharedPreferences.getInstance();
         finalToken = prefs.getString('auth_token');
       }
-      
+
       final socketUrl = _socketUrl;
 
       if (finalToken == null || finalToken.isEmpty) {
         _isConnecting = false;
         return;
       }
-      
-      
+
       _socket = IO.io(
         socketUrl,
         IO.OptionBuilder()
-            .setTransports(['websocket', 'polling']) // Important: Use both for compatibility
+            .setTransports([
+              'websocket',
+              'polling',
+            ]) // Important: Use both for compatibility
             .setAuth({'token': finalToken}) // Send token in auth object
-            .setExtraHeaders({'Authorization': 'Bearer $finalToken'}) // Also send in headers as per requirements
+            .setExtraHeaders({
+              'Authorization': 'Bearer $finalToken',
+            }) // Also send in headers as per requirements
             .disableAutoConnect() // Disable auto-connect, we'll connect explicitly
             .setTimeout(20000) // 20 seconds timeout
             .build(),
@@ -111,6 +119,7 @@ class SocketService {
         // Re-setup notification listeners after reconnection
         // This ensures listeners are active even after socket reconnects
         _setupNotificationListeners();
+        _setupChatListeners();
 
         // Notify listeners (e.g. NotificationsCubit) to sync badge with backend
         for (final callback in _onConnectListeners) {
@@ -134,21 +143,19 @@ class SocketService {
         _isConnecting = false;
       });
 
-      _socket!.onError((error) {
-      });
+      _socket!.onError((error) {});
 
       // Listen for notification events
       // Note: We set up listeners before connection is established
       // Socket.IO will queue them and they'll be active once connected
       _setupNotificationListeners();
+      _setupChatListeners();
 
       // Add a small delay to ensure socket is ready before setting up listeners
       await Future.delayed(const Duration(milliseconds: 100));
-      
+
       // Explicitly connect the socket (since auto-connect is disabled)
       _socket!.connect();
-      
-
     } catch (e, stackTrace) {
       _isConnected = false;
       _isConnecting = false;
@@ -157,14 +164,12 @@ class SocketService {
 
   /// Setup notification event listeners
   void _setupNotificationListeners() {
-    
     if (_socket == null) {
       return;
     }
 
     // DEBUG: Listen to ALL events to see what's coming from backend
-    _socket!.onAny((event, data) {
-    });
+    _socket!.onAny((event, data) {});
 
     // Listen for 'notification' event (general notification)
     _socket!.on('notification', (data) {
@@ -173,23 +178,26 @@ class SocketService {
             ? data
             : {'data': data, 'type': 'general'};
         _notifyListeners(notification);
-      } catch (e) {
-      }
+      } catch (e) {}
     });
 
     // Listen for 'friend_request_received' event (alternative event name)
     _socket!.on('friend_request_received', (data) {
       try {
         Map<String, dynamic> notification;
-        
+
         if (data is Map<String, dynamic>) {
-          
           notification = {
-            '_id': data['requestId'] ?? data['_id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+            '_id':
+                data['requestId'] ??
+                data['_id'] ??
+                DateTime.now().millisecondsSinceEpoch.toString(),
             'userId': data['from']?['_id'] ?? data['from']?['userId'] ?? '',
             'type': 'friendRequest',
             'title': 'Friend Request',
-            'message': data['message'] ?? '${data['from']?['fullName'] ?? 'Someone'} sent you a friend request',
+            'message':
+                data['message'] ??
+                '${data['from']?['fullName'] ?? 'Someone'} sent you a friend request',
             'data': data,
             'isRead': false,
             'createdAt': DateTime.now().toIso8601String(),
@@ -206,10 +214,9 @@ class SocketService {
             'createdAt': DateTime.now().toIso8601String(),
           };
         }
-        
+
         _notifyListeners(notification);
-      } catch (e, stackTrace) {
-      }
+      } catch (e, stackTrace) {}
     });
 
     // Listen for 'friend_request' event (main event from backend)
@@ -217,9 +224,8 @@ class SocketService {
     _socket!.on('friend_request', (data) {
       try {
         Map<String, dynamic> notification;
-        
+
         if (data is Map<String, dynamic>) {
-          
           // Backend payload structure:
           // {
           //   "requestId": "request_id",
@@ -227,11 +233,16 @@ class SocketService {
           //   "message": "..."
           // }
           notification = {
-            '_id': data['requestId'] ?? data['_id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+            '_id':
+                data['requestId'] ??
+                data['_id'] ??
+                DateTime.now().millisecondsSinceEpoch.toString(),
             'userId': data['from']?['_id'] ?? data['from']?['userId'] ?? '',
             'type': 'friendRequest',
             'title': 'Friend Request',
-            'message': data['message'] ?? '${data['from']?['fullName'] ?? 'Someone'} sent you a friend request',
+            'message':
+                data['message'] ??
+                '${data['from']?['fullName'] ?? 'Someone'} sent you a friend request',
             'data': data,
             'isRead': false,
             'createdAt': DateTime.now().toIso8601String(),
@@ -248,25 +259,28 @@ class SocketService {
             'createdAt': DateTime.now().toIso8601String(),
           };
         }
-        
+
         _notifyListeners(notification);
-      } catch (e, stackTrace) {
-      }
+      } catch (e, stackTrace) {}
     });
 
     // Listen for 'friend_request_accepted' event
     _socket!.on('friend_request_accepted', (data) {
       try {
         Map<String, dynamic> notification;
-        
+
         if (data is Map<String, dynamic>) {
-          
           notification = {
-            '_id': data['requestId'] ?? data['_id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+            '_id':
+                data['requestId'] ??
+                data['_id'] ??
+                DateTime.now().millisecondsSinceEpoch.toString(),
             'userId': data['user']?['_id'] ?? data['userId'] ?? '',
             'type': 'friendRequestAccepted',
             'title': 'Friend Request Accepted',
-            'message': data['message'] ?? '${data['user']?['fullName'] ?? 'Someone'} accepted your friend request',
+            'message':
+                data['message'] ??
+                '${data['user']?['fullName'] ?? 'Someone'} accepted your friend request',
             'data': data,
             'isRead': false,
             'createdAt': DateTime.now().toIso8601String(),
@@ -283,19 +297,17 @@ class SocketService {
             'createdAt': DateTime.now().toIso8601String(),
           };
         }
-        
+
         _notifyListeners(notification);
-      } catch (e, stackTrace) {
-      }
+      } catch (e, stackTrace) {}
     });
 
     // Listen for 'unread_count_update' event
     _socket!.on('unread_count_update', (data) {
       try {
         Map<String, dynamic> updateData;
-        
+
         if (data is Map<String, dynamic>) {
-          
           updateData = {
             'type': 'unreadCountUpdate',
             'unreadCount': data['unreadCount'] ?? data['unread_count'] ?? 0,
@@ -310,12 +322,53 @@ class SocketService {
             'timestamp': DateTime.now().toIso8601String(),
           };
         }
-        
+
         _notifyListeners(updateData);
-      } catch (e, stackTrace) {
-      }
+      } catch (e, stackTrace) {}
     });
-    
+  }
+
+  void _setupChatListeners() {
+    if (_socket == null) {
+      return;
+    }
+
+    _socket!.off('receive_message');
+    _socket!.on('receive_message', (data) {
+      _notifyChatMessageListeners(_normalizeChatPayload(data));
+    });
+
+    _socket!.off('message_sent');
+    _socket!.on('message_sent', (data) {
+      _notifyChatMessageListeners(_normalizeChatPayload(data));
+    });
+
+    _socket!.off('messages_read');
+    _socket!.on('messages_read', (data) {
+      _notifyChatReadListeners(_normalizeChatPayload(data));
+    });
+
+    _socket!.off('chat_unread_update');
+    _socket!.on('chat_unread_update', (data) {
+      _notifyChatUnreadListeners(_normalizeChatPayload(data));
+    });
+
+    _socket!.off('typing');
+    _socket!.on('typing', (data) {
+      final payload = _normalizeChatPayload(data)..['event'] = 'typing';
+      _notifyTypingListeners(payload);
+    });
+
+    _socket!.off('stop_typing');
+    _socket!.on('stop_typing', (data) {
+      final payload = _normalizeChatPayload(data)..['event'] = 'stop_typing';
+      _notifyTypingListeners(payload);
+    });
+
+    _socket!.off('user_status');
+    _socket!.on('user_status', (data) {
+      _notifyUserStatusListeners(_normalizeChatPayload(data));
+    });
   }
 
   /// Add notification listener
@@ -324,13 +377,74 @@ class SocketService {
     if (_notificationListeners.contains(listener)) {
       return;
     }
-    
+
     _notificationListeners.add(listener);
   }
 
   /// Remove notification listener
   void removeNotificationListener(Function(Map<String, dynamic>) listener) {
     _notificationListeners.remove(listener);
+  }
+
+  void addChatMessageListener(Function(Map<String, dynamic>) listener) {
+    if (_chatMessageListeners.contains(listener)) {
+      return;
+    }
+    _chatMessageListeners.add(listener);
+  }
+
+  void removeChatMessageListener(Function(Map<String, dynamic>) listener) {
+    _chatMessageListeners.remove(listener);
+  }
+
+  void addChatReadListener(Function(Map<String, dynamic>) listener) {
+    if (_chatReadListeners.contains(listener)) {
+      return;
+    }
+    _chatReadListeners.add(listener);
+  }
+
+  void removeChatReadListener(Function(Map<String, dynamic>) listener) {
+    _chatReadListeners.remove(listener);
+  }
+
+  void addChatUnreadListener(Function(Map<String, dynamic>) listener) {
+    if (_chatUnreadListeners.contains(listener)) {
+      return;
+    }
+    _chatUnreadListeners.add(listener);
+  }
+
+  void removeChatUnreadListener(Function(Map<String, dynamic>) listener) {
+    _chatUnreadListeners.remove(listener);
+  }
+
+  void addTypingListener(Function(Map<String, dynamic>) listener) {
+    if (_typingListeners.contains(listener)) {
+      return;
+    }
+    _typingListeners.add(listener);
+  }
+
+  void removeTypingListener(Function(Map<String, dynamic>) listener) {
+    _typingListeners.remove(listener);
+  }
+
+  void addUserStatusListener(Function(Map<String, dynamic>) listener) {
+    if (_userStatusListeners.contains(listener)) {
+      return;
+    }
+    _userStatusListeners.add(listener);
+  }
+
+  void removeUserStatusListener(Function(Map<String, dynamic>) listener) {
+    _userStatusListeners.remove(listener);
+  }
+
+  /// Announce this client is online so peers receive `user_status`.
+  void announceOnline() {
+    if (_socket == null || !_isConnected) return;
+    _socket!.emit('user_online');
   }
 
   /// Add a callback to be invoked when the socket connects or reconnects.
@@ -345,46 +459,148 @@ class SocketService {
         callback();
       } catch (e) {
         if (kDebugMode) {
-          debugPrint('SocketService addOnConnectListener immediate callback error: $e');
+          debugPrint(
+            'SocketService addOnConnectListener immediate callback error: $e',
+          );
         }
       }
     }
   }
 
+  void removeOnConnectListener(void Function() callback) {
+    _onConnectListeners.remove(callback);
+  }
+
   /// Notify all listeners about new notification
   void _notifyListeners(Map<String, dynamic> notification) {
-    
     if (_notificationListeners.isEmpty) {
       return;
     }
-    
+
     for (int i = 0; i < _notificationListeners.length; i++) {
       try {
-        
         _notificationListeners[i](notification);
-        
-      } catch (e, stackTrace) {
-      }
+      } catch (e, stackTrace) {}
     }
-    
+  }
+
+  void _notifyChatMessageListeners(Map<String, dynamic> payload) {
+    for (final listener in _chatMessageListeners) {
+      try {
+        listener(payload);
+      } catch (_) {}
+    }
+  }
+
+  void _notifyChatReadListeners(Map<String, dynamic> payload) {
+    for (final listener in _chatReadListeners) {
+      try {
+        listener(payload);
+      } catch (_) {}
+    }
+  }
+
+  void _notifyChatUnreadListeners(Map<String, dynamic> payload) {
+    for (final listener in _chatUnreadListeners) {
+      try {
+        listener(payload);
+      } catch (_) {}
+    }
+  }
+
+  void _notifyTypingListeners(Map<String, dynamic> payload) {
+    for (final listener in _typingListeners) {
+      try {
+        listener(payload);
+      } catch (_) {}
+    }
+  }
+
+  void _notifyUserStatusListeners(Map<String, dynamic> payload) {
+    for (final listener in _userStatusListeners) {
+      try {
+        listener(payload);
+      } catch (_) {}
+    }
+  }
+
+  Map<String, dynamic> _normalizeMapPayload(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      return data;
+    }
+    if (data is Map) {
+      return data.map((key, value) => MapEntry(key.toString(), value));
+    }
+    return {'data': data};
+  }
+
+  /// Normalizes chat socket payloads and aliases backend `conversationId` to
+  /// `chatRoomId` for app-level state. Also maps typing `fromUserId` to `userId`.
+  Map<String, dynamic> _normalizeChatPayload(dynamic data) {
+    final payload = _normalizeMapPayload(data);
+
+    final conversationId =
+        payload['conversationId'] ??
+        payload['conversation_id'] ??
+        payload['chatRoomId'];
+    if (conversationId != null) {
+      payload['conversationId'] = conversationId.toString();
+      payload['chatRoomId'] = conversationId.toString();
+    }
+
+    final fromUserId = payload['fromUserId'] ?? payload['from_user_id'];
+    if (fromUserId != null && payload['userId'] == null) {
+      payload['userId'] = fromUserId.toString();
+    }
+
+    final unreadConversations =
+        payload['unreadConversations'] ?? payload['unread_conversations'];
+    if (unreadConversations != null && payload['unreadCount'] == null) {
+      payload['unreadCount'] = unreadConversations;
+    }
+
+    return payload;
+  }
+
+  /// Backend routes chat events to user rooms on auth; no room join is required.
+  void joinRoom(String chatRoomId) {
+    if (chatRoomId.trim().isEmpty) return;
+  }
+
+  void leaveRoom(String chatRoomId) {
+    if (chatRoomId.trim().isEmpty) return;
+  }
+
+  void emitTyping({required String recipientId, String? conversationId}) {
+    if (_socket == null || !_isConnected) return;
+    if (recipientId.trim().isEmpty) return;
+    _socket!.emit('typing', {'toUserId': recipientId.trim()});
+  }
+
+  void emitStopTyping({
+    required String recipientId,
+    String? conversationId,
+  }) {
+    if (_socket == null || !_isConnected) return;
+    if (recipientId.trim().isEmpty) return;
+    _socket!.emit('stop_typing', {'toUserId': recipientId.trim()});
   }
 
   /// Disconnect from socket server
   /// Ensures complete cleanup of socket instance, flags, and listeners
   void disconnect() {
-    
     if (_socket != null) {
       try {
         // Reset flags first to prevent race conditions
         _isConnected = false;
         _isConnecting = false;
-        
+
         // Disconnect socket
         _socket!.disconnect();
-        
+
         // Dispose socket instance
         _socket!.dispose();
-        
+
         // Clear socket reference
         _socket = null;
         // IMPORTANT:
@@ -392,9 +608,7 @@ class SocketService {
         // These are app-level listeners (e.g., NotificationsCubit) that must survive logout/login
         // and socket reconnects. Clearing them causes real-time notifications to stop until the
         // listener is re-registered manually (often only when opening Notifications screen).
-        
       } catch (e, stackTrace) {
-        
         // Force cleanup even if there's an error
         _socket = null;
         _isConnected = false;
@@ -411,13 +625,11 @@ class SocketService {
   /// If socket is not connected, it will connect first using the provided token
   /// Emits 'auth' event with token to authenticate the existing connection
   Future<void> authenticateSocket(String token) async {
-    
     if (_socket == null || !_isConnected) {
-      
       // If not connected, connect first using the provided token
       // This ensures we use the fresh token even if SharedPreferences hasn't been updated yet
       await connect(token: token);
-      
+
       // Wait for connection to establish and listeners to be set up
       // Use a more reliable approach: wait for _isConnected flag
       int attempts = 0;
@@ -425,20 +637,17 @@ class SocketService {
         await Future.delayed(const Duration(milliseconds: 100));
         attempts++;
       }
-      
+
       if (!_isConnected) {
         return;
       }
-      
     }
-    
-    
+
     try {
       // Emit 'auth' event with token (Option B: without restarting connection)
       // This is important for immediate authentication after login
       _socket!.emit('auth', {'token': token});
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   /// Check if socket is connected
@@ -463,4 +672,3 @@ class SocketService {
     final status = getConnectionStatus();
   }
 }
-

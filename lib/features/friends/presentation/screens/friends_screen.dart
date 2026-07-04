@@ -17,13 +17,19 @@ import 'package:wish_listy/core/theme/app_theme.dart' as theme;
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/friends/data/repository/friends_repository.dart';
 import 'package:wish_listy/features/friends/data/models/friendship_model.dart';
+import 'package:wish_listy/features/friends/data/models/suggestion_user_model.dart';
+import 'package:wish_listy/features/friends/presentation/widgets/suggested_friends_section.dart';
 import 'package:wish_listy/features/notifications/presentation/cubit/notifications_cubit.dart';
 
 class FriendsScreen extends StatefulWidget {
   final int? initialTabIndex;
   final void Function(bool isEmpty)? onEmptyStateChanged;
 
-  const FriendsScreen({super.key, this.initialTabIndex, this.onEmptyStateChanged});
+  const FriendsScreen({
+    super.key,
+    this.initialTabIndex,
+    this.onEmptyStateChanged,
+  });
 
   @override
   FriendsScreenState createState() => FriendsScreenState();
@@ -31,10 +37,9 @@ class FriendsScreen extends StatefulWidget {
 
 class FriendsScreenState extends State<FriendsScreen>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
-  
   @override
   bool get wantKeepAlive => true;
-  
+
   late TabController _tabController;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -49,6 +54,10 @@ class FriendsScreenState extends State<FriendsScreen>
   List<Friend> _friends = [];
   bool _isLoadingFriends = false;
   String? _friendsError;
+
+  // Discovery V2 (People You May Know) — My Friends tab
+  List<SuggestionUser> _discoverSuggestions = [];
+  bool _isLoadingDiscover = false;
 
   // Friend requests state
   List<FriendRequest> _friendRequests = [];
@@ -72,11 +81,15 @@ class FriendsScreenState extends State<FriendsScreen>
   void initState() {
     super.initState();
     final initialIndex = widget.initialTabIndex ?? 0;
-    _tabController = TabController(length: 2, vsync: this, initialIndex: initialIndex);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: initialIndex,
+    );
     _initializeAnimations();
     _startAnimations();
     _searchController.addListener(_onSearchChanged);
-    
+
     // Set up scroll listener for pagination
     _scrollController.addListener(_onScroll);
   }
@@ -100,6 +113,7 @@ class FriendsScreenState extends State<FriendsScreen>
         if (mounted) {
           _loadFriends();
           _loadFriendRequests();
+          _loadDiscoverSuggestions();
         }
       });
     }
@@ -152,10 +166,7 @@ class FriendsScreenState extends State<FriendsScreen>
       // When search is cleared or too short, reload full friends list without search
       _currentPage = 1;
       _hasMoreFriends = true;
-      _loadFriends(
-        resetPage: true,
-        forceShowLoading: true,
-      );
+      _loadFriends(resetPage: true, forceShowLoading: true);
     }
   }
 
@@ -210,9 +221,7 @@ class FriendsScreenState extends State<FriendsScreen>
                         label: localization.translate('ui.myFriends'),
                         icon: Icons.people_rounded,
                       ),
-                      UnifiedTab(
-                        label: localization.translate('ui.requests'),
-                      ),
+                      UnifiedTab(label: localization.translate('ui.requests')),
                     ],
                     selectedTabIndex: _tabController.index,
                     onTabChanged: (index) {
@@ -251,15 +260,75 @@ class FriendsScreenState extends State<FriendsScreen>
     );
   }
 
-  Widget _buildMyFriendsTab(LocalizationService localization) {
-    // Show loading state
-    if (_isLoadingFriends && (_friends.isEmpty || _searchQuery.length >= 2)) {
-      return const Center(child: CircularProgressIndicator());
-    }
+  bool _shouldShowDiscoverPymk() {
+    final auth = Provider.of<AuthRepository>(context, listen: false);
+    return !auth.isGuest;
+  }
 
-    // Show error state
-    if (_friendsError != null && _friends.isEmpty) {
-      return Center(
+  Future<void> _loadDiscoverSuggestions() async {
+    final authService = Provider.of<AuthRepository>(context, listen: false);
+    if (authService.isGuest) {
+      if (mounted) {
+        setState(() {
+          _isLoadingDiscover = false;
+          _discoverSuggestions = [];
+        });
+      }
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _isLoadingDiscover = true);
+    try {
+      final list = await _friendsRepository.getSuggestions();
+      if (!mounted) return;
+      setState(() {
+        _discoverSuggestions = list;
+        _isLoadingDiscover = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _discoverSuggestions = [];
+        _isLoadingDiscover = false;
+      });
+    }
+  }
+
+  void _onDiscoverDismiss(String userId) {
+    if (!mounted) return;
+    setState(() {
+      _discoverSuggestions = List<SuggestionUser>.from(_discoverSuggestions)
+        ..removeWhere((u) => u.id == userId);
+    });
+  }
+
+  Widget _buildDiscoverSliver(LocalizationService localization) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.only(
+          left: theme.AppTheme.spacing16,
+          right: theme.AppTheme.spacing16,
+          top: theme.AppTheme.spacing8,
+          bottom: theme.AppTheme.spacing16,
+        ),
+        child: SuggestedFriendsSection(
+          key: const ValueKey('friends_pymk'),
+          localization: localization,
+          useParentDiscover: true,
+          parentDiscoverLoading: _isLoadingDiscover,
+          parentDiscoverSuggestions: _discoverSuggestions,
+          onParentDiscoverDismiss: _onDiscoverDismiss,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFriendsErrorState(LocalizationService localization) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: theme.AppTheme.spacing32,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -278,55 +347,188 @@ class FriendsScreenState extends State<FriendsScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Empty-state body (no friends / no search results) for use inside a scroll view below PYMK.
+  Widget _buildEmptyFriendsScrollableBody(LocalizationService localization) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight > 0 ? constraints.maxHeight : 0,
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: theme.AppTheme.spacing32,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(40),
+                      ),
+                      child: Icon(
+                        Icons.people_outline,
+                        size: 40,
+                        color: AppColors.secondary,
+                      ),
+                    ),
+                    const SizedBox(height: theme.AppTheme.spacing16),
+                    Text(
+                      _searchQuery.isEmpty
+                          ? localization.translate('friends.noFriendsYet')
+                          : localization.translate('friends.noFriendsFound'),
+                      style: AppStyles.headingMedium.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: theme.AppTheme.spacing12),
+                    Text(
+                      _searchQuery.isEmpty
+                          ? localization.translate(
+                              'friends.startConnectingWithFriends',
+                            )
+                          : localization.translate(
+                              'friends.tryAdjustingSearchTerms',
+                            ),
+                      style: AppStyles.bodyMedium.copyWith(
+                        color: AppColors.textTertiary,
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    if (_searchQuery.isEmpty) ...[
+                      const SizedBox(height: theme.AppTheme.spacing24),
+                      CustomButton(
+                        text: localization.translate('friends.addFriends'),
+                        onPressed: () {
+                          Navigator.pushNamed(context, AppRoutes.addFriend);
+                        },
+                        variant: ButtonVariant.primary,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMyFriendsTab(LocalizationService localization) {
+    final showDiscover = _shouldShowDiscoverPymk();
+
+    if (_friendsError != null && _friends.isEmpty && !_isLoadingFriends) {
+      return RefreshIndicator(
+        onRefresh: _refreshFriends,
+        color: AppColors.primary,
+        child: AnimationLimiter(
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            controller: _scrollController,
+            slivers: [
+              if (showDiscover) _buildDiscoverSliver(localization),
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: _buildFriendsErrorState(localization),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_isLoadingFriends && (_friends.isEmpty || _searchQuery.length >= 2)) {
+      return RefreshIndicator(
+        onRefresh: _refreshFriends,
+        color: AppColors.primary,
+        child: AnimationLimiter(
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            controller: _scrollController,
+            slivers: [
+              if (showDiscover) _buildDiscoverSliver(localization),
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
     return RefreshIndicator(
       onRefresh: _refreshFriends,
       color: AppColors.primary,
-      child: _friends.isEmpty
-          ? _buildEmptyState()
-          : AnimationLimiter(
-              child: ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(),
-                controller: _scrollController,
+      child: AnimationLimiter(
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          controller: _scrollController,
+          slivers: [
+            if (showDiscover) _buildDiscoverSliver(localization),
+            if (_friends.isEmpty)
+              SliverFillRemaining(
+                // Must be true: child uses [SingleChildScrollView]; false collapses height → blank area.
+                hasScrollBody: true,
+                child: _buildEmptyFriendsScrollableBody(localization),
+              )
+            else
+              SliverPadding(
                 padding: const EdgeInsets.all(16),
-                itemCount: _friends.length +
-                    (_isLoadingMoreFriends ? 1 : 0) +
-                    1, // +1 for bottom padding
-                itemBuilder: (context, index) {
-                  // Any slot at or beyond the real list is either the loading
-                  // spinner or the bottom-nav-bar padding.
-                  if (index >= _friends.length) {
-                    if (_isLoadingMoreFriends &&
-                        index == _friends.length) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.primary,
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      if (index >= _friends.length) {
+                        if (_isLoadingMoreFriends && index == _friends.length) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 20),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox(height: 120);
+                      }
+                      return AnimationConfiguration.staggeredList(
+                        position: index,
+                        duration: const Duration(milliseconds: 375),
+                        child: SlideAnimation(
+                          verticalOffset: 50.0,
+                          child: FadeInAnimation(
+                            child: _buildFriendCard(
+                              _friends[index],
+                              localization,
+                            ),
                           ),
                         ),
                       );
-                    }
-                    return const SizedBox(height: 120);
-                  }
-                  return AnimationConfiguration.staggeredList(
-                    position: index,
-                    duration: const Duration(milliseconds: 375),
-                    child: SlideAnimation(
-                      verticalOffset: 50.0,
-                      child: FadeInAnimation(
-                        child: _buildFriendCard(
-                          _friends[index],
-                          localization,
-                        ),
-                      ),
-                    ),
-                  );
-                },
+                    },
+                    childCount:
+                        _friends.length + (_isLoadingMoreFriends ? 1 : 0) + 1,
+                  ),
+                ),
               ),
-            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -374,10 +576,7 @@ class FriendsScreenState extends State<FriendsScreen>
             CustomButton(
               text: localization.translate('friends.addFriends'),
               onPressed: () {
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.addFriend,
-                );
+                Navigator.pushNamed(context, AppRoutes.addFriend);
               },
               variant: ButtonVariant.primary,
             ),
@@ -436,10 +635,7 @@ class FriendsScreenState extends State<FriendsScreen>
                         child: CustomButton(
                           text: localization.translate('friends.addFriend'),
                           onPressed: () {
-                            Navigator.pushNamed(
-                              context,
-                              AppRoutes.addFriend,
-                            );
+                            Navigator.pushNamed(context, AppRoutes.addFriend);
                           },
                           variant: ButtonVariant.primary,
                         ),
@@ -489,9 +685,7 @@ class FriendsScreenState extends State<FriendsScreen>
                 // Profile Picture
                 CircleAvatar(
                   radius: 28,
-                  backgroundColor: AppColors.secondary.withValues(
-                    alpha: 0.1,
-                  ),
+                  backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
                   backgroundImage: friend.profileImage != null
                       ? NetworkImage(friend.profileImage!)
                       : null,
@@ -499,9 +693,10 @@ class FriendsScreenState extends State<FriendsScreen>
                       ? Text(
                           friend.fullName.isNotEmpty
                               ? friend.fullName[0].toUpperCase()
-                              : (friend.handle != null && friend.handle!.isNotEmpty)
-                                  ? friend.handle![0].toUpperCase()
-                                  : '?',
+                              : (friend.handle != null &&
+                                    friend.handle!.isNotEmpty)
+                              ? friend.handle![0].toUpperCase()
+                              : '?',
                           style: AppStyles.headingSmall.copyWith(
                             color: AppColors.secondary,
                             fontWeight: FontWeight.bold,
@@ -527,7 +722,8 @@ class FriendsScreenState extends State<FriendsScreen>
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
-                      if (friend.fullName.isNotEmpty && friend.getDisplayHandleOrNull() != null) ...[
+                      if (friend.fullName.isNotEmpty &&
+                          friend.getDisplayHandleOrNull() != null) ...[
                         const SizedBox(height: 2),
                         Text(
                           friend.getDisplayHandleOrNull()!,
@@ -560,9 +756,21 @@ class FriendsScreenState extends State<FriendsScreen>
                     ],
                   ),
                 ),
-                // Arrow icon to indicate clickable
                 const SizedBox(width: 8),
-                Icon(
+                IconButton(
+                  onPressed: () => _openChatRoom(friend),
+                  icon: const Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    size: 20,
+                    color: AppColors.primary,
+                  ),
+                  style: IconButton.styleFrom(
+backgroundColor: AppColors.cardPurple.withValues(alpha: 0.55),                    padding: const EdgeInsets.all(8),
+                    minimumSize: const Size(36, 36),
+                  ),
+                ),
+                const SizedBox(width: 2),
+                const Icon(
                   Icons.arrow_forward_ios,
                   size: 16,
                   color: AppColors.textTertiary,
@@ -572,6 +780,19 @@ class FriendsScreenState extends State<FriendsScreen>
           ),
         ),
       ),
+    );
+  }
+
+  void _openChatRoom(Friend friend) {
+    Navigator.of(context).pushNamed(
+      AppRoutes.chatRoom,
+      arguments: {
+        'userId': friend.id,
+        'displayName': friend.fullName.isNotEmpty
+            ? friend.fullName
+            : friend.getDisplayHandle(),
+        'avatarUrl': friend.profileImage,
+      },
     );
   }
 
@@ -658,7 +879,8 @@ class FriendsScreenState extends State<FriendsScreen>
                           ),
                         ),
                       ),
-                      if (fromUser.fullName.isNotEmpty && fromUser.getDisplayHandleOrNull() != null) ...[
+                      if (fromUser.fullName.isNotEmpty &&
+                          fromUser.getDisplayHandleOrNull() != null) ...[
                         const SizedBox(height: 2),
                         Text(
                           fromUser.getDisplayHandleOrNull()!,
@@ -699,13 +921,19 @@ class FriendsScreenState extends State<FriendsScreen>
                           color: AppColors.error.withOpacity(0.5),
                           width: 1.5,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: Text(
-                        Provider.of<LocalizationService>(context, listen: false).translate('dialogs.decline'),
+                        Provider.of<LocalizationService>(
+                          context,
+                          listen: false,
+                        ).translate('dialogs.decline'),
                         style: AppStyles.bodySmall.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -724,7 +952,10 @@ class FriendsScreenState extends State<FriendsScreen>
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.success,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -740,7 +971,10 @@ class FriendsScreenState extends State<FriendsScreen>
                               ),
                             )
                           : Text(
-                              Provider.of<LocalizationService>(context, listen: false).translate('dialogs.accept'),
+                              Provider.of<LocalizationService>(
+                                context,
+                                listen: false,
+                              ).translate('dialogs.accept'),
                               style: AppStyles.bodySmall.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -757,92 +991,6 @@ class FriendsScreenState extends State<FriendsScreen>
     );
   }
 
-  Widget _buildEmptyState() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Use the full available height to center content properly
-        final availableHeight = constraints.maxHeight;
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: SizedBox(
-            height: availableHeight.isFinite && availableHeight > 0 
-                ? availableHeight 
-                : MediaQuery.of(context).size.height * 0.6,
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: theme.AppTheme.spacing32,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(40),
-                      ),
-                      child: Icon(
-                        Icons.people_outline,
-                        size: 40,
-                        color: AppColors.secondary,
-                      ),
-                    ),
-                    const SizedBox(height: theme.AppTheme.spacing16),
-                    Consumer<LocalizationService>(
-                      builder: (context, localization, child) {
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _searchQuery.isEmpty
-                                  ? localization.translate('friends.noFriendsYet')
-                                  : localization.translate('friends.noFriendsFound'),
-                              style: AppStyles.headingMedium.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: theme.AppTheme.spacing12),
-                            Text(
-                              _searchQuery.isEmpty
-                                  ? localization.translate('friends.startConnectingWithFriends')
-                                  : localization.translate('friends.tryAdjustingSearchTerms'),
-                              style: AppStyles.bodyMedium.copyWith(
-                                color: AppColors.textTertiary,
-                                height: 1.5,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            if (_searchQuery.isEmpty) ...[
-                              const SizedBox(height: theme.AppTheme.spacing24),
-                              CustomButton(
-                                text: localization.translate('friends.addFriends'),
-                                onPressed: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.addFriend,
-                                  );
-                                },
-                                variant: ButtonVariant.primary,
-                              ),
-                            ],
-                          ],
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildEmptyFriendRequests() {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -851,8 +999,8 @@ class FriendsScreenState extends State<FriendsScreen>
         return SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: SizedBox(
-            height: availableHeight.isFinite && availableHeight > 0 
-                ? availableHeight 
+            height: availableHeight.isFinite && availableHeight > 0
+                ? availableHeight
                 : MediaQuery.of(context).size.height * 0.6,
             child: Center(
               child: Padding(
@@ -883,7 +1031,9 @@ class FriendsScreenState extends State<FriendsScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              localization.translate('friends.noFriendRequests'),
+                              localization.translate(
+                                'friends.noFriendRequests',
+                              ),
                               style: AppStyles.headingMedium.copyWith(
                                 color: AppColors.textSecondary,
                               ),
@@ -891,7 +1041,9 @@ class FriendsScreenState extends State<FriendsScreen>
                             ),
                             const SizedBox(height: theme.AppTheme.spacing12),
                             Text(
-                              localization.translate('friends.noFriendRequestsDescription'),
+                              localization.translate(
+                                'friends.noFriendRequestsDescription',
+                              ),
                               style: AppStyles.bodyMedium.copyWith(
                                 color: AppColors.textTertiary,
                                 height: 1.5,
@@ -1014,7 +1166,10 @@ class FriendsScreenState extends State<FriendsScreen>
       });
     } catch (e) {
       if (!mounted) return;
-      final localization = Provider.of<LocalizationService>(context, listen: false);
+      final localization = Provider.of<LocalizationService>(
+        context,
+        listen: false,
+      );
       setState(() {
         _friendsError = localization.translate('friends.failedToLoadFriends');
         _isLoadingFriends = false;
@@ -1028,7 +1183,8 @@ class FriendsScreenState extends State<FriendsScreen>
     if (_searchQuery.length >= 2 ||
         !_hasMoreFriends ||
         _isLoadingMoreFriends ||
-        _isLoadingFriends) return;
+        _isLoadingFriends)
+      return;
 
     setState(() {
       _currentPage++;
@@ -1084,9 +1240,14 @@ class FriendsScreenState extends State<FriendsScreen>
       });
     } catch (e) {
       if (!mounted) return;
-      final localization = Provider.of<LocalizationService>(context, listen: false);
+      final localization = Provider.of<LocalizationService>(
+        context,
+        listen: false,
+      );
       setState(() {
-        _requestsError = localization.translate('friends.failedToLoadFriendRequests');
+        _requestsError = localization.translate(
+          'friends.failedToLoadFriendRequests',
+        );
         _isLoadingRequests = false;
       });
     }
@@ -1120,7 +1281,10 @@ class FriendsScreenState extends State<FriendsScreen>
         await _loadFriends(resetPage: true);
       }
 
-      final localization = Provider.of<LocalizationService>(context, listen: false);
+      final localization = Provider.of<LocalizationService>(
+        context,
+        listen: false,
+      );
       final message = accept
           ? localization.translate('notifications.friendRequestAccepted')
           : localization.translate('notifications.friendRequestDeclined');
@@ -1162,14 +1326,19 @@ class FriendsScreenState extends State<FriendsScreen>
     } catch (e) {
       if (!mounted) return;
       setState(() => _processingRequestIds.remove(request.id));
-      final localization = Provider.of<LocalizationService>(context, listen: false);
+      final localization = Provider.of<LocalizationService>(
+        context,
+        listen: false,
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
               const Icon(Icons.error, color: Colors.white),
               const SizedBox(width: 8),
-              Text(localization.translate('dialogs.failedToProcessFriendRequest')),
+              Text(
+                localization.translate('dialogs.failedToProcessFriendRequest'),
+              ),
             ],
           ),
           backgroundColor: AppColors.error,
@@ -1209,7 +1378,10 @@ class FriendsScreenState extends State<FriendsScreen>
 
   void _showAddFriendDialog() {
     final emailController = TextEditingController();
-    final localization = Provider.of<LocalizationService>(context, listen: false);
+    final localization = Provider.of<LocalizationService>(
+      context,
+      listen: false,
+    );
 
     showDialog(
       context: context,
@@ -1272,8 +1444,10 @@ class FriendsScreenState extends State<FriendsScreen>
   }
 
   Future<void> _refreshFriends() async {
-    // Reset pagination and reload friends
-    await _loadFriends(resetPage: true);
+    await Future.wait<void>([
+      _loadFriends(resetPage: true),
+      _loadDiscoverSuggestions(),
+    ]);
   }
 
   Future<void> _refreshFriendRequests() async {
