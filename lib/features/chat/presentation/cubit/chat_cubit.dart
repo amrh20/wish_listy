@@ -58,6 +58,44 @@ class ChatCubit extends Cubit<ChatState> {
     _activeChatRoomId = chatRoomId;
   }
 
+  /// Clears unread badge for a conversation in local state/cache.
+  void markConversationAsRead(String userId) {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) return;
+
+    final cachedConversations = List<Conversation>.from(_chatCache.conversations);
+    final cachedIndex = cachedConversations.indexWhere(
+      (item) => item.participantId == normalizedUserId,
+    );
+    if (cachedIndex == -1) return;
+
+    final cachedConversation = cachedConversations[cachedIndex];
+    if (cachedConversation.unreadCount == 0) return;
+
+    cachedConversations[cachedIndex] = cachedConversation.copyWith(
+      unreadCount: 0,
+    );
+    _chatCache.setConversations(cachedConversations);
+
+    if (state is! ChatLoaded) return;
+
+    final current = state as ChatLoaded;
+    final updatedUnreadCount = current.unreadCount > 0
+        ? current.unreadCount - 1
+        : 0;
+
+    emit(
+      current.copyWith(
+        conversations: cachedConversations,
+        filteredConversations: _applySearch(
+          cachedConversations,
+          current.searchQuery,
+        ),
+        unreadCount: updatedUnreadCount,
+      ),
+    );
+  }
+
   bool isViewingChatRoom({String? senderId, String? chatRoomId}) {
     if (_activeRoomUserId == null && _activeChatRoomId == null) {
       return false;
@@ -307,6 +345,20 @@ class ChatCubit extends Cubit<ChatState> {
 
   void _onSocketUnreadUpdate(Map<String, dynamic> payload) {
     if (state is! ChatLoaded) return;
+
+    final participantId =
+        payload['userId'] ??
+            payload['participantId'] ??
+            payload['otherUserId'] ??
+            payload['other_user_id'] ??
+            payload['data']?['userId'] ??
+            payload['data']?['participantId'];
+    if (participantId != null && participantId.toString().trim().isNotEmpty) {
+      markConversationAsRead(participantId.toString());
+    }
+
+    if (state is! ChatLoaded) return;
+
     final unread = _parseInt(
       payload['unreadConversations'] ??
           payload['unread_conversations'] ??

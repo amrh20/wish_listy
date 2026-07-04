@@ -1355,6 +1355,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         return Colors.grey;
       case NotificationType.reservationReminder:
         return Colors.amber;
+      case NotificationType.chatMessage:
+        return Colors.blue;
       case NotificationType.general:
         return AppColors.info;
     }
@@ -1403,6 +1405,8 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         return Icons.event_busy;
       case NotificationType.reservationReminder:
         return Icons.schedule;
+      case NotificationType.chatMessage:
+        return Icons.chat_bubble_outline;
       case NotificationType.general:
         return Icons.notifications_outlined;
     }

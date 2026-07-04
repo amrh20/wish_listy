@@ -391,6 +391,10 @@ class ChatRoomCubit extends Cubit<ChatRoomState> {
       final loaded = state as ChatRoomLoaded;
       emit(loaded.copyWith(messages: merged, clearInfoMessage: true));
     }
+
+    if (!message.isMine) {
+      unawaited(markAsRead());
+    }
   }
 
   void _onMessagesRead(Map<String, dynamic> payload) {

@@ -48,6 +48,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
         userId: widget.userId,
         chatRoomId: widget.chatRoomId,
       );
+      _chatCubit?.markConversationAsRead(widget.userId);
       context.read<ChatRoomCubit>().initialize();
     });
   }
@@ -55,6 +56,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   @override
   void dispose() {
     _chatCubit?.setActiveChatRoom(userId: null, chatRoomId: null);
+    _chatCubit?.loadUnreadCount();
+    _chatCubit?.loadConversations(forceRefresh: true);
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _textController.dispose();
