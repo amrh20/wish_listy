@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/constants/app_styles.dart';
+import 'package:wish_listy/features/chat/data/models/chat_message_model.dart';
 
 class ChatInputBar extends StatelessWidget {
   final TextEditingController controller;
@@ -12,6 +13,9 @@ class ChatInputBar extends StatelessWidget {
   final int maxLength;
   final String hintText;
   final String disabledHintText;
+  final ChatMessage? replyToMessage;
+  final String? replyToSenderLabel;
+  final VoidCallback? onClearReply;
 
   const ChatInputBar({
     super.key,
@@ -24,6 +28,9 @@ class ChatInputBar extends StatelessWidget {
     required this.maxLength,
     required this.hintText,
     required this.disabledHintText,
+    this.replyToMessage,
+    this.replyToSenderLabel,
+    this.onClearReply,
   });
 
   @override
@@ -45,18 +52,22 @@ class ChatInputBar extends StatelessWidget {
             ),
           ],
         ),
-        child: ListenableBuilder(
-          listenable: controller,
-          builder: (context, _) {
-            final textLength = controller.text.trim().length;
-            final canSend = isEnabled &&
-                !isSending &&
-                textLength > 0 &&
-                textLength <= maxLength;
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (replyToMessage != null) _buildReplyPreview(context),
+            ListenableBuilder(
+              listenable: controller,
+              builder: (context, _) {
+                final textLength = controller.text.trim().length;
+                final canSend = isEnabled &&
+                    !isSending &&
+                    textLength > 0 &&
+                    textLength <= maxLength;
 
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
-              child: Row(
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+                  child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
@@ -167,10 +178,69 @@ class ChatInputBar extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-            );
-          },
+                  ),
+                );
+              },
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildReplyPreview(BuildContext context) {
+    final msg = replyToMessage!;
+    final label = replyToSenderLabel ?? 'User';
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        border: Border(
+          top: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
+          left: BorderSide(color: AppColors.primary, width: 3),
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: AppStyles.captionWithContext(context).copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  msg.text,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppStyles.captionWithContext(context).copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: onClearReply,
+            icon: Icon(
+              Icons.close_rounded,
+              size: 18,
+              color: AppColors.textTertiary,
+            ),
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(),
+          ),
+        ],
       ),
     );
   }

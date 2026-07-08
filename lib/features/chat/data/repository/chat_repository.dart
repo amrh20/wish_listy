@@ -138,11 +138,17 @@ class ChatRepository {
     required String recipientId,
     required String text,
     String? currentUserId,
+    String? replyToMessageId,
   }) async {
     try {
       final response = await _apiService.post(
         '/chat/messages',
-        data: {'recipientId': recipientId, 'text': text},
+        data: {
+          'recipientId': recipientId,
+          'text': text,
+          if (replyToMessageId != null && replyToMessageId.trim().isNotEmpty)
+            'replyToMessageId': replyToMessageId.trim(),
+        },
       );
 
       final data = _asStringKeyedMap(response['data']);

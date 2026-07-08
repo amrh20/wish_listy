@@ -21,6 +21,12 @@ class ChatRoomCubit extends Cubit<ChatRoomState> {
   Timer? _typingDebounce;
   bool _typingSent = false;
   bool _isFetchingOlder = false;
+  // Tracks whether we have already done the first REST load in this session.
+  // Socket events (via ChatCubit) can populate the cache before the chat room
+  // is opened, so we must not skip the initial REST fetch just because the
+  // cache is non-empty — the cache may only contain the latest socket message,
+  // not the full history.
+  bool _initialRestLoadDone = false;
 
   ChatRoomCubit({
     required this.userId,
@@ -68,24 +74,33 @@ class ChatRoomCubit extends Cubit<ChatRoomState> {
   }
 
   Future<void> _loadInitialMessages() async {
-    if (state is! ChatRoomLoading && _chatCache.hasMessages(userId)) return;
+    // Only skip the REST load if we have already completed it once in this
+    // cubit session AND the cache still has messages. We intentionally do NOT
+    // skip based on cache alone because ChatCubit can pre-populate the cache
+    // via socket events (single messages), which would cause the user to see
+    // an incomplete history and miss older messages.
+    if (_initialRestLoadDone && _chatCache.hasMessages(userId)) return;
 
     try {
       final result = await _chatRepository.fetchMessages(
         userId: userId,
         currentUserId: currentUserId,
       );
-      final messages = result.messages;
-      final sorted = List<ChatMessage>.from(messages)
+      final restMessages = result.messages;
+      final currentMessages = state is ChatRoomLoaded
+          ? (state as ChatRoomLoaded).messages
+          : _chatCache.getMessages(userId);
+      final merged = _dedupeMessages([...currentMessages, ...restMessages])
         ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
-      _chatCache.setMessages(userId, sorted);
+      _chatCache.setMessages(userId, merged);
       _chatRoomId ??=
-          result.conversationId ?? _extractChatRoomId(sorted);
+          result.conversationId ?? _extractChatRoomId(merged);
+      _initialRestLoadDone = true;
       emit(
         ChatRoomLoaded(
-          messages: sorted,
-          hasMoreMessages: messages.isNotEmpty,
+          messages: merged,
+          hasMoreMessages: restMessages.isNotEmpty,
           isConnected: _socketService.isConnected,
         ),
       );
@@ -161,7 +176,7 @@ class ChatRoomCubit extends Cubit<ChatRoomState> {
     }
   }
 
-  Future<void> sendMessage(String rawText) async {
+  Future<void> sendMessage(String rawText, {ChatMessage? replyToMessage}) async {
     final text = rawText.trim();
     if (text.isEmpty || text.length > 4000) return;
 
@@ -173,6 +188,9 @@ class ChatRoomCubit extends Cubit<ChatRoomState> {
       recipientId: userId,
       text: text,
       chatRoomId: _chatRoomId,
+      replyTo: replyToMessage == null
+          ? null
+          : ChatMessageReply.fromMessage(replyToMessage),
     );
 
     final optimisticMessages = <ChatMessage>[...current.messages, optimistic];
@@ -186,6 +204,10 @@ class ChatRoomCubit extends Cubit<ChatRoomState> {
         recipientId: userId,
         text: text,
         currentUserId: currentUserId,
+        replyToMessageId: replyToMessage != null &&
+                !replyToMessage.id.startsWith('local_')
+            ? replyToMessage.id
+            : null,
       );
 
       _chatRoomId ??= serverMessage.chatRoomId;

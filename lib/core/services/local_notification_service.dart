@@ -63,19 +63,38 @@ class LocalNotificationService {
   }
 
   void handleNotificationResponse(NotificationResponse response) {
-    final payload = response.payload;
-    if (payload == null || payload.isEmpty) return;
+    final payload = _decodeChatPayload(response.payload);
+    if (payload == null) return;
+    onChatNotificationTap?.call(payload);
+  }
+
+  Map<String, dynamic>? _decodeChatPayload(String? payload) {
+    if (payload == null || payload.isEmpty) return null;
 
     try {
       final decoded = jsonDecode(payload);
-      if (decoded is! Map<String, dynamic>) return;
-      if (decoded['type']?.toString() != 'chat_message') return;
-      onChatNotificationTap?.call(decoded);
+      if (decoded is! Map<String, dynamic>) return null;
+      if (decoded['type']?.toString() != 'chat_message') return null;
+      return decoded;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('LocalNotificationService tap parse error: $e');
       }
+      return null;
     }
+  }
+
+  Future<Map<String, dynamic>?> getChatLaunchPayload() async {
+    if (!_isInitialized) {
+      await initialize();
+    }
+
+    final launchDetails = await _plugin.getNotificationAppLaunchDetails();
+    if (launchDetails?.didNotificationLaunchApp != true) {
+      return null;
+    }
+
+    return _decodeChatPayload(launchDetails?.notificationResponse?.payload);
   }
 
   Future<void> showChatMessage({
@@ -93,6 +112,7 @@ class LocalNotificationService {
       'senderId': senderId,
       'chatRoomId': chatRoomId,
       'senderName': senderName,
+      'displayName': senderName,
     });
 
     final notificationId =

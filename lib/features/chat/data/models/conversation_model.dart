@@ -224,4 +224,12 @@ class Conversation extends Equatable {
     unreadCount,
     updatedAt,
   ];
+
+  /// A stable "latest activity" timestamp for inbox ordering and display.
+  /// Prefer the last message timestamp when present, then fallback to updatedAt.
+  DateTime get latestActivityAt {
+    final lastMessageTime = lastMessage?.createdAt;
+    if (lastMessageTime == null) return updatedAt;
+    return lastMessageTime.isAfter(updatedAt) ? lastMessageTime : updatedAt;
+  }
 }

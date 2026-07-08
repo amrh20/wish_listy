@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -25,6 +27,16 @@ class ChatFcmPayload {
   final String body;
 
   bool get isValid => senderId.isNotEmpty;
+
+  Map<String, dynamic> toNavigationPayload() {
+    return {
+      'type': 'chat_message',
+      'senderId': senderId,
+      'chatRoomId': chatRoomId,
+      'displayName': senderName,
+      'senderName': senderName,
+    };
+  }
 
   static bool isChatMessage(Map<String, dynamic> data) {
     final type = data['type']?.toString().toLowerCase();
@@ -62,8 +74,10 @@ class ChatFcmPayload {
     ]);
 
     final senderName = _firstNonEmpty([
+      data['displayName'],
       data['senderName'],
       data['sender_name'],
+      nestedMap['displayName'],
       nestedMap['senderName'],
       nestedMap['sender_name'],
       data['notificationTitle'],
@@ -130,8 +144,10 @@ class FcmService {
 
   bool _isInitialized = false;
   bool _permissionDialogShownInSession = false;
+  bool _isAppReady = false;
   NotificationsCubit? _notificationsCubit;
   ChatCubit? _chatCubit;
+  Map<String, dynamic>? _pendingChatNavigation;
 
   Future<void> initialize({
     required AuthRepository authRepository,
@@ -149,6 +165,7 @@ class FcmService {
     _localNotifications.onChatNotificationTap = (payload) {
       _navigateToChatRoom(payload);
     };
+    await _handleLocalNotificationLaunchTap();
 
     try {
       await _messaging.setForegroundNotificationPresentationOptions(
@@ -189,6 +206,30 @@ class FcmService {
         );
       }
     } catch (_) {}
+
+    await _processPendingChatNavigation();
+  }
+
+  Future<void> _handleLocalNotificationLaunchTap() async {
+    final launchPayload =
+        await _localNotifications.getChatLaunchPayload();
+    if (launchPayload == null) return;
+    _navigateToChatRoom(launchPayload);
+  }
+
+  Future<void> _processPendingChatNavigation() async {
+    if (_pendingChatNavigation == null) return;
+
+    for (var attempt = 0; attempt < 8; attempt++) {
+      final context = MyApp.navigatorKey.currentContext;
+      if (context != null) {
+        final pending = _pendingChatNavigation!;
+        _pendingChatNavigation = null;
+        _navigateToChatRoom(pending);
+        return;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+    }
   }
 
   void _handleForegroundMessage(RemoteMessage message) {
@@ -305,11 +346,7 @@ class FcmService {
   }) {
     final chatPayload = ChatFcmPayload.fromRemoteMessage(message);
     if (chatPayload != null && chatPayload.isValid) {
-      _navigateToChatRoom({
-        'senderId': chatPayload.senderId,
-        'chatRoomId': chatPayload.chatRoomId,
-        'senderName': chatPayload.senderName,
-      });
+      _navigateToChatRoom(chatPayload.toNavigationPayload());
       return;
     }
 
@@ -328,27 +365,64 @@ class FcmService {
     notificationsCubit.handleRemoteNotificationTap(data, context);
   }
 
-  void _navigateToChatRoom(Map<String, dynamic> data) {
-    final context = MyApp.navigatorKey.currentContext;
-    if (context == null) return;
+  /// Called by SplashScreen after it finishes navigating to MainNavigation.
+  /// Marks the app as ready for deep navigation and processes any pending chat navigation.
+  void markAppReady() {
+    _isAppReady = true;
+    if (_pendingChatNavigation != null) {
+      unawaited(_processPendingChatNavigation());
+    }
+  }
 
+  void _navigateToChatRoom(Map<String, dynamic> data) {
     final senderId =
         data['senderId']?.toString() ?? data['sender_id']?.toString() ?? '';
     if (senderId.isEmpty) return;
 
+    // Defer navigation until the app has fully loaded past the splash screen.
+    // Without this, FCM navigation during cold-start would be overridden by
+    // SplashScreen's pushReplacement(MainNavigation) call.
+    if (!_isAppReady) {
+      _pendingChatNavigation = Map<String, dynamic>.from(data);
+      return;
+    }
+
+    final context = MyApp.navigatorKey.currentContext;
+    if (context == null) {
+      _pendingChatNavigation = Map<String, dynamic>.from(data);
+      unawaited(_processPendingChatNavigation());
+      return;
+    }
+
     final chatRoomId =
         data['chatRoomId']?.toString() ?? data['chat_room_id']?.toString();
-    final senderName =
-        data['senderName']?.toString() ?? data['sender_name']?.toString();
+    final displayName = _firstNonEmpty([
+      data['displayName'],
+      data['senderName'],
+      data['sender_name'],
+    ]);
+
+    _chatCubit?.setActiveChatRoom(
+      userId: senderId,
+      chatRoomId: chatRoomId,
+    );
+    _chatCubit?.markConversationAsRead(senderId);
 
     Navigator.of(context).pushNamed(
       AppRoutes.chatRoom,
       arguments: {
         'userId': senderId,
-        if (senderName != null && senderName.isNotEmpty)
-          'displayName': senderName,
+        if (displayName.isNotEmpty) 'displayName': displayName,
         if (chatRoomId != null && chatRoomId.isNotEmpty) 'chatRoomId': chatRoomId,
       },
     );
+  }
+
+  static String _firstNonEmpty(List<dynamic> values) {
+    for (final value in values) {
+      final text = value?.toString().trim() ?? '';
+      if (text.isNotEmpty) return text;
+    }
+    return '';
   }
 }

@@ -11,7 +11,7 @@ import 'package:wish_listy/features/chat/presentation/cubit/chat_room_cubit.dart
 import 'package:wish_listy/features/chat/presentation/cubit/chat_room_state.dart';
 import 'package:wish_listy/features/chat/presentation/widgets/chat_connection_banner.dart';
 import 'package:wish_listy/features/chat/presentation/widgets/chat_input_bar.dart';
-import 'package:wish_listy/features/chat/presentation/widgets/message_bubble.dart';
+import 'package:wish_listy/features/chat/presentation/widgets/swipeable_message_bubble.dart';
 import 'package:wish_listy/features/chat/presentation/widgets/typing_indicator.dart';
 
 class ChatRoomScreen extends StatefulWidget {
@@ -37,6 +37,8 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   ChatCubit? _chatCubit;
+
+  ChatMessage? _replyToMessage;
 
   @override
   void initState() {
@@ -73,12 +75,25 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     }
   }
 
+  void _onReplyToMessage(ChatMessage message) {
+    setState(() => _replyToMessage = message);
+    _focusNode.requestFocus();
+  }
+
+  void _clearReply() {
+    setState(() => _replyToMessage = null);
+  }
+
   void _sendMessage() {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
-    context.read<ChatRoomCubit>().sendMessage(text);
+    context.read<ChatRoomCubit>().sendMessage(
+      text,
+      replyToMessage: _replyToMessage,
+    );
     _textController.clear();
     context.read<ChatRoomCubit>().onInputChanged('');
+    if (_replyToMessage != null) _clearReply();
   }
 
   @override
@@ -272,6 +287,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                 maxLength: 4000,
                 hintText: localization.translate('chat.inputHint'),
                 disabledHintText: localization.translate('chat.restricted'),
+                replyToMessage: _replyToMessage,
+                replyToSenderLabel: _replyToMessage == null
+                    ? null
+                    : (_replyToMessage!.isMine
+                          ? localization.translate('common.you')
+                          : (widget.displayName ?? '')),
+                onClearReply: _clearReply,
               ),
             ],
           );
@@ -338,7 +360,9 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
     if (messages.isEmpty) {
       return Center(
         child: Text(
-          Provider.of<LocalizationService>(context).translate('chat.noMessages'),
+          Provider.of<LocalizationService>(
+            context,
+          ).translate('chat.noMessages'),
           style: AppStyles.bodyMediumWithContext(
             context,
           ).copyWith(color: AppColors.textSecondary),
@@ -401,7 +425,11 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
                   ),
                 ),
               ),
-            MessageBubble(message: message),
+            SwipeableMessageBubble(
+              message: message,
+              onReply: () => _onReplyToMessage(message),
+              peerDisplayName: widget.displayName,
+            ),
           ],
         );
       },

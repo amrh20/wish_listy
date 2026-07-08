@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:wish_listy/core/constants/app_colors.dart';
 import 'package:wish_listy/core/services/deep_link_service.dart';
+import 'package:wish_listy/core/services/fcm_service.dart';
 import 'package:wish_listy/features/auth/data/repository/auth_repository.dart';
 import 'package:wish_listy/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:wish_listy/features/profile/presentation/screens/main_navigation.dart';
@@ -80,6 +81,9 @@ class _SplashScreenState extends State<SplashScreen>
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       DeepLinkService().navigatePendingIfAny();
+      // Mark the app as ready so FCM can navigate to any pending chat room
+      // that was tapped from a cold-start notification.
+      FcmService().markAppReady();
     });
   }
 

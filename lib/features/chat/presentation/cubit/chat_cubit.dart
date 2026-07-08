@@ -203,7 +203,11 @@ class ChatCubit extends Cubit<ChatState> {
         currentUserId: _currentUserId,
       );
       conversations = await _enrichConversationsWithMissingNames(conversations);
-      conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      conversations.sort((a, b) {
+        final byActivity = b.latestActivityAt.compareTo(a.latestActivityAt);
+        if (byActivity != 0) return byActivity;
+        return a.participantId.compareTo(b.participantId);
+      });
       _chatCache.setConversations(conversations);
 
       final unreadCount = (state is ChatLoaded)
@@ -325,7 +329,11 @@ class ChatCubit extends Cubit<ChatState> {
       conversations.insert(0, mergedConversation);
     } else {
       conversations[existingIndex] = mergedConversation;
-      conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      conversations.sort((a, b) {
+        final byActivity = b.latestActivityAt.compareTo(a.latestActivityAt);
+        if (byActivity != 0) return byActivity;
+        return a.participantId.compareTo(b.participantId);
+      });
     }
 
     _chatCache.setConversations(conversations);

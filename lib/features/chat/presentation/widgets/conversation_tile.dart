@@ -85,7 +85,7 @@ class ConversationTile extends StatelessWidget {
                 children: [
                   Text(
                     ChatDateFormatter.formatConversationTime(
-                      conversation.updatedAt,
+                      conversation.latestActivityAt,
                     ),
                     style: AppStyles.captionWithContext(context).copyWith(
                       color: AppColors.textTertiary,

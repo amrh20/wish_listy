@@ -28,8 +28,15 @@ class ChatCache {
     return (_messagesByUserId[userId] ?? <ChatMessage>[]).isNotEmpty;
   }
 
+  int _compareConversationsByActivity(Conversation a, Conversation b) {
+    final byActivity = b.latestActivityAt.compareTo(a.latestActivityAt);
+    if (byActivity != 0) return byActivity;
+    return a.participantId.compareTo(b.participantId);
+  }
+
   void setConversations(List<Conversation> conversations) {
-    _conversations = List<Conversation>.from(conversations);
+    _conversations = List<Conversation>.from(conversations)
+      ..sort(_compareConversationsByActivity);
     _conversationsFetchedAt = DateTime.now();
   }
 
@@ -42,8 +49,8 @@ class ChatCache {
       _conversations.insert(0, conversation);
     } else {
       _conversations[index] = conversation;
-      _conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     }
+    _conversations.sort(_compareConversationsByActivity);
     _conversationsFetchedAt = DateTime.now();
   }
 
@@ -81,8 +88,13 @@ class ChatCache {
     final index = list.indexWhere((item) => item.id == tempId);
     if (index != -1) {
       list[index] = newMessage;
-      list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
     }
+    // Dedup by ID: the socket event may have already added the real message
+    // before the HTTP response returned, leaving both local_xxx and abc123 then
+    // abc123 twice after the replace above.
+    final seen = <String>{};
+    list.retainWhere((item) => seen.add(item.id));
+    list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
   }
 
   void markAsReadByUser({required String userId, required DateTime readAt}) {
